@@ -134,7 +134,6 @@ function stopMouseInterval() {
 function initMouse() {
     stopMouseInterval();
 
-    /* eslint-disable-next-line compat/compat */
     dom.removeEventListener(document, (window.PointerEvent ? 'pointermove' : 'mousemove'), onPointerMove, {
         passive: true
     });
@@ -147,7 +146,6 @@ function initMouse() {
         });
     }
 
-    /* eslint-disable-next-line compat/compat */
     dom.removeEventListener(document, (window.PointerEvent ? 'pointerenter' : 'mouseenter'), onPointerEnter, {
         capture: true,
         passive: true

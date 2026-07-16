@@ -116,7 +116,6 @@ The official list of supported browser versions can be found in the `browserlist
     ├── lib                     # Reusable libraries
     │   ├── globalize           # Custom localization library
     │   ├── jellyfin-apiclient  # Supporting code for the deprecated apiclient package
-    │   ├── legacy              # Polyfills for legacy browsers
     │   ├── navdrawer           # Navigation drawer library for classic layout
     │   └── scroller            # Content scrolling library
     ├── plugins                 # Client plugins (features dynamically loaded at runtime)

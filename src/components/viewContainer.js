@@ -1,4 +1,6 @@
 import { importModule } from '@uupaa/dynamic-import-polyfill';
+// Used below for $(view).appendTo(...) - no longer implicitly loaded via lib/legacy.
+import 'jquery';
 import './viewManager/viewContainer.scss';
 import Dashboard from '../utils/dashboard';
 

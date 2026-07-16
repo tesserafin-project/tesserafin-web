@@ -261,7 +261,6 @@ export default function (options) {
         });
 
         inputManager.on(window, onInputCommand);
-        /* eslint-disable-next-line compat/compat */
         document.addEventListener((window.PointerEvent ? 'pointermove' : 'mousemove'), onPointerMove);
 
         dialog.addEventListener('close', onDialogClosed);
@@ -574,7 +573,6 @@ export default function (options) {
         }
 
         inputManager.off(window, onInputCommand);
-        /* eslint-disable-next-line compat/compat */
         document.removeEventListener((window.PointerEvent ? 'pointermove' : 'mousemove'), onPointerMove);
     }
 

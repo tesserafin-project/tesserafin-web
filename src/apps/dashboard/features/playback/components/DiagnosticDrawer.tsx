@@ -39,10 +39,10 @@ interface DiagnosticDrawerProps {
 /** `JSON.stringify`s the DTO the server already filtered (design doc §5.3: "JSON.stringify du DTO
  * déjà filtré côté serveur") — no re-filtering here, the response never carried
  * Path/TranscodingUrl/token/ffmpeg args in the first place. */
-// Clipboard API is unsupported on very old browsers (iOS Safari <10.3, Chrome <66); the copy
-// button degrades to a rejected promise there, surfaced as the existing "failed to copy" toast.
+// navigator.clipboard.writeText can still reject (denied permission, insecure/non-HTTPS context,
+// document not focused); the copy button degrades to that rejected promise, surfaced as the
+// existing "failed to copy" toast.
 const copyDiagnosticToClipboard = (detail: PlaybackDiagnosticDetail): Promise<void> =>
-    // eslint-disable-next-line compat/compat
     navigator.clipboard.writeText(JSON.stringify(detail, null, 2));
 
 const exportFixtureFilename = (sessionId: string): string => `playback-diagnostic-fixture-${sessionId}.json`;

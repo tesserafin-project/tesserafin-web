@@ -1,6 +1,3 @@
-// Import legacy browser polyfills
-import 'lib/legacy';
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 

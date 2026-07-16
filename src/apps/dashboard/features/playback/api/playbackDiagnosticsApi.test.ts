@@ -42,8 +42,8 @@ describe('fetchPlaybackSessions()', () => {
     it('forwards an abort signal when provided', async () => {
         const request = vi.fn().mockResolvedValue({ data: [] });
         const api = createMockApi(request);
-        // Avoid constructing a real AbortController here (flagged by eslint-plugin-compat for
-        // older browser targets) — a signal-shaped stub is enough to assert pass-through.
+        // A signal-shaped stub is enough to assert pass-through - no need to construct a real
+        // AbortController here.
         const signal = {} as AbortSignal;
 
         await fetchPlaybackSessions(api, signal);

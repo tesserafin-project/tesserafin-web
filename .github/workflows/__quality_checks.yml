@@ -34,7 +34,6 @@ jobs:
       fail-fast: false
       matrix:
         command:
-          - build:es-check
           - lint
           - stylelint
           - build:check

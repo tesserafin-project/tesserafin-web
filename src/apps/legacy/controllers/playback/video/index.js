@@ -1665,7 +1665,6 @@ export default function (view) {
         try {
             Events.on(playbackManager, 'playerchange', onPlayerChange);
             bindToPlayer(playbackManager.getCurrentPlayer());
-            /* eslint-disable-next-line compat/compat */
             dom.addEventListener(document, window.PointerEvent ? 'pointermove' : 'mousemove', onPointerMove, {
                 passive: true
             });
@@ -1677,12 +1676,10 @@ export default function (view) {
                 passive: true
             });
             document.addEventListener('wheel', onWheel);
-            /* eslint-disable-next-line compat/compat */
             dom.addEventListener(window, window.PointerEvent ? 'pointerdown' : 'mousedown', onWindowMouseDown, {
                 capture: true,
                 passive: true
             });
-            /* eslint-disable-next-line compat/compat */
             dom.addEventListener(window, window.PointerEvent ? 'pointerup' : 'mouseup', onWindowMouseUp, {
                 capture: true,
                 passive: true
@@ -1720,12 +1717,10 @@ export default function (view) {
             passive: true
         });
         document.removeEventListener('wheel', onWheel);
-        /* eslint-disable-next-line compat/compat */
         dom.removeEventListener(window, window.PointerEvent ? 'pointerdown' : 'mousedown', onWindowMouseDown, {
             capture: true,
             passive: true
         });
-        /* eslint-disable-next-line compat/compat */
         dom.removeEventListener(window, window.PointerEvent ? 'pointerup' : 'mouseup', onWindowMouseUp, {
             capture: true,
             passive: true
@@ -1750,7 +1745,6 @@ export default function (view) {
         stopOsdHideTimer();
         headerElement.classList.remove('osdHeader');
         headerElement.classList.remove('osdHeader-hidden');
-        /* eslint-disable-next-line compat/compat */
         dom.removeEventListener(document, window.PointerEvent ? 'pointermove' : 'mousemove', onPointerMove, {
             passive: true
         });
@@ -1787,7 +1781,6 @@ export default function (view) {
         destroySubtitleSync();
     });
     let lastPointerDown = 0;
-    /* eslint-disable-next-line compat/compat */
     dom.addEventListener(view, window.PointerEvent ? 'pointerdown' : 'click', function (e) {
         if (dom.parentWithClass(e.target, ['videoOsdBottom', 'upNextContainer'])) {
             showOsd();

@@ -7,7 +7,8 @@ import browser from '../../scripts/browser';
 import layoutManager from '../../components/layoutManager';
 import dom from '../../utils/dom';
 import focusManager from '../../components/focusManager';
-import ResizeObserver from 'resize-observer-polyfill';
+// ResizeObserver is natively supported across the evergreen browserslist baseline (RFC-0002);
+// no polyfill import needed, this resolves to the global constructor.
 import '../../styles/scrollstyles.scss';
 import globalize from '../globalize';
 

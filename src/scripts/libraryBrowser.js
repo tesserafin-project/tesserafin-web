@@ -1,3 +1,6 @@
+// Used below for $(button).trigger(...) - no longer implicitly loaded via lib/legacy.
+import 'jquery';
+
 import globalize from 'lib/globalize';
 
 export function showLayoutMenu (button, currentLayout, views) {

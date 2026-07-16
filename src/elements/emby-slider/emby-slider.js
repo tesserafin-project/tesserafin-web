@@ -370,7 +370,6 @@ EmbySliderPrototype.attachedCallback = function () {
         passive: true
     });
 
-    /* eslint-disable-next-line compat/compat */
     dom.addEventListener(this, (window.PointerEvent ? 'pointermove' : 'mousemove'), function (e) {
         if (!this.dragging) {
             const fraction = mapClientToFraction(this, e.clientX);
@@ -388,7 +387,6 @@ EmbySliderPrototype.attachedCallback = function () {
         passive: true
     });
 
-    /* eslint-disable-next-line compat/compat */
     dom.addEventListener(this, (window.PointerEvent ? 'pointerleave' : 'mouseleave'), function () {
         sliderBubble.classList.add('hide');
         hasHideBubbleClass = true;

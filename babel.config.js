@@ -5,13 +5,9 @@ module.exports = {
     ],
     sourceType: 'unambiguous',
     presets: [
-        [
-            '@babel/preset-env',
-            {
-                useBuiltIns: 'usage',
-                corejs: 3
-            }
-        ],
+        // No useBuiltIns/corejs: the evergreen browserslist baseline (RFC-0002) natively supports
+        // everything core-js used to backfill, so automatic per-file polyfill injection is dead weight.
+        '@babel/preset-env',
         '@babel/preset-react'
     ],
     plugins: [

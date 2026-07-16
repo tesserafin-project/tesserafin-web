@@ -2,7 +2,6 @@
 
 import eslint from '@eslint/js';
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
-import compat from 'eslint-plugin-compat';
 import globals from 'globals';
 // @ts-expect-error Missing type definition
 import importPlugin from 'eslint-plugin-import';
@@ -20,7 +19,6 @@ export default tseslint.config(
     tseslint.configs.recommended,
     // @ts-expect-error Harmless type mismatch in dependency
     comments.recommended,
-    compat.configs['flat/recommended'],
     importPlugin.flatConfigs.errors,
     sonarjs.configs.recommended,
 
@@ -73,13 +71,6 @@ export default tseslint.config(
             'no-redeclare': 'off',
             '@typescript-eslint/no-redeclare': ['error', { builtinGlobals: false }],
             'no-restricted-globals': ['error'].concat(restrictedGlobals),
-            'no-restricted-properties': [
-                'error',
-                {
-                    property: 'replaceChildren',
-                    message: 'replaceChildren is not supported in all target browsers'
-                }
-            ],
             'no-return-assign': 'error',
             'no-return-await': 'error',
             'no-sequences': ['error', { 'allowInParentheses': false }],
@@ -199,11 +190,10 @@ export default tseslint.config(
         }
     },
 
-    // Node build/tooling scripts (not shipped to the browser - browserslist compat doesn't apply)
+    // Node build/tooling scripts
     {
         files: [ 'scripts/**/*.{js,mjs,ts}' ],
         rules: {
-            'compat/compat': 'off',
             // Deliberately spawning devDependency CLIs (openapi-generator-cli) via `npx` from a
             // local dev/build script, not user-controlled input.
             'sonarjs/no-os-command-from-path': 'off'
@@ -261,94 +251,7 @@ export default tseslint.config(
                         'src'
                     ]
                 }
-            },
-            polyfills: [
-                'Promise',
-                // whatwg-fetch
-                'fetch',
-                'Response',
-                'Response.headers',
-                'Response.json',
-                // document-register-element
-                'document.registerElement',
-                // resize-observer-polyfill
-                'ResizeObserver',
-                // fast-text-encoding
-                'TextEncoder',
-                // intersection-observer
-                'IntersectionObserver',
-                // Core-js
-                'Object.assign',
-                'Object.is',
-                'Object.setPrototypeOf',
-                'Object.toString',
-                'Object.freeze',
-                'Object.seal',
-                'Object.preventExtensions',
-                'Object.isFrozen',
-                'Object.isSealed',
-                'Object.isExtensible',
-                'Object.getOwnPropertyDescriptor',
-                'Object.getPrototypeOf',
-                'Object.keys',
-                'Object.entries',
-                'Object.getOwnPropertyNames',
-                'Function.name',
-                'Function.hasInstance',
-                'Array.from',
-                'Array.arrayOf',
-                'Array.copyWithin',
-                'Array.fill',
-                'Array.find',
-                'Array.findIndex',
-                'Array.iterator',
-                'String.fromCodePoint',
-                'String.raw',
-                'String.iterator',
-                'String.codePointAt',
-                'String.endsWith',
-                'String.includes',
-                'String.repeat',
-                'String.startsWith',
-                'String.trim',
-                'String.anchor',
-                'String.big',
-                'String.blink',
-                'String.bold',
-                'String.fixed',
-                'String.fontcolor',
-                'String.fontsize',
-                'String.italics',
-                'String.link',
-                'String.small',
-                'String.strike',
-                'String.sub',
-                'String.sup',
-                'URL',
-                'URLSearchParams',
-                'RegExp',
-                'Number',
-                'Math',
-                'Date',
-                'async',
-                'Symbol',
-                'Map',
-                'Set',
-                'WeakMap',
-                'WeakSet',
-                'ArrayBuffer',
-                'DataView',
-                'Int8Array',
-                'Uint8Array',
-                'Uint8ClampedArray',
-                'Int16Array',
-                'Uint16Array',
-                'Int32Array',
-                'Uint32Array',
-                'Float32Array',
-                'Float64Array',
-                'Reflect'
-            ]
+            }
         },
         rules: {
             // TODO: Add typescript recommended typed rules

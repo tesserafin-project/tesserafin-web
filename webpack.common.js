@@ -9,7 +9,6 @@ const { DefinePlugin, IgnorePlugin } = require('webpack');
 const packageJson = require('./package.json');
 
 const Assets = [
-    'native-promise-only/npo.js',
     'libarchive.js/dist/worker-bundle.js',
     'libarchive.js/dist/libarchive.wasm',
     '@jellyfin/libass-wasm/dist/js/default.woff2',
@@ -99,7 +98,7 @@ const config = {
             ]
         }),
         // The libarchive.js worker-bundle is copied manually.
-        // If it is automatically bundled, escheck will fail since it uses import.meta.url.
+        // If it is automatically bundled, webpack chokes on its use of import.meta.url.
         new IgnorePlugin({
             resourceRegExp: /worker-bundle\.js$/,
             contextRegExp: /libarchive.js/
