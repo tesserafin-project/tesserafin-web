@@ -135,6 +135,7 @@
         "build:check": "tsc --noEmit",
         "generate:reefin-sdk": "node scripts/generate-reefin-sdk.mjs",
         "verify:reefin-sdk-fresh": "node scripts/verify-reefin-sdk-fresh.mjs",
+        "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
         "test": "vitest --watch=false --config vite.config.ts",
