@@ -328,11 +328,7 @@ export class HtmlVideoPlayer {
     #lastProfile;
 
     constructor() {
-        if (browser.edgeUwp) {
-            this.name = 'Windows Video Player';
-        } else {
-            this.name = 'Html Video Player';
-        }
+        this.name = 'Html Video Player';
     }
 
     currentSrc() {
@@ -1349,24 +1345,7 @@ export class HtmlVideoPlayer {
     /**
      * @private
      */
-    fetchSubtitlesUwp(track) {
-        return Windows.Storage.StorageFile.getFileFromPathAsync(track.Path)
-            .then(function (storageFile) {
-                return Windows.Storage.FileIO.readTextAsync(storageFile);
-            })
-            .then(function (text) {
-                return JSON.parse(text);
-            });
-    }
-
-    /**
-     * @private
-     */
     async fetchSubtitles(track, item) {
-        if (window.Windows && itemHelper.isLocalItem(item)) {
-            return this.fetchSubtitlesUwp(track, item);
-        }
-
         this.incrementFetchQueue();
         try {
             const response = await fetch(getTextTrackUrl(track, item, '.js'));
@@ -2066,11 +2045,6 @@ export class HtmlVideoPlayer {
             (typeof video.webkitSupportsPresentationMode === 'function' &&
                 video.webkitSupportsPresentationMode('picture-in-picture') &&
                 typeof video.webkitSetPresentationMode === 'function') ||
-            // Check non-standard Windows PiP support
-            (window.Windows &&
-                Windows.UI.ViewManagement.ApplicationView.getForCurrentView().isViewModeSupported(
-                    Windows.UI.ViewManagement.ApplicationViewMode.compactOverlay
-                )) ||
             // Check standard PiP support
             document.pictureInPictureEnabled
         ) {
@@ -2158,17 +2132,6 @@ export class HtmlVideoPlayer {
                         .catch(HtmlVideoPlayer.onPictureInPictureError);
                 }
             }
-        } else if (window.Windows) {
-            this.isPip = isEnabled;
-            if (isEnabled) {
-                Windows.UI.ViewManagement.ApplicationView.getForCurrentView().tryEnterViewModeAsync(
-                    Windows.UI.ViewManagement.ApplicationViewMode.compactOverlay
-                );
-            } else {
-                Windows.UI.ViewManagement.ApplicationView.getForCurrentView().tryEnterViewModeAsync(
-                    Windows.UI.ViewManagement.ApplicationViewMode.default
-                );
-            }
         } else if (
             video?.webkitSupportsPresentationMode &&
             typeof video.webkitSetPresentationMode === 'function'
@@ -2182,8 +2145,6 @@ export class HtmlVideoPlayer {
     isPictureInPictureEnabled() {
         if (document.pictureInPictureEnabled) {
             return !!document.pictureInPictureElement;
-        } else if (window.Windows) {
-            return this.isPip || false;
         } else {
             const video = this.#mediaElement;
             if (video) {
