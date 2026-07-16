@@ -24,8 +24,6 @@ import { BASE_PATH, COLLECTION_FORMATS, type RequestArgs, BaseAPI, RequiredError
 // @ts-ignore
 import type { CreatePlaybackSessionRequest } from '../models';
 // @ts-ignore
-import type { PlaybackSessionId } from '../models';
-// @ts-ignore
 import type { PlaybackSessionResponse } from '../models';
 // @ts-ignore
 import type { ProblemDetails } from '../models';
@@ -77,11 +75,11 @@ export const PlaybackApiAxiosParamCreator = function (configuration?: Configurat
         /**
          * 
          * @summary Removes a playback session.
-         * @param {PlaybackSessionId} id The session to remove.
+         * @param {string} id The session to remove.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        deletePlaybackSession: async (id: PlaybackSessionId, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        deletePlaybackSession: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('deletePlaybackSession', 'id', id)
             const localVarPath = `/Playback/Sessions/{id}`
@@ -114,12 +112,12 @@ export const PlaybackApiAxiosParamCreator = function (configuration?: Configurat
         /**
          * 
          * @summary Fully re-plans an existing session with a complete new set of options. Decision v1 (PR92 §3): this replaces the misnamed `PATCH` the point-1 protocol shipped with, which already required a complete body — `PUT` states that honestly.
-         * @param {PlaybackSessionId} id The session to replace.
+         * @param {string} id The session to replace.
          * @param {ReplacePlaybackSessionRequest} [replacePlaybackSessionRequest] The complete new options to plan.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        replacePlaybackSession: async (id: PlaybackSessionId, replacePlaybackSessionRequest?: ReplacePlaybackSessionRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        replacePlaybackSession: async (id: string, replacePlaybackSessionRequest?: ReplacePlaybackSessionRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('replacePlaybackSession', 'id', id)
             const localVarPath = `/Playback/Sessions/{id}`
@@ -178,11 +176,11 @@ export const PlaybackApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Removes a playback session.
-         * @param {PlaybackSessionId} id The session to remove.
+         * @param {string} id The session to remove.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async deletePlaybackSession(id: PlaybackSessionId, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+        async deletePlaybackSession(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.deletePlaybackSession(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PlaybackApi.deletePlaybackSession']?.[localVarOperationServerIndex]?.url;
@@ -191,12 +189,12 @@ export const PlaybackApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Fully re-plans an existing session with a complete new set of options. Decision v1 (PR92 §3): this replaces the misnamed `PATCH` the point-1 protocol shipped with, which already required a complete body — `PUT` states that honestly.
-         * @param {PlaybackSessionId} id The session to replace.
+         * @param {string} id The session to replace.
          * @param {ReplacePlaybackSessionRequest} [replacePlaybackSessionRequest] The complete new options to plan.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async replacePlaybackSession(id: PlaybackSessionId, replacePlaybackSessionRequest?: ReplacePlaybackSessionRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackSessionResponse>> {
+        async replacePlaybackSession(id: string, replacePlaybackSessionRequest?: ReplacePlaybackSessionRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackSessionResponse>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.replacePlaybackSession(id, replacePlaybackSessionRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PlaybackApi.replacePlaybackSession']?.[localVarOperationServerIndex]?.url;
@@ -305,10 +303,10 @@ export interface PlaybackApiCreatePlaybackSessionRequest {
 export interface PlaybackApiDeletePlaybackSessionRequest {
     /**
      * The session to remove.
-     * @type {PlaybackSessionId}
+     * @type {string}
      * @memberof PlaybackApiDeletePlaybackSession
      */
-    readonly id: PlaybackSessionId
+    readonly id: string
 }
 
 /**
@@ -319,10 +317,10 @@ export interface PlaybackApiDeletePlaybackSessionRequest {
 export interface PlaybackApiReplacePlaybackSessionRequest {
     /**
      * The session to replace.
-     * @type {PlaybackSessionId}
+     * @type {string}
      * @memberof PlaybackApiReplacePlaybackSession
      */
-    readonly id: PlaybackSessionId
+    readonly id: string
 
     /**
      * The complete new options to plan.

@@ -1,200 +1,106 @@
 /**
- * Manual mirror of `Reefin.Playback.Decision` + `Reefin.Api.Models.PlaybackSessionDtos` (repo
- * `reefin`). These routes are Reefin-specific and are not part of `@jellyfin/sdk`, so there is no
- * generated client to lean on — keep this file synchronized by hand with the server DTOs until
- * RFC-0001 §9 Q2 decides on OpenAPI generation.
+ * Playback diagnostics types, sourced from the generated Reefin API client
+ * (`src/lib/reefin-sdk/generated/`, see `docs/reefin/design-reefin-api-layer.md`) rather than
+ * hand-mirrored from the C# DTOs as this file did before PR2 of that design.
  *
- * Verified against `reefin` source on 2026-07-16 (not just the design doc):
- * - `Reefin.Api/Controllers/PlaybackDiagnosticsSessionsController.cs`
- * - `Reefin.Api/Models/PlaybackSessionDtos/PlaybackSessionResponse.cs`
- * - `Reefin.Api/Models/PlaybackSessionDtos/PlaybackSessionListItem.cs`
- * - `src/Reefin.Playback.Decision/{OutputSpec,SelectedStreams,Resolution,MediaKind,PlaybackMethod,StreamingProtocol}.cs`
- * - `src/Reefin.Extensions/Json/JsonDefaults.cs` (serializer options)
+ * The generated model interfaces mark every property optional (`'Foo'?: T`), including properties
+ * the server contract guarantees are always present - Swashbuckle does not mark C# non-nullable
+ * reference/value-type properties as OpenAPI `required` here, so the generator has no way to know
+ * they can't be missing. `DeepRequired<T>` below removes exactly that generator-introduced
+ * optionality (`?`) while leaving genuine domain nullability (`T | null`) untouched, restoring the
+ * required/nullable split this file previously hand-maintained - now re-derived from the generated
+ * shape instead of retyped from the C# source, so structural drift (new/renamed/removed fields) is
+ * caught by `tsc` the next time `npm run generate:reefin-sdk` runs, not discovered at runtime.
  *
- * Two things confirmed by that reading that the design doc did not spell out:
- * 1. Enums serialize as their PascalCase member names (`JsonStringEnumConverter` is registered in
- *    `JsonDefaults.Options`), not as integers — the string-literal unions below are correct.
- * 2. `JsonDefaults.Options` sets `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull`.
- *    A C# `null` property is *omitted* from the JSON payload, not serialized as an explicit
- *    `null`. At the JS boundary this means a field typed `T | null` below will actually be
- *    `undefined` (missing key) at runtime, never a literal `null` value from `JSON.parse`. Treat
- *    nullable fields as falsy (`!value`) rather than doing strict `=== null` checks; the `| null`
- *    in these types documents server intent ("explicitly absent"), not the literal runtime tag.
+ * This still relies on the same two facts about the wire format the pre-generation version of this
+ * file verified directly against `reefin` source (`src/Reefin.Extensions/Json/JsonDefaults.cs`),
+ * which the generated types do not (and can't) express:
+ * 1. Enums serialize as their PascalCase member names, not integers.
+ * 2. `DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull` - a `null`-valued C# property is
+ *    omitted from the JSON payload entirely, never sent as an explicit `null`. At the JS boundary a
+ *    field typed `T | null` below is actually `undefined` (missing key) at runtime. Treat nullable
+ *    fields as falsy (`!value`/`!= null`), never `=== null` - components in this feature already do.
  *
- * The rest of this file (ReasonNode, ClientCapabilities, etc.) mirrors the design doc's proposed
- * shape but is not exercised by PR1 (list-only) — PR2 (detail view) is what will actually read
- * these fields off a live server response and can catch any remaining drift then.
+ * One thing genuinely NOT in the generated output, kept hand-declared here: `DiagnosticTimelineEntry.Stage`
+ * is generated as a plain `string` (docs/pr92-design-playback-api-and-diagnostics.md §4.3's five
+ * stage names aren't modeled as an OpenAPI enum server-side), so `DiagnosticTimelineStage` below
+ * stays a manually maintained literal union, same as before PR2.
  */
 
-export type MediaKind = 'Audio' | 'Video';
-export type PlaybackMethod = 'DirectPlay' | 'Remux' | 'Transcode';
-export type StreamingProtocol = 'Http' | 'Hls';
-export type SubtitleDeliveryMethod = 'Embed' | 'External' | 'Burn' | 'Hls';
+import type {
+    DiagnosticComparison as GeneratedDiagnosticComparison,
+    DivergenceClass,
+    PlaybackDecisionAudioStreamSnapshot as GeneratedAudioStreamSnapshot,
+    PlaybackDecisionClientCapabilities as GeneratedClientCapabilities,
+    PlaybackDecisionMediaKind as MediaKind,
+    PlaybackDecisionMediaSourceSnapshot as GeneratedMediaSourceSnapshot,
+    PlaybackDecisionOutputSpec as GeneratedOutputSpec,
+    PlaybackDecisionPlaybackMethod as PlaybackMethod,
+    PlaybackDecisionPlaybackRequestContext as GeneratedPlaybackRequestContext,
+    PlaybackDecisionReasonCode as ReasonCode,
+    PlaybackDecisionReasonNode as GeneratedReasonNode,
+    PlaybackDecisionReasonOutcome as ReasonOutcome,
+    PlaybackDecisionReasonSubject as GeneratedReasonSubject,
+    PlaybackDecisionReasonSubjectKind as ReasonSubjectKind,
+    PlaybackDecisionResolution as GeneratedResolution,
+    PlaybackDecisionSelectedStreams as GeneratedSelectedStreams,
+    PlaybackDecisionSelectedSubtitle as GeneratedSelectedSubtitle,
+    PlaybackDecisionStreamingProtocol as StreamingProtocol,
+    PlaybackDecisionSubtitleDeliveryMethod as SubtitleDeliveryMethod,
+    PlaybackDecisionSubtitleStreamSnapshot as GeneratedSubtitleStreamSnapshot,
+    PlaybackDecisionTransformKind as TransformKind,
+    PlaybackDecisionVideoStreamSnapshot as GeneratedVideoStreamSnapshot,
+    PlaybackDiagnosticDetail as GeneratedPlaybackDiagnosticDetail,
+    PlaybackSessionListItem as GeneratedPlaybackSessionListItem,
+    PlaybackSessionResponse as GeneratedPlaybackSessionResponse
+} from 'lib/reefin-sdk';
 
-export type TransformKind =
-    | 'RemuxContainer' | 'TranscodeVideo' | 'TranscodeAudio' | 'CopyVideo' | 'CopyAudio'
-    | 'Downmix' | 'Tonemap' | 'BurnInSubtitle' | 'ExtractSubtitle' | 'ConvertSubtitle';
+export type {
+    DivergenceClass, MediaKind, PlaybackMethod, ReasonCode, ReasonOutcome, ReasonSubjectKind,
+    StreamingProtocol, SubtitleDeliveryMethod, TransformKind
+};
 
-export type ReasonCode =
-    | 'ContainerNotSupported' | 'VideoCodecNotSupported' | 'AudioCodecNotSupported'
-    | 'SubtitleCodecNotSupported' | 'AudioIsExternal' | 'SecondaryAudioNotSupported'
-    | 'StreamCountExceedsLimit' | 'VideoProfileNotSupported' | 'VideoRangeTypeNotSupported'
-    | 'VideoCodecTagNotSupported' | 'VideoLevelNotSupported' | 'VideoResolutionNotSupported'
-    | 'VideoBitDepthNotSupported' | 'VideoFramerateNotSupported' | 'VideoRotationNotSupported'
-    | 'RefFramesNotSupported' | 'AnamorphicVideoNotSupported' | 'InterlacedVideoNotSupported'
-    | 'AudioChannelsNotSupported' | 'AudioProfileNotSupported' | 'AudioSampleRateNotSupported'
-    | 'AudioBitDepthNotSupported' | 'ContainerBitrateExceedsLimit' | 'VideoBitrateNotSupported'
-    | 'AudioBitrateNotSupported' | 'UnknownVideoStreamInfo' | 'UnknownAudioStreamInfo'
-    | 'DirectPlayError' | 'StreamCopyable' | 'SourceSelected' | 'MethodChosen'
-    | 'SubtitleBurnInRequired' | 'SubtitleFormatConverted' | 'DownmixRequired' | 'TonemapRequired'
-    | 'NoViablePlan' | 'OutputProfileFallbackUsed' | 'RequestedSourceNotFound';
+/** Removes generator-introduced `?` optionality while preserving genuine `T | null` domain
+ * nullability - see file-level doc comment. Recurses into nested objects/arrays so a type built
+ * from this needs no further per-field adjustment. */
+type DeepRequired<T> = T extends (infer U)[]
+    ? DeepRequired<U>[]
+    : T extends object
+        ? { [K in keyof T]-?: DeepRequired<T[K]> }
+        : T;
 
-export type ReasonOutcome = 'Rejected' | 'Accepted' | 'Chosen';
-export type ReasonSubjectKind = 'Container' | 'VideoStream' | 'AudioStream' | 'Subtitle' | 'Source' | 'Method';
-export type DivergenceClass =
-    | 'Equivalent' | 'ExpectedImprovement' | 'KnownV2Limitation' | 'PotentialRegression' | 'Unexplained';
-
-export interface Resolution { Width: number; Height: number }
-
-export interface OutputSpec {
-    Container: string | null;
-    VideoCodec: string | null;
-    AudioCodec: string | null;
-    Resolution: Resolution | null;
-    VideoRange: string | null;
-    AudioChannels: number | null;
-    TotalBitrate: number | null;
-    VideoBitrate: number | null;
-    AudioBitrate: number | null;
-    Protocol: StreamingProtocol;
-    SubtitleFormat: string | null;
-}
-
-export interface SelectedSubtitle { Index: number; Delivery: SubtitleDeliveryMethod }
-
-export interface SelectedStreams {
-    Video: number | null;
-    Audio: number | null;
-    Subtitle: SelectedSubtitle | null;
-}
+export type Resolution = DeepRequired<GeneratedResolution>;
+export type OutputSpec = DeepRequired<GeneratedOutputSpec>;
+export type SelectedSubtitle = DeepRequired<GeneratedSelectedSubtitle>;
+export type SelectedStreams = DeepRequired<GeneratedSelectedStreams>;
+export type ReasonSubject = DeepRequired<GeneratedReasonSubject>;
+export type ReasonNode = DeepRequired<GeneratedReasonNode>;
+export type PlaybackRequestContext = DeepRequired<GeneratedPlaybackRequestContext>;
+export type ClientCapabilities = DeepRequired<GeneratedClientCapabilities>;
+export type VideoStreamSnapshot = DeepRequired<GeneratedVideoStreamSnapshot>;
+export type AudioStreamSnapshot = DeepRequired<GeneratedAudioStreamSnapshot>;
+export type SubtitleStreamSnapshot = DeepRequired<GeneratedSubtitleStreamSnapshot>;
+export type MediaSourceSnapshot = DeepRequired<GeneratedMediaSourceSnapshot>;
+export type DiagnosticComparison = DeepRequired<GeneratedDiagnosticComparison>;
 
 /** docs/pr92-design-playback-api-and-diagnostics.md §4.2 — stable client-facing response, never
  * StreamInfo/DeviceProfile/MediaOptions. */
-export interface PlaybackSessionResponse {
-    Id: string; // GUID
-    Kind: MediaKind;
-    /** 0 = LegacyDecisionVersion (sentinel — source is the legacy planner until PR115 ships). */
-    DecisionVersion: number;
-    Method: PlaybackMethod;
-    Output: OutputSpec;
-    SelectedStreams: SelectedStreams;
-    Transforms: TransformKind[];
-    Reasons: ReasonCode[];
-    CreatedAt: string; // ISO 8601
-    UpdatedAt: string;
-}
+export type PlaybackSessionResponse = DeepRequired<GeneratedPlaybackSessionResponse>;
 
 /** One row of `GET /System/PlaybackDiagnostics/Sessions`. */
-export interface PlaybackSessionListItem {
-    Session: PlaybackSessionResponse;
-    /** false for almost all sessions while the server-side shadow mode is disabled (the default). */
-    HasDiagnostic: boolean;
-}
+export type PlaybackSessionListItem = DeepRequired<GeneratedPlaybackSessionListItem>;
 
-export interface ReasonSubject {
-    Kind: ReasonSubjectKind;
-    StreamIndex: number | null;
-    SourceId: string | null;
-}
-
-export interface ReasonNode {
-    Code: ReasonCode;
-    Outcome: ReasonOutcome;
-    Subject: ReasonSubject;
-    Detail: string | null;
-    Children: ReasonNode[];
-}
-
-export interface PlaybackRequestContext {
-    RequestId: string;
-    ItemId: string;
-    MediaSourceId: string | null;
-    UserId: string;
-    MediaKind: MediaKind;
-    RequestedAt: string;
-    EngineVersion: number;
-}
-
-/** The raw shape here is still unstable server-side (see `ClientCapabilities.cs` remarks on the
- * PR102 decode/output split) — deliberately left opaque rather than modeled precisely. */
-export type DecodeProfileLike = Record<string, unknown>;
-
-export interface ClientCapabilities {
-    Decode: {
-        DirectPlayProfiles: DecodeProfileLike[];
-        VideoCodecs: Array<{
-            Codec: string; Profiles: string[]; MaxLevel: number | null; MaxBitDepth: number | null;
-            VideoRangeTypes: string[]; MaxResolution: Resolution | null; MaxBitrate: number | null;
-        }>;
-        AudioCodecs: Array<{
-            Codec: string; MaxChannels: number | null; MaxSampleRate: number | null;
-            MaxBitDepth: number | null; MaxBitrate: number | null;
-        }>;
-        SubtitleDelivery: Array<{ Format: string; Method: SubtitleDeliveryMethod }>;
-        SupportsHls: boolean;
-        SupportsDash: boolean;
-    };
-    OutputProfiles: Array<{
-        Type: MediaKind; Protocol: StreamingProtocol; Container: string;
-        VideoCodecs: string[]; AudioCodecs: string[];
-        MaxVideoBitrate: number | null; MaxAudioBitrate: number | null; MaxAudioChannels: number | null;
-    }>;
-}
-
-export interface VideoStreamSnapshot {
-    Index: number; Codec: string; Profile: string | null; Level: number | null;
-    Width: number | null; Height: number | null; BitDepth: number | null; VideoRange: string | null;
-    Framerate: number | null; Bitrate: number | null; IsAnamorphic: boolean; IsInterlaced: boolean;
-}
-
-export interface AudioStreamSnapshot {
-    Index: number; Codec: string; Channels: number | null; SampleRate: number | null;
-    BitDepth: number | null; Bitrate: number | null; Language: string | null; IsDefault: boolean;
-}
-
-export interface SubtitleStreamSnapshot {
-    Index: number; Format: string; IsExternal: boolean; IsForced: boolean;
-    IsDefault: boolean; Language: string | null;
-}
-
-export interface MediaSourceSnapshot {
-    MediaSourceId: string; Container: string; Protocol: string;
-    Bitrate: number | null; RunTimeTicks: number | null;
-    VideoStreams: VideoStreamSnapshot[];
-    AudioStreams: AudioStreamSnapshot[];
-    SubtitleStreams: SubtitleStreamSnapshot[];
-    SupportsDirectPlay: boolean; SupportsDirectStream: boolean; SupportsTranscoding: boolean;
-}
-
-export interface DiagnosticComparison {
-    LegacyMethod: PlaybackMethod;
-    LegacyReasons: ReasonCode[];
-    DivergenceClass: DivergenceClass;
-}
-
+/** Not modeled as an OpenAPI enum server-side (`DiagnosticTimelineEntry.Stage` generates as a
+ * plain `string`) - kept hand-declared, the one thing genuinely not in the generated output. */
 export type DiagnosticTimelineStage = 'Created' | 'Updated' | 'FfmpegStarted' | 'PlaybackStarted' | 'PlaybackStopped';
 
-export interface DiagnosticTimelineEntry { Stage: DiagnosticTimelineStage; At: string }
+export interface DiagnosticTimelineEntry {
+    Stage: DiagnosticTimelineStage
+    At: string
+}
 
 /** docs/pr92-design-playback-api-and-diagnostics.md §4.3 — filtered admin projection, never
  * Path/TranscodingUrl/token/ffmpeg args. Nullable fields mean no shadow diagnostic was retained
- * for this session (the nominal case while the server-side shadow mode is disabled). Not
- * consumed by PR1 (list-only) — reserved for the PR2 detail view. */
-export interface PlaybackDiagnosticDetail extends PlaybackSessionResponse {
-    RequestContext: PlaybackRequestContext | null;
-    Capabilities: ClientCapabilities | null;
-    SourceSnapshot: MediaSourceSnapshot[] | null;
-    Reasoning: ReasonNode | null;
-    Comparison: DiagnosticComparison | null;
-    Timeline: DiagnosticTimelineEntry[];
-}
+ * for this session (the nominal case while the server-side shadow mode is disabled). */
+export type PlaybackDiagnosticDetail =
+    Omit<DeepRequired<GeneratedPlaybackDiagnosticDetail>, 'Timeline'> & { Timeline: DiagnosticTimelineEntry[] };

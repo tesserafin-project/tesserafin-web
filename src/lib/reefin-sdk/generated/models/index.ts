@@ -235,7 +235,6 @@ export * from './playback-info-response';
 export * from './playback-order';
 export * from './playback-progress-info';
 export * from './playback-request-type';
-export * from './playback-session-id';
 export * from './playback-session-list-item';
 export * from './playback-session-response';
 export * from './playback-shadow-options';

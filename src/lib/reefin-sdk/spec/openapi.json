@@ -55955,16 +55955,9 @@
         "description": "Enum PlaybackRequestType."
       },
       "PlaybackSessionId": {
-        "type": "object",
-        "properties": {
-          "Value": {
-            "type": "string",
-            "description": "The underlying identifier value.",
-            "format": "uuid"
-          }
-        },
-        "additionalProperties": false,
-        "description": "Opaque identifier for a Reefin.Controller.MediaEncoding.PlaybackSession."
+        "type": "string",
+        "description": "Opaque identifier for a Reefin.Controller.MediaEncoding.PlaybackSession.",
+        "format": "uuid"
       },
       "PlaybackSessionListItem": {
         "type": "object",

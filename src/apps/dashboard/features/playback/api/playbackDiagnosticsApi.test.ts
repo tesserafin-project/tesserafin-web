@@ -5,11 +5,18 @@ import { fetchPlaybackSessionFixture, fetchPlaybackSessions } from './playbackDi
 import type { PlaybackSessionListItem } from './types';
 
 /**
- * Tests the fetch function in isolation against a minimal mocked `Api`, per design doc §7.3 —
+ * Tests the fetch functions in isolation against a minimal mocked `Api`, per design doc §7.3 —
  * avoids introducing `@testing-library/react-hooks` for a need that doesn't justify it yet.
+ *
+ * Since PR2 (docs/reefin/design-reefin-api-layer.md), these functions call through the generated
+ * `SystemApi` class rather than `axiosInstance.get()` directly. The generated client always
+ * dispatches through `axiosInstance.request(...)` (see `src/lib/reefin-sdk/generated/common.ts`'s
+ * `createRequestFunction`), so the mock shape changed from `{ get }` to `{ request, defaults }` —
+ * `defaults` is read (`axios.defaults.baseURL`) by that same helper before `request` is ever
+ * called, so it has to exist on the mock even though its value doesn't matter here.
  */
-const createMockApi = (get: ReturnType<typeof vi.fn>): Api => ({
-    axiosInstance: { get },
+const createMockApi = (request: ReturnType<typeof vi.fn>): Api => ({
+    axiosInstance: { request, defaults: {} },
     basePath: 'https://example.com',
     authorizationHeader: 'MediaBrowser Token="test-token"'
 } as unknown as Api);
@@ -17,48 +24,47 @@ const createMockApi = (get: ReturnType<typeof vi.fn>): Api => ({
 describe('fetchPlaybackSessions()', () => {
     it('requests the diagnostics sessions route with the auth header attached', async () => {
         const items: PlaybackSessionListItem[] = [];
-        const get = vi.fn().mockResolvedValue({ data: items });
-        const api = createMockApi(get);
+        const request = vi.fn().mockResolvedValue({ data: items });
+        const api = createMockApi(request);
 
         const result = await fetchPlaybackSessions(api);
 
-        expect(get).toHaveBeenCalledWith(
-            'https://example.com/System/PlaybackDiagnostics/Sessions',
+        expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                headers: { Authorization: 'MediaBrowser Token="test-token"' }
+                url: 'https://example.com/System/PlaybackDiagnostics/Sessions',
+                method: 'GET',
+                headers: expect.objectContaining({ Authorization: 'MediaBrowser Token="test-token"' })
             })
         );
         expect(result).toBe(items);
     });
 
     it('forwards an abort signal when provided', async () => {
-        const get = vi.fn().mockResolvedValue({ data: [] });
-        const api = createMockApi(get);
+        const request = vi.fn().mockResolvedValue({ data: [] });
+        const api = createMockApi(request);
         // Avoid constructing a real AbortController here (flagged by eslint-plugin-compat for
         // older browser targets) — a signal-shaped stub is enough to assert pass-through.
         const signal = {} as AbortSignal;
 
         await fetchPlaybackSessions(api, signal);
 
-        expect(get).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({ signal })
-        );
+        expect(request).toHaveBeenCalledWith(expect.objectContaining({ signal }));
     });
 });
 
 describe('fetchPlaybackSessionFixture()', () => {
     it('requests the Fixture sub-route as a blob, with the auth header attached', async () => {
         const blob = new Blob([ '{}' ], { type: 'application/json' });
-        const get = vi.fn().mockResolvedValue({ data: blob });
-        const api = createMockApi(get);
+        const request = vi.fn().mockResolvedValue({ data: blob });
+        const api = createMockApi(request);
 
         const result = await fetchPlaybackSessionFixture(api, 'session-1');
 
-        expect(get).toHaveBeenCalledWith(
-            'https://example.com/System/PlaybackDiagnostics/Sessions/session-1/Fixture',
+        expect(request).toHaveBeenCalledWith(
             expect.objectContaining({
-                headers: { Authorization: 'MediaBrowser Token="test-token"' },
+                url: 'https://example.com/System/PlaybackDiagnostics/Sessions/session-1/Fixture',
+                method: 'GET',
+                headers: expect.objectContaining({ Authorization: 'MediaBrowser Token="test-token"' }),
                 responseType: 'blob'
             })
         );
@@ -70,8 +76,8 @@ describe('fetchPlaybackSessionFixture()', () => {
             isAxiosError: true,
             response: { status: 422 }
         });
-        const get = vi.fn().mockRejectedValue(notRetainedError);
-        const api = createMockApi(get);
+        const request = vi.fn().mockRejectedValue(notRetainedError);
+        const api = createMockApi(request);
 
         await expect(fetchPlaybackSessionFixture(api, 'session-1')).rejects.toBe(notRetainedError);
     });

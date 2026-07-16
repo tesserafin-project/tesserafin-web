@@ -140,10 +140,41 @@ function fixSchema(node) {
     }
 }
 
+/**
+ * Reefin uses strongly-typed ID wrappers server-side (e.g. `PlaybackSessionId`, a struct/record
+ * around a single `Guid`/`string` `Value`) with a custom JSON/route converter that serializes them
+ * as a plain string on the wire - but Swashbuckle's schema reflection doesn't know about that
+ * converter, so it describes the *C# type shape* instead: `{ type: 'object', properties: { Value:
+ * {...} } }`. That's wrong for how the value actually travels (confirmed by reading the generated
+ * `getPlaybackSession`/`exportFixture` parameter creators: `id` is interpolated straight into the
+ * URL path via `String(id)`, which would stringify an object as `"[object Object]"`). Unwrapping
+ * every single-`Value`-property object schema in `components.schemas` to that property's own
+ * schema fixes every `$ref` site at once (4 in the current spec, all route path parameters) without
+ * having to special-case `PlaybackSessionId` by name - any future single-field ID wrapper the
+ * server adds gets the same treatment automatically.
+ */
+function unwrapIdSchemas(spec) {
+    const schemas = (spec.components || {}).schemas || {};
+    for (const [ name, schema ] of Object.entries(schemas)) {
+        const properties = schema && typeof schema === 'object' ? schema.properties : undefined;
+        if (
+            schema?.type === 'object'
+            && properties
+            && Object.keys(properties).length === 1
+            && Object.keys(properties)[0] === 'Value'
+        ) {
+            const description = schema.description;
+            schemas[name] = { ...properties.Value, ...(description ? { description } : {}) };
+            console.log(`[generate-reefin-sdk] Unwrapped single-property ID schema: ${name}`);
+        }
+    }
+}
+
 function main() {
     return resolveSpec().then(({ text, source }) => {
         const spec = JSON.parse(text);
         fixSchema(spec);
+        unwrapIdSchemas(spec);
         const info = spec.info || {};
 
         mkdirSync(SPEC_DIR, { recursive: true });

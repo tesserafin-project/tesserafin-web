@@ -40,8 +40,6 @@ import type { MetadataOptions } from '../models';
 // @ts-ignore
 import type { PlaybackDiagnosticDetail } from '../models';
 // @ts-ignore
-import type { PlaybackSessionId } from '../models';
-// @ts-ignore
 import type { PlaybackSessionListItem } from '../models';
 // @ts-ignore
 import type { ProblemDetails } from '../models';
@@ -66,11 +64,11 @@ export const SystemApiAxiosParamCreator = function (configuration?: Configuratio
         /**
          * 
          * @summary PR113b: exports a session\'s retained shadow diagnostic as a playback-compatibility-lab fixture (docs/pr92-design-playback-api-and-diagnostics.md §5, \"Exporter le cas de test\"), conforming to tests/PlaybackCompat/schema/fixture.schema.json, so a real case observed in production can be dropped into tests/PlaybackCompat/fixtures/ and replayed by the lab. Serialized with Reefin.Api.Models.PlaybackSessionDtos.PlaybackCompatFixtureExporter.Options (camelCase property names) directly, bypassing this API\'s normal PascalCase-by-default content negotiation (see Reefin.Api.Models.PlaybackSessionDtos.PlaybackCompatFixtureExporter remarks) - the schema requires camelCase regardless of what an admin client\'s Accept header might otherwise negotiate.
-         * @param {PlaybackSessionId} id The session to export.
+         * @param {string} id The session to export.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        exportFixture: async (id: PlaybackSessionId, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        exportFixture: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('exportFixture', 'id', id)
             const localVarPath = `/System/PlaybackDiagnostics/Sessions/{id}/Fixture`
@@ -416,11 +414,11 @@ export const SystemApiAxiosParamCreator = function (configuration?: Configuratio
         /**
          * 
          * @summary Gets a single tracked playback session\'s diagnostic detail.
-         * @param {PlaybackSessionId} id The session to look up.
+         * @param {string} id The session to look up.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getPlaybackSession: async (id: PlaybackSessionId, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getPlaybackSession: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('getPlaybackSession', 'id', id)
             const localVarPath = `/System/PlaybackDiagnostics/Sessions/{id}`
@@ -909,11 +907,11 @@ export const SystemApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary PR113b: exports a session\'s retained shadow diagnostic as a playback-compatibility-lab fixture (docs/pr92-design-playback-api-and-diagnostics.md §5, \"Exporter le cas de test\"), conforming to tests/PlaybackCompat/schema/fixture.schema.json, so a real case observed in production can be dropped into tests/PlaybackCompat/fixtures/ and replayed by the lab. Serialized with Reefin.Api.Models.PlaybackSessionDtos.PlaybackCompatFixtureExporter.Options (camelCase property names) directly, bypassing this API\'s normal PascalCase-by-default content negotiation (see Reefin.Api.Models.PlaybackSessionDtos.PlaybackCompatFixtureExporter remarks) - the schema requires camelCase regardless of what an admin client\'s Accept header might otherwise negotiate.
-         * @param {PlaybackSessionId} id The session to export.
+         * @param {string} id The session to export.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async exportFixture(id: PlaybackSessionId, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
+        async exportFixture(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<void>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.exportFixture(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['SystemApi.exportFixture']?.[localVarOperationServerIndex]?.url;
@@ -1022,11 +1020,11 @@ export const SystemApiFp = function(configuration?: Configuration) {
         /**
          * 
          * @summary Gets a single tracked playback session\'s diagnostic detail.
-         * @param {PlaybackSessionId} id The session to look up.
+         * @param {string} id The session to look up.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getPlaybackSession(id: PlaybackSessionId, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackDiagnosticDetail>> {
+        async getPlaybackSession(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackDiagnosticDetail>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getPlaybackSession(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['SystemApi.getPlaybackSession']?.[localVarOperationServerIndex]?.url;
@@ -1636,10 +1634,10 @@ export interface SystemApiInterface {
 export interface SystemApiExportFixtureRequest {
     /**
      * The session to export.
-     * @type {PlaybackSessionId}
+     * @type {string}
      * @memberof SystemApiExportFixture
      */
-    readonly id: PlaybackSessionId
+    readonly id: string
 }
 
 /**
@@ -1783,10 +1781,10 @@ export interface SystemApiGetNamedConfigurationRequest {
 export interface SystemApiGetPlaybackSessionRequest {
     /**
      * The session to look up.
-     * @type {PlaybackSessionId}
+     * @type {string}
      * @memberof SystemApiGetPlaybackSession
      */
-    readonly id: PlaybackSessionId
+    readonly id: string
 }
 
 /**
