@@ -13,8 +13,7 @@ const MarkdownBox: FC<MarkdownBoxProps> = ({ markdown, fallback }) => (
     <Box
         dangerouslySetInnerHTML={
             markdown
-                ? // eslint-disable-next-line sonarjs/disabled-auto-escaping
-                  {
+                ? {
                       __html: DOMPurify.sanitize(
                           markdownIt({ html: true }).render(markdown)
                       )

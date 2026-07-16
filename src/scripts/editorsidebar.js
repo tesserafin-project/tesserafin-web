@@ -7,7 +7,6 @@ import Dashboard from 'utils/dashboard';
 import { getParameterByName } from 'utils/url';
 
 // Disable the naming rules since jstree requires snake_case variables
-/* eslint-disable @typescript-eslint/naming-convention */
 function getNode(item, folderState, selected) {
     const htmlName = getNodeInnerHtml(item);
     const node = {
@@ -382,4 +381,3 @@ $(document)
             .off('open_node.jstree', onNodeOpen)
             .off('load_node.jstree', onNodeOpen);
     });
-/* eslint-enable @typescript-eslint/naming-convention */

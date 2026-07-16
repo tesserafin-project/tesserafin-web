@@ -160,7 +160,6 @@ const detectBitrateInternal = (
     const test = tests[index];
 
     return getDownloadSpeed(api, test.bytes).then(
-        // eslint-disable-next-line sonarjs/function-return-type
         (bitrate) => {
             if (bitrate < test.threshold) {
                 return normalizeReturnBitrate(bitrate);

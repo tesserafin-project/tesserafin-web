@@ -86,7 +86,6 @@ const RemotePlayMenu: FC<RemotePlayMenuProps> = ({
                 <MenuItem
                     key={target.id}
                     // Since we are looping over targets there is no good way to avoid creating a new function here
-                    // eslint-disable-next-line react/jsx-no-bind
                     onClick={() => onPlayTargetClick(target)}
                 >
                     <ListItemIcon>

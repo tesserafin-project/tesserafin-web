@@ -200,8 +200,7 @@ export function getListViewHtml(options) {
         const item = items[i];
 
         const safeOverviewHtml = item.Overview
-            ? // eslint-disable-next-line sonarjs/disabled-auto-escaping
-              DOMPurify.sanitize(
+            ? DOMPurify.sanitize(
                   markdownIt({ html: true }).render(item.Overview)
               )
             : '';

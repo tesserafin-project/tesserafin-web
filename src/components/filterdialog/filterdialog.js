@@ -15,7 +15,6 @@ function merge(resultItems, queryItems, delimiter) {
     if (!queryItems) {
         return resultItems;
     }
-    // eslint-disable-next-line sonarjs/no-alphabetical-sort
     return union(resultItems, queryItems.split(delimiter)).sort();
 }
 

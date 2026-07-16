@@ -26,7 +26,6 @@ const ListViewUserDataButtons: FC<ListViewUserDataButtonsProps> = ({
     const renderRightButtons = () => {
         return listOptions.rightButtons?.map((button, index) => (
             <RightIconButtons
-                // eslint-disable-next-line react/no-array-index-key
                 key={index}
                 className='listItemButton itemAction'
                 id={button.id}

@@ -52,7 +52,6 @@ const LibraryToolbar: FC = () => {
     const viewType = content?.viewType ?? LibraryTab.Movies;
     const libraryViewSettings =
         viewSettings ?? getDefaultLibraryViewSettings(viewType);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const setLibraryViewSettings =
         setViewSettings ??
         ((action: SetStateAction<LibraryViewSettings>) => {

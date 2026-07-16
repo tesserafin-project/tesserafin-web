@@ -128,7 +128,6 @@ const SuggestionsSectionView: FC<SuggestionsSectionViewProps> = ({
 
             {movieRecommendationsItems?.map((recommendation, index) => (
                 <SectionContainer
-                    // eslint-disable-next-line react/no-array-index-key
                     key={`${recommendation.CategoryId}-${index}`} // use a unique id return value may have duplicate id
                     sectionHeaderProps={{
                         title: getRecommendationTittle(recommendation)

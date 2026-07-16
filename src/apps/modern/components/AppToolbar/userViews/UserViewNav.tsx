@@ -58,7 +58,6 @@ const getCurrentUserView = (
         return MetaView.Favorites;
     }
 
-    // eslint-disable-next-line sonarjs/different-types-comparison
     return userViews?.find(({ Id: id }) => id === libraryId);
 };
 

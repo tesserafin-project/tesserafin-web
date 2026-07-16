@@ -21,7 +21,6 @@ const UserAvatar: FC<UserAvatarProps> = ({ user, size }) => {
                     ? `${api.basePath}/Users/${user.Id}/Images/Primary?tag=${user.PrimaryImageTag}`
                     : undefined
             }
-            // eslint-disable-next-line react/jsx-no-bind
             sx={(theme) => ({
                 bgcolor:
                     api && user.Id && user.PrimaryImageTag

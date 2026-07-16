@@ -81,7 +81,6 @@ const RemotePlayButton = () => {
                             aria-haspopup='true'
                             onClick={onRemotePlayActiveButtonClick}
                             color='inherit'
-                            // eslint-disable-next-line react/jsx-no-bind
                             sx={(theme) => ({
                                 color: theme.vars.palette.primary.main
                             })}

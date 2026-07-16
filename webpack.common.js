@@ -23,7 +23,6 @@ const DEV_MODE = process.env.NODE_ENV !== 'production';
 let COMMIT_SHA = '';
 try {
     COMMIT_SHA = require('child_process')
-        // eslint-disable-next-line sonarjs/no-os-command-from-path
         .execSync('git describe --always --dirty')
         .toString()
         .trim();

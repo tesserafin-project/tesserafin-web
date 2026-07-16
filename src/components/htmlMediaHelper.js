@@ -428,7 +428,6 @@ export function getBufferedRanges(instance, elem) {
             start = 0;
         }
         if (!isValidDuration(end)) {
-            // eslint-disable-next-line sonarjs/no-dead-store
             end = 0;
             continue;
         }

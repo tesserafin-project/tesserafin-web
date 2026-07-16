@@ -382,7 +382,6 @@ export default function (view, params) {
             .then(function (options) {
                 const loginDisclaimer = view.querySelector('.loginDisclaimer');
 
-                // eslint-disable-next-line sonarjs/disabled-auto-escaping
                 loginDisclaimer.innerHTML = DOMPurify.sanitize(
                     markdownIt({ html: true }).render(
                         options.LoginDisclaimer || ''

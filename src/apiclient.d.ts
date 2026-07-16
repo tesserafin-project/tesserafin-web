@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module 'jellyfin-apiclient' {
     import type {
         AllThemeMediaResult,
@@ -598,4 +597,3 @@ declare module 'jellyfin-apiclient' {
         trigger(obj: any, eventName: string, ...args: any[]): void;
     };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */

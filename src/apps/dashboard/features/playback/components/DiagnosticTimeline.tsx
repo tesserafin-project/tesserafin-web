@@ -30,7 +30,6 @@ const DiagnosticTimeline = ({ entries }: DiagnosticTimelineProps) => {
             {sortedEntries.map((entry, index) => (
                 // Stages are not guaranteed unique (e.g. multiple `Updated` entries), so the
                 // array position is included in the key.
-                // eslint-disable-next-line react/no-array-index-key
                 <ListItem key={`${entry.Stage}-${index}`} disableGutters>
                     <ListItemText
                         primary={globalize.translate(

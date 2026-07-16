@@ -405,7 +405,6 @@ function intersectsInternal(a1, a2, b1, b2) {
 }
 
 function intersects(a1, a2, b1, b2) {
-    // eslint-disable-next-line sonarjs/arguments-order
     return (
         intersectsInternal(a1, a2, b1, b2) || intersectsInternal(b1, b2, a1, a2)
     );

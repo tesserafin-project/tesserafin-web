@@ -19,7 +19,6 @@ import Events, { type Event } from 'utils/events';
 import { PlaybackManagerEvent } from '../constants/playbackManagerEvent';
 import { PlayerEvent } from '../constants/playerEvent';
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface PlaybackSubscriber {
     onPlaybackCancelled?(e: Event): void;
     onPlaybackError?(e: Event, errorType: MediaError): void;
@@ -57,7 +56,6 @@ export interface PlaybackSubscriber {
     onReportPlayback?(e: Event, isServerItem: boolean): void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export abstract class PlaybackSubscriber {
     protected player: PlayerPlugin | undefined;
 

@@ -169,7 +169,6 @@ function supportsCssAnimation(allowPrefix) {
     const domPrefixes = ['Webkit', 'O', 'Moz'];
     const elm = document.createElement('div');
 
-    // eslint-disable-next-line sonarjs/different-types-comparison
     if (elm.style.animationName !== undefined) {
         animation = true;
     }

@@ -15,7 +15,6 @@ interface CardImageUrlParams {
     shape?: CardShape;
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
 export function getCardImageUrl({
     api,
     item,
@@ -35,7 +34,6 @@ export function getCardImageUrl({
     let imgType: ImageType | undefined;
     let itemId = null;
 
-    /* eslint-disable sonarjs/no-duplicated-branches */
     if (options.preferThumb && item.ImageTags?.Thumb) {
         imgType = ImageType.Thumb;
         imgTag = item.ImageTags.Thumb;
@@ -171,7 +169,6 @@ export function getCardImageUrl({
         imgTag = item.ParentBackdropImageTags[0];
         itemId = item.ParentBackdropItemId;
     }
-    /* eslint-enable sonarjs/no-duplicated-branches */
 
     if (!itemId) {
         itemId = item.Id;

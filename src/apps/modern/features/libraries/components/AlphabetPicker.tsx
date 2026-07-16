@@ -66,7 +66,6 @@ const AlphabetPicker: React.FC<AlphabetPickerProps> = ({
     return (
         <Box
             className='alphaPicker-fixed-right'
-            // eslint-disable-next-line react/jsx-no-bind
             sx={(theme) => ({
                 position: 'fixed',
                 top: '112px', // This is the height of the AppBar + Tabs, this should be dynamic

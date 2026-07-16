@@ -50,7 +50,6 @@ const CustomThemeProvider: FC<PropsWithChildren> = ({ children }) => {
 
     return (
         // NOTE: Suppress warning about inconsistent return type
-        // eslint-disable-next-line react/jsx-no-useless-fragment
         <>{children}</>
     );
 };

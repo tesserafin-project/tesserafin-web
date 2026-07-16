@@ -166,7 +166,6 @@ function updateValues(isValueSet) {
     if (!!isValueSet && !supportsValueAutoSnap) {
         const value = snapValue(this, parseFloat(this.value)).toString();
 
-        // eslint-disable-next-line sonarjs/different-types-comparison
         if (this.value !== value) {
             this.value = value;
 

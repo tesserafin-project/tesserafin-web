@@ -7,7 +7,6 @@ type AlphaPickerProps = {
 };
 
 // React compatibility wrapper component for alphaPicker.js
-// eslint-disable-next-line no-empty-function
 const AlphaPickerComponent: FunctionComponent<AlphaPickerProps> = ({
     onAlphaPicked = () => {}
 }: AlphaPickerProps) => {
@@ -27,7 +26,6 @@ const AlphaPickerComponent: FunctionComponent<AlphaPickerProps> = ({
         return () => {
             alphaPicker?.destroy();
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps -- Disabled for wrapper components
     }, []);
 
     return <div ref={element} className='alphaPicker align-items-center' />;

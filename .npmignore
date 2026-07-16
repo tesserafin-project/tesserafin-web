@@ -2,8 +2,6 @@
 .ci
 .gitattributes
 .github
-.eslintrc.yml
-run-eslint.sh
 webpack.config.js
 yarn.lock
 src

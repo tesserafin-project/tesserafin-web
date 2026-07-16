@@ -1109,7 +1109,6 @@ function renderOverview(page, item) {
     const overviewElements = page.querySelectorAll('.overview');
 
     if (overviewElements.length > 0) {
-        // eslint-disable-next-line sonarjs/disabled-auto-escaping
         const overview = DOMPurify.sanitize(
             markdownIt({ html: true }).render(item.Overview || '')
         );

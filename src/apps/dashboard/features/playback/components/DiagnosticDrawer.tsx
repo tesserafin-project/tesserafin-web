@@ -221,7 +221,6 @@ const DiagnosticDrawer = ({ sessionId, onClose }: DiagnosticDrawerProps) => {
                          * expects focus to move into it); same precedent as SearchFields.tsx.
                          */}
                         <IconButton
-                            // eslint-disable-next-line jsx-a11y/no-autofocus
                             autoFocus
                             aria-label={globalize.translate('ButtonClose')}
                             title={globalize.translate('ButtonClose')}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Router, RouterState } from '@remix-run/router';
 import type { History, Listener, To } from 'history';
 
@@ -72,5 +71,3 @@ export class RouterHistory implements History {
 export const createRouterHistory = (router: Router): History => {
     return new RouterHistory(router);
 };
-
-/* eslint-enable @typescript-eslint/no-explicit-any */

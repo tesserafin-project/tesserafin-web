@@ -52,7 +52,6 @@ export const Component = () => {
     const onSearchChange = useCallback(
         (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
             setSearchQuery(event.target.value);
-            // eslint-disable-next-line react-hooks/exhaustive-deps
         },
         []
     );
@@ -60,7 +59,6 @@ export const Component = () => {
     const onViewAll = useCallback(() => {
         if (category) setCategory('');
         else setStatus(PluginStatusOption.All);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [category]);
 
     const filteredPlugins = useMemo(() => {
@@ -191,7 +189,6 @@ export const Component = () => {
                                                 ? 'primary'
                                                 : undefined
                                         }
-                                        // eslint-disable-next-line react/jsx-no-bind
                                         onClick={() =>
                                             setStatus(PluginStatusOption.All)
                                         }
@@ -205,7 +202,6 @@ export const Component = () => {
                                                 ? 'primary'
                                                 : undefined
                                         }
-                                        // eslint-disable-next-line react/jsx-no-bind
                                         onClick={() =>
                                             setStatus(
                                                 PluginStatusOption.Available
@@ -223,7 +219,6 @@ export const Component = () => {
                                                 ? 'primary'
                                                 : undefined
                                         }
-                                        // eslint-disable-next-line react/jsx-no-bind
                                         onClick={() =>
                                             setStatus(
                                                 PluginStatusOption.Installed
@@ -240,7 +235,6 @@ export const Component = () => {
                                         color={
                                             !category ? 'primary' : undefined
                                         }
-                                        // eslint-disable-next-line react/jsx-no-bind
                                         onClick={() => setCategory('')}
                                         label={globalize.translate('All')}
                                     />
@@ -253,7 +247,6 @@ export const Component = () => {
                                                     ? 'primary'
                                                     : undefined
                                             }
-                                            // eslint-disable-next-line react/jsx-no-bind
                                             onClick={() =>
                                                 setCategory(c.toLowerCase())
                                             }
@@ -271,11 +264,9 @@ export const Component = () => {
                             <Box>
                                 {filteredPlugins.length > 0 ? (
                                     // NOTE: Legacy Grid is required due to lack of gap support in JMP on some OSs
-                                    // eslint-disable-next-line @typescript-eslint/no-deprecated
                                     <Grid container spacing={2}>
                                         {filteredPlugins.map((plugin) => (
                                             // NOTE: Legacy Grid is required due to lack of gap support in JMP on some OSs
-                                            // eslint-disable-next-line @typescript-eslint/no-deprecated
                                             <Grid
                                                 key={plugin.id}
                                                 item

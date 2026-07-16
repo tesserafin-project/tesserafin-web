@@ -9,6 +9,5 @@ export const SubtitleStylingOption = {
     Native: 'Native'
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type SubtitleStylingOption =
     (typeof SubtitleStylingOption)[keyof typeof SubtitleStylingOption];

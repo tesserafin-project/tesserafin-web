@@ -37,7 +37,6 @@ const Lists: FC<ListsProps> = ({ items = [], listOptions = {} }) => {
         <>
             {Object.entries(groupedData).map(
                 ([itemGroupTitle, getItems], index) => (
-                    // eslint-disable-next-line react/no-array-index-key
                     <Box key={index}>
                         {itemGroupTitle && (
                             <ListGroupHeaderWrapper index={index}>

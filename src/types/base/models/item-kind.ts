@@ -6,5 +6,4 @@ export const ItemKind = {
     SeriesTimer: 'SeriesTimer'
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ItemKind = (typeof ItemKind)[keyof typeof ItemKind] | undefined;

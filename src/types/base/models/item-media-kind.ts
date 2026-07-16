@@ -8,7 +8,6 @@ export const ItemMediaKind = {
     Recording: 'Recording'
 } as const;
 
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export type ItemMediaKind =
     | (typeof ItemMediaKind)[keyof typeof ItemMediaKind]
     | undefined;

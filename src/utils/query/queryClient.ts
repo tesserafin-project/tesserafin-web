@@ -17,7 +17,6 @@ const MAX_STALENESS = 60 * 1000;
 const MAX_RETRIES = 2;
 
 // NOTE: queryClient needs to be defined before the QueryCache so that it can be used in the onError callback.
-// eslint-disable-next-line prefer-const
 export let queryClient: QueryClient;
 
 /** Query cache for handling query errors and side effects. */
@@ -25,7 +24,6 @@ const queryCache = new QueryCache({
     onError: (error, { queryKey }) => {
         if (!queryClient) return;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const requestError = error as any;
         const status =
             requestError?.response?.status ||
@@ -58,7 +56,6 @@ queryClient = new QueryClient({
             networkMode: 'always', // network connection is not required if running on localhost
             staleTime: MAX_STALENESS,
             retry: (failureCount, error) => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const requestError = error as any;
                 const status =
                     requestError?.response?.status ||

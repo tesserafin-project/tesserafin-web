@@ -8,7 +8,6 @@ import NoItemsMessage from 'components/common/NoItemsMessage';
 import SectionContainer from 'components/common/SectionContainer';
 import type { LibraryViewProps } from 'types/library';
 
-// eslint-disable-next-line sonarjs/function-return-type
 const UpcomingView: FC<LibraryViewProps> = ({ parentId }) => {
     const { __legacyApiClient__ } = useApi();
     const { isLoading, data: groupsUpcomingEpisodes } =

@@ -4,7 +4,6 @@ export declare global {
     interface Window {
         ApiClient: ApiClient;
         Events: Events;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         NativeShell: any;
         Loading: {
             show();

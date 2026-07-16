@@ -317,7 +317,6 @@ function supportsVc1(videoTestElement) {
 }
 
 function supportsHdr10(options) {
-    // eslint-disable-next-line no-constant-binary-expression, sonarjs/no-redundant-boolean
     return (
         options.supportsHdr10 ??
         (false ||
@@ -337,7 +336,8 @@ function supportsHdr10(options) {
             //  * https://bugzilla.mozilla.org/show_bug.cgi?id=1915265
             (browser.firefox &&
                 browser.osx &&
-                !browser.iphone && !browser.ipod &&
+                !browser.iphone &&
+                !browser.ipod &&
                 !browser.ipad &&
                 browser.versionMajor >= 100))
     );
@@ -348,7 +348,6 @@ function supportsHlg(options) {
 }
 
 function supportsDolbyVision(options) {
-    // eslint-disable-next-line no-constant-binary-expression, sonarjs/no-redundant-boolean
     return (
         options.supportsDolbyVision ??
         (false ||

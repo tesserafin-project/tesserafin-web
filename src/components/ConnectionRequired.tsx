@@ -119,7 +119,6 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
                 '[ConnectionRequired] unhandled connection state',
                 connectionResponse.State
             );
-            // eslint-disable-next-line react-hooks/exhaustive-deps
         },
         [navigateIfNotThere, location.pathname, navigate]
     );

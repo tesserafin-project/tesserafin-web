@@ -448,7 +448,6 @@ function executeCommand(item, id, options) {
     const api = ServerConnections.getApi(serverId);
 
     return new Promise(function (resolve, reject) {
-        // eslint-disable-next-line sonarjs/max-switch-cases
         switch (id) {
             case 'addtocollection':
                 import('./collectionEditor/collectionEditor').then(

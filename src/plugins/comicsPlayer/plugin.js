@@ -368,69 +368,63 @@ export class ComicsPlayer {
         });
         this.archiveSource = new ArchiveSource(downloadUrl);
 
-        //eslint-disable-next-line import/no-unresolved
         import('swiper/css/bundle');
 
-        return (
-            this.archiveSource
-                .load()
-                // eslint-disable-next-line import/no-unresolved
-                .then(() => import('swiper/bundle'))
-                .then(({ Swiper }) => {
-                    loading.hide();
+        return this.archiveSource
+            .load()
+            .then(() => import('swiper/bundle'))
+            .then(({ Swiper }) => {
+                loading.hide();
 
-                    this.pageCount = this.archiveSource.urls.length;
-                    this.currentPage = options.startPositionTicks / 10000 || 0;
+                this.pageCount = this.archiveSource.urls.length;
+                this.currentPage = options.startPositionTicks / 10000 || 0;
 
-                    this.swiperInstance = new Swiper(
-                        elem.querySelector('.slideshowSwiperContainer'),
-                        {
-                            direction: 'horizontal',
-                            // loop is disabled due to the lack of Swiper support in virtual slides
-                            loop: false,
-                            zoom: {
-                                minRatio: 1,
-                                toggle: true,
-                                containerClass: 'slider-zoom-container'
-                            },
-                            autoplay: false,
-                            keyboard: {
-                                enabled: true
-                            },
-                            preloadImages: true,
-                            slidesPerView:
-                                this.comicsPlayerSettings.pagesPerView,
-                            slidesPerGroup:
-                                this.comicsPlayerSettings.pagesPerView,
-                            slidesPerColumn: 1,
-                            initialSlide: this.currentPage,
-                            navigation: {
-                                nextEl: '.swiper-button-next',
-                                prevEl: '.swiper-button-prev'
-                            },
-                            pagination: {
-                                el: '.swiper-pagination',
-                                clickable: true,
-                                type: 'fraction'
-                            },
-                            // reduces memory consumption for large libraries while allowing preloading of images
-                            virtual: {
-                                slides: this.archiveSource.urls,
-                                cache: true,
-                                renderSlide: this.getImgFromUrl,
-                                addSlidesBefore: 1,
-                                addSlidesAfter: 1
-                            }
+                this.swiperInstance = new Swiper(
+                    elem.querySelector('.slideshowSwiperContainer'),
+                    {
+                        direction: 'horizontal',
+                        // loop is disabled due to the lack of Swiper support in virtual slides
+                        loop: false,
+                        zoom: {
+                            minRatio: 1,
+                            toggle: true,
+                            containerClass: 'slider-zoom-container'
+                        },
+                        autoplay: false,
+                        keyboard: {
+                            enabled: true
+                        },
+                        preloadImages: true,
+                        slidesPerView: this.comicsPlayerSettings.pagesPerView,
+                        slidesPerGroup: this.comicsPlayerSettings.pagesPerView,
+                        slidesPerColumn: 1,
+                        initialSlide: this.currentPage,
+                        navigation: {
+                            nextEl: '.swiper-button-next',
+                            prevEl: '.swiper-button-prev'
+                        },
+                        pagination: {
+                            el: '.swiper-pagination',
+                            clickable: true,
+                            type: 'fraction'
+                        },
+                        // reduces memory consumption for large libraries while allowing preloading of images
+                        virtual: {
+                            slides: this.archiveSource.urls,
+                            cache: true,
+                            renderSlide: this.getImgFromUrl,
+                            addSlidesBefore: 1,
+                            addSlidesAfter: 1
                         }
-                    );
+                    }
+                );
 
-                    // save current page ( a page is an image file inside the archive )
-                    this.swiperInstance.on('slideChange', () => {
-                        this.currentPage = this.swiperInstance.activeIndex;
-                        Events.trigger(this, 'pause');
-                    });
-                })
-        );
+                // save current page ( a page is an image file inside the archive )
+                this.swiperInstance.on('slideChange', () => {
+                    this.currentPage = this.swiperInstance.activeIndex;
+                    Events.trigger(this, 'pause');
+                });
+            });
     }
 
     getImgFromUrl(url) {

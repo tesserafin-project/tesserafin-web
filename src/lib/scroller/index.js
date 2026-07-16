@@ -25,7 +25,6 @@ function type(value) {
     }
 
     if (typeof value === 'object' || typeof value === 'function') {
-        // eslint-disable-next-line sonarjs/prefer-regexp-exec
         return (
             Object.prototype.toString
                 .call(value)
@@ -1009,7 +1008,6 @@ scrollerFactory.prototype.toCenter = function (item, immediate) {
 };
 
 scrollerFactory.create = function (frame, options) {
-    // eslint-disable-next-line new-cap
     const instance = new scrollerFactory(frame, options);
     return Promise.resolve(instance);
 };

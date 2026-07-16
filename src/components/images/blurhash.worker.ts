@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-globals */
 import { decode } from 'blurhash';
 
 self.onmessage = ({ data: { hash, width, height } }): void => {
@@ -13,4 +12,3 @@ self.onmessage = ({ data: { hash, width, height } }): void => {
         throw new TypeError(`Blurhash ${hash} is not valid`);
     }
 };
-/* eslint-enable no-restricted-globals */

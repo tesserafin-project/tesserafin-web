@@ -83,7 +83,6 @@ function setFiles(page, files) {
     reader.readAsDataURL(file);
 }
 
-// eslint-disable-next-line sonarjs/no-invariant-returns
 function onSubmit(e) {
     const file = currentFile;
 

@@ -66,7 +66,6 @@ const LibraryViewMenu: FC = () => {
                 {currentRoute?.views.map((tab) => (
                     <MenuItem
                         key={tab.view}
-                        // eslint-disable-next-line react/jsx-no-bind
                         onClick={() => {
                             searchParams.set('tab', `${tab.index}`);
                             setSearchParams(searchParams);

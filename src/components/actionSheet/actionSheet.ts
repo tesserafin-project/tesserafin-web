@@ -138,7 +138,6 @@ function centerFocus(elem: Element, horiz: boolean, on: boolean) {
         });
 }
 
-/* eslint-disable-next-line sonarjs/cognitive-complexity */
 export function show(options: Options) {
     // items
     // positionTo

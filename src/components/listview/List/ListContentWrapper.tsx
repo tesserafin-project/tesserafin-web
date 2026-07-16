@@ -26,7 +26,6 @@ const ListContentWrapper: FC<PropsWithChildren<ListContentWrapperProps>> = ({
             </>
         );
     } else {
-        // eslint-disable-next-line react/jsx-no-useless-fragment
         return <>{children}</>;
     }
 };

@@ -48,7 +48,6 @@ function textAreaCopy(text) {
  * @returns {Promise<void>} Promise.
  */
 export function copy(text) {
-    // eslint-disable-next-line sonarjs/different-types-comparison
     if (navigator.clipboard === undefined) {
         return textAreaCopy(text);
     } else {

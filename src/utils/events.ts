@@ -1,5 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
-export interface Event {
+﻿export interface Event {
     type: string;
 }
 
@@ -48,4 +47,3 @@ export default {
             });
     }
 };
-/* eslint-enable @typescript-eslint/no-explicit-any */
