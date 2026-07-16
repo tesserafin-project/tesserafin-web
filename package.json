@@ -134,6 +134,7 @@
         "build:production": "cross-env NODE_ENV=\"production\" webpack --config webpack.prod.js",
         "build:check": "tsc --noEmit",
         "generate:reefin-sdk": "node scripts/generate-reefin-sdk.mjs",
+        "verify:reefin-sdk-fresh": "node scripts/verify-reefin-sdk-fresh.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
         "test": "vitest --watch=false --config vite.config.ts",
