@@ -1,10 +1,14 @@
 # RFC-0002 — Abandon des cibles navigateurs legacy et adoption de Biome
 
-- **Statut** : Draft
+- **Statut** : Implemented
 - **Date** : 2026-07-16
 - **Auteur** : Reefin Team
 - **Dépôt** : `reefin-web` (fork de `jellyfin-web`)
 - **Relation** : s'appuie sur RFC-0001 (`docs/reefin/RFC-0001-vision-and-feasibility.md`) — §3 politique de breaking changes (critère 1, « supprime de l'architecture héritée »), §7 phase 2 (« mise en place d'une politique de synchronisation contrôlée avec l'upstream »), §8 (« dépendances tierces et outillage de build tant qu'ils ne bloquent pas la trajectoire TypeScript/React ciblée »).
+- **Clôture (W13.1, « Clôture des fondations »)** : toutes les étapes du plan d'exécution §5.4
+  (1-7) sont faites, y compris l'étape 7 (TypeScript 6.0) et le retrait de
+  `ForkTsCheckerWebpackPlugin` qui en découlait (voir §7 « Mesures finales » ci-dessous pour les
+  chiffres de clôture et l'écart avec les estimations antérieures).
 
 ---
 
@@ -232,5 +236,59 @@ Chaque PR reste revuable indépendamment ; l'ordre est contraint (le retrait des
    - **`@eslint-community/eslint-plugin-eslint-comments`** : sans objet, n'a de sens que si ESLint reste présent (§5.1) — perte nulle par construction.
    - **`eslint-plugin-import`** : déjà configuré `off` côté Biome (`correctness.noUnresolvedImports: "off"`, pas d'organisation d'imports — `assist.organizeImports: "off"`) ; la résolution de modules erronée reste couverte indirectement par `tsc` (`npm run build:check`).
 5. ~~**`jquery` dans `src/lib/legacy/index.ts`**~~ — **Résolu dans la PR de retrait (§4.1)** : audit complet des usages de `$`/`jQuery` global (`$(document)`, `$(window)`, `$.` bare) a trouvé 5 consommateurs réels. Trois importaient déjà `jquery` explicitement (`src/scripts/editorsidebar.js`, `src/components/tvproviders/xmltv.js`, `src/components/tvproviders/schedulesdirect.js`) et n'étaient pas affectés. Deux dépendaient du chargement implicite via `lib/legacy` sans import propre — `src/components/viewContainer.js` (`$(view).appendTo(...)`) et `src/scripts/libraryBrowser.js` (`$(button).trigger(...)`) — et ont chacun reçu un `import 'jquery';` explicite avant le retrait de `lib/legacy`. `jquery` reste dans `package.json` (dépendance réelle, pas un polyfill de compat navigateur) ; voir aussi `src/lib/scroller/index.js`, qui importait `resize-observer-polyfill` directement (indépendamment de `lib/legacy`) et a été basculé sur le constructeur natif `ResizeObserver` (supporté nativement par toute la baseline evergreen — §3).
+
+---
+
+## 7. Mesures finales (W13.1 — « Clôture des fondations »)
+
+Toutes les étapes du plan §5.4 sont exécutées : retrait des cibles legacy (§4.1), Biome (§5),
+migration esbuild-loader (`spike-esbuild-loader.md`), TypeScript 6.0
+(`investigation-typescript-upgrade.md`), Babel réduit à la règle UMD résiduelle (probablement un
+no-op — voir commit `b5b834f44f`). En clôture de tranche, W13.1 ajoute le dernier retrait laissé en
+suspens par la question ouverte §6 point 1 : **`ForkTsCheckerWebpackPlugin`**, dont la dépendance à
+l'API JS de TypeScript restait un risque résiduel identifié par le spike esbuild (§6 point 1,
+`spike-esbuild-loader.md` point 3). Il est supprimé de `webpack.common.js` et de `package.json` ;
+le type-check est désormais exclusivement porté par `npm run typecheck` (`tsc --noEmit`, alias
+`build:check` conservé pour compatibilité), complètement découplé du build webpack — un type-check
+cassé sous une TypeScript future ne peut plus bloquer `build:production`/`build:development`
+eux-mêmes.
+
+Mesures reproduites le 16 juillet 2026 sur cette machine, `rm -rf dist node_modules/.cache` puis
+`npm run build:production` (build à froid, sans aucun cache webpack/esbuild/babel) :
+
+| Métrique | Avant RFC-0002 (baseline pré-legacy-removal, §4.1) | Après (spike esbuild, `ForkTsChecker` encore présent) | **Final (W13.1, `ForkTsChecker` retiré)** | Delta final vs baseline |
+| --- | --- | --- | --- | --- |
+| Build prod à froid | ~163–167 s (Babel + `ts-loader`, `spike-esbuild-loader.md`) | 67–76 s | **64,9 s** (webpack ; 66,7 s de bout en bout avec `npm`/`cross-env`) | **~2,5× plus rapide** (163 s / 65 s ≈ 2,51×) |
+| `main.jellyfin.bundle.js` | 1 174 162 octets (1 147,6 KiB) | 391 552 octets | **391 552 octets (382,4 KiB)** | **-66,7 %** |
+| `dist/` total (apparent size, `du -sb`) | 57 761 607 octets (~55,09 MiB) | ~52 MiB (spike, non chiffré à l'octet) | **54 547 872 octets (~52,02 MiB)** | **-3 213 735 octets (-5,6 %)** |
+| Tests Vitest | — | — | **204/204 verts** (19 fichiers de test) | — |
+
+**Écart avec les chiffres pressentis avant mesure** : le gain de build à froid mesuré ici (~2,5×)
+est supérieur à l'estimation grossière de ~2,2× circulant avant cette clôture — l'écart vient
+précisément du retrait de `ForkTsCheckerWebpackPlugin` : le spike (§ci-dessus, colonne du milieu)
+mesurait 67–76 s **avec** ForkTsChecker encore actif en worker parallèle ; le retirer fait
+redescendre le temps mesuré ici à 64,9 s, en plus de simplifier le graphe de plugins. La réduction du
+bundle principal (-66,7 %) est légèrement supérieure aux ~64 % pressentis également — les deux
+écarts vont dans le même sens (mieux que prévu), pas de régression à signaler. Le total `dist/`
+bouge peu en proportion (-5,6 %) parce que l'essentiel de son poids (assets statiques, wasm
+libarchive/libass, polices Noto, workers pdf.js/libpgs) est indépendant du toolchain JS/TS — seul le
+JS applicatif et ses dépendances bundlées se contractent significativement, ce qui est cohérent avec
+le constat déjà fait en §4.1 (le gain vient de l'absence de retranspilation ES5 des dépendances, pas
+des quelques chunks polyfills eux-mêmes).
+
+**Nouveau garde-fou** : un budget de taille est désormais appliqué sur `main.jellyfin.bundle.js` —
+**450 KiB (460 800 octets) en taille brute non compressée**, appliqué à la fois par
+`webpack.prod.js` (`performance.maxAssetSize` + `assetFilter`, échoue le build en cas de
+dépassement) et par le script `npm run verify:bundle-budget` (mesure `dist/` existant ou déclenche
+un build). Voir `webpack.performance-budget.json` pour la valeur unique partagée par les deux, et le
+choix taille brute vs gzip justifié dans `scripts/verify-bundle-budget.mjs`. Mesure actuelle
+(382,4 KiB) laisse ~78 KiB (~17 %) de marge avant ce seuil.
+
+Vérifications de clôture (toutes exécutées localement le 16 juillet 2026, CI GitHub indisponible —
+quota épuisé) : `npm run typecheck` (0 erreur), `npm run lint` (Biome — 0 erreur, 278 warnings
+préexistants et non liés à ce changement, cohérent avec le rapport §4.1 sur ESLint avant Biome),
+`npm run stylelint` (0 erreur), `npm test` (204/204), `npm run build:production` (réussi, budget
+bundle respecté), `npm run verify:reefin-sdk-fresh` (SDK généré identique à celui commité),
+`npm run verify:bundle-budget` (PASS, voir tableau ci-dessus).
 
 ---
