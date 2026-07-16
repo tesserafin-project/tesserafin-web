@@ -22,13 +22,20 @@ import { invalidateVirtualFolders } from 'apps/dashboard/features/libraries/api/
 
 export const Component = () => {
     const { user } = useApi();
-    const { data: virtualFolders, isPending: isVirtualFoldersPending, isError: isVirtualFoldersError } = useVirtualFolders();
+    const {
+        data: virtualFolders,
+        isPending: isVirtualFoldersPending,
+        isError: isVirtualFoldersError
+    } = useVirtualFolders();
     const startTask = useStartTask();
-    const { data: tasks, isPending: isLiveTasksPending } = useLiveTasks({ isHidden: false });
+    const { data: tasks, isPending: isLiveTasksPending } = useLiveTasks({
+        isHidden: false
+    });
 
-    const librariesTask = useMemo(() => (
-        tasks?.find((value) => value.Key === 'RefreshLibrary')
-    ), [ tasks ]);
+    const librariesTask = useMemo(
+        () => tasks?.find((value) => value.Key === 'RefreshLibrary'),
+        [tasks]
+    );
 
     const showMediaLibraryCreator = useCallback(() => {
         const mediaLibraryCreator = new MediaLibraryCreator({
@@ -39,7 +46,7 @@ export const Component = () => {
         void mediaLibraryCreator.then((hasChanges: boolean) => {
             if (hasChanges) invalidateVirtualFolders(user);
         });
-    }, [ user ]);
+    }, [user]);
 
     const onScanLibraries = useCallback(() => {
         if (librariesTask?.Id) {
@@ -47,7 +54,7 @@ export const Component = () => {
                 taskId: librariesTask.Id
             });
         }
-    }, [ startTask, librariesTask ]);
+    }, [startTask, librariesTask]);
 
     if (isVirtualFoldersPending || isLiveTasksPending) return <Loading />;
 
@@ -59,10 +66,16 @@ export const Component = () => {
         >
             <Box className='content-primary'>
                 {isVirtualFoldersError ? (
-                    <Alert severity='error'>{globalize.translate('LibrariesLoadError')}</Alert>
+                    <Alert severity='error'>
+                        {globalize.translate('LibrariesLoadError')}
+                    </Alert>
                 ) : (
                     <Stack spacing={3} mt={2}>
-                        <Stack direction='row' alignItems={'center'} spacing={1.5}>
+                        <Stack
+                            direction='row'
+                            alignItems={'center'}
+                            spacing={1.5}
+                        >
                             <Button
                                 startIcon={<Add />}
                                 onClick={showMediaLibraryCreator}
@@ -72,20 +85,24 @@ export const Component = () => {
                             <Button
                                 onClick={onScanLibraries}
                                 startIcon={<RefreshIcon />}
-                                loading={librariesTask && librariesTask.State !== TaskState.Idle}
+                                loading={
+                                    librariesTask &&
+                                    librariesTask.State !== TaskState.Idle
+                                }
                                 loadingPosition='start'
                                 variant='outlined'
                             >
                                 {globalize.translate('ButtonScanAllLibraries')}
                             </Button>
-                            {(librariesTask && librariesTask.State == TaskState.Running) && (
-                                <TaskProgress task={librariesTask} />
-                            )}
+                            {librariesTask &&
+                                librariesTask.State == TaskState.Running && (
+                                    <TaskProgress task={librariesTask} />
+                                )}
                         </Stack>
 
                         <Box>
                             <Grid container spacing={2}>
-                                {virtualFolders?.map(virtualFolder => (
+                                {virtualFolders?.map((virtualFolder) => (
                                     <Grid
                                         key={virtualFolder?.ItemId}
                                         item

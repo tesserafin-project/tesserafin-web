@@ -20,7 +20,9 @@ function onClick() {
 
 function onUserDataChanged({ Data }, button) {
     const itemId = button.dataset.id;
-    const userData = (Data?.UserDataList ?? []).find(u => u.ItemId === itemId);
+    const userData = (Data?.UserDataList ?? []).find(
+        (u) => u.ItemId === itemId
+    );
     if (userData) {
         setState(button, userData.Played);
     }
@@ -56,9 +58,13 @@ function setState(button, played, updateAttribute) {
 
 function setTitle(button, itemType, played) {
     if (itemType !== 'AudioBook') {
-        button.title = played ? globalize.translate('Watched') : globalize.translate('MarkPlayed');
+        button.title = played
+            ? globalize.translate('Watched')
+            : globalize.translate('MarkPlayed');
     } else {
-        button.title = played ? globalize.translate('Played') : globalize.translate('MarkPlayed');
+        button.title = played
+            ? globalize.translate('Played')
+            : globalize.translate('MarkPlayed');
     }
 
     const text = button.querySelector('.button-text');
@@ -140,4 +146,3 @@ document.registerElement('emby-playstatebutton', {
     prototype: EmbyPlaystateButtonPrototype,
     extends: 'button'
 });
-

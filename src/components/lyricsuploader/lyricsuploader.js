@@ -31,10 +31,12 @@ function onFileReaderError(evt) {
 }
 
 function isValidLyricsFile(file) {
-    return file && ['.lrc', '.txt']
-        .some(function(ext) {
+    return (
+        file &&
+        ['.lrc', '.txt'].some(function (ext) {
             return file.name.endsWith(ext);
-        });
+        })
+    );
 }
 
 function setFiles(page, files) {
@@ -92,20 +94,25 @@ async function onSubmit(e) {
     const api = ServerConnections.getApi(currentServerId);
     const data = await readFileAsText(file);
 
-    getLyricApi(api).uploadLyrics({
-        itemId: currentItemId,
-        fileName: file.name,
-        body: data
-    }).then(function () {
-        dlg.querySelector('#uploadLyrics').value = '';
-        loading.hide();
-        hasChanges = true;
-        dialogHelper.close(dlg);
-    });
+    getLyricApi(api)
+        .uploadLyrics({
+            itemId: currentItemId,
+            fileName: file.name,
+            body: data
+        })
+        .then(function () {
+            dlg.querySelector('#uploadLyrics').value = '';
+            loading.hide();
+            hasChanges = true;
+            dialogHelper.close(dlg);
+        });
 }
 
 function initEditor(page) {
-    page.querySelector('.uploadLyricsForm').addEventListener('submit', onSubmit);
+    page.querySelector('.uploadLyricsForm').addEventListener(
+        'submit',
+        onSubmit
+    );
     page.querySelector('#uploadLyrics').addEventListener('change', function () {
         setFiles(page, this.files);
     });

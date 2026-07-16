@@ -11,14 +11,13 @@ export const useCreateBackup = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (backupOptions: BackupOptionsDto) => (
+        mutationFn: (backupOptions: BackupOptionsDto) =>
             getBackupApi(api!).createBackup({
                 backupOptionsDto: backupOptions
-            })
-        ),
+            }),
         onSuccess: () => {
             void queryClient.invalidateQueries({
-                queryKey: [ QUERY_KEY ]
+                queryKey: [QUERY_KEY]
             });
         }
     });

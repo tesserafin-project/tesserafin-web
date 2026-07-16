@@ -13,7 +13,8 @@
 import pinnedVersion from './spec/version.json';
 
 /** `info.version` (== `x-reefin-version`) of the OpenAPI spec the SDK was last generated from. */
-export const REEFIN_SPEC_VERSION: string = pinnedVersion.xReefinVersion ?? pinnedVersion.version ?? '0.0.0';
+export const REEFIN_SPEC_VERSION: string =
+    pinnedVersion.xReefinVersion ?? pinnedVersion.version ?? '0.0.0';
 
 /**
  * Minimum `reefin` server version this client is known to work against. For now this simply

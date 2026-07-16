@@ -10,7 +10,7 @@ import { safeDecodeURIComponent } from 'utils/url';
  * @returns {Api} An equivalent SDK Api instance.
  */
 export const toApi = (apiClient: ApiClient): Api => {
-    return (new Jellyfin({
+    return new Jellyfin({
         // The SDK encodes these values when creating the authorization header,
         // so we need to decode them here to avoid double encoding.
         clientInfo: {
@@ -21,10 +21,7 @@ export const toApi = (apiClient: ApiClient): Api => {
             name: safeDecodeURIComponent(apiClient.deviceName()),
             id: safeDecodeURIComponent(apiClient.deviceId())
         }
-    })).createApi(
-        apiClient.serverAddress(),
-        apiClient.accessToken()
-    );
+    }).createApi(apiClient.serverAddress(), apiClient.accessToken());
 };
 
 /**
@@ -44,7 +41,7 @@ export const toApi = (apiClient: ApiClient): Api => {
  * handling for the concrete pattern.
  */
 export const toReefinApi = (apiClient: ApiClient): ReefinApi => {
-    return (new ReefinSdk({
+    return new ReefinSdk({
         clientInfo: {
             name: REEFIN_CLIENT_IDENTITY.name,
             version: safeDecodeURIComponent(apiClient.appVersion())
@@ -53,8 +50,5 @@ export const toReefinApi = (apiClient: ApiClient): ReefinApi => {
             name: safeDecodeURIComponent(apiClient.deviceName()),
             id: safeDecodeURIComponent(apiClient.deviceId())
         }
-    })).createApi(
-        apiClient.serverAddress(),
-        apiClient.accessToken()
-    );
+    }).createApi(apiClient.serverAddress(), apiClient.accessToken());
 };

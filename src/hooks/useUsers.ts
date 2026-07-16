@@ -1,6 +1,9 @@
 import type { AxiosRequestConfig } from 'axios';
 import type { Api } from '@jellyfin/sdk';
-import type { UserApiGetUsersRequest, UserDto } from '@jellyfin/sdk/lib/generated-client';
+import type {
+    UserApiGetUsersRequest,
+    UserDto
+} from '@jellyfin/sdk/lib/generated-client';
 import { getUserApi } from '@jellyfin/sdk/lib/utils/api/user-api';
 import { useQuery } from '@tanstack/react-query';
 
@@ -33,9 +36,8 @@ export const useUsers = (
 ) => {
     const { api } = useApi();
     return useQuery({
-        queryKey: [ QUERY_KEY ],
-        queryFn: ({ signal }) =>
-            fetchUsers(api!, requestParams, { signal }),
+        queryKey: [QUERY_KEY],
+        queryFn: ({ signal }) => fetchUsers(api!, requestParams, { signal }),
         enabled: !!api,
         staleTime: options?.forceRefresh ? 0 : undefined
     });
@@ -47,7 +49,7 @@ export const useUsersDetails = () => {
     const names: string[] = [];
 
     if (users) {
-        users.forEach(user => {
+        users.forEach((user) => {
             const userId = user.Id;
             if (userId) usersById[userId] = user;
             if (user.Name) names.push(user.Name);

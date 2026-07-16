@@ -11,7 +11,10 @@ const fetchGetMovieRecommendations = async (
     params: MovieApiGetMovieRecommendationsRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getMovieApi(api).getMovieRecommendations(params, options);
+    const response = await getMovieApi(api).getMovieRecommendations(
+        params,
+        options
+    );
     return response.data;
 };
 
@@ -20,11 +23,13 @@ export const getMovieRecommendationsQuery = (
     api?: Api,
     params: MovieApiGetMovieRecommendationsRequest = {},
     enabled = true
-) => queryOptions({
-    queryKey: ['MovieRecommendations', params?.parentId],
-    queryFn: ({ signal }) => fetchGetMovieRecommendations(api!, params, { signal }),
-    enabled: !!api && enabled
-});
+) =>
+    queryOptions({
+        queryKey: ['MovieRecommendations', params?.parentId],
+        queryFn: ({ signal }) =>
+            fetchGetMovieRecommendations(api!, params, { signal }),
+        enabled: !!api && enabled
+    });
 
 /** Hook for fetching movie recommendations. */
 export const useMovieRecommendations = (
@@ -32,12 +37,14 @@ export const useMovieRecommendations = (
     enabled?: boolean
 ) => {
     const { api, user } = useApi();
-    return useQuery(getMovieRecommendationsQuery(
-        api,
-        {
-            ...params,
-            userId: params?.userId || user?.Id
-        },
-        enabled
-    ));
+    return useQuery(
+        getMovieRecommendationsQuery(
+            api,
+            {
+                ...params,
+                userId: params?.userId || user?.Id
+            },
+            enabled
+        )
+    );
 };

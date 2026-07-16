@@ -20,7 +20,5 @@
     "Reasons": ["VideoCodecNotSupported", "MethodChosen"],
     "CreatedAt": "2026-07-16T10:00:00Z",
     "UpdatedAt": "2026-07-16T10:00:05Z",
-    "Timeline": [
-        { "Stage": "Created", "At": "2026-07-16T10:00:00Z" }
-    ]
+    "Timeline": [{ "Stage": "Created", "At": "2026-07-16T10:00:00Z" }]
 }

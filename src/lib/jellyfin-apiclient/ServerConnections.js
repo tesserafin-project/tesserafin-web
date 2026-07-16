@@ -10,8 +10,16 @@ import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
 
 import ConnectionManager from './connectionManager';
 
-const normalizeImageOptions = options => {
-    if (!options.quality && (options.maxWidth || options.width || options.maxHeight || options.height || options.fillWidth || options.fillHeight)) {
+const normalizeImageOptions = (options) => {
+    if (
+        !options.quality &&
+        (options.maxWidth ||
+            options.width ||
+            options.maxHeight ||
+            options.height ||
+            options.fillWidth ||
+            options.fillHeight)
+    ) {
         options.quality = 90;
     }
 };
@@ -43,7 +51,10 @@ class ServerConnections extends ConnectionManager {
             // Ensure the updated credentials are persisted to storage
             credentialProvider.credentials(credentialProvider.credentials());
 
-            if (window.NativeShell && typeof window.NativeShell.onLocalUserSignedOut === 'function') {
+            if (
+                window.NativeShell &&
+                typeof window.NativeShell.onLocalUserSignedOut === 'function'
+            ) {
                 window.NativeShell.onLocalUserSignedOut(logoutInfo);
             }
         });
@@ -127,7 +138,8 @@ class ServerConnections extends ConnectionManager {
      */
     async getCurrentApiClientAsync() {
         const apiClient = this.currentApiClient();
-        if (!apiClient) throw new Error('[ServerConnection] No current ApiClient instance');
+        if (!apiClient)
+            throw new Error('[ServerConnection] No current ApiClient instance');
 
         return apiClient;
     }
@@ -137,8 +149,14 @@ class ServerConnections extends ConnectionManager {
         this.setLocalApiClient(apiClient);
         setTimeout(() => detectBitrate(this.getApi(user.ServerId), true), 6000);
         return setUserInfo(user.Id, apiClient).then(() => {
-            if (window.NativeShell && typeof window.NativeShell.onLocalUserSignedIn === 'function') {
-                return window.NativeShell.onLocalUserSignedIn(user, apiClient.accessToken());
+            if (
+                window.NativeShell &&
+                typeof window.NativeShell.onLocalUserSignedIn === 'function'
+            ) {
+                return window.NativeShell.onLocalUserSignedIn(
+                    user,
+                    apiClient.accessToken()
+                );
             }
             return Promise.resolve();
         });
@@ -155,4 +173,5 @@ export default new ServerConnections(
     () => appHost.appVersion(),
     () => appHost.deviceName(),
     () => appHost.deviceId(),
-    capabilities);
+    capabilities
+);

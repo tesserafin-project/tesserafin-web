@@ -31,19 +31,31 @@ const BookOsd: FC<BookOsdProps> = ({
 
     const onClickFullscreen = useCallback(() => {
         onToggleFullscreen?.();
-        setFullscreen(state => !state);
+        setFullscreen((state) => !state);
     }, [onToggleFullscreen]);
 
     return (
         <div className='bookOsd'>
             <div className='bookOsdRow bookOsdTop'>
-                <IconButton onClick={onExit} icon='arrow_back' title={globalize.translate('ButtonBack')} />
+                <IconButton
+                    onClick={onExit}
+                    icon='arrow_back'
+                    title={globalize.translate('ButtonBack')}
+                />
                 <span className='bookOsdTitle'>{title}</span>
             </div>
 
             <div className='bookOsdRow bookOsdBottom'>
-                <IconButton onClick={onPrevious} icon='navigate_before' title={globalize.translate('Previous')} />
-                <IconButton onClick={onNext} icon='navigate_next' title={globalize.translate('Next')} />
+                <IconButton
+                    onClick={onPrevious}
+                    icon='navigate_before'
+                    title={globalize.translate('Previous')}
+                />
+                <IconButton
+                    onClick={onNext}
+                    icon='navigate_next'
+                    title={globalize.translate('Next')}
+                />
 
                 {onOpenTableOfContents && (
                     <IconButton
@@ -82,7 +94,9 @@ const BookOsd: FC<BookOsdProps> = ({
                     <IconButton
                         onClick={onClickFullscreen}
                         icon={fullscreen ? 'fullscreen_exit' : 'fullscreen'}
-                        title={globalize.translate(fullscreen ? 'ExitFullscreen' : 'Fullscreen')}
+                        title={globalize.translate(
+                            fullscreen ? 'ExitFullscreen' : 'Fullscreen'
+                        )}
                     />
                 )}
             </div>

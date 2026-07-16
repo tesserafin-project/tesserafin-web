@@ -23,11 +23,20 @@ import datetime from 'scripts/datetime';
 import globalize from 'lib/globalize';
 
 import { type JellyfinApiContext, useApi } from './useApi';
-import { getAlphaPickerQuery, getFieldsQuery, getFiltersQuery, getLimitQuery } from 'utils/items';
+import {
+    getAlphaPickerQuery,
+    getFieldsQuery,
+    getFiltersQuery,
+    getLimitQuery
+} from 'utils/items';
 import { getProgramSections, getSuggestionSections } from 'utils/sections';
 
 import type { LibraryViewSettings, ParentId } from 'types/library';
-import { type Section, type SectionType, SectionApiMethod } from 'types/sections';
+import {
+    type Section,
+    type SectionType,
+    SectionApiMethod
+} from 'types/sections';
 import { LibraryTab } from 'types/libraryTab';
 import { ItemKind } from 'types/base/models/item-kind';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
@@ -55,7 +64,9 @@ const fetchGetItems = async (
 
 export const useGetItems = (parametersOptions: LibraryApiGetItemsRequest) => {
     const currentApi = useApi();
-    const isRandom = Boolean(parametersOptions.sortBy?.includes(ItemSortBy.Random));
+    const isRandom = Boolean(
+        parametersOptions.sortBy?.includes(ItemSortBy.Random)
+    );
 
     return useQuery({
         queryKey: [
@@ -143,7 +154,8 @@ export const useGetStudios = (parentId: ParentId, itemType: BaseItemKind[]) => {
         queryKey: ['Studios', parentId, itemType],
         queryFn: ({ signal }) =>
             fetchGetStudios(currentApi, parentId, itemType, { signal }),
-        enabled: !!currentApi.api && !!currentApi.user?.Id && !!parentId && !isLivetv
+        enabled:
+            !!currentApi.api && !!currentApi.user?.Id && !!parentId && !isLivetv
     });
 };
 
@@ -181,7 +193,8 @@ export const useGetQueryFiltersLegacy = (
             fetchGetQueryFiltersLegacy(currentApi, parentId, itemType, {
                 signal
             }),
-        enabled: !!currentApi.api && !!currentApi.user?.Id && !!parentId && !isLivetv
+        enabled:
+            !!currentApi.api && !!currentApi.user?.Id && !!parentId && !isLivetv
     });
 };
 
@@ -195,7 +208,10 @@ const fetchGetItemsViewByType = async (
 ) => {
     const { api, user } = currentApi;
     if (api && user?.Id) {
-        const isFavorite = libraryViewSettings.Filters?.Status?.includes(ItemFilter.IsFavorite) || undefined;
+        const isFavorite =
+            libraryViewSettings.Filters?.Status?.includes(
+                ItemFilter.IsFavorite
+            ) || undefined;
         let response;
         switch (viewType) {
             case LibraryTab.AlbumArtists: {
@@ -203,7 +219,10 @@ const fetchGetItemsViewByType = async (
                     {
                         userId: user.Id,
                         parentId: parentId ?? undefined,
-                        enableImageTypes: [libraryViewSettings.ImageType, ImageType.Backdrop],
+                        enableImageTypes: [
+                            libraryViewSettings.ImageType,
+                            ImageType.Backdrop
+                        ],
                         ...getFieldsQuery(viewType, libraryViewSettings),
                         ...getFiltersQuery(viewType, libraryViewSettings),
                         ...getLimitQuery(),
@@ -224,7 +243,10 @@ const fetchGetItemsViewByType = async (
                     {
                         userId: user.Id,
                         parentId: parentId ?? undefined,
-                        enableImageTypes: [libraryViewSettings.ImageType, ImageType.Backdrop],
+                        enableImageTypes: [
+                            libraryViewSettings.ImageType,
+                            ImageType.Backdrop
+                        ],
                         ...getFieldsQuery(viewType, libraryViewSettings),
                         ...getFiltersQuery(viewType, libraryViewSettings),
                         ...getLimitQuery(),
@@ -245,7 +267,10 @@ const fetchGetItemsViewByType = async (
                     {
                         userId: user.Id,
                         parentId: parentId ?? undefined,
-                        enableImageTypes: [libraryViewSettings.ImageType, ImageType.Backdrop],
+                        enableImageTypes: [
+                            libraryViewSettings.ImageType,
+                            ImageType.Backdrop
+                        ],
                         fields: [ItemFields.PrimaryImageAspectRatio],
                         filters: libraryViewSettings?.Filters?.Status,
                         ...getLimitQuery(),
@@ -299,14 +324,18 @@ const fetchGetItemsViewByType = async (
                         recursive: false,
                         imageTypeLimit: 1,
                         parentId: parentId ?? undefined,
-                        enableImageTypes: [libraryViewSettings.ImageType, ImageType.Backdrop],
+                        enableImageTypes: [
+                            libraryViewSettings.ImageType,
+                            ImageType.Backdrop
+                        ],
                         ...getFieldsQuery(viewType, libraryViewSettings),
                         ...getFiltersQuery(viewType, libraryViewSettings),
                         ...getLimitQuery(),
                         ...getAlphaPickerQuery(libraryViewSettings),
-                        sortBy: libraryViewSettings.SortBy === ItemSortBy.IsFolder ?
-                            [ItemSortBy.IsFolder, ItemSortBy.SortName] :
-                            [libraryViewSettings.SortBy],
+                        sortBy:
+                            libraryViewSettings.SortBy === ItemSortBy.IsFolder
+                                ? [ItemSortBy.IsFolder, ItemSortBy.SortName]
+                                : [libraryViewSettings.SortBy],
                         sortOrder: [libraryViewSettings.SortOrder],
                         includeItemTypes: itemType,
                         startIndex: libraryViewSettings.StartIndex
@@ -335,12 +364,18 @@ const fetchGetItemsViewByType = async (
                         recursive: true,
                         imageTypeLimit: 1,
                         parentId: parentId ?? undefined,
-                        enableImageTypes: [libraryViewSettings.ImageType, ImageType.Backdrop],
+                        enableImageTypes: [
+                            libraryViewSettings.ImageType,
+                            ImageType.Backdrop
+                        ],
                         ...getFieldsQuery(viewType, libraryViewSettings),
                         ...getFiltersQuery(viewType, libraryViewSettings),
                         ...getLimitQuery(),
                         ...getAlphaPickerQuery(libraryViewSettings),
-                        isFavorite: viewType === LibraryTab.Favorites ? true : undefined,
+                        isFavorite:
+                            viewType === LibraryTab.Favorites
+                                ? true
+                                : undefined,
                         sortBy: [libraryViewSettings.SortBy],
                         sortOrder: [libraryViewSettings.SortOrder],
                         includeItemTypes: itemType,
@@ -387,9 +422,11 @@ export const useGetItemsViewByType = (
                 { signal }
             ),
         refetchOnWindowFocus: false,
-        enabled: !!currentApi.api && !!currentApi.user?.Id
-            && viewType
-            && [
+        enabled:
+            !!currentApi.api &&
+            !!currentApi.user?.Id &&
+            viewType &&
+            [
                 LibraryTab.Movies,
                 LibraryTab.Favorites,
                 LibraryTab.Collections,
@@ -432,7 +469,7 @@ export const usePlaylistsMoveItemMutation = () => {
     const currentApi = useApi();
     return useMutation({
         mutationFn: (requestParameters: PlaylistApiMoveItemRequest) =>
-            fetchPlaylistsMoveItem(currentApi, requestParameters )
+            fetchPlaylistsMoveItem(currentApi, requestParameters)
     });
 };
 
@@ -455,13 +492,13 @@ function groupsUpcomingEpisodes(items: ItemDto[]) {
                     item.PremiereDate,
                     true
                 );
-                dateText = datetime.isRelativeDay(premiereDate, -1) ?
-                    globalize.translate('Yesterday') :
-                    datetime.toLocaleDateString(premiereDate, {
-                        weekday: 'long',
-                        month: 'short',
-                        day: 'numeric'
-                    });
+                dateText = datetime.isRelativeDay(premiereDate, -1)
+                    ? globalize.translate('Yesterday')
+                    : datetime.toLocaleDateString(premiereDate, {
+                          weekday: 'long',
+                          month: 'short',
+                          day: 'numeric'
+                      });
             } catch {
                 console.error('error parsing timestamp for upcoming tv shows');
             }
@@ -526,7 +563,7 @@ export const useGetGroupsUpcomingEpisodes = (parentId: ParentId) => {
 
 interface ToggleFavoriteMutationProp {
     itemId: string;
-    isFavorite: boolean
+    isFavorite: boolean;
 }
 
 const fetchUpdateFavoriteStatus = async (
@@ -556,13 +593,13 @@ export const useToggleFavoriteMutation = () => {
     const currentApi = useApi();
     return useMutation({
         mutationFn: ({ itemId, isFavorite }: ToggleFavoriteMutationProp) =>
-            fetchUpdateFavoriteStatus(currentApi, itemId, isFavorite )
+            fetchUpdateFavoriteStatus(currentApi, itemId, isFavorite)
     });
 };
 
 interface TogglePlayedMutationProp {
     itemId: string;
-    isPlayed: boolean
+    isPlayed: boolean;
 }
 
 const fetchUpdatePlayedState = async (
@@ -592,7 +629,7 @@ export const useTogglePlayedMutation = () => {
     const currentApi = useApi();
     return useMutation({
         mutationFn: ({ itemId, isPlayed }: TogglePlayedMutationProp) =>
-            fetchUpdatePlayedState(currentApi, itemId, isPlayed )
+            fetchUpdatePlayedState(currentApi, itemId, isPlayed)
     });
 };
 
@@ -615,14 +652,22 @@ function groupsTimers(timers: ItemDto[], indexByDate?: boolean) {
 
         if (indexByDate !== false && item.StartDate) {
             try {
-                const premiereDate = datetime.parseISO8601Date(item.StartDate, true);
+                const premiereDate = datetime.parseISO8601Date(
+                    item.StartDate,
+                    true
+                );
                 dateText = datetime.toLocaleDateString(premiereDate, {
                     weekday: 'long',
                     month: 'short',
                     day: 'numeric'
                 });
             } catch (err) {
-                console.error('error parsing premiereDate:' + item.StartDate + '; error: ' + err);
+                console.error(
+                    'error parsing premiereDate:' +
+                        item.StartDate +
+                        '; error: ' +
+                        err
+                );
             }
         }
 
@@ -673,12 +718,19 @@ const fetchGetTimers = async (
     }
 };
 
-export const useGetTimers = (isUpcomingRecordingsEnabled: boolean, indexByDate?: boolean) => {
+export const useGetTimers = (
+    isUpcomingRecordingsEnabled: boolean,
+    indexByDate?: boolean
+) => {
     const currentApi = useApi();
     return useQuery({
         queryKey: ['Timers', { isUpcomingRecordingsEnabled, indexByDate }],
-        queryFn: ({ signal }) => fetchGetTimers(currentApi, indexByDate, { signal }),
-        enabled: !!currentApi.api && !!currentApi.user?.Id && isUpcomingRecordingsEnabled
+        queryFn: ({ signal }) =>
+            fetchGetTimers(currentApi, indexByDate, { signal }),
+        enabled:
+            !!currentApi.api &&
+            !!currentApi.user?.Id &&
+            isUpcomingRecordingsEnabled
     });
 };
 
@@ -699,7 +751,11 @@ const fetchGetSectionItems = async (
                             userId: user.Id,
                             limit: 12,
                             imageTypeLimit: 1,
-                            enableImageTypes: [ImageType.Primary, ImageType.Thumb, ImageType.Backdrop],
+                            enableImageTypes: [
+                                ImageType.Primary,
+                                ImageType.Thumb,
+                                ImageType.Backdrop
+                            ],
                             enableTotalRecordCount: false,
                             fields: [
                                 ItemFields.ChannelInfo,
@@ -722,7 +778,11 @@ const fetchGetSectionItems = async (
                             userId: user.Id,
                             limit: 12,
                             imageTypeLimit: 1,
-                            enableImageTypes: [ImageType.Primary, ImageType.Thumb, ImageType.Backdrop],
+                            enableImageTypes: [
+                                ImageType.Primary,
+                                ImageType.Thumb,
+                                ImageType.Backdrop
+                            ],
                             enableTotalRecordCount: false,
                             fields: [
                                 ItemFields.ChannelInfo,
@@ -742,7 +802,11 @@ const fetchGetSectionItems = async (
                     await getLiveTvApi(api).getRecordings(
                         {
                             userId: user.Id,
-                            enableImageTypes: [ImageType.Primary, ImageType.Thumb, ImageType.Backdrop],
+                            enableImageTypes: [
+                                ImageType.Primary,
+                                ImageType.Thumb,
+                                ImageType.Backdrop
+                            ],
                             enableTotalRecordCount: false,
                             fields: [
                                 ItemFields.CanDelete,
@@ -834,7 +898,10 @@ const fetchGetSectionItems = async (
                             ],
                             parentId: parentId ?? undefined,
                             imageTypeLimit: 1,
-                            enableImageTypes: [ImageType.Primary, ImageType.Thumb],
+                            enableImageTypes: [
+                                ImageType.Primary,
+                                ImageType.Thumb
+                            ],
                             ...section.parametersOptions
                         },
                         {
@@ -863,7 +930,7 @@ const fetchGetSectionItems = async (
                 break;
             }
         }
-        return response as ItemDto[] || [] ;
+        return (response as ItemDto[]) || [];
     }
 };
 
@@ -880,14 +947,19 @@ const getSectionsWithItems = async (
     options?: AxiosRequestConfig
 ) => {
     if (sectionType) {
-        sections = sections.filter((section) => sectionType.includes(section.type));
+        sections = sections.filter((section) =>
+            sectionType.includes(section.type)
+        );
     }
 
     const updatedSectionWithItems: SectionWithItems[] = [];
 
     for (const section of sections) {
         const items = await fetchGetSectionItems(
-            currentApi, parentId, section, options
+            currentApi,
+            parentId,
+            section,
+            options
         );
 
         if (items && items.length > 0) {
@@ -908,9 +980,19 @@ export const useGetSuggestionSectionsWithItems = (
     const currentApi = useApi();
     const sections = getSuggestionSections();
     return useQuery({
-        queryKey: ['SuggestionSectionWithItems', parentId, { suggestionSectionType }],
+        queryKey: [
+            'SuggestionSectionWithItems',
+            parentId,
+            { suggestionSectionType }
+        ],
         queryFn: ({ signal }) =>
-            getSectionsWithItems(currentApi, parentId, sections, suggestionSectionType, { signal }),
+            getSectionsWithItems(
+                currentApi,
+                parentId,
+                sections,
+                suggestionSectionType,
+                { signal }
+            ),
         enabled: !!currentApi.api && !!currentApi.user?.Id && !!parentId
     });
 };
@@ -923,7 +1005,14 @@ export const useGetProgramsSectionsWithItems = (
     const sections = getProgramSections();
     return useQuery({
         queryKey: ['ProgramSectionWithItems', { programSectionType }],
-        queryFn: ({ signal }) => getSectionsWithItems(currentApi, parentId, sections, programSectionType, { signal }),
+        queryFn: ({ signal }) =>
+            getSectionsWithItems(
+                currentApi,
+                parentId,
+                sections,
+                programSectionType,
+                { signal }
+            ),
         enabled: !!currentApi.api && !!currentApi.user?.Id
     });
 };

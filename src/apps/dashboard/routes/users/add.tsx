@@ -1,4 +1,7 @@
-import type { BaseItemDto, CreateUserByName } from '@jellyfin/sdk/lib/generated-client';
+import type {
+    BaseItemDto,
+    CreateUserByName
+} from '@jellyfin/sdk/lib/generated-client';
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 
 import globalize from '../../../../lib/globalize';
@@ -24,27 +27,26 @@ type ItemsArr = {
 
 const UserNew = () => {
     const navigate = useNavigate();
-    const [ channelsItems, setChannelsItems ] = useState<ItemsArr[]>([]);
-    const [ mediaFoldersItems, setMediaFoldersItems ] = useState<ItemsArr[]>([]);
-    const [ isErrorToastOpen, setIsErrorToastOpen ] = useState(false);
+    const [channelsItems, setChannelsItems] = useState<ItemsArr[]>([]);
+    const [mediaFoldersItems, setMediaFoldersItems] = useState<ItemsArr[]>([]);
+    const [isErrorToastOpen, setIsErrorToastOpen] = useState(false);
     const element = useRef<HTMLDivElement>(null);
 
     const handleToastClose = useCallback(() => {
         setIsErrorToastOpen(false);
     }, []);
-    const { data: mediaFolders, isSuccess: isMediaFoldersSuccess } = useLibraryMediaFolders();
+    const { data: mediaFolders, isSuccess: isMediaFoldersSuccess } =
+        useLibraryMediaFolders();
     const { data: channels, isSuccess: isChannelsSuccess } = useChannels();
 
     const createUser = useCreateUser();
     const updateUserPolicy = useUpdateUserPolicy();
 
     const getItemsResult = (items: BaseItemDto[]) => {
-        return items.map(item =>
-            ({
-                Id: item.Id,
-                Name: item.Name
-            })
-        );
+        return items.map((item) => ({
+            Id: item.Id,
+            Name: item.Name
+        }));
     };
 
     const loadMediaFolders = useCallback((result: BaseItemDto[]) => {
@@ -57,10 +59,14 @@ const UserNew = () => {
 
         setMediaFoldersItems(getItemsResult(result));
 
-        const folderAccess = page.querySelector('.folderAccess') as HTMLDivElement;
+        const folderAccess = page.querySelector(
+            '.folderAccess'
+        ) as HTMLDivElement;
         folderAccess.dispatchEvent(new CustomEvent('create'));
 
-        (page.querySelector('.chkEnableAllFolders') as HTMLInputElement).checked = false;
+        (
+            page.querySelector('.chkEnableAllFolders') as HTMLInputElement
+        ).checked = false;
     }, []);
 
     const loadChannels = useCallback((result: BaseItemDto[]) => {
@@ -75,13 +81,21 @@ const UserNew = () => {
 
         setChannelsItems(channelItems);
 
-        const channelAccess = page.querySelector('.channelAccess') as HTMLDivElement;
+        const channelAccess = page.querySelector(
+            '.channelAccess'
+        ) as HTMLDivElement;
         channelAccess.dispatchEvent(new CustomEvent('create'));
 
-        const channelAccessContainer = page.querySelector('.channelAccessContainer') as HTMLDivElement;
-        channelItems.length ? channelAccessContainer.classList.remove('hide') : channelAccessContainer.classList.add('hide');
+        const channelAccessContainer = page.querySelector(
+            '.channelAccessContainer'
+        ) as HTMLDivElement;
+        channelItems.length
+            ? channelAccessContainer.classList.remove('hide')
+            : channelAccessContainer.classList.add('hide');
 
-        (page.querySelector('.chkEnableAllChannels') as HTMLInputElement).checked = false;
+        (
+            page.querySelector('.chkEnableAllChannels') as HTMLInputElement
+        ).checked = false;
     }, []);
 
     const loadUser = useCallback(() => {
@@ -122,53 +136,86 @@ const UserNew = () => {
 
         const saveUser = () => {
             const userInput: CreateUserByName = {
-                Name: (page.querySelector('#txtUsername') as HTMLInputElement).value,
-                Password: (page.querySelector('#txtPassword') as HTMLInputElement).value
+                Name: (page.querySelector('#txtUsername') as HTMLInputElement)
+                    .value,
+                Password: (
+                    page.querySelector('#txtPassword') as HTMLInputElement
+                ).value
             };
-            createUser.mutate({ createUserByName: userInput }, {
-                onSuccess: (response) => {
-                    const user = response.data;
+            createUser.mutate(
+                { createUserByName: userInput },
+                {
+                    onSuccess: (response) => {
+                        const user = response.data;
 
-                    if (!user.Id || !user.Policy) {
-                        throw new Error('Unexpected null user id or policy');
-                    }
-
-                    user.Policy.EnableAllFolders = (page.querySelector('.chkEnableAllFolders') as HTMLInputElement).checked;
-                    user.Policy.EnabledFolders = [];
-
-                    if (!user.Policy.EnableAllFolders) {
-                        user.Policy.EnabledFolders = Array.prototype.filter.call(page.querySelectorAll('.chkFolder'), function (i) {
-                            return i.checked;
-                        }).map(function (i) {
-                            return i.getAttribute('data-id');
-                        });
-                    }
-
-                    user.Policy.EnableAllChannels = (page.querySelector('.chkEnableAllChannels') as HTMLInputElement).checked;
-                    user.Policy.EnabledChannels = [];
-
-                    if (!user.Policy.EnableAllChannels) {
-                        user.Policy.EnabledChannels = Array.prototype.filter.call(page.querySelectorAll('.chkChannel'), function (i) {
-                            return i.checked;
-                        }).map(function (i) {
-                            return i.getAttribute('data-id');
-                        });
-                    }
-
-                    updateUserPolicy.mutate({
-                        userId: user.Id,
-                        userPolicy: user.Policy
-                    }, {
-                        onSuccess: () => {
-                            navigate(`/dashboard/users/${user.Id}/profile`);
-                        },
-                        onError: () => {
-                            console.error('[usernew] failed to update user policy');
-                            setIsErrorToastOpen(true);
+                        if (!user.Id || !user.Policy) {
+                            throw new Error(
+                                'Unexpected null user id or policy'
+                            );
                         }
-                    });
+
+                        user.Policy.EnableAllFolders = (
+                            page.querySelector(
+                                '.chkEnableAllFolders'
+                            ) as HTMLInputElement
+                        ).checked;
+                        user.Policy.EnabledFolders = [];
+
+                        if (!user.Policy.EnableAllFolders) {
+                            user.Policy.EnabledFolders = Array.prototype.filter
+                                .call(
+                                    page.querySelectorAll('.chkFolder'),
+                                    function (i) {
+                                        return i.checked;
+                                    }
+                                )
+                                .map(function (i) {
+                                    return i.getAttribute('data-id');
+                                });
+                        }
+
+                        user.Policy.EnableAllChannels = (
+                            page.querySelector(
+                                '.chkEnableAllChannels'
+                            ) as HTMLInputElement
+                        ).checked;
+                        user.Policy.EnabledChannels = [];
+
+                        if (!user.Policy.EnableAllChannels) {
+                            user.Policy.EnabledChannels = Array.prototype.filter
+                                .call(
+                                    page.querySelectorAll('.chkChannel'),
+                                    function (i) {
+                                        return i.checked;
+                                    }
+                                )
+                                .map(function (i) {
+                                    return i.getAttribute('data-id');
+                                });
+                        }
+
+                        updateUserPolicy.mutate(
+                            {
+                                userId: user.Id,
+                                userPolicy: user.Policy
+                            },
+                            {
+                                onSuccess: () => {
+                                    navigate(
+                                        `/dashboard/users/${user.Id}/profile`
+                                    );
+                                },
+                                onError: () => {
+                                    console.error(
+                                        '[usernew] failed to update user policy'
+                                    );
+                                    setIsErrorToastOpen(true);
+                                }
+                            }
+                        );
+                    }
                 }
-            });
+            );
         };
 
         const onSubmit = (e: Event) => {
@@ -180,37 +227,58 @@ const UserNew = () => {
         };
 
         const enableAllChannelsChange = function (this: HTMLInputElement) {
-            const channelAccessListContainer = page.querySelector('.channelAccessListContainer') as HTMLDivElement;
-            this.checked ? channelAccessListContainer.classList.add('hide') : channelAccessListContainer.classList.remove('hide');
+            const channelAccessListContainer = page.querySelector(
+                '.channelAccessListContainer'
+            ) as HTMLDivElement;
+            this.checked
+                ? channelAccessListContainer.classList.add('hide')
+                : channelAccessListContainer.classList.remove('hide');
         };
 
         const enableAllFoldersChange = function (this: HTMLInputElement) {
-            const folderAccessListContainer = page.querySelector('.folderAccessListContainer') as HTMLDivElement;
-            this.checked ? folderAccessListContainer.classList.add('hide') : folderAccessListContainer.classList.remove('hide');
+            const folderAccessListContainer = page.querySelector(
+                '.folderAccessListContainer'
+            ) as HTMLDivElement;
+            this.checked
+                ? folderAccessListContainer.classList.add('hide')
+                : folderAccessListContainer.classList.remove('hide');
         };
 
         const onCancelClick = () => {
             window.history.back();
         };
 
-        (page.querySelector('.chkEnableAllChannels') as HTMLInputElement).addEventListener('change', enableAllChannelsChange);
-        (page.querySelector('.chkEnableAllFolders') as HTMLInputElement).addEventListener('change', enableAllFoldersChange);
-        (page.querySelector('.newUserProfileForm') as HTMLFormElement).addEventListener('submit', onSubmit);
-        (page.querySelector('#btnCancel') as HTMLButtonElement).addEventListener('click', onCancelClick);
+        (
+            page.querySelector('.chkEnableAllChannels') as HTMLInputElement
+        ).addEventListener('change', enableAllChannelsChange);
+        (
+            page.querySelector('.chkEnableAllFolders') as HTMLInputElement
+        ).addEventListener('change', enableAllFoldersChange);
+        (
+            page.querySelector('.newUserProfileForm') as HTMLFormElement
+        ).addEventListener('submit', onSubmit);
+        (
+            page.querySelector('#btnCancel') as HTMLButtonElement
+        ).addEventListener('click', onCancelClick);
 
         return () => {
-            (page.querySelector('.chkEnableAllChannels') as HTMLInputElement).removeEventListener('change', enableAllChannelsChange);
-            (page.querySelector('.chkEnableAllFolders') as HTMLInputElement).removeEventListener('change', enableAllFoldersChange);
-            (page.querySelector('.newUserProfileForm') as HTMLFormElement).removeEventListener('submit', onSubmit);
-            (page.querySelector('#btnCancel') as HTMLButtonElement).removeEventListener('click', onCancelClick);
+            (
+                page.querySelector('.chkEnableAllChannels') as HTMLInputElement
+            ).removeEventListener('change', enableAllChannelsChange);
+            (
+                page.querySelector('.chkEnableAllFolders') as HTMLInputElement
+            ).removeEventListener('change', enableAllFoldersChange);
+            (
+                page.querySelector('.newUserProfileForm') as HTMLFormElement
+            ).removeEventListener('submit', onSubmit);
+            (
+                page.querySelector('#btnCancel') as HTMLButtonElement
+            ).removeEventListener('click', onCancelClick);
         };
     }, [loadUser, createUser, updateUserPolicy, navigate]);
 
     return (
-        <Page
-            id='newUserPage'
-            className='mainAnimatedPage type-interior'
-        >
+        <Page id='newUserPage' className='mainAnimatedPage type-interior'>
             <Toast
                 open={isErrorToastOpen}
                 onClose={handleToastClose}
@@ -249,7 +317,7 @@ const UserNew = () => {
                         listTitle='HeaderLibraries'
                         description='LibraryAccessHelp'
                     >
-                        {mediaFoldersItems.map(Item => (
+                        {mediaFoldersItems.map((Item) => (
                             <CheckBoxElement
                                 key={Item.Id}
                                 className='chkFolder'
@@ -269,7 +337,7 @@ const UserNew = () => {
                         listTitle='Channels'
                         description='ChannelAccessHelp'
                     >
-                        {channelsItems.map(Item => (
+                        {channelsItems.map((Item) => (
                             <CheckBoxElement
                                 key={Item.Id}
                                 className='chkChannel'
@@ -294,7 +362,6 @@ const UserNew = () => {
                 </form>
             </div>
         </Page>
-
     );
 };
 

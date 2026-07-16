@@ -11,23 +11,19 @@ import UserAvatar from 'components/UserAvatar';
 import { useUsers } from 'hooks/useUsers';
 
 interface ButtonProps {
-    onClick: () => void
-    tooltip?: string
-    Icon: SvgIconComponent
+    onClick: () => void;
+    tooltip?: string;
+    Icon: SvgIconComponent;
 }
 
 interface SyncPlayGroupListItemProps {
-    group: GroupInfoDto
-    button: ButtonProps
+    group: GroupInfoDto;
+    button: ButtonProps;
 }
 
 const SyncPlayGroupListItem: FC<SyncPlayGroupListItemProps> = ({
     group: currentGroup,
-    button: {
-        onClick,
-        tooltip,
-        Icon: ButtonIcon
-    }
+    button: { onClick, tooltip, Icon: ButtonIcon }
 }) => {
     const { data: users } = useUsers();
 
@@ -38,22 +34,18 @@ const SyncPlayGroupListItem: FC<SyncPlayGroupListItemProps> = ({
                 flexGrow: 1
             }}
         >
-            <Box sx={{ lineHeight: 1.35 }}>
-                {currentGroup?.GroupName}
-            </Box>
-            <Stack
-                direction='row'
-                alignItems='center'
-                spacing={4}
-            >
+            <Box sx={{ lineHeight: 1.35 }}>{currentGroup?.GroupName}</Box>
+            <Stack direction='row' alignItems='center' spacing={4}>
                 <AvatarGroup
                     sx={{
                         flexGrow: 1,
                         justifyContent: 'flex-end'
                     }}
                 >
-                    {currentGroup?.Participants?.map(participantName => {
-                        const participant = users?.find(u => u.Name === participantName);
+                    {currentGroup?.Participants?.map((participantName) => {
+                        const participant = users?.find(
+                            (u) => u.Name === participantName
+                        );
                         return participant ? (
                             <UserAvatar
                                 key={participant.Id}
@@ -63,12 +55,8 @@ const SyncPlayGroupListItem: FC<SyncPlayGroupListItemProps> = ({
                         ) : null;
                     })}
                 </AvatarGroup>
-                <Tooltip
-                    title={tooltip}
-                >
-                    <IconButton
-                        onClick={onClick}
-                    >
+                <Tooltip title={tooltip}>
+                    <IconButton onClick={onClick}>
                         <ButtonIcon />
                     </IconButton>
                 </Tooltip>

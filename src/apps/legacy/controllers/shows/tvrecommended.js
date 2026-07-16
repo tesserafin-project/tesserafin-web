@@ -22,19 +22,26 @@ import 'elements/emby-button/emby-button';
 import 'styles/scrollstyles.scss';
 
 function getTabs() {
-    return [{
-        name: globalize.translate('Shows')
-    }, {
-        name: globalize.translate('Suggestions')
-    }, {
-        name: globalize.translate('TabUpcoming')
-    }, {
-        name: globalize.translate('Genres')
-    }, {
-        name: globalize.translate('TabNetworks')
-    }, {
-        name: globalize.translate('Episodes')
-    }];
+    return [
+        {
+            name: globalize.translate('Shows')
+        },
+        {
+            name: globalize.translate('Suggestions')
+        },
+        {
+            name: globalize.translate('TabUpcoming')
+        },
+        {
+            name: globalize.translate('Genres')
+        },
+        {
+            name: globalize.translate('TabNetworks')
+        },
+        {
+            name: globalize.translate('Episodes')
+        }
+    ];
 }
 
 function getDefaultTabIndex(folderId) {
@@ -236,7 +243,14 @@ export default function (view, params) {
     }
 
     function initTabs() {
-        mainTabsManager.setTabs(view, currentTabIndex, getTabs, getTabContainers, onBeforeTabChange, onTabChange);
+        mainTabsManager.setTabs(
+            view,
+            currentTabIndex,
+            getTabs,
+            getTabContainers,
+            onBeforeTabChange,
+            onTabChange
+        );
     }
 
     function getTabController(page, index, callback) {
@@ -272,19 +286,27 @@ export default function (view, params) {
             let tabContent;
 
             if (index === 1) {
-                tabContent = view.querySelector(".pageTabContent[data-index='" + index + "']");
+                tabContent = view.querySelector(
+                    ".pageTabContent[data-index='" + index + "']"
+                );
                 self.tabContent = tabContent;
             }
 
             let controller = tabControllers[index];
 
             if (!controller) {
-                tabContent = view.querySelector(".pageTabContent[data-index='" + index + "']");
+                tabContent = view.querySelector(
+                    ".pageTabContent[data-index='" + index + "']"
+                );
 
                 if (index === 1) {
                     controller = self;
                 } else {
-                    controller = new ControllerFactory(view, params, tabContent);
+                    controller = new ControllerFactory(
+                        view,
+                        params,
+                        tabContent
+                    );
                 }
 
                 tabControllers[index] = controller;
@@ -332,21 +354,30 @@ export default function (view, params) {
     function onInputCommand(e) {
         if (e.detail.command === 'search') {
             e.preventDefault();
-            Dashboard.navigate(`search?collectionType=${CollectionType.Tvshows}&parentId=${params.topParentId}`);
+            Dashboard.navigate(
+                `search?collectionType=${CollectionType.Tvshows}&parentId=${params.topParentId}`
+            );
         }
     }
 
     const self = this;
-    let currentTabIndex = parseInt(params.tab || getDefaultTabIndex(params.topParentId), 10);
+    let currentTabIndex = parseInt(
+        params.tab || getDefaultTabIndex(params.topParentId),
+        10
+    );
     const suggestionsTabIndex = 1;
 
     self.initTab = function () {
-        const tabContent = view.querySelector(".pageTabContent[data-index='" + suggestionsTabIndex + "']");
+        const tabContent = view.querySelector(
+            ".pageTabContent[data-index='" + suggestionsTabIndex + "']"
+        );
         initSuggestedTab(view, tabContent);
     };
 
     self.renderTab = function () {
-        const tabContent = view.querySelector(".pageTabContent[data-index='" + suggestionsTabIndex + "']");
+        const tabContent = view.querySelector(
+            ".pageTabContent[data-index='" + suggestionsTabIndex + "']"
+        );
         loadSuggestionsTab(view, params, tabContent);
     };
 
@@ -358,10 +389,12 @@ export default function (view, params) {
             const parentId = params.topParentId;
 
             if (parentId) {
-                ApiClient.getItem(ApiClient.getCurrentUserId(), parentId).then(function (item) {
-                    view.setAttribute('data-title', item.Name);
-                    libraryMenu.setTitle(item.Name);
-                });
+                ApiClient.getItem(ApiClient.getCurrentUserId(), parentId).then(
+                    function (item) {
+                        view.setAttribute('data-title', item.Name);
+                        libraryMenu.setTitle(item.Name);
+                    }
+                );
             } else {
                 view.setAttribute('data-title', globalize.translate('Shows'));
                 libraryMenu.setTitle(globalize.translate('Shows'));
@@ -369,7 +402,10 @@ export default function (view, params) {
         }
 
         Events.on(playbackManager, 'playbackstop', onPlaybackStop);
-        self._unsubscribeUserData = ApiClient.subscribe([OutboundWebSocketMessageType.UserDataChanged], onUserDataChanged);
+        self._unsubscribeUserData = ApiClient.subscribe(
+            [OutboundWebSocketMessageType.UserDataChanged],
+            onUserDataChanged
+        );
         inputManager.on(window, onInputCommand);
     });
     view.addEventListener('viewbeforehide', function () {
@@ -386,4 +422,3 @@ export default function (view, params) {
         });
     });
 }
-

@@ -31,18 +31,29 @@ const ItemsView: FC = () => {
         setViewSettings
     } = useLibrary();
     const viewType = content?.viewType ?? LibraryTab.Movies;
-    const libraryViewSettings = viewSettings ?? getDefaultLibraryViewSettings(viewType);
+    const libraryViewSettings =
+        viewSettings ?? getDefaultLibraryViewSettings(viewType);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const setLibraryViewSettings = setViewSettings ?? ((action: SetStateAction<LibraryViewSettings>) => { /* no-op */ });
+    const setLibraryViewSettings =
+        setViewSettings ??
+        ((action: SetStateAction<LibraryViewSettings>) => {
+            /* no-op */
+        });
     const { isAlphabetPickerEnabled, noItemsMessage } = content ?? {};
 
     const { __legacyApiClient__, user } = useApi();
 
     // The query key for all items for the current user.
     // This should be used to invalidate queries that affect multiple parents, such as collections and playlists.
-    const allItemsQueryKey = useMemo(() => ['User', user?.Id, 'Items'], [user?.Id]);
+    const allItemsQueryKey = useMemo(
+        () => ['User', user?.Id, 'Items'],
+        [user?.Id]
+    );
     // The query key for all views for the current parent item.
-    const allViewsQueryKey = useMemo(() => [...allItemsQueryKey, parentId, 'ViewByType'], [allItemsQueryKey, parentId]);
+    const allViewsQueryKey = useMemo(
+        () => [...allItemsQueryKey, parentId, 'ViewByType'],
+        [allItemsQueryKey, parentId]
+    );
 
     const getListOptions = useCallback(() => {
         const listOptions: ListOptions = {
@@ -64,7 +75,12 @@ const ItemsView: FC = () => {
         }
 
         return listOptions;
-    }, [itemsResult?.data?.Items, collectionType, viewType, libraryViewSettings.SortBy]);
+    }, [
+        itemsResult?.data?.Items,
+        collectionType,
+        viewType,
+        libraryViewSettings.SortBy
+    ]);
 
     const getCardOptions = useCallback(() => {
         let shape;
@@ -105,13 +121,16 @@ const ItemsView: FC = () => {
         };
 
         if (
-            viewType === LibraryTab.Songs
-            || viewType === LibraryTab.Albums
-            || viewType === LibraryTab.Episodes
+            viewType === LibraryTab.Songs ||
+            viewType === LibraryTab.Albums ||
+            viewType === LibraryTab.Episodes
         ) {
             cardOptions.showParentTitle = libraryViewSettings.ShowTitle;
             cardOptions.overlayPlayButton = true;
-        } else if (viewType === LibraryTab.Artists || viewType === LibraryTab.Authors) {
+        } else if (
+            viewType === LibraryTab.Artists ||
+            viewType === LibraryTab.Authors
+        ) {
             cardOptions.lines = 1;
             cardOptions.showYear = false;
             cardOptions.overlayPlayButton = true;
@@ -128,7 +147,10 @@ const ItemsView: FC = () => {
             cardOptions.lines = 3;
         } else if (viewType === LibraryTab.Movies) {
             cardOptions.overlayPlayButton = true;
-        } else if (viewType === LibraryTab.Series || viewType === LibraryTab.Studios) {
+        } else if (
+            viewType === LibraryTab.Series ||
+            viewType === LibraryTab.Studios
+        ) {
             cardOptions.overlayMoreButton = true;
         }
 
@@ -146,7 +168,11 @@ const ItemsView: FC = () => {
 
     const getItems = useCallback(() => {
         if (!itemsResult?.data?.Items?.length) {
-            return <NoItemsMessage message={noItemsMessage ?? 'MessageNoItemsAvailable'} />;
+            return (
+                <NoItemsMessage
+                    message={noItemsMessage ?? 'MessageNoItemsAvailable'}
+                />
+            );
         }
 
         if (libraryViewSettings.ViewMode === ViewMode.ListView) {
@@ -175,9 +201,9 @@ const ItemsView: FC = () => {
 
     const itemsContainerClass = classNames(
         'padded-left padded-right',
-        libraryViewSettings.ViewMode === ViewMode.ListView ?
-            'vertical-list' :
-            'vertical-wrap'
+        libraryViewSettings.ViewMode === ViewMode.ListView
+            ? 'vertical-list'
+            : 'vertical-wrap'
     );
 
     return (
@@ -189,7 +215,7 @@ const ItemsView: FC = () => {
                 />
             )}
 
-            {(!itemsResult || itemsResult.isPending) ? (
+            {!itemsResult || itemsResult.isPending ? (
                 <Loading />
             ) : (
                 <ItemsContainer

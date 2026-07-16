@@ -9,7 +9,12 @@ const foldersTabContent: LibraryTabContent = {
     collectionType: CollectionType.Homevideos,
     isBtnPlayAllEnabled: true,
     isBtnShuffleEnabled: true,
-    itemType: [BaseItemKind.Folder, BaseItemKind.Photo, BaseItemKind.PhotoAlbum, BaseItemKind.Video]
+    itemType: [
+        BaseItemKind.Folder,
+        BaseItemKind.Photo,
+        BaseItemKind.PhotoAlbum,
+        BaseItemKind.Video
+    ]
 };
 
 const photosTabContent: LibraryTabContent = {

@@ -13,20 +13,19 @@ import globalize from 'lib/globalize';
 import UserMenuButton from './UserMenuButton';
 
 interface AppToolbarProps {
-    buttons?: ReactNode
-    isDrawerAvailable: boolean
-    isDrawerOpen: boolean
-    onDrawerButtonClick?: (event: React.MouseEvent<HTMLElement>) => void
-    isBackButtonAvailable?: boolean
-    isUserMenuAvailable?: boolean
-    className?: string
+    buttons?: ReactNode;
+    isDrawerAvailable: boolean;
+    isDrawerOpen: boolean;
+    onDrawerButtonClick?: (event: React.MouseEvent<HTMLElement>) => void;
+    isBackButtonAvailable?: boolean;
+    isUserMenuAvailable?: boolean;
+    className?: string;
 }
 
 const onBackButtonClick = () => {
-    appRouter.back()
-        .catch(err => {
-            console.error('[AppToolbar] error calling appRouter.back', err);
-        });
+    appRouter.back().catch((err) => {
+        console.error('[AppToolbar] error calling appRouter.back', err);
+    });
 };
 
 const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
@@ -34,7 +33,9 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
     children,
     isDrawerAvailable,
     isDrawerOpen,
-    onDrawerButtonClick = () => { /* no-op */ },
+    onDrawerButtonClick = () => {
+        /* no-op */
+    },
     isBackButtonAvailable = false,
     isUserMenuAvailable = true,
     className
@@ -54,11 +55,17 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
             }}
         >
             {isUserLoggedIn && isDrawerAvailable && (
-                <Tooltip title={globalize.translate(isDrawerOpen ? 'MenuClose' : 'MenuOpen')}>
+                <Tooltip
+                    title={globalize.translate(
+                        isDrawerOpen ? 'MenuClose' : 'MenuOpen'
+                    )}
+                >
                     <IconButton
                         size='large'
                         color='inherit'
-                        aria-label={globalize.translate(isDrawerOpen ? 'MenuClose' : 'MenuOpen')}
+                        aria-label={globalize.translate(
+                            isDrawerOpen ? 'MenuClose' : 'MenuOpen'
+                        )}
                         onClick={onDrawerButtonClick}
                     >
                         <MenuIcon />
@@ -81,7 +88,13 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
 
             {children}
 
-            <Box sx={{ display: 'flex', flexGrow: 1, justifyContent: 'flex-end' }}>
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexGrow: 1,
+                    justifyContent: 'flex-end'
+                }}
+            >
                 {buttons}
             </Box>
 

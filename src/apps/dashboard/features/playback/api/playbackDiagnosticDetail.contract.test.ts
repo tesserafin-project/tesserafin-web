@@ -42,12 +42,16 @@ vi.mock('lib/globalize', () => ({
  */
 describe('PlaybackDiagnosticDetail contract (local fixtures)', () => {
     describe('sessionDetailWithoutDiagnostic.json', () => {
-        const detail = sessionDetailWithoutDiagnostic as unknown as PlaybackDiagnosticDetail;
+        const detail =
+            sessionDetailWithoutDiagnostic as unknown as PlaybackDiagnosticDetail;
 
         it('always carries the legacy-derived decision fields', () => {
             expect(detail.Id).toBe('3fa85f64-5717-4562-b3fc-2c963f66afa6');
             expect(detail.Method).toBe('Transcode');
-            expect(detail.Reasons).toEqual(['VideoCodecNotSupported', 'MethodChosen']);
+            expect(detail.Reasons).toEqual([
+                'VideoCodecNotSupported',
+                'MethodChosen'
+            ]);
             expect(detail.Timeline).toHaveLength(1);
             expect(detail.Timeline[0].Stage).toBe('Created');
         });
@@ -63,12 +67,15 @@ describe('PlaybackDiagnosticDetail contract (local fixtures)', () => {
         });
 
         it('formatOutputSpec handles the always-available Output without throwing', () => {
-            expect(formatOutputSpec(detail.Output)).toBe('MP4 · H264 · 1920x1080 · AAC');
+            expect(formatOutputSpec(detail.Output)).toBe(
+                'MP4 · H264 · 1920x1080 · AAC'
+            );
         });
     });
 
     describe('sessionDetailWithDiagnostic.json', () => {
-        const detail = sessionDetailWithDiagnostic as unknown as PlaybackDiagnosticDetail;
+        const detail =
+            sessionDetailWithDiagnostic as unknown as PlaybackDiagnosticDetail;
 
         it('populates every diagnostic-only field', () => {
             expect(detail.RequestContext).toBeDefined();
@@ -83,20 +90,24 @@ describe('PlaybackDiagnosticDetail contract (local fixtures)', () => {
             const root = detail.Reasoning as ReasonNode;
             expect(root.Children).toHaveLength(2);
 
-            for (const node of [ root, ...root.Children ]) {
+            for (const node of [root, ...root.Children]) {
                 // Exercises the real i18n-backed formatter against every code in the fixture;
                 // translations aren't loaded in this test environment, so `translate()` falls
                 // back to returning the dotted key itself — good enough to prove no code throws
                 // and the ReasonCode.<code> key is well-formed.
-                expect(formatReasonCode(node.Code)).toBe(`ReasonCode.${node.Code}`);
+                expect(formatReasonCode(node.Code)).toBe(
+                    `ReasonCode.${node.Code}`
+                );
             }
 
             // A child with no further children (the ReasonTree "leaf" rendering path).
             expect(root.Children[0].Children).toHaveLength(0);
         });
 
-        it('getDivergenceClassColor resolves a color for the fixture\'s DivergenceClass', () => {
-            expect(getDivergenceClassColor(detail.Comparison!.DivergenceClass)).toBe('success');
+        it("getDivergenceClassColor resolves a color for the fixture's DivergenceClass", () => {
+            expect(
+                getDivergenceClassColor(detail.Comparison!.DivergenceClass)
+            ).toBe('success');
         });
 
         it('a ReasonSubject without StreamIndex/SourceId omits both (root Method subject)', () => {

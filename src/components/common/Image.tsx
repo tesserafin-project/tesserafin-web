@@ -21,11 +21,7 @@ interface ImageProps {
     containImage: boolean;
 }
 
-const Image: FC<ImageProps> = ({
-    imgUrl,
-    blurhash,
-    containImage
-}) => {
+const Image: FC<ImageProps> = ({ imgUrl, blurhash, containImage }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isLoadStarted, setIsLoadStarted] = useState(false);
     const handleLoad = useCallback(() => {
@@ -41,19 +37,22 @@ const Image: FC<ImageProps> = ({
 
     return (
         <div>
-            {!isLoaded && isLoadStarted && blurhash && userSettings.enableBlurhash() && (
-                <BlurhashCanvas
-                    hash={blurhash}
-                    width= {20}
-                    height={20}
-                    punch={1}
-                    style={{
-                        ...imageStyle,
-                        borderRadius: '0.2em',
-                        pointerEvents: 'none'
-                    }}
-                />
-            )}
+            {!isLoaded &&
+                isLoadStarted &&
+                blurhash &&
+                userSettings.enableBlurhash() && (
+                    <BlurhashCanvas
+                        hash={blurhash}
+                        width={20}
+                        height={20}
+                        punch={1}
+                        style={{
+                            ...imageStyle,
+                            borderRadius: '0.2em',
+                            pointerEvents: 'none'
+                        }}
+                    />
+                )}
             <LazyLoadImage
                 key={imgUrl}
                 src={imgUrl}
@@ -66,7 +65,6 @@ const Image: FC<ImageProps> = ({
                 onLoad={handleLoad}
                 beforeLoad={handleLoadStarted}
             />
-
         </div>
     );
 };

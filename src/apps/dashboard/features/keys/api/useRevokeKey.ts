@@ -9,13 +9,11 @@ export const useRevokeKey = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (params: AuthenticationApiRevokeKeyRequest) => (
-            getAuthenticationApi(api!)
-                .revokeKey(params)
-        ),
+        mutationFn: (params: AuthenticationApiRevokeKeyRequest) =>
+            getAuthenticationApi(api!).revokeKey(params),
         onSuccess: () => {
             void queryClient.invalidateQueries({
-                queryKey: [ QUERY_KEY ]
+                queryKey: [QUERY_KEY]
             });
         }
     });

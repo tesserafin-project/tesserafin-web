@@ -13,6 +13,7 @@ import { fetchPlaybackSessionFixture } from './playbackDiagnosticsApi';
 export const useExportFixture = () => {
     const { api } = useApi();
     return useMutation({
-        mutationFn: (sessionId: string) => fetchPlaybackSessionFixture(api!, sessionId)
+        mutationFn: (sessionId: string) =>
+            fetchPlaybackSessionFixture(api!, sessionId)
     });
 };

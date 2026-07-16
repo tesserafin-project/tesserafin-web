@@ -10,9 +10,12 @@ const useLiveTasks = (params: ScheduledTaskApiGetTasksRequest) => {
     const tasksQuery = useTasks(params);
 
     useEffect(() => {
-        return api?.subscribe([OutboundWebSocketMessageType.ScheduledTasksInfo], ({ Data }) => {
-            queryClient.setQueryData([ QUERY_KEY ], Data ?? []);
-        });
+        return api?.subscribe(
+            [OutboundWebSocketMessageType.ScheduledTasksInfo],
+            ({ Data }) => {
+                queryClient.setQueryData([QUERY_KEY], Data ?? []);
+            }
+        );
     }, [api]);
 
     return tasksQuery;

@@ -23,7 +23,7 @@ interface BaseCardProps {
     onActionClick?: () => void;
     height?: number;
     width?: number;
-};
+}
 
 const BaseCard = ({
     title,
@@ -66,12 +66,15 @@ const BaseCard = ({
                         title={title}
                     />
                 ) : (
-                    <Box className={getDefaultBackgroundClass(title)} sx={{
-                        flexGrow: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
+                    <Box
+                        className={getDefaultBackgroundClass(title)}
+                        sx={{
+                            flexGrow: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
                         {icon}
                     </Box>
                 )}
@@ -83,14 +86,18 @@ const BaseCard = ({
                         paddingBottom: 2,
                         paddingRight: 1
                     }
-                }}>
+                }}
+            >
                 <Stack flexGrow={1} direction='row'>
                     <Stack flexGrow={1} sx={{ overflow: 'hidden' }}>
-                        <Typography gutterBottom sx={{
-                            overflow: 'hidden',
-                            whiteSpace: 'nowrap',
-                            textOverflow: 'ellipsis'
-                        }}>
+                        <Typography
+                            gutterBottom
+                            sx={{
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'ellipsis'
+                            }}
+                        >
                             {title}
                         </Typography>
                         {text && (

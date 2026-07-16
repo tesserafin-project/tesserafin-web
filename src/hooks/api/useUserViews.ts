@@ -11,26 +11,26 @@ const fetchUserViews = async (
     params?: UserViewApiGetUserViewsRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getUserViewApi(api)
-        .getUserViews(params, options);
+    const response = await getUserViewApi(api).getUserViews(params, options);
     return response.data;
 };
 
 export const getUserViewsQuery = (
     api?: Api,
     params?: UserViewApiGetUserViewsRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'Views', params ],
-    queryFn: ({ signal }) => fetchUserViews(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'Views', params],
+        queryFn: ({ signal }) => fetchUserViews(api!, params, { signal }),
+        enabled: !!api
+    });
 
-export const useUserViews = (
-    params?: UserViewApiGetUserViewsRequest
-) => {
+export const useUserViews = (params?: UserViewApiGetUserViewsRequest) => {
     const { api, user } = useApi();
-    return useQuery(getUserViewsQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getUserViewsQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

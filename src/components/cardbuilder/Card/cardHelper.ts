@@ -16,7 +16,10 @@ import { ItemKind } from 'types/base/models/item-kind';
 import { ItemMediaKind } from 'types/base/models/item-media-kind';
 import { ensureArray } from 'utils/array';
 
-import type { NullableNumber, NullableString } from 'types/base/common/shared/types';
+import type {
+    NullableNumber,
+    NullableString
+} from 'types/base/common/shared/types';
 import type { ItemDto } from 'types/base/models/item-dto';
 import type { CardOptions } from 'types/cardOptions';
 import type { DataAttributes } from 'types/dataAttributes';
@@ -65,7 +68,7 @@ export function getCardLogoUrl(
 interface TextAction {
     url: string;
     title: string;
-    dataAttributes: DataAttributes
+    dataAttributes: DataAttributes;
 }
 
 export interface TextLine {
@@ -88,18 +91,16 @@ export function getTextActionButton(
 
     const url = appRouter.getRouteUrl(item, { serverId });
 
-    const dataAttributes = getDataAttributes(
-        {
-            action: ItemAction.Link,
-            itemServerId: serverId ?? item.ServerId,
-            itemId: item.Id,
-            itemChannelId: item.ChannelId,
-            itemType: item.Type,
-            itemMediaType: item.MediaType,
-            itemCollectionType: item.CollectionType,
-            itemIsFolder: item.IsFolder
-        }
-    );
+    const dataAttributes = getDataAttributes({
+        action: ItemAction.Link,
+        itemServerId: serverId ?? item.ServerId,
+        itemId: item.Id,
+        itemChannelId: item.ChannelId,
+        itemType: item.Type,
+        itemMediaType: item.MediaType,
+        itemCollectionType: item.CollectionType,
+        itemIsFolder: item.IsFolder
+    });
 
     return {
         titleAction: {
@@ -122,8 +123,8 @@ export function getAirTimeText(
             let date = datetime.parseISO8601Date(item.StartDate);
 
             if (showAirDateTime) {
-                airTimeText
-                    += datetime.toLocaleDateString(date, {
+                airTimeText +=
+                    datetime.toLocaleDateString(date, {
                         weekday: 'short',
                         month: 'short',
                         day: 'numeric'
@@ -156,56 +157,56 @@ function isMusicGenreOrMusicArtist(
 
 function getMovieCount(itemMovieCount: NullableNumber) {
     if (itemMovieCount) {
-        return itemMovieCount === 1 ?
-            globalize.translate('ValueOneMovie') :
-            globalize.translate('ValueMovieCount', itemMovieCount);
+        return itemMovieCount === 1
+            ? globalize.translate('ValueOneMovie')
+            : globalize.translate('ValueMovieCount', itemMovieCount);
     }
 }
 
 function getSeriesCount(itemSeriesCount: NullableNumber) {
     if (itemSeriesCount) {
-        return itemSeriesCount === 1 ?
-            globalize.translate('ValueOneSeries') :
-            globalize.translate('ValueSeriesCount', itemSeriesCount);
+        return itemSeriesCount === 1
+            ? globalize.translate('ValueOneSeries')
+            : globalize.translate('ValueSeriesCount', itemSeriesCount);
     }
 }
 
 function getEpisodeCount(itemEpisodeCount: NullableNumber) {
     if (itemEpisodeCount) {
-        return itemEpisodeCount === 1 ?
-            globalize.translate('ValueOneEpisode') :
-            globalize.translate('ValueEpisodeCount', itemEpisodeCount);
+        return itemEpisodeCount === 1
+            ? globalize.translate('ValueOneEpisode')
+            : globalize.translate('ValueEpisodeCount', itemEpisodeCount);
     }
 }
 
 function getAlbumCount(itemAlbumCount: NullableNumber) {
     if (itemAlbumCount) {
-        return itemAlbumCount === 1 ?
-            globalize.translate('ValueOneAlbum') :
-            globalize.translate('ValueAlbumCount', itemAlbumCount);
+        return itemAlbumCount === 1
+            ? globalize.translate('ValueOneAlbum')
+            : globalize.translate('ValueAlbumCount', itemAlbumCount);
     }
 }
 
 function getSongCount(itemSongCount: NullableNumber) {
     if (itemSongCount) {
-        return itemSongCount === 1 ?
-            globalize.translate('ValueOneSong') :
-            globalize.translate('ValueSongCount', itemSongCount);
+        return itemSongCount === 1
+            ? globalize.translate('ValueOneSong')
+            : globalize.translate('ValueSongCount', itemSongCount);
     }
 }
 
 function getMusicVideoCount(itemMusicVideoCount: NullableNumber) {
     if (itemMusicVideoCount) {
-        return itemMusicVideoCount === 1 ?
-            globalize.translate('ValueOneMusicVideo') :
-            globalize.translate('ValueMusicVideoCount', itemMusicVideoCount);
+        return itemMusicVideoCount === 1
+            ? globalize.translate('ValueOneMusicVideo')
+            : globalize.translate('ValueMusicVideoCount', itemMusicVideoCount);
     }
 }
 
 function getRecursiveItemCount(itemRecursiveItemCount: NullableNumber) {
-    return itemRecursiveItemCount === 1 ?
-        globalize.translate('ValueOneEpisode') :
-        globalize.translate('ValueEpisodeCount', itemRecursiveItemCount);
+    return itemRecursiveItemCount === 1
+        ? globalize.translate('ValueOneEpisode')
+        : globalize.translate('ValueEpisodeCount', itemRecursiveItemCount);
 }
 
 function getParentTitle(
@@ -214,34 +215,32 @@ function getParentTitle(
     item: ItemDto
 ) {
     if (isOuterFooter && item.AlbumArtists?.length) {
-        return item.AlbumArtists
-            .map(artist => {
-                const artistItem: ItemDto = {
-                    ...artist,
-                    Type: BaseItemKind.MusicArtist,
-                    IsFolder: true
-                };
-                return getTextActionButton(artistItem, null, serverId);
-            })
-            .reduce((acc, line) => ({
-                title: [
-                    ...ensureArray(acc.title),
-                    ...ensureArray(line.title)
-                ],
+        return item.AlbumArtists.map((artist) => {
+            const artistItem: ItemDto = {
+                ...artist,
+                Type: BaseItemKind.MusicArtist,
+                IsFolder: true
+            };
+            return getTextActionButton(artistItem, null, serverId);
+        }).reduce(
+            (acc, line) => ({
+                title: [...ensureArray(acc.title), ...ensureArray(line.title)],
                 titleAction: [
                     ...ensureArray(acc.titleAction),
                     ...ensureArray(line.titleAction)
                 ]
-            }), {});
+            }),
+            {}
+        );
     } else {
         return {
-            title: isUsingLiveTvNaming(item.Type) ?
-                item.Name :
-                item.SeriesName
-                  || item.Series
-                  || item.Album
-                  || item.AlbumArtist
-                  || ''
+            title: isUsingLiveTvNaming(item.Type)
+                ? item.Name
+                : item.SeriesName ||
+                  item.Series ||
+                  item.Album ||
+                  item.AlbumArtist ||
+                  ''
         };
     }
 }
@@ -303,9 +302,9 @@ export function shouldShowTitle(
     itemType: ItemKind
 ) {
     return (
-        Boolean(showTitle)
-        || itemType === ItemKind.PhotoAlbum
-        || itemType === ItemKind.Folder
+        Boolean(showTitle) ||
+        itemType === ItemKind.PhotoAlbum ||
+        itemType === ItemKind.Folder
     );
 }
 
@@ -316,13 +315,11 @@ export function shouldShowOtherText(
     return isOuterFooter ? !overlayText : overlayText;
 }
 
-export function shouldShowParentTitleUnderneath(
-    itemType: ItemKind
-) {
+export function shouldShowParentTitleUnderneath(itemType: ItemKind) {
     return (
-        itemType === ItemKind.MusicAlbum
-        || itemType === ItemKind.Audio
-        || itemType === ItemKind.MusicVideo
+        itemType === ItemKind.MusicAlbum ||
+        itemType === ItemKind.Audio ||
+        itemType === ItemKind.MusicVideo
     );
 }
 
@@ -334,8 +331,8 @@ function shouldShowMediaTitle(
     textLines: TextLine[]
 ) {
     let showMediaTitle =
-        (showTitle && !titleAdded)
-        || (cardOptions.showParentTitleOrTitle && !textLines.length);
+        (showTitle && !titleAdded) ||
+        (cardOptions.showParentTitleOrTitle && !textLines.length);
     if (!showMediaTitle && !titleAdded && (showTitle || forceName)) {
         showMediaTitle = true;
     }
@@ -561,8 +558,8 @@ function getAdditionalLines(
 
 function getProductionYear(item: ItemDto) {
     const productionYear =
-        item.ProductionYear
-        && datetime.toLocaleString(item.ProductionYear, {
+        item.ProductionYear &&
+        datetime.toLocaleString(item.ProductionYear, {
             useGrouping: false
         });
     if (item.Type === ItemKind.Series) {
@@ -577,8 +574,8 @@ function getProductionYear(item: ItemDto) {
                 { useGrouping: false }
             );
             return (
-                productionYear
-                + (endYear === productionYear ? '' : ' - ' + endYear)
+                productionYear +
+                (endYear === productionYear ? '' : ' - ' + endYear)
             );
         } else {
             return productionYear || '';
@@ -590,13 +587,13 @@ function getProductionYear(item: ItemDto) {
 
 function getMediaTitle(cardOptions: CardOptions, item: ItemDto): TextLine {
     const name =
-        cardOptions.showTitle === 'auto'
-        && !item.IsFolder
-        && item.MediaType === ItemMediaKind.Photo ?
-            '' :
-            itemHelper.getDisplayName(item, {
-                includeParentInfo: cardOptions.includeParentInfoInTitle
-            });
+        cardOptions.showTitle === 'auto' &&
+        !item.IsFolder &&
+        item.MediaType === ItemMediaKind.Photo
+            ? ''
+            : itemHelper.getDisplayName(item, {
+                  includeParentInfo: cardOptions.includeParentInfoInTitle
+              });
 
     return getTextActionButton({
         Id: item.Id,
@@ -614,11 +611,7 @@ function getParentTitleOrTitle(
     setTitleAdded: (val: boolean) => void,
     showTitle: boolean
 ): TextLine {
-    if (
-        isOuterFooter
-        && item.Type === ItemKind.Episode
-        && item.SeriesName
-    ) {
+    if (isOuterFooter && item.Type === ItemKind.Episode && item.SeriesName) {
         if (item.SeriesId) {
             return getTextActionButton({
                 Id: item.SeriesId,
@@ -637,11 +630,11 @@ function getParentTitleOrTitle(
         return { title: item.Name };
     } else {
         const parentTitle =
-            item.SeriesName
-            || item.Series
-            || item.Album
-            || item.AlbumArtist
-            || '';
+            item.SeriesName ||
+            item.Series ||
+            item.Album ||
+            item.AlbumArtist ||
+            '';
 
         if (parentTitle || showTitle) {
             return { title: parentTitle };
@@ -684,9 +677,9 @@ export function getCardTextLines({
     };
 
     if (
-        showOtherText
-        && (cardOptions.showParentTitle || cardOptions.showParentTitleOrTitle)
-        && !parentTitleUnderneath
+        showOtherText &&
+        (cardOptions.showParentTitle || cardOptions.showParentTitleOrTitle) &&
+        !parentTitleUnderneath
     ) {
         addTextLine(
             getParentTitleOrTitle(isOuterFooter, item, setTitleAdded, showTitle)
@@ -717,10 +710,10 @@ export function getCardTextLines({
     }
 
     if (
-        (showTitle || !imgUrl)
-        && forceName
-        && overlayText
-        && textLines.length === 1
+        (showTitle || !imgUrl) &&
+        forceName &&
+        overlayText &&
+        textLines.length === 1
     ) {
         textLines = [];
     }

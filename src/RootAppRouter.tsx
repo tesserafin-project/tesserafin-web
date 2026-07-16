@@ -7,7 +7,10 @@ import {
     useLocation
 } from 'react-router-dom';
 
-import { DASHBOARD_APP_PATHS, DASHBOARD_APP_ROUTES } from 'apps/dashboard/routes/routes';
+import {
+    DASHBOARD_APP_PATHS,
+    DASHBOARD_APP_ROUTES
+} from 'apps/dashboard/routes/routes';
 import { APP_ROUTES as MODERN_APP_ROUTES } from 'apps/modern/routes/routes';
 import { APP_ROUTES as LEGACY_APP_ROUTES } from 'apps/legacy/routes/routes';
 import { WIZARD_APP_ROUTES } from 'apps/wizard/routes/routes';
@@ -46,8 +49,9 @@ export default function RootAppRouter() {
  */
 function RootAppLayout() {
     const location = useLocation();
-    const isNewLayoutPath = Object.values(DASHBOARD_APP_PATHS)
-        .some(path => location.pathname.startsWith(`/${path}`));
+    const isNewLayoutPath = Object.values(DASHBOARD_APP_PATHS).some((path) =>
+        location.pathname.startsWith(`/${path}`)
+    );
 
     return (
         <ThemeProvider

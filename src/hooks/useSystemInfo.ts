@@ -7,22 +7,21 @@ import { useApi } from './useApi';
 
 export const QUERY_KEY = 'SystemInfo';
 
-const fetchSystemInfo = async (
-    api: Api,
-    options?: AxiosRequestConfig
-) => {
-    const response = await getSystemApi(api)
-        .getSystemInfo(options);
+const fetchSystemInfo = async (api: Api, options?: AxiosRequestConfig) => {
+    const response = await getSystemApi(api).getSystemInfo(options);
     return response.data;
 };
 
-export const getSystemInfoQuery = (
-    api?: Api
-) => queryOptions({
-    queryKey: [ QUERY_KEY ],
-    queryFn: ({ signal }) => fetchSystemInfo(api!, { signal, headers: { 'Cache-Control': 'no-cache' } }),
-    enabled: !!api
-});
+export const getSystemInfoQuery = (api?: Api) =>
+    queryOptions({
+        queryKey: [QUERY_KEY],
+        queryFn: ({ signal }) =>
+            fetchSystemInfo(api!, {
+                signal,
+                headers: { 'Cache-Control': 'no-cache' }
+            }),
+        enabled: !!api
+    });
 
 export const useSystemInfo = () => {
     const { api } = useApi();

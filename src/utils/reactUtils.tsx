@@ -1,4 +1,8 @@
-import { type SupportedColorScheme, ThemeProvider, useColorScheme } from '@mui/material/styles';
+import {
+    type SupportedColorScheme,
+    ThemeProvider,
+    useColorScheme
+} from '@mui/material/styles';
 import { QueryClientProvider } from '@tanstack/react-query';
 import React, { type FC, type PropsWithChildren, useEffect } from 'react';
 import { flushSync } from 'react-dom';
@@ -15,7 +19,7 @@ import { queryClient } from 'utils/query/queryClient';
  * Render a React component outside of the main React app context
  * i.e. within a legacy view/controller page.
  */
-export const renderComponent = <P extends object> (
+export const renderComponent = <P extends object>(
     Component: FC<P>,
     props: P,
     element: HTMLElement
@@ -42,14 +46,12 @@ const CustomThemeProvider: FC<PropsWithChildren> = ({ children }) => {
 
     useEffect(() => {
         setColorScheme(theme as SupportedColorScheme);
-    }, [ theme, setColorScheme ]);
+    }, [theme, setColorScheme]);
 
     return (
         // NOTE: Suppress warning about inconsistent return type
         // eslint-disable-next-line react/jsx-no-useless-fragment
-        <>
-            {children}
-        </>
+        <>{children}</>
     );
 };
 

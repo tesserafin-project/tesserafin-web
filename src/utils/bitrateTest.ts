@@ -22,7 +22,9 @@ interface BitrateTest {
 
 /** Gets a normalized maximum downlink speed (only supported on certain browsers) */
 const getMaxBandwidth = () => {
-    const connection = (navigator as unknown as { connection: { downlinkMax: number } }).connection;
+    const connection = (
+        navigator as unknown as { connection: { downlinkMax: number } }
+    ).connection;
     if (connection) {
         let max = connection.downlinkMax;
         if (max && max > 0 && max < Number.POSITIVE_INFINITY) {
@@ -44,11 +46,14 @@ const getMaxBandwidth = () => {
  */
 const getDownloadSpeed = (api: Api, bytes: number) => {
     return new Promise<number>((resolve, reject) => {
-        const url = api.basePath + '/Playback/BitrateTest?' + new URLSearchParams({
-            Size: bytes.toString()
-        });
+        const url =
+            api.basePath +
+            '/Playback/BitrateTest?' +
+            new URLSearchParams({
+                Size: bytes.toString()
+            });
 
-        const xhr = new XMLHttpRequest;
+        const xhr = new XMLHttpRequest();
 
         xhr.open('GET', url, true);
 
@@ -57,7 +62,7 @@ const getDownloadSpeed = (api: Api, bytes: number) => {
 
         const headers = {
             'Cache-Control': 'no-cache, no-store',
-            'Authorization': api.authorizationHeader
+            Authorization: api.authorizationHeader
         };
 
         for (const key in headers) {
@@ -74,16 +79,21 @@ const getDownloadSpeed = (api: Api, bytes: number) => {
 
         xhr.onload = () => {
             if (xhr.status < 400) {
-                const responseTimeSeconds = (performance.now() - startTime) * 1e-3;
+                const responseTimeSeconds =
+                    (performance.now() - startTime) * 1e-3;
                 const bytesLoaded = xhr.response.size;
                 const bytesPerSecond = bytesLoaded / responseTimeSeconds;
                 const bitrate = Math.round(bytesPerSecond * 8);
 
-                console.debug(`[bitratetest] ${bytesLoaded} bytes loaded (${bytes} requested) in ${responseTimeSeconds} seconds -> ${bitrate} bps`);
+                console.debug(
+                    `[bitratetest] ${bytesLoaded} bytes loaded (${bytes} requested) in ${responseTimeSeconds} seconds -> ${bitrate} bps`
+                );
 
                 resolve(bitrate);
             } else {
-                reject(new Error(`[bitratetest] failed with ${xhr.status} status`));
+                reject(
+                    new Error(`[bitratetest] failed with ${xhr.status} status`)
+                );
             }
         };
 
@@ -137,7 +147,12 @@ const normalizeReturnBitrate = (bitrate: number) => {
  * @param {number | undefined} currentBitrate Current bitrate
  * @returns {number} Normalized bitrate
  */
-const detectBitrateInternal = (api: Api, tests: BitrateTest[], index: number, currentBitrate: number | undefined): Promise<number> => {
+const detectBitrateInternal = (
+    api: Api,
+    tests: BitrateTest[],
+    index: number,
+    currentBitrate: number | undefined
+): Promise<number> => {
     if (index >= tests.length) {
         return Promise.resolve(normalizeReturnBitrate(currentBitrate || 0));
     }
@@ -163,7 +178,10 @@ const detectBitrateInternal = (api: Api, tests: BitrateTest[], index: number, cu
  * @param {EndPointInfo} endpointInfo Endpoint info for special handling on local networks
  * @returns {number} Normalized bitrate
  */
-const detectBitrateWithEndpointInfo = (api: Api, endpointInfo: EndPointInfo) => {
+const detectBitrateWithEndpointInfo = (
+    api: Api,
+    endpointInfo: EndPointInfo
+) => {
     return detectBitrateInternal(
         api,
         [
@@ -182,9 +200,11 @@ const detectBitrateWithEndpointInfo = (api: Api, endpointInfo: EndPointInfo) => 
         ],
         0,
         undefined
-    ).then(result => {
+    ).then((result) => {
         const bitrateInMbps = (result / 1048576).toFixed(2);
-        console.debug(`[bitratetest] bitrate detected as ${bitrateInMbps} Mbps`);
+        console.debug(
+            `[bitratetest] bitrate detected as ${bitrateInMbps} Mbps`
+        );
         if (endpointInfo.IsInNetwork) {
             result = Math.max(result || 0, LAN_BITRATE);
 
@@ -202,9 +222,11 @@ const detectBitrateWithEndpointInfo = (api: Api, endpointInfo: EndPointInfo) => 
  * @returns {number} The detected bitrate
  */
 export const detectBitrate = (api: Api, force: boolean) => {
-    if (!force
-        && lastDetectedBitrate
-        && Date.now() - (lastDetectedBitrateTime || 0) <= BITRATE_CACHE_DURATION) {
+    if (
+        !force &&
+        lastDetectedBitrate &&
+        Date.now() - (lastDetectedBitrateTime || 0) <= BITRATE_CACHE_DURATION
+    ) {
         return Promise.resolve(lastDetectedBitrate);
     }
 
@@ -217,7 +239,8 @@ export const detectBitrate = (api: Api, force: boolean) => {
         .then(
             (response) => detectBitrateWithEndpointInfo(api, response.data),
             () => detectBitrateWithEndpointInfo(api, {})
-        ).finally(() => {
+        )
+        .finally(() => {
             pendingBitrateDetection = null;
         });
 

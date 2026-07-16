@@ -12,9 +12,18 @@ import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React, { useCallback, useEffect, useState } from 'react';
-import { type ActionFunctionArgs, Form, useActionData, useNavigation } from 'react-router-dom';
+import {
+    type ActionFunctionArgs,
+    Form,
+    useActionData,
+    useNavigation
+} from 'react-router-dom';
 
-import { getBrandingOptionsQuery, QUERY_KEY, useBrandingOptions } from 'apps/dashboard/features/branding/api/useBrandingOptions';
+import {
+    getBrandingOptionsQuery,
+    QUERY_KEY,
+    useBrandingOptions
+} from 'apps/dashboard/features/branding/api/useBrandingOptions';
 import Loading from 'components/loading/LoadingComponent';
 import Image from 'components/Image';
 import Page from 'components/Page';
@@ -45,14 +54,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         SplashscreenEnabled: data.SplashscreenEnabled?.toString() === 'on'
     };
 
-    await getSystemApi(api)
-        .updateNamedConfiguration({
-            key: BRANDING_CONFIG_KEY,
-            body: JSON.stringify(brandingOptions)
-        });
+    await getSystemApi(api).updateNamedConfiguration({
+        key: BRANDING_CONFIG_KEY,
+        body: JSON.stringify(brandingOptions)
+    });
 
     void queryClient.invalidateQueries({
-        queryKey: [ QUERY_KEY ]
+        queryKey: [QUERY_KEY]
     });
 
     return {
@@ -64,8 +72,7 @@ export const loader = async () => {
     const api = ServerConnections.getApi();
     if (!api) return {};
 
-    return queryClient.ensureQueryData(
-        getBrandingOptionsQuery(api));
+    return queryClient.ensureQueryData(getBrandingOptionsQuery(api));
 };
 
 export const Component = () => {
@@ -79,17 +86,21 @@ export const Component = () => {
         isPending,
         isError
     } = useBrandingOptions();
-    const [ brandingOptions, setBrandingOptions ] = useState(defaultBrandingOptions || {});
+    const [brandingOptions, setBrandingOptions] = useState(
+        defaultBrandingOptions || {}
+    );
 
-    const [ error, setError ] = useState<string>();
+    const [error, setError] = useState<string>();
 
-    const [ isSplashscreenEnabled, setIsSplashscreenEnabled ] = useState(brandingOptions.SplashscreenEnabled ?? false);
-    const [ splashscreenUrl, setSplashscreenUrl ] = useState<string>();
+    const [isSplashscreenEnabled, setIsSplashscreenEnabled] = useState(
+        brandingOptions.SplashscreenEnabled ?? false
+    );
+    const [splashscreenUrl, setSplashscreenUrl] = useState<string>();
     useEffect(() => {
         if (!api || isSubmitting) return;
 
         setSplashscreenUrl(api.getUri(SPLASHSCREEN_URL, { t: Date.now() }));
-    }, [ api, isSubmitting ]);
+    }, [api, isSubmitting]);
 
     const onSplashscreenDelete = useCallback(() => {
         setError(undefined);
@@ -99,59 +110,67 @@ export const Component = () => {
         getImageApi(api)
             .deleteCustomSplashscreen()
             .then(() => {
-                setSplashscreenUrl(api.getUri(SPLASHSCREEN_URL, { t: Date.now() }));
+                setSplashscreenUrl(
+                    api.getUri(SPLASHSCREEN_URL, { t: Date.now() })
+                );
             })
-            .catch(e => {
+            .catch((e) => {
                 console.error('[BrandingPage] error deleting image', e);
                 setError('ImageDeleteFailed');
             });
-    }, [ api ]);
+    }, [api]);
 
-    const onSplashscreenUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-        setError(undefined);
+    const onSplashscreenUpload = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            setError(undefined);
 
-        const files = event.target.files;
+            const files = event.target.files;
 
-        if (!api || !files) return false;
+            if (!api || !files) return false;
 
-        const file = files[0];
-        const reader = new FileReader();
-        reader.onerror = e => {
-            console.error('[BrandingPage] error reading file', e);
-            setError('ImageUploadFailed');
-        };
-        reader.onabort = e => {
-            console.warn('[BrandingPage] aborted reading file', e);
-            setError('ImageUploadCancelled');
-        };
-        reader.onload = () => {
-            if (!reader.result) return;
+            const file = files[0];
+            const reader = new FileReader();
+            reader.onerror = (e) => {
+                console.error('[BrandingPage] error reading file', e);
+                setError('ImageUploadFailed');
+            };
+            reader.onabort = (e) => {
+                console.warn('[BrandingPage] aborted reading file', e);
+                setError('ImageUploadCancelled');
+            };
+            reader.onload = () => {
+                if (!reader.result) return;
 
-            const dataUrl = reader.result as string; // readAsDataURL produces a string
-            // FIXME: TypeScript SDK thinks body should be a File but in reality it is a Base64 string
-            const body = dataUrl.split(',')[1] as never;
-            getImageApi(api)
-                .uploadCustomSplashscreen(
-                    { body },
-                    { headers: { ['Content-Type']: file.type } }
-                )
-                .then(() => {
-                    setSplashscreenUrl(dataUrl);
-                })
-                .catch(e => {
-                    console.error('[BrandingPage] error uploading splashscreen', e);
-                    setError('ImageUploadFailed');
-                });
-        };
+                const dataUrl = reader.result as string; // readAsDataURL produces a string
+                // FIXME: TypeScript SDK thinks body should be a File but in reality it is a Base64 string
+                const body = dataUrl.split(',')[1] as never;
+                getImageApi(api)
+                    .uploadCustomSplashscreen(
+                        { body },
+                        { headers: { ['Content-Type']: file.type } }
+                    )
+                    .then(() => {
+                        setSplashscreenUrl(dataUrl);
+                    })
+                    .catch((e) => {
+                        console.error(
+                            '[BrandingPage] error uploading splashscreen',
+                            e
+                        );
+                        setError('ImageUploadFailed');
+                    });
+            };
 
-        reader.readAsDataURL(file);
-    }, [ api ]);
+            reader.readAsDataURL(file);
+        },
+        [api]
+    );
 
-    const setSplashscreenEnabled = useCallback(async (_: React.ChangeEvent<HTMLInputElement>, isEnabled: boolean) => {
-        setIsSplashscreenEnabled(isEnabled);
+    const setSplashscreenEnabled = useCallback(
+        async (_: React.ChangeEvent<HTMLInputElement>, isEnabled: boolean) => {
+            setIsSplashscreenEnabled(isEnabled);
 
-        await getSystemApi(api!)
-            .updateNamedConfiguration({
+            await getSystemApi(api!).updateNamedConfiguration({
                 key: BRANDING_CONFIG_KEY,
                 body: JSON.stringify({
                     ...defaultBrandingOptions,
@@ -159,19 +178,24 @@ export const Component = () => {
                 })
             });
 
-        void queryClient.invalidateQueries({
-            queryKey: [ QUERY_KEY ]
-        });
-    }, [ api, defaultBrandingOptions ]);
-
-    const setBrandingOption = useCallback((event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-        if (Object.keys(BrandingOption).includes(event.target.name)) {
-            setBrandingOptions({
-                ...brandingOptions,
-                [event.target.name]: event.target.value
+            void queryClient.invalidateQueries({
+                queryKey: [QUERY_KEY]
             });
-        }
-    }, [ brandingOptions ]);
+        },
+        [api, defaultBrandingOptions]
+    );
+
+    const setBrandingOption = useCallback(
+        (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+            if (Object.keys(BrandingOption).includes(event.target.name)) {
+                setBrandingOptions({
+                    ...brandingOptions,
+                    [event.target.name]: event.target.value
+                });
+            }
+        },
+        [brandingOptions]
+    );
 
     const onSubmit = useCallback(() => {
         setError(undefined);
@@ -186,12 +210,11 @@ export const Component = () => {
             className='mainAnimatedPage type-interior'
         >
             <Box className='content-primary'>
-                <Form
-                    method='POST'
-                    onSubmit={onSubmit}
-                >
+                <Form method='POST' onSubmit={onSubmit}>
                     {isError ? (
-                        <Alert severity='error'>{globalize.translate('BrandingLoadError')}</Alert>
+                        <Alert severity='error'>
+                            {globalize.translate('BrandingLoadError')}
+                        </Alert>
                     ) : (
                         <Stack spacing={3}>
                             <Typography variant='h1'>
@@ -221,9 +244,9 @@ export const Component = () => {
                                     <Image
                                         isLoading={false}
                                         url={
-                                            isSplashscreenEnabled ?
-                                                splashscreenUrl :
-                                                undefined
+                                            isSplashscreenEnabled
+                                                ? splashscreenUrl
+                                                : undefined
                                         }
                                     />
                                 </Box>
@@ -235,16 +258,24 @@ export const Component = () => {
                                     <FormControlLabel
                                         control={
                                             <Switch
-                                                name={BrandingOption.SplashscreenEnabled}
+                                                name={
+                                                    BrandingOption.SplashscreenEnabled
+                                                }
                                                 checked={isSplashscreenEnabled}
-                                                onChange={setSplashscreenEnabled}
+                                                onChange={
+                                                    setSplashscreenEnabled
+                                                }
                                             />
                                         }
-                                        label={globalize.translate('EnableSplashScreen')}
+                                        label={globalize.translate(
+                                            'EnableSplashScreen'
+                                        )}
                                     />
 
                                     <Typography variant='body2'>
-                                        {globalize.translate('CustomSplashScreenSize')}
+                                        {globalize.translate(
+                                            'CustomSplashScreenSize'
+                                        )}
                                     </Typography>
 
                                     <Button
@@ -259,7 +290,9 @@ export const Component = () => {
                                             hidden
                                             onChange={onSplashscreenUpload}
                                         />
-                                        {globalize.translate('UploadCustomImage')}
+                                        {globalize.translate(
+                                            'UploadCustomImage'
+                                        )}
                                     </Button>
 
                                     <Button
@@ -269,7 +302,9 @@ export const Component = () => {
                                         disabled={!isSplashscreenEnabled}
                                         onClick={onSplashscreenDelete}
                                     >
-                                        {globalize.translate('DeleteCustomImage')}
+                                        {globalize.translate(
+                                            'DeleteCustomImage'
+                                        )}
                                     </Button>
                                 </Stack>
                             </Stack>
@@ -280,8 +315,12 @@ export const Component = () => {
                                 minRows={5}
                                 maxRows={5}
                                 name={BrandingOption.LoginDisclaimer}
-                                label={globalize.translate('LabelLoginDisclaimer')}
-                                helperText={globalize.translate('LabelLoginDisclaimerHelp')}
+                                label={globalize.translate(
+                                    'LabelLoginDisclaimer'
+                                )}
+                                helperText={globalize.translate(
+                                    'LabelLoginDisclaimerHelp'
+                                )}
                                 value={brandingOptions?.LoginDisclaimer}
                                 onChange={setBrandingOption}
                                 slotProps={{
@@ -298,7 +337,9 @@ export const Component = () => {
                                 maxRows={20}
                                 name={BrandingOption.CustomCss}
                                 label={globalize.translate('LabelCustomCss')}
-                                helperText={globalize.translate('LabelCustomCssHelp')}
+                                helperText={globalize.translate(
+                                    'LabelCustomCssHelp'
+                                )}
                                 spellCheck={false}
                                 value={brandingOptions?.CustomCss}
                                 onChange={setBrandingOption}
@@ -309,10 +350,7 @@ export const Component = () => {
                                 }}
                             />
 
-                            <Button
-                                type='submit'
-                                size='large'
-                            >
+                            <Button type='submit' size='large'>
                                 {globalize.translate('Save')}
                             </Button>
                         </Stack>

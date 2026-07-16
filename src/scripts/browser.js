@@ -26,8 +26,7 @@ function isTv(userAgent) {
 }
 
 function isWeb0s(userAgent) {
-    return userAgent.includes('netcast')
-        || userAgent.includes('web0s');
+    return userAgent.includes('netcast') || userAgent.includes('web0s');
 }
 
 function isMobile(userAgent) {
@@ -155,7 +154,11 @@ let _supportsCssAnimation;
 let _supportsCssAnimationWithPrefix;
 function supportsCssAnimation(allowPrefix) {
     // TODO: Assess if this is still needed, as all of our targets should natively support CSS animations.
-    if (allowPrefix && (_supportsCssAnimationWithPrefix === true || _supportsCssAnimationWithPrefix === false)) {
+    if (
+        allowPrefix &&
+        (_supportsCssAnimationWithPrefix === true ||
+            _supportsCssAnimationWithPrefix === false)
+    ) {
         return _supportsCssAnimationWithPrefix;
     }
     if (_supportsCssAnimation === true || _supportsCssAnimation === false) {
@@ -193,27 +196,30 @@ const uaMatch = function (ua) {
     // Motorola Edge device UA triggers false positive for Edge browser
     ua = ua.replace(/(motorola edge)/, '').trim();
 
-    const match = /(edg)[ /]([\w.]+)/.exec(ua)
-        || /(edga)[ /]([\w.]+)/.exec(ua)
-        || /(edgios)[ /]([\w.]+)/.exec(ua)
-        || /(edge)[ /]([\w.]+)/.exec(ua)
-        || /(titanos)[ /]([\w.]+)/.exec(ua)
-        || /(opera)[ /]([\w.]+)/.exec(ua)
-        || /(opr)[ /]([\w.]+)/.exec(ua)
-        || /(chrome)[ /]([\w.]+)/.exec(ua)
-        || /(safari)[ /]([\w.]+)/.exec(ua)
-        || /(firefox)[ /]([\w.]+)/.exec(ua)
-        || !ua.includes('compatible') && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua)
-        || [];
+    const match =
+        /(edg)[ /]([\w.]+)/.exec(ua) ||
+        /(edga)[ /]([\w.]+)/.exec(ua) ||
+        /(edgios)[ /]([\w.]+)/.exec(ua) ||
+        /(edge)[ /]([\w.]+)/.exec(ua) ||
+        /(titanos)[ /]([\w.]+)/.exec(ua) ||
+        /(opera)[ /]([\w.]+)/.exec(ua) ||
+        /(opr)[ /]([\w.]+)/.exec(ua) ||
+        /(chrome)[ /]([\w.]+)/.exec(ua) ||
+        /(safari)[ /]([\w.]+)/.exec(ua) ||
+        /(firefox)[ /]([\w.]+)/.exec(ua) ||
+        (!ua.includes('compatible') &&
+            /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua)) ||
+        [];
 
     const versionMatch = /(version)[ /]([\w.]+)/.exec(ua);
 
-    let platformMatch = /(ipad)/.exec(ua)
-        || /(iphone)/.exec(ua)
-        || /(windows)/.exec(ua)
-        || /(android)/.exec(ua)
-        || /(titanos)/.exec(ua)
-        || [];
+    let platformMatch =
+        /(ipad)/.exec(ua) ||
+        /(iphone)/.exec(ua) ||
+        /(windows)/.exec(ua) ||
+        /(android)/.exec(ua) ||
+        /(titanos)/.exec(ua) ||
+        [];
 
     let browser = match[1] || '';
 
@@ -264,7 +270,13 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
 
     browser.edgeChromium = browser.edg || browser.edga || browser.edgios;
 
-    if (!browser.chrome && !browser.edgeChromium && !browser.edge && !browser.opera && normalizedUA.includes('webkit')) {
+    if (
+        !browser.chrome &&
+        !browser.edgeChromium &&
+        !browser.edge &&
+        !browser.opera &&
+        normalizedUA.includes('webkit')
+    ) {
         browser.safari = true;
     }
 
@@ -273,7 +285,13 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
     // This is a workaround to detect iPads on iOS 13+ that report as desktop Safari
     // This may break in the future if Apple releases a touchscreen Mac
     // https://forums.developer.apple.com/thread/119186
-    if (browser.osx && !browser.iphone && !browser.ipod && !browser.ipad && navigator.maxTouchPoints > 1) {
+    if (
+        browser.osx &&
+        !browser.iphone &&
+        !browser.ipod &&
+        !browser.ipad &&
+        navigator.maxTouchPoints > 1
+    ) {
         browser.ipad = true;
     }
 
@@ -284,17 +302,23 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
     browser.ps4 = normalizedUA.includes('playstation 4');
     browser.xboxOne = normalizedUA.includes('xbox');
 
-    browser.animate = typeof document !== 'undefined' && document.documentElement.animate != null;
+    browser.animate =
+        typeof document !== 'undefined' &&
+        document.documentElement.animate != null;
     browser.hisense = normalizedUA.includes('hisense');
     browser.tizen = normalizedUA.includes('tizen') || window.tizen != null;
     browser.vega = normalizedUA.includes('kepler');
     browser.vidaa = normalizedUA.includes('vidaa');
     browser.web0s = isWeb0s(normalizedUA);
 
-    browser.tv = browser.ps4 || browser.vega || browser.xboxOne || isTv(normalizedUA);
+    browser.tv =
+        browser.ps4 || browser.vega || browser.xboxOne || isTv(normalizedUA);
     browser.operaTv = browser.tv && normalizedUA.includes('opr/');
 
-    browser.edgeUwp = (browser.edge || browser.edgeChromium) && (normalizedUA.includes('msapphost') || normalizedUA.includes('webview'));
+    browser.edgeUwp =
+        (browser.edge || browser.edgeChromium) &&
+        (normalizedUA.includes('msapphost') ||
+            normalizedUA.includes('webview'));
 
     if (browser.web0s) {
         browser.web0sVersion = web0sVersion(browser);
@@ -327,7 +351,10 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
         browser.slow = true;
     }
 
-    if (typeof document !== 'undefined' && ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) {
+    if (
+        (typeof document !== 'undefined' && 'ontouchstart' in window) ||
+        navigator.maxTouchPoints > 0
+    ) {
         browser.touch = true;
     }
 
@@ -340,7 +367,8 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
         browser.iOSVersion = iOSversion();
 
         if (browser.iOSVersion && browser.iOSVersion.length >= 2) {
-            browser.iOSVersion = browser.iOSVersion[0] + (browser.iOSVersion[1] / 10);
+            browser.iOSVersion =
+                browser.iOSVersion[0] + browser.iOSVersion[1] / 10;
         }
     }
 

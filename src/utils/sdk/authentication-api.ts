@@ -9,5 +9,9 @@ import type { Api } from '@jellyfin/sdk/lib/api';
 import { AuthenticationApi } from '@jellyfin/sdk/lib/generated-client/api/authentication-api';
 
 export function getAuthenticationApi(api: Api): AuthenticationApi {
-    return new AuthenticationApi(api.configuration, undefined, api.axiosInstance);
+    return new AuthenticationApi(
+        api.configuration,
+        undefined,
+        api.axiosInstance
+    );
 }

@@ -13,19 +13,23 @@ const fetchConfigurationPages = async (
     params?: PluginApiGetConfigurationPagesRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getPluginApi(api)
-        .getConfigurationPages(params, options);
+    const response = await getPluginApi(api).getConfigurationPages(
+        params,
+        options
+    );
     return response.data;
 };
 
 const getConfigurationPagesQuery = (
     api?: Api,
     params?: PluginApiGetConfigurationPagesRequest
-) => queryOptions({
-    queryKey: [ QueryKey.ConfigurationPages, params?.enableInMainMenu ],
-    queryFn: ({ signal }) => fetchConfigurationPages(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: [QueryKey.ConfigurationPages, params?.enableInMainMenu],
+        queryFn: ({ signal }) =>
+            fetchConfigurationPages(api!, params, { signal }),
+        enabled: !!api
+    });
 
 export const useConfigurationPages = (
     params?: PluginApiGetConfigurationPagesRequest

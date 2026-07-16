@@ -23,9 +23,15 @@ import html from './template.html';
 import './style.scss';
 
 const THEMES = {
-    'dark': { 'body': { 'color': '#d8dadc', 'background': '#000', 'font-size': 'medium' } },
-    'sepia': { 'body': { 'color': '#d8a262', 'background': '#000', 'font-size': 'medium' } },
-    'light': { 'body': { 'color': '#000', 'background': '#fff', 'font-size': 'medium' } }
+    dark: {
+        body: { color: '#d8dadc', background: '#000', 'font-size': 'medium' }
+    },
+    sepia: {
+        body: { color: '#d8a262', background: '#000', 'font-size': 'medium' }
+    },
+    light: {
+        body: { color: '#000', background: '#fff', 'font-size': 'medium' }
+    }
 };
 const THEME_ORDER = ['dark', 'sepia', 'light'];
 const FONT_SIZES = ['x-small', 'small', 'medium', 'large', 'x-large'];
@@ -120,10 +126,12 @@ export class BookPlayer {
     }
 
     getBufferedRanges() {
-        return [{
-            start: 0,
-            end: 10000000
-        }];
+        return [
+            {
+                start: 0,
+                end: 10000000
+            }
+        ];
     }
 
     volume() {
@@ -186,7 +194,9 @@ export class BookPlayer {
     }
 
     bindEvents() {
-        this.mediaElement?.addEventListener('close', this.onDialogClosed, { once: true });
+        this.mediaElement?.addEventListener('close', this.onDialogClosed, {
+            once: true
+        });
 
         document.addEventListener('keydown', this.onWindowKeyDown);
         this.rendition?.on('keydown', this.onWindowKeyDown);
@@ -195,7 +205,9 @@ export class BookPlayer {
             const player = document.querySelector('.bookOsd');
             this.addSwipeGestures(player);
         } else {
-            this.rendition?.on('rendered', (e, i) => this.addSwipeGestures(i.document.documentElement));
+            this.rendition?.on('rendered', (e, i) =>
+                this.addSwipeGestures(i.document.documentElement)
+            );
         }
     }
 
@@ -205,7 +217,9 @@ export class BookPlayer {
         this.mediaElement?.removeEventListener('close', this.onDialogClosed);
 
         if (!browser.safari) {
-            this.rendition?.off('rendered', (e, i) => this.addSwipeGestures(i.document.documentElement));
+            this.rendition?.off('rendered', (e, i) =>
+                this.addSwipeGestures(i.document.documentElement)
+            );
         }
 
         this.touchHelper?.destroy();
@@ -224,11 +238,17 @@ export class BookPlayer {
         if (Screenfull.isEnabled) {
             Screenfull.toggle();
         } else if (window.NativeShell) {
-            this.fullscreen ? window.NativeShell.disableFullscreen() : window.NativeShell.enableFullscreen();
+            this.fullscreen
+                ? window.NativeShell.disableFullscreen()
+                : window.NativeShell.enableFullscreen();
         }
 
         // needs to be executed with a slight delay to give NativeShell time to process the request
-        setTimeout(() => this.rendition.resize(player.clientWidth, player.clientHeight), 200);
+        setTimeout(
+            () =>
+                this.rendition.resize(player.clientWidth, player.clientHeight),
+            200
+        );
 
         // required for mobile apps without browser fullscreen support
         this.fullscreen = !this.fullscreen;
@@ -236,7 +256,10 @@ export class BookPlayer {
 
     rotateTheme() {
         if (this.loaded) {
-            const newTheme = THEME_ORDER[(THEME_ORDER.indexOf(this.theme) + 1) % THEME_ORDER.length];
+            const newTheme =
+                THEME_ORDER[
+                    (THEME_ORDER.indexOf(this.theme) + 1) % THEME_ORDER.length
+                ];
             this.rendition.themes.register('default', THEMES[newTheme]);
             this.rendition.themes.update('default');
             this.theme = newTheme;
@@ -244,8 +267,12 @@ export class BookPlayer {
     }
 
     increaseFontSize() {
-        if (this.loaded && this.fontSize !== FONT_SIZES[FONT_SIZES.length - 1]) {
-            const newFontSize = FONT_SIZES[(FONT_SIZES.indexOf(this.fontSize) + 1)];
+        if (
+            this.loaded &&
+            this.fontSize !== FONT_SIZES[FONT_SIZES.length - 1]
+        ) {
+            const newFontSize =
+                FONT_SIZES[FONT_SIZES.indexOf(this.fontSize) + 1];
             this.rendition.themes.fontSize(newFontSize);
             this.fontSize = newFontSize;
         }
@@ -253,7 +280,8 @@ export class BookPlayer {
 
     decreaseFontSize() {
         if (this.loaded && this.fontSize !== FONT_SIZES[0]) {
-            const newFontSize = FONT_SIZES[(FONT_SIZES.indexOf(this.fontSize) - 1)];
+            const newFontSize =
+                FONT_SIZES[FONT_SIZES.indexOf(this.fontSize) - 1];
             this.rendition.themes.fontSize(newFontSize);
             this.fontSize = newFontSize;
         }
@@ -262,14 +290,18 @@ export class BookPlayer {
     previous(e) {
         e?.preventDefault();
         if (this.rendition) {
-            this.rendition.book.package.metadata.direction === 'rtl' ? this.rendition.next() : this.rendition.prev();
+            this.rendition.book.package.metadata.direction === 'rtl'
+                ? this.rendition.next()
+                : this.rendition.prev();
         }
     }
 
     next(e) {
         e?.preventDefault();
         if (this.rendition) {
-            this.rendition.book.package.metadata.direction === 'rtl' ? this.rendition.prev() : this.rendition.next();
+            this.rendition.book.package.metadata.direction === 'rtl'
+                ? this.rendition.prev()
+                : this.rendition.next();
         }
     }
 
@@ -297,17 +329,24 @@ export class BookPlayer {
         }
 
         this.mediaElement = elem;
-        this.unmountBookOsd = renderComponent(BookOsd, {
-            title: options.items[0].Name,
-            onExit: this.onDialogClosed,
-            onPrevious: this.previous,
-            onNext: this.next,
-            onOpenTableOfContents: this.openTableOfContents,
-            onRotateTheme: this.rotateTheme,
-            onDecreaseFontSize: this.decreaseFontSize,
-            onIncreaseFontSize: this.increaseFontSize,
-            onToggleFullscreen: Screenfull.isEnabled || window.NativeShell ? this.toggleFullscreen : null
-        }, elem.querySelector('#bookOsdMount'));
+        this.unmountBookOsd = renderComponent(
+            BookOsd,
+            {
+                title: options.items[0].Name,
+                onExit: this.onDialogClosed,
+                onPrevious: this.previous,
+                onNext: this.next,
+                onOpenTableOfContents: this.openTableOfContents,
+                onRotateTheme: this.rotateTheme,
+                onDecreaseFontSize: this.decreaseFontSize,
+                onIncreaseFontSize: this.increaseFontSize,
+                onToggleFullscreen:
+                    Screenfull.isEnabled || window.NativeShell
+                        ? this.toggleFullscreen
+                        : null
+            },
+            elem.querySelector('#bookOsdMount')
+        );
 
         return elem;
     }
@@ -328,10 +367,15 @@ export class BookPlayer {
             import('epubjs').then(({ default: epubjs }) => {
                 const api = ServerConnections.getApi(item.ServerId);
                 if (!api) {
-                    console.error('[BookPlayer] no Api instance available for server', item.ServerId);
+                    console.error(
+                        '[BookPlayer] no Api instance available for server',
+                        item.ServerId
+                    );
                     return;
                 }
-                const downloadHref = getLibraryApi(api).getDownloadUrl({ itemId: item.Id });
+                const downloadHref = getLibraryApi(api).getDownloadUrl({
+                    itemId: item.Id
+                });
                 const book = epubjs(downloadHref, { openAs: 'epub' });
 
                 const rendition = book.renderTo('bookPlayerContainer', {
@@ -347,35 +391,48 @@ export class BookPlayer {
                 rendition.themes.register('default', THEMES[this.theme]);
                 rendition.themes.select('default');
 
-                return rendition.display().then(() => {
-                    const epubElem = document.querySelector('.epub-container');
-                    epubElem.style.opacity = '0';
+                return rendition.display().then(
+                    () => {
+                        const epubElem =
+                            document.querySelector('.epub-container');
+                        epubElem.style.opacity = '0';
 
-                    this.bindEvents();
+                        this.bindEvents();
 
-                    return this.rendition.book.locations.generate(1024).then(async () => {
-                        if (this.cancellationToken) reject();
+                        return this.rendition.book.locations
+                            .generate(1024)
+                            .then(async () => {
+                                if (this.cancellationToken) reject();
 
-                        const percentageTicks = options.startPositionTicks / 10000000;
-                        if (percentageTicks !== 0.0) {
-                            const resumeLocation = book.locations.cfiFromPercentage(percentageTicks);
-                            await rendition.display(resumeLocation);
-                        }
+                                const percentageTicks =
+                                    options.startPositionTicks / 10000000;
+                                if (percentageTicks !== 0.0) {
+                                    const resumeLocation =
+                                        book.locations.cfiFromPercentage(
+                                            percentageTicks
+                                        );
+                                    await rendition.display(resumeLocation);
+                                }
 
-                        this.loaded = true;
-                        epubElem.style.opacity = '';
-                        rendition.on('relocated', (locations) => {
-                            this.progress = book.locations.percentageFromCfi(locations.start.cfi);
-                            Events.trigger(this, 'pause');
-                        });
+                                this.loaded = true;
+                                epubElem.style.opacity = '';
+                                rendition.on('relocated', (locations) => {
+                                    this.progress =
+                                        book.locations.percentageFromCfi(
+                                            locations.start.cfi
+                                        );
+                                    Events.trigger(this, 'pause');
+                                });
 
-                        loading.hide();
-                        return resolve();
-                    });
-                }, () => {
-                    console.error('failed to display epub');
-                    return reject();
-                });
+                                loading.hide();
+                                return resolve();
+                            });
+                    },
+                    () => {
+                        console.error('failed to display epub');
+                        return reject();
+                    }
+                );
             });
         });
     }

@@ -77,32 +77,38 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
     );
 
     const onGridViewClick = useCallback(() => {
-        setLibraryViewSettings(prevState => ({
+        setLibraryViewSettings((prevState) => ({
             ...prevState,
             ViewMode: ViewMode.GridView
         }));
         setIsSettingsOpen(false);
-    }, [ setLibraryViewSettings ]);
+    }, [setLibraryViewSettings]);
 
     const onListViewClick = useCallback(() => {
-        setLibraryViewSettings(prevState => ({
+        setLibraryViewSettings((prevState) => ({
             ...prevState,
             ViewMode: ViewMode.ListView
         }));
         setIsSettingsOpen(false);
     }, [setLibraryViewSettings]);
 
-    const onSettingsClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation();
-        setIsSettingsOpen(prev => !prev);
-    }, []);
+    const onSettingsClick = useCallback(
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            setIsSettingsOpen((prev) => !prev);
+        },
+        []
+    );
 
-    const setImageType = useCallback((imageType: ImageType) => {
-        setLibraryViewSettings((prevState) => ({
-            ...prevState,
-            ImageType: imageType
-        }));
-    }, [setLibraryViewSettings]);
+    const setImageType = useCallback(
+        (imageType: ImageType) => {
+            setLibraryViewSettings((prevState) => ({
+                ...prevState,
+                ImageType: imageType
+            }));
+        },
+        [setLibraryViewSettings]
+    );
 
     const isGridView = libraryViewSettings.ViewMode === ViewMode.GridView;
     const isImageTypeVisible = !IMAGE_TYPE_EXCLUDED_VIEWS.includes(viewType);
@@ -135,9 +141,7 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                 }}
             >
                 <MenuList>
-                    <MenuItem
-                        onClick={onGridViewClick}
-                    >
+                    <MenuItem onClick={onGridViewClick}>
                         <ListItemIcon>
                             {isGridView ? <Check fontSize='small' /> : null}
                         </ListItemIcon>
@@ -155,11 +159,7 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                         </IconButton>
                     </MenuItem>
 
-                    <Collapse
-                        in={isSettingsOpen}
-                        timeout='auto'
-                        unmountOnExit
-                    >
+                    <Collapse in={isSettingsOpen} timeout='auto' unmountOnExit>
                         {isImageTypeVisible && (
                             <MenuList
                                 subheader={
@@ -178,13 +178,20 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                                     <MenuItem
                                         key={imageType.value}
                                         // eslint-disable-next-line react/jsx-no-bind
-                                        onClick={() => setImageType(imageType.value)}
+                                        onClick={() =>
+                                            setImageType(imageType.value)
+                                        }
                                     >
                                         <ListItemIcon>
-                                            {libraryViewSettings.ImageType === imageType.value && <Check fontSize='small' />}
+                                            {libraryViewSettings.ImageType ===
+                                                imageType.value && (
+                                                <Check fontSize='small' />
+                                            )}
                                         </ListItemIcon>
                                         <ListItemText>
-                                            {globalize.translate(imageType.label)}
+                                            {globalize.translate(
+                                                imageType.label
+                                            )}
                                         </ListItemText>
                                     </MenuItem>
                                 ))}
@@ -209,7 +216,9 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                                     control={
                                         <Switch
                                             size='small'
-                                            checked={libraryViewSettings.ShowTitle}
+                                            checked={
+                                                libraryViewSettings.ShowTitle
+                                            }
                                             onChange={handleChange}
                                             name='ShowTitle'
                                         />
@@ -223,7 +232,9 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                                         control={
                                             <Switch
                                                 size='small'
-                                                checked={libraryViewSettings.ShowYear}
+                                                checked={
+                                                    libraryViewSettings.ShowYear
+                                                }
                                                 onChange={handleChange}
                                                 name='ShowYear'
                                             />
@@ -237,21 +248,23 @@ const ViewSettingsButton: FC<ViewSettingsButtonProps> = ({
                                     control={
                                         <Switch
                                             size='small'
-                                            checked={libraryViewSettings.CardLayout}
+                                            checked={
+                                                libraryViewSettings.CardLayout
+                                            }
                                             onChange={handleChange}
                                             name='CardLayout'
                                         />
                                     }
-                                    label={globalize.translate('EnableCardLayout')}
+                                    label={globalize.translate(
+                                        'EnableCardLayout'
+                                    )}
                                 />
                             </MenuItem>
                         </MenuList>
                         <Divider />
                     </Collapse>
 
-                    <MenuItem
-                        onClick={onListViewClick}
-                    >
+                    <MenuItem onClick={onListViewClick}>
                         <ListItemIcon>
                             {isGridView ? null : <Check fontSize='small' />}
                         </ListItemIcon>

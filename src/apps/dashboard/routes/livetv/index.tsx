@@ -39,17 +39,17 @@ export const Component = () => {
         isError: isTasksError
     } = useLiveTasks({ isHidden: false });
     const providerButtonRef = useRef<HTMLButtonElement | null>(null);
-    const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
-    const [ isMenuOpen, setIsMenuOpen ] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const startTask = useStartTask();
 
     const navigateToSchedulesDirect = useCallback(() => {
         navigate('/dashboard/livetv/guide?type=schedulesdirect');
-    }, [ navigate ]);
+    }, [navigate]);
 
     const navigateToXMLTV = useCallback(() => {
         navigate('/dashboard/livetv/guide?type=xmltv');
-    }, [ navigate ]);
+    }, [navigate]);
 
     const showProviderMenu = useCallback(() => {
         setAnchorEl(providerButtonRef.current);
@@ -61,9 +61,10 @@ export const Component = () => {
         setIsMenuOpen(false);
     }, []);
 
-    const refreshGuideTask = useMemo(() => (
-        tasks?.find((value) => value.Key === 'RefreshGuide')
-    ), [ tasks ]);
+    const refreshGuideTask = useMemo(
+        () => tasks?.find((value) => value.Key === 'RefreshGuide'),
+        [tasks]
+    );
 
     const refreshGuideData = useCallback(() => {
         if (refreshGuideTask?.Id) {
@@ -71,7 +72,7 @@ export const Component = () => {
                 taskId: refreshGuideTask.Id
             });
         }
-    }, [ startTask, refreshGuideTask ]);
+    }, [startTask, refreshGuideTask]);
 
     if (isConfigPending || isTasksPending) return <Loading />;
 
@@ -82,11 +83,15 @@ export const Component = () => {
             className='mainAnimatedPage type-interior'
         >
             <Box className='content-primary'>
-                {(isConfigError || isTasksError) ? (
-                    <Alert severity='error'>{globalize.translate('HeaderError')}</Alert>
+                {isConfigError || isTasksError ? (
+                    <Alert severity='error'>
+                        {globalize.translate('HeaderError')}
+                    </Alert>
                 ) : (
                     <Stack spacing={3}>
-                        <Typography variant='h2'>{globalize.translate('HeaderTunerDevices')}</Typography>
+                        <Typography variant='h2'>
+                            {globalize.translate('HeaderTunerDevices')}
+                        </Typography>
 
                         <Button
                             sx={{ alignSelf: 'flex-start' }}
@@ -99,7 +104,7 @@ export const Component = () => {
 
                         <Box>
                             <Grid container spacing={2}>
-                                {config.TunerHosts?.map(tunerHost => (
+                                {config.TunerHosts?.map((tunerHost) => (
                                     <Grid
                                         key={tunerHost.Id}
                                         item
@@ -117,7 +122,9 @@ export const Component = () => {
                             </Grid>
                         </Box>
 
-                        <Typography variant='h2'>{globalize.translate('HeaderGuideProviders')}</Typography>
+                        <Typography variant='h2'>
+                            {globalize.translate('HeaderGuideProviders')}
+                        </Typography>
 
                         <Stack sx={{ alignSelf: 'flex-start' }} spacing={2}>
                             <Stack direction='row' spacing={1.5}>
@@ -134,16 +141,24 @@ export const Component = () => {
                                     startIcon={<RefreshIcon />}
                                     variant='outlined'
                                     onClick={refreshGuideData}
-                                    loading={refreshGuideTask && refreshGuideTask.State === TaskState.Running}
+                                    loading={
+                                        refreshGuideTask &&
+                                        refreshGuideTask.State ===
+                                            TaskState.Running
+                                    }
                                     loadingPosition='start'
                                 >
-                                    {globalize.translate('ButtonRefreshGuideData')}
+                                    {globalize.translate(
+                                        'ButtonRefreshGuideData'
+                                    )}
                                 </Button>
                             </Stack>
 
-                            {(refreshGuideTask && refreshGuideTask.State === TaskState.Running) && (
-                                <TaskProgress task={refreshGuideTask} />
-                            )}
+                            {refreshGuideTask &&
+                                refreshGuideTask.State ===
+                                    TaskState.Running && (
+                                    <TaskProgress task={refreshGuideTask} />
+                                )}
                         </Stack>
 
                         <Menu
@@ -159,16 +174,21 @@ export const Component = () => {
                             </MenuItem>
                         </Menu>
 
-                        {(config.ListingProviders && config.ListingProviders?.length > 0) && (
-                            <List sx={{ backgroundColor: 'background.paper' }}>
-                                {config.ListingProviders?.map(provider => (
-                                    <Provider
-                                        key={provider.Id}
-                                        provider={provider}
-                                    />
-                                ))}
-                            </List>
-                        )}
+                        {config.ListingProviders &&
+                            config.ListingProviders?.length > 0 && (
+                                <List
+                                    sx={{ backgroundColor: 'background.paper' }}
+                                >
+                                    {config.ListingProviders?.map(
+                                        (provider) => (
+                                            <Provider
+                                                key={provider.Id}
+                                                provider={provider}
+                                            />
+                                        )
+                                    )}
+                                </List>
+                            )}
                     </Stack>
                 )}
             </Box>

@@ -5,22 +5,17 @@ import { useApi } from 'hooks/useApi';
 import { QueryKey } from './queryKey';
 import { getPluginApi } from '@jellyfin/sdk/lib/utils/api/plugin-api';
 
-const fetchRepositories = async (
-    api: Api,
-    options?: AxiosRequestConfig
-) => {
-    const response = await getPluginApi(api)
-        .getRepositories(options);
+const fetchRepositories = async (api: Api, options?: AxiosRequestConfig) => {
+    const response = await getPluginApi(api).getRepositories(options);
     return response.data;
 };
 
-const getRepositoriesQuery = (
-    api?: Api
-) => queryOptions({
-    queryKey: [ QueryKey.Repositories ],
-    queryFn: ({ signal }) => fetchRepositories(api!, { signal }),
-    enabled: !!api
-});
+const getRepositoriesQuery = (api?: Api) =>
+    queryOptions({
+        queryKey: [QueryKey.Repositories],
+        queryFn: ({ signal }) => fetchRepositories(api!, { signal }),
+        enabled: !!api
+    });
 
 export const useRepositories = () => {
     const { api } = useApi();

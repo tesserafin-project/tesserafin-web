@@ -10,10 +10,10 @@ import { useTogglePlayedMutation } from 'hooks/useFetchItems';
 
 interface PlayedButtonProps {
     className?: string;
-    isPlayed : boolean | undefined;
+    isPlayed: boolean | undefined;
     itemId: string | null | undefined;
-    itemType: string | null | undefined,
-    queryKey?: QueryKey
+    itemType: string | null | undefined;
+    queryKey?: QueryKey;
 }
 
 const PlayedButton: FC<PlayedButtonProps> = ({
@@ -29,9 +29,13 @@ const PlayedButton: FC<PlayedButtonProps> = ({
     const getTitle = useCallback(() => {
         let buttonTitle;
         if (itemType !== BaseItemKind.AudioBook) {
-            buttonTitle = isPlayed ? globalize.translate('Watched') : globalize.translate('MarkPlayed');
+            buttonTitle = isPlayed
+                ? globalize.translate('Watched')
+                : globalize.translate('MarkPlayed');
         } else {
-            buttonTitle = isPlayed ? globalize.translate('Played') : globalize.translate('MarkPlayed');
+            buttonTitle = isPlayed
+                ? globalize.translate('Played')
+                : globalize.translate('MarkPlayed');
         }
 
         return buttonTitle;
@@ -43,17 +47,21 @@ const PlayedButton: FC<PlayedButtonProps> = ({
                 throw new Error('Item has no Id');
             }
 
-            await togglePlayedMutation({
-                itemId,
-                isPlayed
-            },
-            { onSuccess: async() => {
-                await queryClient.invalidateQueries({
-                    queryKey,
-                    type: 'all',
-                    refetchType: 'active'
-                });
-            } });
+            await togglePlayedMutation(
+                {
+                    itemId,
+                    isPlayed
+                },
+                {
+                    onSuccess: async () => {
+                        await queryClient.invalidateQueries({
+                            queryKey,
+                            type: 'all',
+                            refetchType: 'active'
+                        });
+                    }
+                }
+            );
         } catch (e) {
             console.error(e);
         }
@@ -67,9 +75,7 @@ const PlayedButton: FC<PlayedButtonProps> = ({
             size='small'
             onClick={onClick}
         >
-            <CheckIcon
-                color={isPlayed ? 'error' : undefined}
-            />
+            <CheckIcon color={isPlayed ? 'error' : undefined} />
         </IconButton>
     );
 };

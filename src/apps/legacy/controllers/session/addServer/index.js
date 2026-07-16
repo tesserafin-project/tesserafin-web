@@ -11,13 +11,21 @@ function handleConnectionResult(page, result) {
     switch (result.State) {
         case ConnectionState.SignedIn: {
             const apiClient = result.ApiClient;
-            Dashboard.onServerChanged(apiClient.getCurrentUserId(), apiClient.accessToken(), apiClient);
+            Dashboard.onServerChanged(
+                apiClient.getCurrentUserId(),
+                apiClient.accessToken(),
+                apiClient
+            );
             Dashboard.navigate('home');
             break;
         }
         case ConnectionState.ServerSignIn:
             if (result.SystemInfo.StartupWizardCompleted) {
-                Dashboard.navigate('login?serverid=' + result.Servers[0].Id, false, 'none');
+                Dashboard.navigate(
+                    'login?serverid=' + result.Servers[0].Id,
+                    false,
+                    'none'
+                );
             } else {
                 Dashboard.navigate('/wizard/start');
             }
@@ -27,7 +35,10 @@ function handleConnectionResult(page, result) {
             break;
         case ConnectionState.ServerUpdateNeeded:
             Dashboard.alert({
-                message: globalize.translate('ServerUpdateNeeded', '<a href="https://github.com/jellyfin/jellyfin">https://github.com/jellyfin/jellyfin</a>')
+                message: globalize.translate(
+                    'ServerUpdateNeeded',
+                    '<a href="https://github.com/jellyfin/jellyfin">https://github.com/jellyfin/jellyfin</a>'
+                )
             });
             break;
         case ConnectionState.Unavailable:
@@ -44,17 +55,23 @@ function submitServer(page) {
     const host = page.querySelector('#txtServerHost').value.replace(/\/+$/, '');
     ServerConnections.connectToAddress(host, {
         enableAutoLogin: appSettings.enableAutoLogin()
-    }).then(function(result) {
-        handleConnectionResult(page, result);
-    }, function() {
-        handleConnectionResult(page, {
-            State: ConnectionState.Unavailable
-        });
-    });
+    }).then(
+        function (result) {
+            handleConnectionResult(page, result);
+        },
+        function () {
+            handleConnectionResult(page, {
+                State: ConnectionState.Unavailable
+            });
+        }
+    );
 }
 
-export default function(view) {
-    view.querySelector('.addServerForm').addEventListener('submit', onServerSubmit);
+export default function (view) {
+    view.querySelector('.addServerForm').addEventListener(
+        'submit',
+        onServerSubmit
+    );
     view.querySelector('.btnCancel').addEventListener('click', goBack);
 
     import('components/autoFocuser').then(({ default: autoFocuser }) => {
@@ -73,4 +90,3 @@ export default function(view) {
         });
     }
 }
-

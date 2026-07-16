@@ -8,13 +8,11 @@ import { PluginApiSetRepositoriesRequest } from '@jellyfin/sdk/lib/generated-cli
 export const useSetRepositories = () => {
     const { api } = useApi();
     return useMutation({
-        mutationFn: (params: PluginApiSetRepositoriesRequest) => (
-            getPluginApi(api!)
-                .setRepositories(params)
-        ),
+        mutationFn: (params: PluginApiSetRepositoriesRequest) =>
+            getPluginApi(api!).setRepositories(params),
         onSuccess: () => {
             void queryClient.invalidateQueries({
-                queryKey: [ QueryKey.Repositories ]
+                queryKey: [QueryKey.Repositories]
             });
         }
     });

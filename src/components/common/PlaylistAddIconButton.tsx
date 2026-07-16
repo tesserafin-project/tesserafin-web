@@ -9,7 +9,9 @@ interface PlaylistAddIconButtonProps {
     className?: string;
 }
 
-const PlaylistAddIconButton: FC<PlaylistAddIconButtonProps> = ({ className }) => {
+const PlaylistAddIconButton: FC<PlaylistAddIconButtonProps> = ({
+    className
+}) => {
     return (
         <IconButton
             className={className}

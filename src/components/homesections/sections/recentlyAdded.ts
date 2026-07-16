@@ -9,7 +9,11 @@ import type { ApiClient } from 'jellyfin-apiclient';
 
 import { getLatestMediaQuery } from 'apps/legacy/features/libraries/api/useLatestMedia';
 import cardBuilder from 'components/cardbuilder/cardBuilder';
-import { getBackdropShape, getPortraitShape, getSquareShape } from 'components/cardbuilder/utils/shape';
+import {
+    getBackdropShape,
+    getPortraitShape,
+    getSquareShape
+} from 'components/cardbuilder/utils/shape';
 import layoutManager from 'components/layoutManager';
 import { appRouter } from 'components/router/appRouter';
 import globalize from 'lib/globalize';
@@ -45,10 +49,7 @@ function getFetchLatestItemsFn(
         const options = {
             userId: user?.Id,
             limit,
-            fields: [
-                ItemFields.PrimaryImageAspectRatio,
-                ItemFields.Path
-            ],
+            fields: [ItemFields.PrimaryImageAspectRatio, ItemFields.Path],
             imageTypeLimit: 1,
             enableImageTypes: [
                 ImageType.Primary,
@@ -58,8 +59,7 @@ function getFetchLatestItemsFn(
             parentId
         };
 
-        return queryClient
-            .fetchQuery(getLatestMediaQuery(api, options));
+        return queryClient.fetchQuery(getLatestMediaQuery(api, options));
     };
 }
 
@@ -71,7 +71,12 @@ function getLatestItemsHtmlFn(
     return function (items: BaseItemDto[]) {
         const cardLayout = false;
         let shape;
-        if (itemType === 'Channel' || viewType === 'movies' || viewType === 'books' || viewType === 'tvshows') {
+        if (
+            itemType === 'Channel' ||
+            viewType === 'movies' ||
+            viewType === 'books' ||
+            viewType === 'tvshows'
+        ) {
             shape = getPortraitShape(enableOverflow);
         } else if (viewType === 'music' || viewType === 'homevideos') {
             shape = getSquareShape(enableOverflow);
@@ -82,7 +87,13 @@ function getLatestItemsHtmlFn(
         return cardBuilder.getCardsHtml({
             items: items,
             shape: shape,
-            preferThumb: viewType !== 'movies' && viewType !== 'tvshows' && itemType !== 'Channel' && viewType !== 'music' ? 'auto' : null,
+            preferThumb:
+                viewType !== 'movies' &&
+                viewType !== 'tvshows' &&
+                itemType !== 'Channel' &&
+                viewType !== 'music'
+                    ? 'auto'
+                    : null,
             showUnplayedIndicator: false,
             showChildCountIndicator: true,
             context: 'home',
@@ -92,8 +103,13 @@ function getLatestItemsHtmlFn(
             allowBottomPadding: !enableOverflow && !cardLayout,
             cardLayout: cardLayout,
             showTitle: viewType !== 'photos',
-            showYear: viewType === 'movies' || viewType === 'tvshows' || !viewType,
-            showParentTitle: viewType === 'music' || viewType === 'tvshows' || !viewType || (cardLayout && (viewType === 'tvshows')),
+            showYear:
+                viewType === 'movies' || viewType === 'tvshows' || !viewType,
+            showParentTitle:
+                viewType === 'music' ||
+                viewType === 'tvshows' ||
+                !viewType ||
+                (cardLayout && viewType === 'tvshows'),
             lines: 2
         });
     };
@@ -108,26 +124,40 @@ function renderLatestSection(
 ) {
     let html = '';
 
-    html += '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
+    html +=
+        '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
     if (!layoutManager.tv) {
-        html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl(parent, {
-            section: 'latest'
-        }) + '" class="more button-flat button-flat-mini sectionTitleTextButton">';
+        html +=
+            '<a is="emby-linkbutton" href="' +
+            appRouter.getRouteUrl(parent, {
+                section: 'latest'
+            }) +
+            '" class="more button-flat button-flat-mini sectionTitleTextButton">';
         html += '<h2 class="sectionTitle sectionTitle-cards">';
-        html += globalize.translate('LatestFromLibrary', escapeHtml(parent.Name));
+        html += globalize.translate(
+            'LatestFromLibrary',
+            escapeHtml(parent.Name)
+        );
         html += '</h2>';
-        html += '<span class="material-icons chevron_right" aria-hidden="true"></span>';
+        html +=
+            '<span class="material-icons chevron_right" aria-hidden="true"></span>';
         html += '</a>';
     } else {
-        html += '<h2 class="sectionTitle sectionTitle-cards">' + globalize.translate('LatestFromLibrary', escapeHtml(parent.Name)) + '</h2>';
+        html +=
+            '<h2 class="sectionTitle sectionTitle-cards">' +
+            globalize.translate('LatestFromLibrary', escapeHtml(parent.Name)) +
+            '</h2>';
     }
     html += '</div>';
 
     if (options.enableOverflow) {
-        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
-        html += '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
+        html +=
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
     } else {
-        html += '<div is="emby-itemscontainer" class="itemsContainer focuscontainer-x padded-left padded-right vertical-wrap">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer focuscontainer-x padded-left padded-right vertical-wrap">';
     }
 
     if (options.enableOverflow) {
@@ -137,10 +167,21 @@ function renderLatestSection(
 
     elem.innerHTML = html;
 
-    const itemsContainer: SectionContainerElement | null = elem.querySelector('.itemsContainer');
+    const itemsContainer: SectionContainerElement | null =
+        elem.querySelector('.itemsContainer');
     if (!itemsContainer) return;
-    itemsContainer.fetchData = getFetchLatestItemsFn(apiClient, user, parent.Id, parent.CollectionType, options);
-    itemsContainer.getItemsHtml = getLatestItemsHtmlFn(parent.Type, parent.CollectionType, options);
+    itemsContainer.fetchData = getFetchLatestItemsFn(
+        apiClient,
+        user,
+        parent.Id,
+        parent.CollectionType,
+        options
+    );
+    itemsContainer.getItemsHtml = getLatestItemsHtmlFn(
+        parent.Type,
+        parent.CollectionType,
+        options
+    );
     itemsContainer.parentContainer = elem;
 }
 
@@ -152,15 +193,24 @@ export function loadRecentlyAdded(
     options: SectionOptions
 ) {
     elem.classList.remove('verticalSection');
-    const excludeViewTypes = ['playlists', 'livetv', 'boxsets', 'channels', 'folders'];
+    const excludeViewTypes = [
+        'playlists',
+        'livetv',
+        'boxsets',
+        'channels',
+        'folders'
+    ];
     const userExcludeItems = user.Configuration?.LatestItemsExcludes ?? [];
 
-    userViews.forEach(item => {
+    userViews.forEach((item) => {
         if (!item.Id || userExcludeItems.includes(item.Id)) {
             return;
         }
 
-        if (item.CollectionType && excludeViewTypes.includes(item.CollectionType)) {
+        if (
+            item.CollectionType &&
+            excludeViewTypes.includes(item.CollectionType)
+        ) {
             return;
         }
 

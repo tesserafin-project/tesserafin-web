@@ -35,26 +35,32 @@ type LibraryCardProps = {
 const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
     const { api, user } = useApi();
     const actionRef = useRef<HTMLButtonElement | null>(null);
-    const [ anchorEl, setAnchorEl ] = useState<HTMLElement | null>(null);
-    const [ isMenuOpen, setIsMenuOpen ] = useState(false);
-    const [ isRenameLibraryDialogOpen, setIsRenameLibraryDialogOpen ] = useState(false);
-    const [ isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen ] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isRenameLibraryDialogOpen, setIsRenameLibraryDialogOpen] =
+        useState(false);
+    const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] =
+        useState(false);
     const renameVirtualFolder = useRenameVirtualFolder();
     const removeVirtualFolder = useRemoveVirtualFolder();
 
     const imageUrl = useMemo(() => {
         if (virtualFolder.PrimaryImageItemId && virtualFolder.ItemId && api) {
             const dpr = window?.devicePixelRatio || 1;
-            return getImageApi(api)
-                .getItemImageUrlById(virtualFolder.ItemId, ImageType.Primary, {
-                    maxWidth: Math.round(dom.getScreenWidth() * dpr * 0.40)
-                });
+            return getImageApi(api).getItemImageUrlById(
+                virtualFolder.ItemId,
+                ImageType.Primary,
+                {
+                    maxWidth: Math.round(dom.getScreenWidth() * dpr * 0.4)
+                }
+            );
         }
-    }, [ api, virtualFolder ]);
+    }, [api, virtualFolder]);
 
-    const typeName = getCollectionTypeOptions().filter(function (t) {
-        return t.value == virtualFolder.CollectionType;
-    })[0]?.name || globalize.translate('Other');
+    const typeName =
+        getCollectionTypeOptions().filter(function (t) {
+            return t.value == virtualFolder.CollectionType;
+        })[0]?.name || globalize.translate('Other');
 
     const openRenameDialog = useCallback(() => {
         setAnchorEl(null);
@@ -76,30 +82,36 @@ const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
         setIsMenuOpen(true);
     }, []);
 
-    const renameLibrary = useCallback((newName: string) => {
-        if (virtualFolder.Name) {
-            renameVirtualFolder.mutate({
-                refreshLibrary: true,
-                newName: newName,
-                name: virtualFolder.Name
-            }, {
-                onSettled: () => {
-                    hideRenameLibraryDialog();
-                }
-            });
-        }
-    }, [ renameVirtualFolder, virtualFolder, hideRenameLibraryDialog ]);
+    const renameLibrary = useCallback(
+        (newName: string) => {
+            if (virtualFolder.Name) {
+                renameVirtualFolder.mutate(
+                    {
+                        refreshLibrary: true,
+                        newName: newName,
+                        name: virtualFolder.Name
+                    },
+                    {
+                        onSettled: () => {
+                            hideRenameLibraryDialog();
+                        }
+                    }
+                );
+            }
+        },
+        [renameVirtualFolder, virtualFolder, hideRenameLibraryDialog]
+    );
 
     const showRefreshDialog = useCallback(() => {
         setAnchorEl(null);
         setIsMenuOpen(false);
 
         void new RefreshDialog({
-            itemIds: [ virtualFolder.ItemId ],
+            itemIds: [virtualFolder.ItemId],
             serverId: ServerConnections.currentApiClient()?.serverId(),
             mode: 'scan'
         }).show();
-    }, [ virtualFolder ]);
+    }, [virtualFolder]);
 
     const showMediaLibraryEditor = useCallback(() => {
         setAnchorEl(null);
@@ -113,21 +125,24 @@ const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
         void mediaLibraryEditor.then((hasChanges: boolean) => {
             if (hasChanges) invalidateVirtualFolders(user, virtualFolder);
         });
-    }, [ user, virtualFolder ]);
+    }, [user, virtualFolder]);
 
     const showImageEditor = useCallback(() => {
         setAnchorEl(null);
         setIsMenuOpen(false);
 
-        void imageeditor.show({
-            itemId: virtualFolder.ItemId,
-            serverId: ServerConnections.currentApiClient()?.serverId()
-        }).then(() => {
-            invalidateVirtualFolders(user);
-        }).catch(() => {
-            /* pop up closed */
-        });
-    }, [ user, virtualFolder ]);
+        void imageeditor
+            .show({
+                itemId: virtualFolder.ItemId,
+                serverId: ServerConnections.currentApiClient()?.serverId()
+            })
+            .then(() => {
+                invalidateVirtualFolders(user);
+            })
+            .catch(() => {
+                /* pop up closed */
+            });
+    }, [user, virtualFolder]);
 
     const showDeleteLibraryDialog = useCallback(() => {
         setAnchorEl(null);
@@ -141,16 +156,19 @@ const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
 
     const onConfirmDeleteLibrary = useCallback(() => {
         if (virtualFolder.Name) {
-            removeVirtualFolder.mutate({
-                name: virtualFolder.Name,
-                refreshLibrary: true
-            }, {
-                onSettled: () => {
-                    setIsConfirmDeleteDialogOpen(false);
+            removeVirtualFolder.mutate(
+                {
+                    name: virtualFolder.Name,
+                    refreshLibrary: true
+                },
+                {
+                    onSettled: () => {
+                        setIsConfirmDeleteDialogOpen(false);
+                    }
                 }
-            });
+            );
         }
-    }, [ virtualFolder, removeVirtualFolder ]);
+    }, [virtualFolder, removeVirtualFolder]);
 
     return (
         <>
@@ -169,9 +187,15 @@ const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
                 open={isConfirmDeleteDialogOpen}
                 title={globalize.translate('HeaderRemoveMediaFolder')}
                 text={
-                    globalize.translate('MessageAreYouSureYouWishToRemoveMediaFolder') + '\n\n'
-                    + globalize.translate('MessageTheFollowingLocationWillBeRemovedFromLibrary') + '\n\n'
-                    + virtualFolder.Locations?.join('\n')
+                    globalize.translate(
+                        'MessageAreYouSureYouWishToRemoveMediaFolder'
+                    ) +
+                    '\n\n' +
+                    globalize.translate(
+                        'MessageTheFollowingLocationWillBeRemovedFromLibrary'
+                    ) +
+                    '\n\n' +
+                    virtualFolder.Locations?.join('\n')
                 }
                 confirmButtonText={globalize.translate('Delete')}
                 confirmButtonColor='error'
@@ -183,47 +207,57 @@ const LibraryCard = ({ virtualFolder }: LibraryCardProps) => {
                 title={virtualFolder.Name || ''}
                 text={typeName}
                 image={imageUrl}
-                icon={<Icon sx={{ fontSize: 70 }}>{getLibraryIcon(virtualFolder.CollectionType)}</Icon>}
+                icon={
+                    <Icon sx={{ fontSize: 70 }}>
+                        {getLibraryIcon(virtualFolder.CollectionType)}
+                    </Icon>
+                }
                 action={true}
                 actionRef={actionRef}
                 onActionClick={onActionClick}
                 onClick={showMediaLibraryEditor}
                 height={260}
             />
-            <Menu
-                anchorEl={anchorEl}
-                open={isMenuOpen}
-                onClose={onMenuClose}
-            >
+            <Menu anchorEl={anchorEl} open={isMenuOpen} onClose={onMenuClose}>
                 <MenuItem onClick={showImageEditor}>
                     <ListItemIcon>
                         <ImageIcon />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('EditImages')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('EditImages')}
+                    </ListItemText>
                 </MenuItem>
                 <MenuItem onClick={showMediaLibraryEditor}>
                     <ListItemIcon>
                         <Folder />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('ManageLibrary')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('ManageLibrary')}
+                    </ListItemText>
                 </MenuItem>
                 <MenuItem onClick={openRenameDialog}>
                     <ListItemIcon>
                         <EditIcon />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('ButtonRename')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('ButtonRename')}
+                    </ListItemText>
                 </MenuItem>
                 <MenuItem onClick={showRefreshDialog}>
                     <ListItemIcon>
                         <RefreshIcon />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('ScanLibrary')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('ScanLibrary')}
+                    </ListItemText>
                 </MenuItem>
                 <MenuItem onClick={showDeleteLibraryDialog}>
                     <ListItemIcon>
                         <DeleteIcon />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('ButtonRemove')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('ButtonRemove')}
+                    </ListItemText>
                 </MenuItem>
             </Menu>
         </>

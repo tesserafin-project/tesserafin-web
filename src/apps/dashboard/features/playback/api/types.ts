@@ -56,8 +56,15 @@ import type {
 } from 'lib/reefin-sdk';
 
 export type {
-    DivergenceClass, MediaKind, PlaybackMethod, ReasonCode, ReasonOutcome, ReasonSubjectKind,
-    StreamingProtocol, SubtitleDeliveryMethod, TransformKind
+    DivergenceClass,
+    MediaKind,
+    PlaybackMethod,
+    ReasonCode,
+    ReasonOutcome,
+    ReasonSubjectKind,
+    StreamingProtocol,
+    SubtitleDeliveryMethod,
+    TransformKind
 };
 
 /** Removes generator-introduced `?` optionality while preserving genuine `T | null` domain
@@ -66,8 +73,8 @@ export type {
 type DeepRequired<T> = T extends (infer U)[]
     ? DeepRequired<U>[]
     : T extends object
-        ? { [K in keyof T]-?: DeepRequired<T[K]> }
-        : T;
+      ? { [K in keyof T]-?: DeepRequired<T[K]> }
+      : T;
 
 export type Resolution = DeepRequired<GeneratedResolution>;
 export type OutputSpec = DeepRequired<GeneratedOutputSpec>;
@@ -75,32 +82,43 @@ export type SelectedSubtitle = DeepRequired<GeneratedSelectedSubtitle>;
 export type SelectedStreams = DeepRequired<GeneratedSelectedStreams>;
 export type ReasonSubject = DeepRequired<GeneratedReasonSubject>;
 export type ReasonNode = DeepRequired<GeneratedReasonNode>;
-export type PlaybackRequestContext = DeepRequired<GeneratedPlaybackRequestContext>;
+export type PlaybackRequestContext =
+    DeepRequired<GeneratedPlaybackRequestContext>;
 export type ClientCapabilities = DeepRequired<GeneratedClientCapabilities>;
 export type VideoStreamSnapshot = DeepRequired<GeneratedVideoStreamSnapshot>;
 export type AudioStreamSnapshot = DeepRequired<GeneratedAudioStreamSnapshot>;
-export type SubtitleStreamSnapshot = DeepRequired<GeneratedSubtitleStreamSnapshot>;
+export type SubtitleStreamSnapshot =
+    DeepRequired<GeneratedSubtitleStreamSnapshot>;
 export type MediaSourceSnapshot = DeepRequired<GeneratedMediaSourceSnapshot>;
 export type DiagnosticComparison = DeepRequired<GeneratedDiagnosticComparison>;
 
 /** docs/pr92-design-playback-api-and-diagnostics.md §4.2 — stable client-facing response, never
  * StreamInfo/DeviceProfile/MediaOptions. */
-export type PlaybackSessionResponse = DeepRequired<GeneratedPlaybackSessionResponse>;
+export type PlaybackSessionResponse =
+    DeepRequired<GeneratedPlaybackSessionResponse>;
 
 /** One row of `GET /System/PlaybackDiagnostics/Sessions`. */
-export type PlaybackSessionListItem = DeepRequired<GeneratedPlaybackSessionListItem>;
+export type PlaybackSessionListItem =
+    DeepRequired<GeneratedPlaybackSessionListItem>;
 
 /** Not modeled as an OpenAPI enum server-side (`DiagnosticTimelineEntry.Stage` generates as a
  * plain `string`) - kept hand-declared, the one thing genuinely not in the generated output. */
-export type DiagnosticTimelineStage = 'Created' | 'Updated' | 'FfmpegStarted' | 'PlaybackStarted' | 'PlaybackStopped';
+export type DiagnosticTimelineStage =
+    | 'Created'
+    | 'Updated'
+    | 'FfmpegStarted'
+    | 'PlaybackStarted'
+    | 'PlaybackStopped';
 
 export interface DiagnosticTimelineEntry {
-    Stage: DiagnosticTimelineStage
-    At: string
+    Stage: DiagnosticTimelineStage;
+    At: string;
 }
 
 /** docs/pr92-design-playback-api-and-diagnostics.md §4.3 — filtered admin projection, never
  * Path/TranscodingUrl/token/ffmpeg args. Nullable fields mean no shadow diagnostic was retained
  * for this session (the nominal case while the server-side shadow mode is disabled). */
-export type PlaybackDiagnosticDetail =
-    Omit<DeepRequired<GeneratedPlaybackDiagnosticDetail>, 'Timeline'> & { Timeline: DiagnosticTimelineEntry[] };
+export type PlaybackDiagnosticDetail = Omit<
+    DeepRequired<GeneratedPlaybackDiagnosticDetail>,
+    'Timeline'
+> & { Timeline: DiagnosticTimelineEntry[] };

@@ -1,7 +1,13 @@
 import type { LibraryUpdateInfo } from '@jellyfin/sdk/lib/generated-client/models/library-update-info';
 import { MediaType } from '@jellyfin/sdk/lib/generated-client/models/media-type';
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
-import React, { type FC, type PropsWithChildren, useCallback, useEffect, useRef } from 'react';
+import React, {
+    type FC,
+    type PropsWithChildren,
+    useCallback,
+    useEffect,
+    useRef
+} from 'react';
 import classNames from 'classnames';
 import Box from '@mui/material/Box';
 import Sortable from 'sortablejs';
@@ -44,7 +50,7 @@ export interface ItemsContainerProps {
     parentId?: ParentId;
     reloadItems?: () => void;
     getItemsHtml?: () => string;
-    queryKey?: QueryKey
+    queryKey?: QueryKey;
 }
 
 const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
@@ -61,7 +67,8 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
 }) => {
     const queryClient = useQueryClient();
     const { api } = useApi();
-    const { mutateAsync: playlistsMoveItemMutation } = usePlaylistsMoveItemMutation();
+    const { mutateAsync: playlistsMoveItemMutation } =
+        usePlaylistsMoveItemMutation();
     const itemsContainerRef = useRef<HTMLDivElement>(null);
     const multiSelectref = useRef<MultiSelect | null>(null);
     const sortableref = useRef<Sortable | null>(null);
@@ -73,8 +80,8 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
         const multiSelect = multiSelectref.current;
 
         if (
-            multiSelect
-            && multiSelect.onContainerClick.call(itemsContainer, e) === false
+            multiSelect &&
+            multiSelect.onContainerClick.call(itemsContainer, e) === false
         ) {
             return;
         }
@@ -147,7 +154,9 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
                 });
                 loading.hide();
             } catch (error) {
-                console.error('[Drag-Drop] error playlists Move Item: ' + error);
+                console.error(
+                    '[Drag-Drop] error playlists Move Item: ' + error
+                );
                 loading.hide();
                 if (!reloadItems) return;
                 reloadItems();
@@ -156,17 +165,20 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
         [playlistsMoveItemMutation, reloadItems]
     );
 
-    const initDragReordering = useCallback((itemsContainer: HTMLDivElement) => {
-        sortableref.current = Sortable.create(itemsContainer, {
-            draggable: '.listItem',
-            handle: '.listViewDragHandle',
+    const initDragReordering = useCallback(
+        (itemsContainer: HTMLDivElement) => {
+            sortableref.current = Sortable.create(itemsContainer, {
+                draggable: '.listItem',
+                handle: '.listViewDragHandle',
 
-            // dragging ended
-            onEnd: (evt: Sortable.SortableEvent) => {
-                return onDrop(evt);
-            }
-        });
-    }, [onDrop]);
+                // dragging ended
+                onEnd: (evt: Sortable.SortableEvent) => {
+                    return onDrop(evt);
+                }
+            });
+        },
+        [onDrop]
+    );
 
     const destroyDragReordering = useCallback(() => {
         if (sortableref.current) {
@@ -175,9 +187,10 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
         }
     }, []);
 
-    const invalidateQueries = useCallback(() => (
-        queryClient.invalidateQueries({ queryKey })
-    ), [queryClient, queryKey]);
+    const invalidateQueries = useCallback(
+        () => queryClient.invalidateQueries({ queryKey }),
+        [queryClient, queryKey]
+    );
 
     const notifyRefreshNeeded = useCallback(
         (isInForeground: boolean) => {
@@ -193,7 +206,10 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
 
     const onLibraryChanged = useCallback(
         ({ Data }: { Data?: LibraryUpdateInfo }) => {
-            if (eventsToMonitor.includes('seriestimers') || eventsToMonitor.includes('timers')) {
+            if (
+                eventsToMonitor.includes('seriestimers') ||
+                eventsToMonitor.includes('timers')
+            ) {
                 // yes this is an assumption
                 return;
             }
@@ -210,9 +226,9 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
                 const collectionFolders = Data?.CollectionFolders ?? [];
 
                 if (
-                    foldersAddedTo.indexOf(parentId) === -1
-                    && foldersRemovedFrom.indexOf(parentId) === -1
-                    && collectionFolders.indexOf(parentId) === -1
+                    foldersAddedTo.indexOf(parentId) === -1 &&
+                    foldersRemovedFrom.indexOf(parentId) === -1 &&
+                    collectionFolders.indexOf(parentId) === -1
                 ) {
                     return;
                 }
@@ -228,17 +244,17 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
             const state = stopInfo.state;
 
             if (
-                state.NowPlayingItem
-                && state.NowPlayingItem.MediaType === MediaType.Video
+                state.NowPlayingItem &&
+                state.NowPlayingItem.MediaType === MediaType.Video
             ) {
                 if (eventsToMonitor.includes('videoplayback')) {
                     notifyRefreshNeeded(true);
                     return;
                 }
             } else if (
-                state.NowPlayingItem
-                && state.NowPlayingItem.MediaType === MediaType.Audio
-                && eventsToMonitor.includes('audioplayback')
+                state.NowPlayingItem &&
+                state.NowPlayingItem.MediaType === MediaType.Audio &&
+                eventsToMonitor.includes('audioplayback')
             ) {
                 notifyRefreshNeeded(true);
                 return;
@@ -274,19 +290,33 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
     const subscribe = useCallback(() => {
         if (api) {
             unsubscribeRef.current = [
-                api.subscribe([OutboundWebSocketMessageType.UserDataChanged], invalidateQueries),
-                api.subscribe([OutboundWebSocketMessageType.TimerCreated], invalidateQueries),
-                api.subscribe([OutboundWebSocketMessageType.TimerCancelled], invalidateQueries),
-                api.subscribe([OutboundWebSocketMessageType.SeriesTimerCreated], invalidateQueries),
-                api.subscribe([OutboundWebSocketMessageType.SeriesTimerCancelled], invalidateQueries),
-                api.subscribe([OutboundWebSocketMessageType.LibraryChanged], onLibraryChanged)
+                api.subscribe(
+                    [OutboundWebSocketMessageType.UserDataChanged],
+                    invalidateQueries
+                ),
+                api.subscribe(
+                    [OutboundWebSocketMessageType.TimerCreated],
+                    invalidateQueries
+                ),
+                api.subscribe(
+                    [OutboundWebSocketMessageType.TimerCancelled],
+                    invalidateQueries
+                ),
+                api.subscribe(
+                    [OutboundWebSocketMessageType.SeriesTimerCreated],
+                    invalidateQueries
+                ),
+                api.subscribe(
+                    [OutboundWebSocketMessageType.SeriesTimerCancelled],
+                    invalidateQueries
+                ),
+                api.subscribe(
+                    [OutboundWebSocketMessageType.LibraryChanged],
+                    onLibraryChanged
+                )
             ];
         }
-    }, [
-        api,
-        invalidateQueries,
-        onLibraryChanged
-    ]);
+    }, [api, invalidateQueries, onLibraryChanged]);
 
     useEffect(() => {
         const itemsContainer = itemsContainerRef.current;
@@ -323,8 +353,8 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
         }
 
         if (
-            layoutManager.desktop
-            || (layoutManager.mobile && isMultiSelectEnabled !== false)
+            layoutManager.desktop ||
+            (layoutManager.mobile && isMultiSelectEnabled !== false)
         ) {
             initMultiSelect(itemsContainer);
         }
@@ -347,7 +377,7 @@ const ItemsContainer: FC<PropsWithChildren<ItemsContainerProps>> = ({
         subscribe();
 
         const unSubAll = () => {
-            unsubscribeRef.current.forEach(unsub => {
+            unsubscribeRef.current.forEach((unsub) => {
                 unsub();
             });
             unsubscribeRef.current = [];

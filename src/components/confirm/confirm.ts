@@ -3,18 +3,18 @@ import { appRouter } from 'components/router/appRouter';
 import globalize from 'lib/globalize';
 
 interface OptionItem {
-    id: string,
-    name: string,
-    type: 'cancel' | 'delete' | 'submit'
+    id: string;
+    name: string;
+    type: 'cancel' | 'delete' | 'submit';
 }
 
 interface ConfirmOptions {
-    title?: string,
-    text: string
-    cancelText?: string,
-    confirmText?: string,
-    primary?: string
-    buttons?: OptionItem[]
+    title?: string;
+    text: string;
+    cancelText?: string;
+    confirmText?: string;
+    primary?: string;
+    buttons?: OptionItem[];
 }
 
 async function confirm(options: string | ConfirmOptions, title: string = '') {
@@ -43,7 +43,7 @@ async function confirm(options: string | ConfirmOptions, title: string = '') {
 
     await appRouter.ready();
 
-    return dialog.show(options).then(result => {
+    return dialog.show(options).then((result) => {
         if (result === 'ok') {
             return Promise.resolve();
         }

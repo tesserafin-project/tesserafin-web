@@ -23,14 +23,15 @@ import type {
  * the generated class — goes away once a later PR migrates the connection layer itself (design doc
  * §8 PR3), at which point `useApi()` can hand out a `ReefinApi` directly.
  */
-const systemApiFor = (api: Api): SystemApi => new SystemApi(
-    new Configuration({
-        basePath: api.basePath,
-        baseOptions: { headers: { Authorization: api.authorizationHeader } }
-    }),
-    api.basePath,
-    api.axiosInstance
-);
+const systemApiFor = (api: Api): SystemApi =>
+    new SystemApi(
+        new Configuration({
+            basePath: api.basePath,
+            baseOptions: { headers: { Authorization: api.authorizationHeader } }
+        }),
+        api.basePath,
+        api.axiosInstance
+    );
 
 /**
  * Every generated model property is optional (see `./types.ts`'s file-level comment on
@@ -55,7 +56,10 @@ export async function fetchPlaybackSessionDetail(
     id: string,
     signal?: AbortSignal
 ): Promise<PlaybackDiagnosticDetail> {
-    const { data } = await systemApiFor(api).getPlaybackSession({ id }, { signal });
+    const { data } = await systemApiFor(api).getPlaybackSession(
+        { id },
+        { signal }
+    );
     return asContract<PlaybackDiagnosticDetail>(data);
 }
 
@@ -68,7 +72,13 @@ export async function fetchPlaybackSessionDetail(
  * 'blob'` is passed the same way it was against the raw-axios version of this function, and the
  * result is asserted to `Blob` for the same reason as `asContract` above.
  */
-export async function fetchPlaybackSessionFixture(api: Api, id: string): Promise<Blob> {
-    const { data } = await systemApiFor(api).exportFixture({ id }, { responseType: 'blob' });
+export async function fetchPlaybackSessionFixture(
+    api: Api,
+    id: string
+): Promise<Blob> {
+    const { data } = await systemApiFor(api).exportFixture(
+        { id },
+        { responseType: 'blob' }
+    );
     return asContract<Blob>(data);
 }

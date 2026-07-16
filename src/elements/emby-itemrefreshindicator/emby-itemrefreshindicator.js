@@ -7,7 +7,9 @@ import 'webcomponents.js/webcomponents-lite';
 
 function onRefreshProgress(indicator, info) {
     if (!indicator.itemId) {
-        indicator.itemId = dom.parentWithAttribute(indicator, 'data-id').getAttribute('data-id');
+        indicator.itemId = dom
+            .parentWithAttribute(indicator, 'data-id')
+            .getAttribute('data-id');
     }
 
     if (info?.ItemId === indicator.itemId) {
@@ -34,12 +36,20 @@ EmbyItemRefreshIndicatorPrototype.createdCallback = function () {
     const handler = ({ Data }) => onRefreshProgress(this, Data);
 
     this._wsApiClientCreatedHandler = (e, newApiClient) => {
-        const unsub = newApiClient.subscribe([OutboundWebSocketMessageType.RefreshProgress], handler);
+        const unsub = newApiClient.subscribe(
+            [OutboundWebSocketMessageType.RefreshProgress],
+            handler
+        );
         if (unsub) this._wsUnsubscribers.push(unsub);
     };
 
     this._wsUnsubscribers = ServerConnections.getApiClients()
-        .map(apiClient => apiClient.subscribe([OutboundWebSocketMessageType.RefreshProgress], handler))
+        .map((apiClient) =>
+            apiClient.subscribe(
+                [OutboundWebSocketMessageType.RefreshProgress],
+                handler
+            )
+        )
         .filter(Boolean);
 };
 
@@ -56,7 +66,7 @@ EmbyItemRefreshIndicatorPrototype.detachedCallback = function () {
         EmbyProgressRing.detachedCallback.call(this);
     }
 
-    this._wsUnsubscribers?.forEach(unsub => {
+    this._wsUnsubscribers?.forEach((unsub) => {
         unsub();
     });
     this._wsUnsubscribers = [];
@@ -72,4 +82,3 @@ document.registerElement('emby-itemrefreshindicator', {
     prototype: EmbyItemRefreshIndicatorPrototype,
     extends: 'div'
 });
-

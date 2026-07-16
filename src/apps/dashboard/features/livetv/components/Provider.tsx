@@ -22,14 +22,15 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { useDeleteProvider } from '../api/useDeleteProvider';
 
 interface ProviderProps {
-    provider: ListingsProviderInfo
+    provider: ListingsProviderInfo;
 }
 
 const Provider = ({ provider }: ProviderProps) => {
-    const [ isDeleteProviderDialogOpen, setIsDeleteProviderDialogOpen ] = useState(false);
+    const [isDeleteProviderDialogOpen, setIsDeleteProviderDialogOpen] =
+        useState(false);
     const actionsRef = useRef<HTMLButtonElement | null>(null);
-    const [ anchorEl, setAnchorEl ] = useState<HTMLButtonElement | null>(null);
-    const [ isMenuOpen, setIsMenuOpen ] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const deleteProvider = useDeleteProvider();
 
     const showChannelMapper = useCallback(() => {
@@ -39,7 +40,7 @@ const Provider = ({ provider }: ProviderProps) => {
             serverId: ServerConnections.currentApiClient()?.serverId(),
             providerId: provider.Id
         }).show();
-    }, [ provider ]);
+    }, [provider]);
 
     const showContextMenu = useCallback(() => {
         setAnchorEl(actionsRef.current);
@@ -63,15 +64,18 @@ const Provider = ({ provider }: ProviderProps) => {
 
     const onConfirmDelete = useCallback(() => {
         if (provider.Id) {
-            deleteProvider.mutate({
-                id: provider.Id
-            }, {
-                onSettled: () => {
-                    setIsDeleteProviderDialogOpen(false);
+            deleteProvider.mutate(
+                {
+                    id: provider.Id
+                },
+                {
+                    onSettled: () => {
+                        setIsDeleteProviderDialogOpen(false);
+                    }
                 }
-            });
+            );
         }
-    }, [ deleteProvider, provider ]);
+    }, [deleteProvider, provider]);
 
     return (
         <>
@@ -85,14 +89,21 @@ const Provider = ({ provider }: ProviderProps) => {
                 confirmButtonColor='error'
             />
             <ListItem
-                disablePadding key={provider.Id}
+                disablePadding
+                key={provider.Id}
                 secondaryAction={
                     <IconButton ref={actionsRef} onClick={showContextMenu}>
                         <MoreVertIcon />
                     </IconButton>
                 }
             >
-                <ListItemLink to={getProviderConfigurationUrl(provider.Type || '') + '&id=' + provider.Id}>
+                <ListItemLink
+                    to={
+                        getProviderConfigurationUrl(provider.Type || '') +
+                        '&id=' +
+                        provider.Id
+                    }
+                >
                     <ListItemAvatar>
                         <Avatar sx={{ bgcolor: 'primary.main' }}>
                             <DvrIcon sx={{ color: '#fff' }} />
@@ -113,16 +124,14 @@ const Provider = ({ provider }: ProviderProps) => {
                 </ListItemLink>
             </ListItem>
 
-            <Menu
-                anchorEl={anchorEl}
-                open={isMenuOpen}
-                onClose={onMenuClose}
-            >
+            <Menu anchorEl={anchorEl} open={isMenuOpen} onClose={onMenuClose}>
                 <MenuItem onClick={showChannelMapper}>
                     <ListItemIcon>
                         <LocationSearchingIcon />
                     </ListItemIcon>
-                    <ListItemText>{globalize.translate('MapChannels')}</ListItemText>
+                    <ListItemText>
+                        {globalize.translate('MapChannels')}
+                    </ListItemText>
                 </MenuItem>
                 <MenuItem onClick={showDeleteDialog}>
                     <ListItemIcon>

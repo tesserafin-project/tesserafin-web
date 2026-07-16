@@ -22,7 +22,9 @@ export const getPublishedServerUris = (uris: string[]): PublishedServerUris => {
     return publishedServerUris;
 };
 
-export const encodePublishedServerUris = (uris: PublishedServerUris): string[] => {
+export const encodePublishedServerUris = (
+    uris: PublishedServerUris
+): string[] => {
     if (uris.all) {
         return [`all=${uris.all}`];
     }
@@ -42,9 +44,12 @@ export const encodePublishedServerUris = (uris: PublishedServerUris): string[] =
 export const splitString = (str: string | null | undefined) => {
     if (!str) return [];
 
-    return str.split(',').map(function (s) {
-        return s.trim();
-    }).filter(function (s) {
-        return s.length > 0;
-    });
+    return str
+        .split(',')
+        .map(function (s) {
+            return s.trim();
+        })
+        .filter(function (s) {
+            return s.length > 0;
+        });
 };

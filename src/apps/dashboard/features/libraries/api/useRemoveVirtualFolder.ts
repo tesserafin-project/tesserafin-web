@@ -9,10 +9,8 @@ import { invalidateVirtualFolders } from './invalidateVirtualFolders';
 export const useRemoveVirtualFolder = () => {
     const { api, user } = useApi();
     return useMutation({
-        mutationFn: (params: LibraryStructureApiRemoveVirtualFolderRequest) => (
-            getLibraryStructureApi(api!)
-                .removeVirtualFolder(params)
-        ),
+        mutationFn: (params: LibraryStructureApiRemoveVirtualFolderRequest) =>
+            getLibraryStructureApi(api!).removeVirtualFolder(params),
         onSuccess: () => {
             invalidateVirtualFolders(user);
         }

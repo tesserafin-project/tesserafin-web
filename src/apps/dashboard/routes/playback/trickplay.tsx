@@ -2,7 +2,12 @@ import React from 'react';
 
 import globalize from 'lib/globalize';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
-import { type ActionFunctionArgs, Form, useActionData, useNavigation } from 'react-router-dom';
+import {
+    type ActionFunctionArgs,
+    Form,
+    useActionData,
+    useNavigation
+} from 'react-router-dom';
 import { QUERY_KEY, useConfiguration } from 'hooks/useConfiguration';
 import Page from 'components/Page';
 import Box from '@mui/material/Box';
@@ -37,22 +42,32 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     options.EnableHwAcceleration = data.HwAcceleration?.toString() === 'on';
     options.EnableHwEncoding = data.HwEncoding?.toString() === 'on';
-    options.EnableKeyFrameOnlyExtraction = data.KeyFrameOnlyExtraction?.toString() === 'on';
-    options.ScanBehavior = data.ScanBehavior.toString() as TrickplayScanBehavior;
-    options.ProcessPriority = data.ProcessPriority.toString() as ProcessPriorityClass;
+    options.EnableKeyFrameOnlyExtraction =
+        data.KeyFrameOnlyExtraction?.toString() === 'on';
+    options.ScanBehavior =
+        data.ScanBehavior.toString() as TrickplayScanBehavior;
+    options.ProcessPriority =
+        data.ProcessPriority.toString() as ProcessPriorityClass;
     options.Interval = parseInt(data.ImageInterval.toString() || '10000', 10);
-    options.WidthResolutions = data.WidthResolutions.toString().replace(' ', '').split(',').map(Number);
+    options.WidthResolutions = data.WidthResolutions.toString()
+        .replace(' ', '')
+        .split(',')
+        .map(Number);
     options.TileWidth = parseInt(data.TileWidth.toString() || '10', 10);
     options.TileHeight = parseInt(data.TileHeight.toString() || '10', 10);
     options.Qscale = parseInt(data.Qscale.toString() || '4', 10);
     options.JpegQuality = parseInt(data.JpegQuality.toString() || '90', 10);
-    options.ProcessThreads = parseInt(data.TrickplayThreads.toString() || '1', 10);
+    options.ProcessThreads = parseInt(
+        data.TrickplayThreads.toString() || '1',
+        10
+    );
 
-    await getSystemApi(api)
-        .updateConfiguration({ serverConfiguration: config });
+    await getSystemApi(api).updateConfiguration({
+        serverConfiguration: config
+    });
 
     void queryClient.invalidateQueries({
-        queryKey: [ QUERY_KEY ]
+        queryKey: [QUERY_KEY]
     });
 
     return {
@@ -79,7 +94,9 @@ export const Component = () => {
             <Box className='content-primary'>
                 <Form method='POST'>
                     {isError ? (
-                        <Alert severity='error'>{globalize.translate('TrickplayLoadError')}</Alert>
+                        <Alert severity='error'>
+                            {globalize.translate('TrickplayLoadError')}
+                        </Alert>
                     ) : (
                         <Stack spacing={3}>
                             <Typography variant='h1'>
@@ -97,10 +114,15 @@ export const Component = () => {
                                     control={
                                         <Checkbox
                                             name='HwAcceleration'
-                                            defaultChecked={defaultConfig.TrickplayOptions?.EnableHwAcceleration}
+                                            defaultChecked={
+                                                defaultConfig.TrickplayOptions
+                                                    ?.EnableHwAcceleration
+                                            }
                                         />
                                     }
-                                    label={globalize.translate('LabelTrickplayAccel')}
+                                    label={globalize.translate(
+                                        'LabelTrickplayAccel'
+                                    )}
                                 />
                             </FormControl>
 
@@ -109,12 +131,21 @@ export const Component = () => {
                                     control={
                                         <Checkbox
                                             name='HwEncoding'
-                                            defaultChecked={defaultConfig.TrickplayOptions?.EnableHwEncoding}
+                                            defaultChecked={
+                                                defaultConfig.TrickplayOptions
+                                                    ?.EnableHwEncoding
+                                            }
                                         />
                                     }
-                                    label={globalize.translate('LabelTrickplayAccelEncoding')}
+                                    label={globalize.translate(
+                                        'LabelTrickplayAccelEncoding'
+                                    )}
                                 />
-                                <FormHelperText>{globalize.translate('LabelTrickplayAccelEncodingHelp')}</FormHelperText>
+                                <FormHelperText>
+                                    {globalize.translate(
+                                        'LabelTrickplayAccelEncodingHelp'
+                                    )}
+                                </FormHelperText>
                             </FormControl>
 
                             <FormControl>
@@ -122,46 +153,94 @@ export const Component = () => {
                                     control={
                                         <Checkbox
                                             name='KeyFrameOnlyExtraction'
-                                            defaultChecked={defaultConfig.TrickplayOptions?.EnableKeyFrameOnlyExtraction}
+                                            defaultChecked={
+                                                defaultConfig.TrickplayOptions
+                                                    ?.EnableKeyFrameOnlyExtraction
+                                            }
                                         />
                                     }
-                                    label={globalize.translate('LabelTrickplayKeyFrameOnlyExtraction')}
+                                    label={globalize.translate(
+                                        'LabelTrickplayKeyFrameOnlyExtraction'
+                                    )}
                                 />
-                                <FormHelperText>{globalize.translate('LabelTrickplayKeyFrameOnlyExtractionHelp')}</FormHelperText>
+                                <FormHelperText>
+                                    {globalize.translate(
+                                        'LabelTrickplayKeyFrameOnlyExtractionHelp'
+                                    )}
+                                </FormHelperText>
                             </FormControl>
 
                             <TextField
                                 name='ScanBehavior'
                                 select
-                                defaultValue={defaultConfig.TrickplayOptions?.ScanBehavior}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.ScanBehavior
+                                }
                                 label={globalize.translate('LabelScanBehavior')}
-                                helperText={globalize.translate('LabelScanBehaviorHelp')}
+                                helperText={globalize.translate(
+                                    'LabelScanBehaviorHelp'
+                                )}
                             >
-                                <MenuItem value={TrickplayScanBehavior.NonBlocking}>{globalize.translate('NonBlockingScan')}</MenuItem>
-                                <MenuItem value={TrickplayScanBehavior.Blocking}>{globalize.translate('BlockingScan')}</MenuItem>
+                                <MenuItem
+                                    value={TrickplayScanBehavior.NonBlocking}
+                                >
+                                    {globalize.translate('NonBlockingScan')}
+                                </MenuItem>
+                                <MenuItem
+                                    value={TrickplayScanBehavior.Blocking}
+                                >
+                                    {globalize.translate('BlockingScan')}
+                                </MenuItem>
                             </TextField>
 
                             <TextField
                                 name='ProcessPriority'
                                 select
-                                defaultValue={defaultConfig.TrickplayOptions?.ProcessPriority}
-                                label={globalize.translate('LabelProcessPriority')}
-                                helperText={globalize.translate('LabelProcessPriorityHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions
+                                        ?.ProcessPriority
+                                }
+                                label={globalize.translate(
+                                    'LabelProcessPriority'
+                                )}
+                                helperText={globalize.translate(
+                                    'LabelProcessPriorityHelp'
+                                )}
                             >
-                                <MenuItem value={ProcessPriorityClass.High}>{globalize.translate('PriorityHigh')}</MenuItem>
-                                <MenuItem value={ProcessPriorityClass.AboveNormal}>{globalize.translate('PriorityAboveNormal')}</MenuItem>
-                                <MenuItem value={ProcessPriorityClass.Normal}>{globalize.translate('PriorityNormal')}</MenuItem>
-                                <MenuItem value={ProcessPriorityClass.BelowNormal}>{globalize.translate('PriorityBelowNormal')}</MenuItem>
-                                <MenuItem value={ProcessPriorityClass.Idle}>{globalize.translate('PriorityIdle')}</MenuItem>
+                                <MenuItem value={ProcessPriorityClass.High}>
+                                    {globalize.translate('PriorityHigh')}
+                                </MenuItem>
+                                <MenuItem
+                                    value={ProcessPriorityClass.AboveNormal}
+                                >
+                                    {globalize.translate('PriorityAboveNormal')}
+                                </MenuItem>
+                                <MenuItem value={ProcessPriorityClass.Normal}>
+                                    {globalize.translate('PriorityNormal')}
+                                </MenuItem>
+                                <MenuItem
+                                    value={ProcessPriorityClass.BelowNormal}
+                                >
+                                    {globalize.translate('PriorityBelowNormal')}
+                                </MenuItem>
+                                <MenuItem value={ProcessPriorityClass.Idle}>
+                                    {globalize.translate('PriorityIdle')}
+                                </MenuItem>
                             </TextField>
 
                             <TextField
-                                label={globalize.translate('LabelImageInterval')}
+                                label={globalize.translate(
+                                    'LabelImageInterval'
+                                )}
                                 name='ImageInterval'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.Interval}
-                                helperText={globalize.translate('LabelImageIntervalHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.Interval
+                                }
+                                helperText={globalize.translate(
+                                    'LabelImageIntervalHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 1,
@@ -171,10 +250,17 @@ export const Component = () => {
                             />
 
                             <TextField
-                                label={globalize.translate('LabelWidthResolutions')}
+                                label={globalize.translate(
+                                    'LabelWidthResolutions'
+                                )}
                                 name='WidthResolutions'
-                                defaultValue={defaultConfig.TrickplayOptions?.WidthResolutions}
-                                helperText={globalize.translate('LabelWidthResolutionsHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions
+                                        ?.WidthResolutions
+                                }
+                                helperText={globalize.translate(
+                                    'LabelWidthResolutionsHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         required: true,
@@ -188,8 +274,12 @@ export const Component = () => {
                                 name='TileWidth'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.TileWidth}
-                                helperText={globalize.translate('LabelTileWidthHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.TileWidth
+                                }
+                                helperText={globalize.translate(
+                                    'LabelTileWidthHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 1,
@@ -203,8 +293,12 @@ export const Component = () => {
                                 name='TileHeight'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.TileHeight}
-                                helperText={globalize.translate('LabelTileHeightHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.TileHeight
+                                }
+                                helperText={globalize.translate(
+                                    'LabelTileHeightHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 1,
@@ -218,8 +312,12 @@ export const Component = () => {
                                 name='JpegQuality'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.JpegQuality}
-                                helperText={globalize.translate('LabelJpegQualityHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.JpegQuality
+                                }
+                                helperText={globalize.translate(
+                                    'LabelJpegQualityHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 1,
@@ -234,8 +332,12 @@ export const Component = () => {
                                 name='Qscale'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.Qscale}
-                                helperText={globalize.translate('LabelQscaleHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions?.Qscale
+                                }
+                                helperText={globalize.translate(
+                                    'LabelQscaleHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 2,
@@ -246,12 +348,19 @@ export const Component = () => {
                             />
 
                             <TextField
-                                label={globalize.translate('LabelTrickplayThreads')}
+                                label={globalize.translate(
+                                    'LabelTrickplayThreads'
+                                )}
                                 name='TrickplayThreads'
                                 type='number'
                                 inputMode='numeric'
-                                defaultValue={defaultConfig.TrickplayOptions?.ProcessThreads}
-                                helperText={globalize.translate('LabelTrickplayThreadsHelp')}
+                                defaultValue={
+                                    defaultConfig.TrickplayOptions
+                                        ?.ProcessThreads
+                                }
+                                helperText={globalize.translate(
+                                    'LabelTrickplayThreadsHelp'
+                                )}
                                 slotProps={{
                                     htmlInput: {
                                         min: 0,
@@ -260,10 +369,7 @@ export const Component = () => {
                                 }}
                             />
 
-                            <Button
-                                type='submit'
-                                size='large'
-                            >
+                            <Button type='submit' size='large'>
                                 {globalize.translate('Save')}
                             </Button>
                         </Stack>

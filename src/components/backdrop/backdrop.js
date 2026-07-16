@@ -40,17 +40,27 @@ class Backdrop {
             }
 
             const onAnimationComplete = () => {
-                dom.removeEventListener(backdropImage, dom.whichAnimationEvent(), onAnimationComplete, {
-                    once: true
-                });
+                dom.removeEventListener(
+                    backdropImage,
+                    dom.whichAnimationEvent(),
+                    onAnimationComplete,
+                    {
+                        once: true
+                    }
+                );
                 if (backdropImage === self.currentAnimatingElement) {
                     self.currentAnimatingElement = null;
                 }
             };
 
-            dom.addEventListener(backdropImage, dom.whichAnimationEvent(), onAnimationComplete, {
-                once: true
-            });
+            dom.addEventListener(
+                backdropImage,
+                dom.whichAnimationEvent(),
+                onAnimationComplete,
+                {
+                    once: true
+                }
+            );
 
             internalBackdrop(true);
         };
@@ -141,9 +151,14 @@ function setBackdropImage(url) {
     }
 
     const elem = getBackdropContainer();
-    const existingBackdropImage = elem.querySelector('.displayingBackdropImage');
+    const existingBackdropImage = elem.querySelector(
+        '.displayingBackdropImage'
+    );
     // If the current backdrop image is the same as the new one, do nothing
-    if (existingBackdropImage && existingBackdropImage.getAttribute('data-url') === url) {
+    if (
+        existingBackdropImage &&
+        existingBackdropImage.getAttribute('data-url') === url
+    ) {
         return;
     }
 
@@ -158,23 +173,29 @@ function getItemImageUrls(item, imageOptions) {
     const apiClient = ServerConnections.getApiClient(item.ServerId);
     if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
         return item.BackdropImageTags.map((imgTag, index) => {
-            return apiClient.getScaledImageUrl(item.BackdropItemId || item.Id, Object.assign(imageOptions, {
-                type: 'Backdrop',
-                tag: imgTag,
-                maxWidth: dom.getScreenWidth(),
-                index: index
-            }));
+            return apiClient.getScaledImageUrl(
+                item.BackdropItemId || item.Id,
+                Object.assign(imageOptions, {
+                    type: 'Backdrop',
+                    tag: imgTag,
+                    maxWidth: dom.getScreenWidth(),
+                    index: index
+                })
+            );
         });
     }
 
     if (item.ParentBackdropItemId && item.ParentBackdropImageTags?.length) {
         return item.ParentBackdropImageTags.map((imgTag, index) => {
-            return apiClient.getScaledImageUrl(item.ParentBackdropItemId, Object.assign(imageOptions, {
-                type: 'Backdrop',
-                tag: imgTag,
-                maxWidth: dom.getScreenWidth(),
-                index: index
-            }));
+            return apiClient.getScaledImageUrl(
+                item.ParentBackdropItemId,
+                Object.assign(imageOptions, {
+                    type: 'Backdrop',
+                    tag: imgTag,
+                    maxWidth: dom.getScreenWidth(),
+                    index: index
+                })
+            );
         });
     }
 
@@ -183,7 +204,7 @@ function getItemImageUrls(item, imageOptions) {
 
 function getImageUrls(items, imageOptions) {
     const list = [];
-    const onImg = img => {
+    const onImg = (img) => {
         list.push(img);
     };
 
@@ -247,8 +268,10 @@ function onRotationInterval() {
 
     // Remove old images after a delay to allow fade-in animation (800ms) to complete
     setTimeout(() => {
-        const oldImages = getBackdropContainer().querySelectorAll(`.backdropImage:not([data-url="${currentImage}"])`);
-        oldImages.forEach(img => {
+        const oldImages = getBackdropContainer().querySelectorAll(
+            `.backdropImage:not([data-url="${currentImage}"])`
+        );
+        oldImages.forEach((img) => {
             img.remove();
         });
     }, 1600);

@@ -15,13 +15,11 @@ import { queryClient } from 'utils/query/queryClient';
 
 import type { SectionContainerElement, SectionOptions } from './section';
 
-function getOnNowFetchFn(
-    apiClient: ApiClient
-) {
+function getOnNowFetchFn(apiClient: ApiClient) {
     return function () {
         const api = ServerConnections.getApi(apiClient.serverId());
-        return queryClient
-            .fetchQuery(getRecommendedProgramsQuery(api, {
+        return queryClient.fetchQuery(
+            getRecommendedProgramsQuery(api, {
                 userId: apiClient.getCurrentUserId(),
                 isAiring: true,
                 limit: 24,
@@ -36,19 +34,18 @@ function getOnNowFetchFn(
                     ItemFields.ChannelInfo,
                     ItemFields.PrimaryImageAspectRatio
                 ]
-            }));
+            })
+        );
     };
 }
 
-function getOnNowItemsHtmlFn(
-    { enableOverflow }: SectionOptions
-) {
-    return (items: BaseItemDto[]) => (
+function getOnNowItemsHtmlFn({ enableOverflow }: SectionOptions) {
+    return (items: BaseItemDto[]) =>
         cardBuilder.getCardsHtml({
             items: items,
             preferThumb: 'auto',
             inheritThumb: false,
-            shape: (enableOverflow ? 'autooverflow' : 'auto'),
+            shape: enableOverflow ? 'autooverflow' : 'auto',
             showParentTitleOrTitle: true,
             showTitle: true,
             centerText: true,
@@ -62,8 +59,7 @@ function getOnNowItemsHtmlFn(
             defaultShape: getBackdropShape(enableOverflow),
             lines: 3,
             overlayPlayButton: true
-        })
-    );
+        });
 }
 
 function buildSection(
@@ -80,45 +76,81 @@ function buildSection(
 
     let html = '';
     html += '<div class="verticalSection">';
-    html += '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
-    html += '<h2 class="sectionTitle sectionTitle-cards">' + globalize.translate('LiveTV') + '</h2>';
+    html +=
+        '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
+    html +=
+        '<h2 class="sectionTitle sectionTitle-cards">' +
+        globalize.translate('LiveTV') +
+        '</h2>';
     html += '</div>';
 
     if (options.enableOverflow) {
-        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true" data-scrollbuttons="false">';
-        html += '<div class="padded-top padded-bottom scrollSlider focuscontainer-x">';
+        html +=
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true" data-scrollbuttons="false">';
+        html +=
+            '<div class="padded-top padded-bottom scrollSlider focuscontainer-x">';
     } else {
         html += '<div class="padded-top padded-bottom focuscontainer-x">';
     }
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-        serverId,
-        section: 'programs'
-    }) + '" class="raised"><span>' + globalize.translate('Programs') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('livetv', {
+            serverId,
+            section: 'programs'
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Programs') +
+        '</span></a>';
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-        serverId,
-        section: 'guide'
-    }) + '" class="raised"><span>' + globalize.translate('Guide') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('livetv', {
+            serverId,
+            section: 'guide'
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Guide') +
+        '</span></a>';
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-        serverId,
-        section: 'channels'
-    }) + '" class="raised"><span>' + globalize.translate('Channels') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('livetv', {
+            serverId,
+            section: 'channels'
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Channels') +
+        '</span></a>';
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('recordedtv', {
-        serverId
-    }) + '" class="raised"><span>' + globalize.translate('Recordings') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('recordedtv', {
+            serverId
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Recordings') +
+        '</span></a>';
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-        serverId,
-        section: 'dvrschedule'
-    }) + '" class="raised"><span>' + globalize.translate('Schedule') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('livetv', {
+            serverId,
+            section: 'dvrschedule'
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Schedule') +
+        '</span></a>';
 
-    html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-        serverId,
-        section: 'seriesrecording'
-    }) + '" class="raised"><span>' + globalize.translate('Series') + '</span></a>';
+    html +=
+        '<a is="emby-linkbutton" href="' +
+        appRouter.getRouteUrl('livetv', {
+            serverId,
+            section: 'seriesrecording'
+        }) +
+        '" class="raised"><span>' +
+        globalize.translate('Series') +
+        '</span></a>';
 
     html += '</div>';
     if (options.enableOverflow) {
@@ -128,28 +160,39 @@ function buildSection(
     html += '</div>';
 
     html += '<div class="verticalSection">';
-    html += '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
+    html +=
+        '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
 
     if (!layoutManager.tv) {
-        html += '<a is="emby-linkbutton" href="' + appRouter.getRouteUrl('livetv', {
-            serverId,
-            section: 'onnow'
-        }) + '" class="more button-flat button-flat-mini sectionTitleTextButton">';
+        html +=
+            '<a is="emby-linkbutton" href="' +
+            appRouter.getRouteUrl('livetv', {
+                serverId,
+                section: 'onnow'
+            }) +
+            '" class="more button-flat button-flat-mini sectionTitleTextButton">';
         html += '<h2 class="sectionTitle sectionTitle-cards">';
         html += globalize.translate('HeaderOnNow');
         html += '</h2>';
-        html += '<span class="material-icons chevron_right" aria-hidden="true"></span>';
+        html +=
+            '<span class="material-icons chevron_right" aria-hidden="true"></span>';
         html += '</a>';
     } else {
-        html += '<h2 class="sectionTitle sectionTitle-cards">' + globalize.translate('HeaderOnNow') + '</h2>';
+        html +=
+            '<h2 class="sectionTitle sectionTitle-cards">' +
+            globalize.translate('HeaderOnNow') +
+            '</h2>';
     }
     html += '</div>';
 
     if (options.enableOverflow) {
-        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
-        html += '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
+        html +=
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
     } else {
-        html += '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right vertical-wrap focuscontainer-x">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right vertical-wrap focuscontainer-x">';
     }
 
     if (options.enableOverflow) {
@@ -161,7 +204,8 @@ function buildSection(
 
     elem.innerHTML = html;
 
-    const itemsContainer: SectionContainerElement | null = elem.querySelector('.itemsContainer');
+    const itemsContainer: SectionContainerElement | null =
+        elem.querySelector('.itemsContainer');
     if (!itemsContainer) return;
     itemsContainer.parentContainer = elem;
     itemsContainer.fetchData = getOnNowFetchFn(apiClient);
@@ -180,23 +224,25 @@ export function loadLiveTV(
 
     const api = ServerConnections.getApi(apiClient.serverId());
     return queryClient
-        .fetchQuery(getRecommendedProgramsQuery(api, {
-            userId: apiClient.getCurrentUserId(),
-            isAiring: true,
-            limit: 1,
-            imageTypeLimit: 1,
-            enableImageTypes: [
-                ImageType.Primary,
-                ImageType.Thumb,
-                ImageType.Backdrop
-            ],
-            enableTotalRecordCount: false,
-            fields: [
-                ItemFields.ChannelInfo,
-                ItemFields.PrimaryImageAspectRatio
-            ]
-        }))
-        .then(programs => {
+        .fetchQuery(
+            getRecommendedProgramsQuery(api, {
+                userId: apiClient.getCurrentUserId(),
+                isAiring: true,
+                limit: 1,
+                imageTypeLimit: 1,
+                enableImageTypes: [
+                    ImageType.Primary,
+                    ImageType.Thumb,
+                    ImageType.Backdrop
+                ],
+                enableTotalRecordCount: false,
+                fields: [
+                    ItemFields.ChannelInfo,
+                    ItemFields.PrimaryImageAspectRatio
+                ]
+            })
+        )
+        .then((programs) => {
             if (programs.Items?.length) {
                 buildSection(elem, apiClient, options);
             }

@@ -10,13 +10,11 @@ export const useDeleteDevice = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (params: DeviceApiDeleteDeviceRequest) => (
-            getDeviceApi(api!)
-                .deleteDevice(params)
-        ),
+        mutationFn: (params: DeviceApiDeleteDeviceRequest) =>
+            getDeviceApi(api!).deleteDevice(params),
         onSuccess: () => {
             void queryClient.invalidateQueries({
-                queryKey: [ QUERY_KEY ]
+                queryKey: [QUERY_KEY]
             });
         }
     });

@@ -11,11 +11,14 @@ import { EventType } from 'constants/eventType';
  * will always return the default theme.
  */
 export const ThemeStorageManager: StorageManager = () => ({
-    get: defaultValue => defaultValue,
-    set: () => { /* no-op */ },
-    subscribe: handler => {
+    get: (defaultValue) => defaultValue,
+    set: () => {
+        /* no-op */
+    },
+    subscribe: (handler) => {
         const wrappedHandler = (_e: Event, value: string) => handler(value);
         Events.on(document, EventType.THEME_CHANGE, wrappedHandler);
-        return () => Events.off(document, EventType.THEME_CHANGE, wrappedHandler);
+        return () =>
+            Events.off(document, EventType.THEME_CHANGE, wrappedHandler);
     }
 });

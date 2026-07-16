@@ -18,14 +18,16 @@ function getLatestRecordingsFetchFn(
     return function () {
         const api = ServerConnections.getApi(serverId);
         const apiClient = ServerConnections.getApiClient(serverId);
-        return queryClient.fetchQuery(getRecordingsQuery(api, {
-            userId: apiClient?.getCurrentUserId(),
-            limit: enableOverflow ? 12 : 5,
-            fields: [ ItemFields.PrimaryImageAspectRatio ],
-            enableTotalRecordCount: false,
-            isLibraryItem: activeRecordingsOnly ? undefined : false,
-            isInProgress: activeRecordingsOnly ? true : undefined
-        }));
+        return queryClient.fetchQuery(
+            getRecordingsQuery(api, {
+                userId: apiClient?.getCurrentUserId(),
+                limit: enableOverflow ? 12 : 5,
+                fields: [ItemFields.PrimaryImageAspectRatio],
+                enableTotalRecordCount: false,
+                isLibraryItem: activeRecordingsOnly ? undefined : false,
+                isInProgress: activeRecordingsOnly ? true : undefined
+            })
+        );
     };
 }
 
@@ -63,21 +65,27 @@ export function loadRecordings(
     apiClient: ApiClient,
     options: SectionOptions
 ) {
-    const title = activeRecordingsOnly ?
-        globalize.translate('HeaderActiveRecordings') :
-        globalize.translate('HeaderLatestRecordings');
+    const title = activeRecordingsOnly
+        ? globalize.translate('HeaderActiveRecordings')
+        : globalize.translate('HeaderLatestRecordings');
 
     let html = '';
 
     html += '<div class="sectionTitleContainer sectionTitleContainer-cards">';
-    html += '<h2 class="sectionTitle sectionTitle-cards padded-left">' + title + '</h2>';
+    html +=
+        '<h2 class="sectionTitle sectionTitle-cards padded-left">' +
+        title +
+        '</h2>';
     html += '</div>';
 
     if (options.enableOverflow) {
-        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
-        html += '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
+        html +=
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x">';
     } else {
-        html += '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right vertical-wrap focuscontainer-x">';
+        html +=
+            '<div is="emby-itemscontainer" class="itemsContainer padded-left padded-right vertical-wrap focuscontainer-x">';
     }
 
     if (options.enableOverflow) {
@@ -88,9 +96,17 @@ export function loadRecordings(
     elem.classList.add('hide');
     elem.innerHTML = html;
 
-    const itemsContainer: SectionContainerElement | null = elem.querySelector('.itemsContainer');
+    const itemsContainer: SectionContainerElement | null =
+        elem.querySelector('.itemsContainer');
     if (!itemsContainer) return;
-    itemsContainer.fetchData = getLatestRecordingsFetchFn(apiClient.serverId(), activeRecordingsOnly, options);
-    itemsContainer.getItemsHtml = getLatestRecordingItemsHtml(activeRecordingsOnly, options);
+    itemsContainer.fetchData = getLatestRecordingsFetchFn(
+        apiClient.serverId(),
+        activeRecordingsOnly,
+        options
+    );
+    itemsContainer.getItemsHtml = getLatestRecordingItemsHtml(
+        activeRecordingsOnly,
+        options
+    );
     itemsContainer.parentContainer = elem;
 }

@@ -33,9 +33,11 @@ function displayContent(cmd, apiClient) {
 }
 
 function playTrailers(apiClient, itemId) {
-    apiClient.getItem(apiClient.getCurrentUserId(), itemId).then(function (item) {
-        playbackManager.playTrailers(item);
-    });
+    apiClient
+        .getItem(apiClient.getCurrentUserId(), itemId)
+        .then(function (item) {
+            playbackManager.playTrailers(item);
+        });
 }
 
 function processGeneralCommand(cmd, apiClient) {
@@ -101,11 +103,15 @@ function processGeneralCommand(cmd, apiClient) {
             break;
         case 'SetAudioStreamIndex':
             notifyApp();
-            playbackManager.setAudioStreamIndex(parseInt(cmd.Arguments.Index, 10));
+            playbackManager.setAudioStreamIndex(
+                parseInt(cmd.Arguments.Index, 10)
+            );
             break;
         case 'SetSubtitleStreamIndex':
             notifyApp();
-            playbackManager.setSubtitleStreamIndex(parseInt(cmd.Arguments.Index, 10));
+            playbackManager.setSubtitleStreamIndex(
+                parseInt(cmd.Arguments.Index, 10)
+            );
             break;
         case 'ToggleFullscreen':
             inputManager.handleCommand('togglefullscreen');
@@ -134,7 +140,9 @@ function processGeneralCommand(cmd, apiClient) {
             focusManager.sendText(cmd.Arguments.String);
             break;
         default:
-            console.debug('processGeneralCommand does not recognize: ' + cmd.Name);
+            console.debug(
+                'processGeneralCommand does not recognize: ' + cmd.Name
+            );
             break;
     }
 
@@ -192,29 +200,55 @@ function onPlaystate({ Data }) {
  */
 function subscribeToApiClient(apiClient) {
     const subscriptions = [
-        apiClient.subscribe([OutboundWebSocketMessageType.Play], (msg) => onPlay(msg, apiClient)),
-        apiClient.subscribe([OutboundWebSocketMessageType.Playstate], (msg) => onPlaystate(msg)),
-        apiClient.subscribe([OutboundWebSocketMessageType.GeneralCommand], ({ Data }) => processGeneralCommand(Data, apiClient)),
-        apiClient.subscribe([OutboundWebSocketMessageType.SyncPlayCommand], ({ Data }) => {
-            pluginManager.firstOfType(PluginType.SyncPlay)?.instance.Manager.processCommand(Data, apiClient);
-        }),
-        apiClient.subscribe([OutboundWebSocketMessageType.SyncPlayGroupUpdate], ({ Data }) => {
-            pluginManager.firstOfType(PluginType.SyncPlay)?.instance.Manager.processGroupUpdate(Data, apiClient);
-            Events.trigger(serverNotifications, OutboundWebSocketMessageType.SyncPlayGroupUpdate, [apiClient, Data]);
-        })
+        apiClient.subscribe([OutboundWebSocketMessageType.Play], (msg) =>
+            onPlay(msg, apiClient)
+        ),
+        apiClient.subscribe([OutboundWebSocketMessageType.Playstate], (msg) =>
+            onPlaystate(msg)
+        ),
+        apiClient.subscribe(
+            [OutboundWebSocketMessageType.GeneralCommand],
+            ({ Data }) => processGeneralCommand(Data, apiClient)
+        ),
+        apiClient.subscribe(
+            [OutboundWebSocketMessageType.SyncPlayCommand],
+            ({ Data }) => {
+                pluginManager
+                    .firstOfType(PluginType.SyncPlay)
+                    ?.instance.Manager.processCommand(Data, apiClient);
+            }
+        ),
+        apiClient.subscribe(
+            [OutboundWebSocketMessageType.SyncPlayGroupUpdate],
+            ({ Data }) => {
+                pluginManager
+                    .firstOfType(PluginType.SyncPlay)
+                    ?.instance.Manager.processGroupUpdate(Data, apiClient);
+                Events.trigger(
+                    serverNotifications,
+                    OutboundWebSocketMessageType.SyncPlayGroupUpdate,
+                    [apiClient, Data]
+                );
+            }
+        )
     ];
 
-    return () => subscriptions.get(apiClient.serverId()).forEach((unsub) => {
-        unsub();
-    });
+    return () =>
+        subscriptions.get(apiClient.serverId()).forEach((unsub) => {
+            unsub();
+        });
 }
 
 export function initializeServerConnections() {
     ServerConnections.getApiClients().forEach(subscribeToApiClient);
 
-    Events.on(ServerConnections, 'apiclientcreated', function (e, newApiClient) {
-        subscribeToApiClient(newApiClient);
-    });
+    Events.on(
+        ServerConnections,
+        'apiclientcreated',
+        function (e, newApiClient) {
+            subscribeToApiClient(newApiClient);
+        }
+    );
 }
 
 window.ServerNotifications = serverNotifications;

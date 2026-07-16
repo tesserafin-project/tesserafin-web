@@ -13,7 +13,10 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import LibraryIcon from 'apps/modern/components/LibraryIcon';
 import { MetaView } from 'apps/modern/constants/metaView';
 import { useAncestors } from 'apps/modern/features/libraries/hooks/api/useAncestors';
-import { isDetailsPath, isLibraryPath } from 'apps/modern/features/libraries/utils/path';
+import {
+    isDetailsPath,
+    isLibraryPath
+} from 'apps/modern/features/libraries/utils/path';
 import { appRouter } from 'components/router/appRouter';
 import { useUserViews } from 'hooks/api/useUserViews';
 import { useApi } from 'hooks/useApi';
@@ -39,11 +42,16 @@ const getCurrentUserView = (
     collectionType: string | null,
     tab: number
 ) => {
-    const isUserViewPath = isDetailsPath(pathname) || isLibraryPath(pathname) || [HOME_PATH, LIST_PATH].includes(pathname);
+    const isUserViewPath =
+        isDetailsPath(pathname) ||
+        isLibraryPath(pathname) ||
+        [HOME_PATH, LIST_PATH].includes(pathname);
     if (!isUserViewPath) return undefined;
 
     if (collectionType === CollectionType.Livetv) {
-        return userViews?.find(({ CollectionType: type }) => type === CollectionType.Livetv);
+        return userViews?.find(
+            ({ CollectionType: type }) => type === CollectionType.Livetv
+        );
     }
 
     if (pathname === HOME_PATH && tab === 1) {
@@ -56,39 +64,41 @@ const getCurrentUserView = (
 
 const UserViewNav = () => {
     const location = useLocation();
-    const [ searchParams ] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const itemId = searchParams.get('id') || undefined;
-    const libraryId = searchParams.get('topParentId') || searchParams.get('parentId');
+    const libraryId =
+        searchParams.get('topParentId') || searchParams.get('parentId');
     const collectionType = searchParams.get('collectionType');
     const { activeTab } = useCurrentTab();
     const { menuLinks } = useWebConfig();
 
-    const isExtraLargeScreen = useMediaQuery((t: Theme) => t.breakpoints.up('xl'));
+    const isExtraLargeScreen = useMediaQuery((t: Theme) =>
+        t.breakpoints.up('xl')
+    );
     const isLargeScreen = useMediaQuery((t: Theme) => t.breakpoints.up('lg'));
     const maxViews = useMemo(() => {
         if (isExtraLargeScreen) return MAX_USER_VIEWS_XL;
         if (isLargeScreen) return MAX_USER_VIEWS_LG;
         return MAX_USER_VIEWS_MD;
-    }, [ isExtraLargeScreen, isLargeScreen ]);
+    }, [isExtraLargeScreen, isLargeScreen]);
 
     const { user } = useApi();
-    const {
-        data: userViews,
-        isPending
-    } = useUserViews({ userId: user?.Id });
+    const { data: userViews, isPending } = useUserViews({ userId: user?.Id });
 
-    const navItems = useMemo(() => [
-        ...(menuLinks || []),
-        ...(userViews?.Items || [])
-    ], [ menuLinks, userViews ]);
+    const navItems = useMemo(
+        () => [...(menuLinks || []), ...(userViews?.Items || [])],
+        [menuLinks, userViews]
+    );
 
-    const {
-        data: ancestors
-    } = useAncestors({ itemId });
+    const { data: ancestors } = useAncestors({ itemId });
 
     const ancestorLibraryId = useMemo(() => {
-        return ancestors?.find(ancestor => ancestor.Type === BaseItemKind.CollectionFolder)?.Id || null;
-    }, [ ancestors ]);
+        return (
+            ancestors?.find(
+                (ancestor) => ancestor.Type === BaseItemKind.CollectionFolder
+            )?.Id || null
+        );
+    }, [ancestors]);
 
     const primaryNavItems = useMemo(() => {
         // If the number of nav items exceeds the max + 1, we put the excess items in the overflow menu.
@@ -100,24 +110,44 @@ const UserViewNav = () => {
         return navItems;
     }, [maxViews, navItems]);
 
-    const overflowNavItems = useMemo(() => (
-        navItems.slice(primaryNavItems?.length || 0)
-    ), [ primaryNavItems, navItems ]);
+    const overflowNavItems = useMemo(
+        () => navItems.slice(primaryNavItems?.length || 0),
+        [primaryNavItems, navItems]
+    );
 
-    const [ overflowAnchorEl, setOverflowAnchorEl ] = useState<null | HTMLElement>(null);
+    const [overflowAnchorEl, setOverflowAnchorEl] =
+        useState<null | HTMLElement>(null);
     const isOverflowMenuOpen = Boolean(overflowAnchorEl);
 
-    const onOverflowButtonClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
-        setOverflowAnchorEl(event.currentTarget);
-    }, []);
+    const onOverflowButtonClick = useCallback(
+        (event: React.MouseEvent<HTMLElement>) => {
+            setOverflowAnchorEl(event.currentTarget);
+        },
+        []
+    );
 
     const onOverflowMenuClose = useCallback(() => {
         setOverflowAnchorEl(null);
     }, []);
 
-    const currentUserView = useMemo(() => (
-        getCurrentUserView(userViews?.Items, location.pathname, libraryId || ancestorLibraryId, collectionType, activeTab)
-    ), [ activeTab, collectionType, libraryId, ancestorLibraryId, location.pathname, userViews ]);
+    const currentUserView = useMemo(
+        () =>
+            getCurrentUserView(
+                userViews?.Items,
+                location.pathname,
+                libraryId || ancestorLibraryId,
+                collectionType,
+                activeTab
+            ),
+        [
+            activeTab,
+            collectionType,
+            libraryId,
+            ancestorLibraryId,
+            location.pathname,
+            userViews
+        ]
+    );
 
     if (isPending) return null;
 
@@ -125,7 +155,11 @@ const UserViewNav = () => {
         <>
             <Button
                 variant='text'
-                color={(currentUserView?.Id === MetaView.Favorites.Id) ? 'primary' : 'inherit'}
+                color={
+                    currentUserView?.Id === MetaView.Favorites.Id
+                        ? 'primary'
+                        : 'inherit'
+                }
                 startIcon={<Favorite />}
                 component={Link}
                 to='/home?tab=1'
@@ -133,7 +167,7 @@ const UserViewNav = () => {
                 {globalize.translate(MetaView.Favorites.Name)}
             </Button>
 
-            {primaryNavItems?.map(navItem => {
+            {primaryNavItems?.map((navItem) => {
                 if ('url' in navItem) {
                     return (
                         <Button
@@ -155,10 +189,18 @@ const UserViewNav = () => {
                     <Button
                         key={navItem.Id}
                         variant='text'
-                        color={(navItem.Id === currentUserView?.Id) ? 'primary' : 'inherit'}
+                        color={
+                            navItem.Id === currentUserView?.Id
+                                ? 'primary'
+                                : 'inherit'
+                        }
                         startIcon={<LibraryIcon item={navItem} />}
                         component={Link}
-                        to={appRouter.getRouteUrl(navItem, { context: navItem.CollectionType }).substring(1)}
+                        to={appRouter
+                            .getRouteUrl(navItem, {
+                                context: navItem.CollectionType
+                            })
+                            .substring(1)}
                     >
                         {navItem.Name}
                     </Button>

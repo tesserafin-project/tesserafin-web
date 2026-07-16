@@ -32,10 +32,12 @@ function onFileReaderError(evt) {
 }
 
 function isValidSubtitleFile(file) {
-    return file && ['.sub', '.srt', '.vtt', '.ass', '.ssa', '.mks']
-        .some(function(ext) {
+    return (
+        file &&
+        ['.sub', '.srt', '.vtt', '.ass', '.ssa', '.mks'].some(function (ext) {
             return file.name.endsWith(ext);
-        });
+        })
+    );
 }
 
 function setFiles(page, files) {
@@ -93,33 +95,54 @@ async function onSubmit(e) {
     const dlg = dom.parentWithClass(this, 'dialog');
     const language = dlg.querySelector('#selectLanguage').value;
     const isForced = dlg.querySelector('#chkIsForced').checked;
-    const isHearingImpaired = dlg.querySelector('#chkIsHearingImpaired').checked;
+    const isHearingImpaired = dlg.querySelector(
+        '#chkIsHearingImpaired'
+    ).checked;
 
     const api = ServerConnections.getApi(currentServerId);
     if (!api) {
-        console.error('[SubtitleUploader] No Api instance available for server', currentServerId);
+        console.error(
+            '[SubtitleUploader] No Api instance available for server',
+            currentServerId
+        );
         return;
     }
 
     const data = await readFileAsBase64(file);
-    const format = file.name.substring(file.name.lastIndexOf('.') + 1).toLowerCase();
+    const format = file.name
+        .substring(file.name.lastIndexOf('.') + 1)
+        .toLowerCase();
 
-    getSubtitleApi(api).uploadSubtitle({
-        itemId: currentItemId,
-        uploadSubtitleDto: { Data: data, Language: language, IsForced: isForced, Format: format, IsHearingImpaired: isHearingImpaired }
-    }).then(function () {
-        dlg.querySelector('#uploadSubtitle').value = '';
-        loading.hide();
-        hasChanges = true;
-        dialogHelper.close(dlg);
-    });
+    getSubtitleApi(api)
+        .uploadSubtitle({
+            itemId: currentItemId,
+            uploadSubtitleDto: {
+                Data: data,
+                Language: language,
+                IsForced: isForced,
+                Format: format,
+                IsHearingImpaired: isHearingImpaired
+            }
+        })
+        .then(function () {
+            dlg.querySelector('#uploadSubtitle').value = '';
+            loading.hide();
+            hasChanges = true;
+            dialogHelper.close(dlg);
+        });
 }
 
 function initEditor(page) {
-    page.querySelector('.uploadSubtitleForm').addEventListener('submit', onSubmit);
-    page.querySelector('#uploadSubtitle').addEventListener('change', function () {
-        setFiles(page, this.files);
-    });
+    page.querySelector('.uploadSubtitleForm').addEventListener(
+        'submit',
+        onSubmit
+    );
+    page.querySelector('#uploadSubtitle').addEventListener(
+        'change',
+        function () {
+            setFiles(page, this.files);
+        }
+    );
     page.querySelector('.btnBrowse').addEventListener('click', function () {
         page.querySelector('#uploadSubtitle').click();
     });

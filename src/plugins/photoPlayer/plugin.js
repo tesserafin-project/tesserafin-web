@@ -12,29 +12,31 @@ export default class PhotoPlayer {
 
     play(options) {
         return new Promise(function (resolve) {
-            import('../../components/slideshow/slideshow').then(({ default: Slideshow }) => {
-                const index = options.startIndex || 0;
+            import('../../components/slideshow/slideshow').then(
+                ({ default: Slideshow }) => {
+                    const index = options.startIndex || 0;
 
-                const apiClient = ServerConnections.currentApiClient();
-                apiClient.getCurrentUser().then(function(result) {
-                    const newSlideShow = new Slideshow({
-                        showTitle: false,
-                        cover: false,
-                        items: options.items,
-                        startIndex: index,
-                        interval: 11000,
-                        interactive: true,
-                        // playbackManager.shuffle has no options. So treat 'shuffle' as a 'play' action
-                        autoplay: {
-                            delay: userSettings.slideshowInterval() * 1000
-                        },
-                        user: result
+                    const apiClient = ServerConnections.currentApiClient();
+                    apiClient.getCurrentUser().then(function (result) {
+                        const newSlideShow = new Slideshow({
+                            showTitle: false,
+                            cover: false,
+                            items: options.items,
+                            startIndex: index,
+                            interval: 11000,
+                            interactive: true,
+                            // playbackManager.shuffle has no options. So treat 'shuffle' as a 'play' action
+                            autoplay: {
+                                delay: userSettings.slideshowInterval() * 1000
+                            },
+                            user: result
+                        });
+
+                        newSlideShow.show();
+                        resolve();
                     });
-
-                    newSlideShow.show();
-                    resolve();
-                });
-            });
+                }
+            );
         });
     }
 

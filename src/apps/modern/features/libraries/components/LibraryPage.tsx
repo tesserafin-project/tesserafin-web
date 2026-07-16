@@ -9,7 +9,7 @@ import useCurrentTab from 'hooks/useCurrentTab';
 import PageTabContent from './PageTabContent';
 
 interface LibraryPageProps {
-    type: CollectionType
+    type: CollectionType;
 }
 
 const PAGE_IDS: Record<CollectionType, string> = {
@@ -38,16 +38,16 @@ const PAGE_BACKDROPS: Partial<Record<CollectionType, BaseItemKind[]>> = {
     [CollectionType.Unknown]: [BaseItemKind.Movie, BaseItemKind.Series]
 };
 
-const LibraryPage: FC<LibraryPageProps> = ({
-    type
-}) => {
+const LibraryPage: FC<LibraryPageProps> = ({ type }) => {
     const { libraryId, activeTab } = useCurrentTab();
     const currentTab = viewsByKind[type][activeTab];
 
     return (
         <Page
             id={PAGE_IDS[type]}
-            className={'mainAnimatedPage libraryPage pageWithAbsoluteTabs withTabs'}
+            className={
+                'mainAnimatedPage libraryPage pageWithAbsoluteTabs withTabs'
+            }
             backDropType={PAGE_BACKDROPS[type]}
         >
             <PageTabContent

@@ -14,7 +14,10 @@ const fetchBackups = async (api: Api, options?: AxiosRequestConfig) => {
 
     backups.sort((a, b) => {
         if (a.DateCreated && b.DateCreated) {
-            return new Date(b.DateCreated).getTime() - new Date(a.DateCreated).getTime();
+            return (
+                new Date(b.DateCreated).getTime() -
+                new Date(a.DateCreated).getTime()
+            );
         } else {
             return 0;
         }
@@ -27,9 +30,8 @@ export const useBackups = () => {
     const { api } = useApi();
 
     return useQuery({
-        queryKey: [ QUERY_KEY ],
-        queryFn: ({ signal }) =>
-            fetchBackups(api!, { signal }),
+        queryKey: [QUERY_KEY],
+        queryFn: ({ signal }) => fetchBackups(api!, { signal }),
         enabled: !!api
     });
 };

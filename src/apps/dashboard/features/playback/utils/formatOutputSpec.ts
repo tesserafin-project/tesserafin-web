@@ -9,7 +9,9 @@ export const formatOutputSpec = (output: OutputSpec): string => {
     const parts = [
         output.Container?.toUpperCase(),
         output.VideoCodec?.toUpperCase(),
-        output.Resolution ? `${output.Resolution.Width}x${output.Resolution.Height}` : undefined,
+        output.Resolution
+            ? `${output.Resolution.Width}x${output.Resolution.Height}`
+            : undefined,
         output.AudioCodec?.toUpperCase()
     ].filter((part): part is string => !!part);
 

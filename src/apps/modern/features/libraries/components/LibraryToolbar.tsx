@@ -50,12 +50,28 @@ const LibraryToolbar: FC = () => {
         setViewSettings
     } = useLibrary();
     const viewType = content?.viewType ?? LibraryTab.Movies;
-    const libraryViewSettings = viewSettings ?? getDefaultLibraryViewSettings(viewType);
+    const libraryViewSettings =
+        viewSettings ?? getDefaultLibraryViewSettings(viewType);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const setLibraryViewSettings = setViewSettings ?? ((action: SetStateAction<LibraryViewSettings>) => { /* no-op */ });
-    const { itemType, isPaginationEnabled, isBtnPlayAllEnabled, isBtnQueueEnabled, isBtnShuffleEnabled, isBtnSortEnabled, isBtnFilterEnabled, isBtnNewCollectionEnabled, isBtnNewPlaylistEnabled, isBtnGridListEnabled } = content ?? {};
+    const setLibraryViewSettings =
+        setViewSettings ??
+        ((action: SetStateAction<LibraryViewSettings>) => {
+            /* no-op */
+        });
+    const {
+        itemType,
+        isPaginationEnabled,
+        isBtnPlayAllEnabled,
+        isBtnQueueEnabled,
+        isBtnShuffleEnabled,
+        isBtnSortEnabled,
+        isBtnFilterEnabled,
+        isBtnNewCollectionEnabled,
+        isBtnNewPlaylistEnabled,
+        isBtnGridListEnabled
+    } = content ?? {};
 
-    const isSmallScreen = useMediaQuery(t => t.breakpoints.up('sm'));
+    const isSmallScreen = useMediaQuery((t) => t.breakpoints.up('sm'));
 
     const { data: item } = useItem(parentId || undefined);
 
@@ -66,30 +82,47 @@ const LibraryToolbar: FC = () => {
         (filter) => !!filter
     );
     const { user } = useApi();
-    const canCreateCollections = user?.Policy?.IsAdministrator || user?.Policy?.EnableCollectionManagement;
+    const canCreateCollections =
+        user?.Policy?.IsAdministrator ||
+        user?.Policy?.EnableCollectionManagement;
 
     // The query key for all items for the current user.
     // This should be used to invalidate queries that affect multiple parents, such as collections and playlists.
-    const allItemsQueryKey = useMemo(() => ['User', user?.Id, 'Items'], [user?.Id]);
+    const allItemsQueryKey = useMemo(
+        () => ['User', user?.Id, 'Items'],
+        [user?.Id]
+    );
 
     // Pagination
     const startIndex = viewSettings?.StartIndex ?? 0;
     const { libraryPageSize: paginationLimit } = useUserSettings();
     const paginationStart = totalRecordCount ? startIndex + 1 : 0;
-    const paginationEnd = paginationLimit ?
-        Math.min(startIndex + paginationLimit, totalRecordCount) :
-        totalRecordCount;
+    const paginationEnd = paginationLimit
+        ? Math.min(startIndex + paginationLimit, totalRecordCount)
+        : totalRecordCount;
     const isUserPaginationEnabled = paginationLimit > 0;
     /** True if the data is larger than the page limit */
-    const isPaginationRequired = isUserPaginationEnabled && paginationLimit < totalRecordCount;
+    const isPaginationRequired =
+        isUserPaginationEnabled && paginationLimit < totalRecordCount;
 
     const itemCountDisplay = useMemo(() => {
         if (isPending) return '\u2219'; // Bullet "operator" character as a loading indicator
 
-        return isPaginationRequired ?
-            globalize.translate('ListPaging', paginationStart, paginationEnd, totalRecordCount) :
-            totalRecordCount;
-    }, [isPending, isPaginationRequired, paginationStart, paginationEnd, totalRecordCount]);
+        return isPaginationRequired
+            ? globalize.translate(
+                  'ListPaging',
+                  paginationStart,
+                  paginationEnd,
+                  totalRecordCount
+              )
+            : totalRecordCount;
+    }, [
+        isPending,
+        isPaginationRequired,
+        paginationStart,
+        paginationEnd,
+        totalRecordCount
+    ]);
 
     if (!isLibraryPath) return null;
 
@@ -151,9 +184,7 @@ const LibraryToolbar: FC = () => {
                             }
                         }}
                     >
-                        <ButtonGroup
-                            variant='contained'
-                        >
+                        <ButtonGroup variant='contained'>
                             {isBtnPlayAllEnabled && (
                                 <PlayAllButton
                                     item={item}
@@ -173,33 +204,44 @@ const LibraryToolbar: FC = () => {
                                     viewType={viewType}
                                     collectionType={collectionType}
                                     hasFilters={hasFilters}
-                                    isTextVisible={isSmallScreen && !isBtnPlayAllEnabled}
+                                    isTextVisible={
+                                        isSmallScreen && !isBtnPlayAllEnabled
+                                    }
                                     libraryViewSettings={libraryViewSettings}
                                 />
                             )}
 
-                            {isBtnQueueEnabled && item && playbackManager.canQueue(item) && (
-                                <QueueButton
-                                    item={item}
-                                    items={items}
-                                    hasFilters={hasFilters}
-                                    isTextVisible={isSmallScreen && !isBtnPlayAllEnabled && !isBtnShuffleEnabled}
-                                />
-                            )}
+                            {isBtnQueueEnabled &&
+                                item &&
+                                playbackManager.canQueue(item) && (
+                                    <QueueButton
+                                        item={item}
+                                        items={items}
+                                        hasFilters={hasFilters}
+                                        isTextVisible={
+                                            isSmallScreen &&
+                                            !isBtnPlayAllEnabled &&
+                                            !isBtnShuffleEnabled
+                                        }
+                                    />
+                                )}
                         </ButtonGroup>
 
                         {isBtnNewCollectionEnabled && canCreateCollections && (
-                            <NewCollectionButton isTextVisible={isSmallScreen} queryKey={allItemsQueryKey} />
+                            <NewCollectionButton
+                                isTextVisible={isSmallScreen}
+                                queryKey={allItemsQueryKey}
+                            />
                         )}
                         {isBtnNewPlaylistEnabled && (
-                            <NewPlaylistButton isTextVisible={isSmallScreen} queryKey={allItemsQueryKey} />
+                            <NewPlaylistButton
+                                isTextVisible={isSmallScreen}
+                                queryKey={allItemsQueryKey}
+                            />
                         )}
                     </Box>
 
-                    <ButtonGroup
-                        color='inherit'
-                        variant='text'
-                    >
+                    <ButtonGroup color='inherit' variant='text'>
                         {isBtnFilterEnabled && (
                             <FilterButton
                                 parentId={parentId}
@@ -234,7 +276,11 @@ const LibraryToolbar: FC = () => {
                             index={startIndex}
                             pageSize={paginationLimit}
                             total={totalRecordCount}
-                            disabled={isPending || !isPaginationRequired || itemsResult?.isPlaceholderData}
+                            disabled={
+                                isPending ||
+                                !isPaginationRequired ||
+                                itemsResult?.isPlaceholderData
+                            }
                         />
                     )}
                 </Stack>

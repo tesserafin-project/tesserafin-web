@@ -14,9 +14,16 @@ const defaultMuiTheme = extendTheme({
  * scheme. For custom schemes, we need to merge these manually.
  */
 export const buildCustomColorScheme = (options: ColorSystemOptions) =>
-    merge<ColorSystemOptions, ColorSystemOptions | undefined, ColorSystemOptions, ColorSystemOptions>(
+    merge<
+        ColorSystemOptions,
+        ColorSystemOptions | undefined,
+        ColorSystemOptions,
+        ColorSystemOptions
+    >(
         {},
-        options.palette?.mode === 'light' ? defaultMuiTheme.colorSchemes.light : defaultMuiTheme.colorSchemes.dark,
+        options.palette?.mode === 'light'
+            ? defaultMuiTheme.colorSchemes.light
+            : defaultMuiTheme.colorSchemes.dark,
         DEFAULT_COLOR_SCHEME,
         options
     );

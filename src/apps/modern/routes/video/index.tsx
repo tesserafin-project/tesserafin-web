@@ -15,8 +15,8 @@ import Typography from '@mui/material/Typography';
  */
 const VideoPage: FC = () => {
     const documentRef = useRef<Document>(document);
-    const [ isVisible, setIsVisible ] = useState(true);
-    const [ videoTitle, setVideoTitle ] = useState<string>('');
+    const [isVisible, setIsVisible] = useState(true);
+    const [videoTitle, setVideoTitle] = useState<string>('');
 
     const onShowVideoOsd = (_e: Event, isShowing: boolean) => {
         setIsVisible(isShowing);
@@ -44,10 +44,7 @@ const VideoPage: FC = () => {
 
     return (
         <>
-            <Fade
-                in={isVisible}
-                easing='fade-out'
-            >
+            <Fade in={isVisible} easing='fade-out'>
                 <Box
                     className='skinHeader skinHeader-withBackground skinHeader-blurred osdHeader'
                     sx={{

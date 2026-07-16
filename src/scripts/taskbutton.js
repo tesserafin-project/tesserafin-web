@@ -1,4 +1,3 @@
-
 import globalize from 'lib/globalize';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
@@ -43,14 +42,28 @@ function taskbutton(options) {
         }
 
         if (options.lastResultElem) {
-            const lastResult = task.LastExecutionResult ? task.LastExecutionResult.Status : '';
+            const lastResult = task.LastExecutionResult
+                ? task.LastExecutionResult.Status
+                : '';
 
             if (lastResult == 'Failed') {
-                options.lastResultElem.html('<span style="color:#FF0000;">(' + globalize.translate('LabelFailed') + ')</span>');
+                options.lastResultElem.html(
+                    '<span style="color:#FF0000;">(' +
+                        globalize.translate('LabelFailed') +
+                        ')</span>'
+                );
             } else if (lastResult == 'Cancelled') {
-                options.lastResultElem.html('<span style="color:#0026FF;">(' + globalize.translate('LabelCancelled') + ')</span>');
+                options.lastResultElem.html(
+                    '<span style="color:#0026FF;">(' +
+                        globalize.translate('LabelCancelled') +
+                        ')</span>'
+                );
             } else if (lastResult == 'Aborted') {
-                options.lastResultElem.html('<span style="color:#FF0000;">' + globalize.translate('LabelAbortedByServerShutdown') + '</span>');
+                options.lastResultElem.html(
+                    '<span style="color:#FF0000;">' +
+                        globalize.translate('LabelAbortedByServerShutdown') +
+                        '</span>'
+                );
             } else {
                 options.lastResultElem.html(lastResult);
             }
@@ -78,7 +91,10 @@ function taskbutton(options) {
 
     function subscribe() {
         const api = ServerConnections.getApi(serverId);
-        return api.subscribe([OutboundWebSocketMessageType.ScheduledTasksInfo], onScheduledTasksUpdate);
+        return api.subscribe(
+            [OutboundWebSocketMessageType.ScheduledTasksInfo],
+            onScheduledTasksUpdate
+        );
     }
 
     function startSubscription() {

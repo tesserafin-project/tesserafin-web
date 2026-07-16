@@ -18,9 +18,7 @@ const fetchLogEntries = async (
     return response.data;
 };
 
-export const useLogEntries = (
-    requestParams: SystemApiGetLogEntriesRequest
-) => {
+export const useLogEntries = (requestParams: SystemApiGetLogEntriesRequest) => {
     const { api } = useApi();
     return useQuery({
         queryKey: ['ActivityLogEntries', requestParams],

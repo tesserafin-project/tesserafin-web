@@ -29,22 +29,23 @@ import ConfirmDialog from 'components/ConfirmDialog';
 export const Component = () => {
     const { api } = useApi();
     const { data: backups, isPending, isError } = useBackups();
-    const [ isCreateFormOpen, setIsCreateFormOpen ] = useState(false);
-    const [ backupInProgress, setBackupInProgress ] = useState(false);
-    const [ restoreInProgress, setRestoreInProgress ] = useState(false);
-    const [ isRestoreSuccess, setIsRestoreSuccess ] = useState(false);
-    const [ isErrorOccurred, setIsErrorOccurred ] = useState(false);
-    const [ isRestoreDialogOpen, setIsRestoreDialogOpen ] = useState(false);
-    const [ backupToRestore, setBackupToRestore ] = useState<BackupManifestDto | null>(null);
-    const [ isConfirmBackupOpen, setIsConfirmBackupOpen ] = useState(false);
-    const [ pendingBackupOptions, setPendingBackupOptions ] = useState<BackupOptionsDto | null>(null);
+    const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+    const [backupInProgress, setBackupInProgress] = useState(false);
+    const [restoreInProgress, setRestoreInProgress] = useState(false);
+    const [isRestoreSuccess, setIsRestoreSuccess] = useState(false);
+    const [isErrorOccurred, setIsErrorOccurred] = useState(false);
+    const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
+    const [backupToRestore, setBackupToRestore] =
+        useState<BackupManifestDto | null>(null);
+    const [isConfirmBackupOpen, setIsConfirmBackupOpen] = useState(false);
+    const [pendingBackupOptions, setPendingBackupOptions] =
+        useState<BackupOptionsDto | null>(null);
     const createBackup = useCreateBackup();
     const restoreBackup = useRestoreBackup();
 
-    const {
-        data: tasks,
-        isPending: isTasksPending
-    } = useLiveTasks({ isHidden: false });
+    const { data: tasks, isPending: isTasksPending } = useLiveTasks({
+        isHidden: false
+    });
 
     const onCreateClick = useCallback(() => {
         setIsCreateFormOpen(true);
@@ -70,36 +71,44 @@ export const Component = () => {
         setIsConfirmBackupOpen(false);
     }, []);
 
-    const startBackupProcess = useCallback((backupOptions: BackupOptionsDto) => {
-        setBackupInProgress(true);
-        setIsCreateFormOpen(false);
-        createBackup.mutate(backupOptions, {
-            onError: () => {
-                setIsErrorOccurred(true);
-            },
-            onSettled: () => {
-                setBackupInProgress(false);
-            }
-        });
-    }, [ createBackup ]);
+    const startBackupProcess = useCallback(
+        (backupOptions: BackupOptionsDto) => {
+            setBackupInProgress(true);
+            setIsCreateFormOpen(false);
+            createBackup.mutate(backupOptions, {
+                onError: () => {
+                    setIsErrorOccurred(true);
+                },
+                onSettled: () => {
+                    setBackupInProgress(false);
+                }
+            });
+        },
+        [createBackup]
+    );
 
     const startPendingBackup = useCallback(() => {
         setIsConfirmBackupOpen(false);
         if (pendingBackupOptions) {
             startBackupProcess(pendingBackupOptions);
         }
-    }, [ startBackupProcess, pendingBackupOptions ]);
+    }, [startBackupProcess, pendingBackupOptions]);
 
-    const onBackupCreate = useCallback((backupOptions: BackupOptionsDto) => {
-        const isTasksRunning = tasks?.some(task => task?.State !== TaskState.Idle);
-        if (isTasksRunning) {
-            setPendingBackupOptions(backupOptions);
-            setIsCreateFormOpen(false);
-            setIsConfirmBackupOpen(true);
-        } else {
-            startBackupProcess(backupOptions);
-        }
-    }, [ startBackupProcess, tasks ]);
+    const onBackupCreate = useCallback(
+        (backupOptions: BackupOptionsDto) => {
+            const isTasksRunning = tasks?.some(
+                (task) => task?.State !== TaskState.Idle
+            );
+            if (isTasksRunning) {
+                setPendingBackupOptions(backupOptions);
+                setIsCreateFormOpen(false);
+                setIsConfirmBackupOpen(true);
+            } else {
+                startBackupProcess(backupOptions);
+            }
+        },
+        [startBackupProcess, tasks]
+    );
 
     const promptRestore = useCallback((backup: BackupManifestDto) => {
         setIsRestoreDialogOpen(true);
@@ -131,7 +140,8 @@ export const Component = () => {
                         setRestoreInProgress(false);
                         setIsRestoreSuccess(true);
                         clearInterval(serverCheckInterval);
-                    }).catch(() => {
+                    })
+                    .catch(() => {
                         // Server is still down
                     });
             }, 45000);
@@ -158,10 +168,12 @@ export const Component = () => {
                 open={isConfirmBackupOpen}
                 title={globalize.translate('HeaderBackupWarning')}
                 text={
-                    globalize.translate('LabelBackupWarning')
-                    + '\n\n'
-                    + tasks?.filter(task => task.State !== TaskState.Idle)
-                        .map(task => '- ' + task.Name).join('\n')
+                    globalize.translate('LabelBackupWarning') +
+                    '\n\n' +
+                    tasks
+                        ?.filter((task) => task.State !== TaskState.Idle)
+                        .map((task) => '- ' + task.Name)
+                        .join('\n')
                 }
                 confirmButtonText={globalize.translate('Create')}
                 confirmButtonColor='warning'
@@ -191,7 +203,9 @@ export const Component = () => {
             />
             <Box className='content-primary'>
                 {isError ? (
-                    <Alert severity='error'>{globalize.translate('BackupsPageLoadError')}</Alert>
+                    <Alert severity='error'>
+                        {globalize.translate('BackupsPageLoadError')}
+                    </Alert>
                 ) : (
                     <Stack spacing={3}>
                         <Typography variant='h1'>
@@ -212,12 +226,14 @@ export const Component = () => {
                         <Box className='readOnlyContent'>
                             {backups.length > 0 && (
                                 <List sx={{ bgcolor: 'background.paper' }}>
-                                    {backups.map(backup => {
-                                        return <Backup
-                                            key={backup.Path}
-                                            backup={backup}
-                                            onRestore={promptRestore}
-                                        />;
+                                    {backups.map((backup) => {
+                                        return (
+                                            <Backup
+                                                key={backup.Path}
+                                                backup={backup}
+                                                onRestore={promptRestore}
+                                            />
+                                        );
                                     })}
                                 </List>
                             )}

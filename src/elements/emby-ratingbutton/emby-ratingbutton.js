@@ -14,16 +14,19 @@ function onClick() {
     const isFavorite = this.getAttribute('data-isfavorite') === 'true';
     const userId = apiClient.getCurrentUserId();
 
-    apiClient.updateFavoriteStatus(userId, id, !isFavorite)
-        .then(userData => {
-            setState(button, userData.Likes, userData.IsFavorite);
-            void queryClient.invalidateQueries({ queryKey: ['User', userId, 'Items'] });
+    apiClient.updateFavoriteStatus(userId, id, !isFavorite).then((userData) => {
+        setState(button, userData.Likes, userData.IsFavorite);
+        void queryClient.invalidateQueries({
+            queryKey: ['User', userId, 'Items']
         });
+    });
 }
 
 function onUserDataChanged({ MessageType, Data }, apiClient, button) {
     const itemId = button.dataset.id;
-    const userData = (Data?.UserDataList ?? []).find(u => u.ItemId === itemId);
+    const userData = (Data?.UserDataList ?? []).find(
+        (u) => u.ItemId === itemId
+    );
     if (userData) {
         setState(button, userData.Likes, userData.IsFavorite);
     }
@@ -51,14 +54,16 @@ function setState(button, likes, isFavorite, updateAttribute) {
     if (updateAttribute !== false) {
         button.setAttribute('data-isfavorite', isFavorite);
 
-        button.setAttribute('data-likes', (likes === null ? '' : likes));
+        button.setAttribute('data-likes', likes === null ? '' : likes);
     }
 
     setTitle(button, isFavorite);
 }
 
 function setTitle(button, isFavorite) {
-    button.title = isFavorite ? globalize.translate('Favorite') : globalize.translate('AddToFavorites');
+    button.title = isFavorite
+        ? globalize.translate('Favorite')
+        : globalize.translate('AddToFavorites');
 
     const text = button.querySelector('.button-text');
     if (text) {

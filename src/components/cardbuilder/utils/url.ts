@@ -39,7 +39,10 @@ export function getCardImageUrl({
     if (options.preferThumb && item.ImageTags?.Thumb) {
         imgType = ImageType.Thumb;
         imgTag = item.ImageTags.Thumb;
-    } else if ((options.preferBanner || shape === CardShape.Banner) && item.ImageTags?.Banner) {
+    } else if (
+        (options.preferBanner || shape === CardShape.Banner) &&
+        item.ImageTags?.Banner
+    ) {
         imgType = ImageType.Banner;
         imgTag = item.ImageTags.Banner;
     } else if (options.preferDisc && item.ImageTags?.Disc) {
@@ -48,15 +51,28 @@ export function getCardImageUrl({
     } else if (options.preferLogo && item.ImageTags?.Logo) {
         imgType = ImageType.Logo;
         imgTag = item.ImageTags.Logo;
-    } else if (options.preferLogo && item.ParentLogoImageTag && item.ParentLogoItemId) {
+    } else if (
+        options.preferLogo &&
+        item.ParentLogoImageTag &&
+        item.ParentLogoItemId
+    ) {
         imgType = ImageType.Logo;
         imgTag = item.ParentLogoImageTag;
         itemId = item.ParentLogoItemId;
-    } else if (options.preferThumb && item.SeriesThumbImageTag && options.inheritThumb !== false) {
+    } else if (
+        options.preferThumb &&
+        item.SeriesThumbImageTag &&
+        options.inheritThumb !== false
+    ) {
         imgType = ImageType.Thumb;
         imgTag = item.SeriesThumbImageTag;
         itemId = item.SeriesId;
-    } else if (options.preferThumb && item.ParentThumbItemId && options.inheritThumb !== false && item.MediaType !== 'Photo') {
+    } else if (
+        options.preferThumb &&
+        item.ParentThumbItemId &&
+        options.inheritThumb !== false &&
+        item.MediaType !== 'Photo'
+    ) {
         imgType = ImageType.Thumb;
         imgTag = item.ParentThumbImageTag;
         itemId = item.ParentThumbItemId;
@@ -64,21 +80,33 @@ export function getCardImageUrl({
         imgType = ImageType.Backdrop;
         imgTag = item.BackdropImageTags[0];
         forceName = true;
-    } else if (options.preferThumb && item.ParentBackdropImageTags?.length && options.inheritThumb !== false && item.Type === 'Episode') {
+    } else if (
+        options.preferThumb &&
+        item.ParentBackdropImageTags?.length &&
+        options.inheritThumb !== false &&
+        item.Type === 'Episode'
+    ) {
         imgType = ImageType.Backdrop;
         imgTag = item.ParentBackdropImageTags[0];
         itemId = item.ParentBackdropItemId;
-    } else if (item.ImageTags?.Primary && (item.Type !== 'Episode' || item.ChildCount !== 0)) {
+    } else if (
+        item.ImageTags?.Primary &&
+        (item.Type !== 'Episode' || item.ChildCount !== 0)
+    ) {
         imgType = ImageType.Primary;
         imgTag = item.ImageTags.Primary;
-        height = width && primaryImageAspectRatio ? (width / primaryImageAspectRatio) : undefined;
+        height =
+            width && primaryImageAspectRatio
+                ? width / primaryImageAspectRatio
+                : undefined;
 
         if (options.preferThumb && options.showTitle !== false) {
             forceName = true;
         }
 
         if (primaryImageAspectRatio && uiAspect) {
-            coverImage = (Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect) <= 0.2;
+            coverImage =
+                Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect <= 0.2;
         }
     } else if (item.SeriesPrimaryImageTag) {
         imgType = ImageType.Primary;
@@ -88,14 +116,18 @@ export function getCardImageUrl({
         imgType = ImageType.Primary;
         imgTag = item.PrimaryImageTag;
         itemId = item.PrimaryImageItemId;
-        height = width && primaryImageAspectRatio ? (width / primaryImageAspectRatio) : undefined;
+        height =
+            width && primaryImageAspectRatio
+                ? width / primaryImageAspectRatio
+                : undefined;
 
         if (options.preferThumb && options.showTitle !== false) {
             forceName = true;
         }
 
         if (primaryImageAspectRatio && uiAspect) {
-            coverImage = (Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect) <= 0.2;
+            coverImage =
+                Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect <= 0.2;
         }
     } else if (item.ParentPrimaryImageTag) {
         imgType = ImageType.Primary;
@@ -105,10 +137,14 @@ export function getCardImageUrl({
         imgType = ImageType.Primary;
         imgTag = item.AlbumPrimaryImageTag;
         itemId = item.AlbumId;
-        height = width && primaryImageAspectRatio ? (width / primaryImageAspectRatio) : undefined;
+        height =
+            width && primaryImageAspectRatio
+                ? width / primaryImageAspectRatio
+                : undefined;
 
         if (primaryImageAspectRatio && uiAspect) {
-            coverImage = (Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect) <= 0.2;
+            coverImage =
+                Math.abs(primaryImageAspectRatio - uiAspect) / uiAspect <= 0.2;
         }
     } else if (item.Type === 'Season' && item.ImageTags?.Thumb) {
         imgType = ImageType.Thumb;
@@ -127,7 +163,10 @@ export function getCardImageUrl({
         imgType = ImageType.Thumb;
         imgTag = item.ParentThumbImageTag;
         itemId = item.ParentThumbItemId;
-    } else if (item.ParentBackdropImageTags?.length && options.inheritThumb !== false) {
+    } else if (
+        item.ParentBackdropImageTags?.length &&
+        options.inheritThumb !== false
+    ) {
         imgType = ImageType.Backdrop;
         imgTag = item.ParentBackdropImageTags[0];
         itemId = item.ParentBackdropItemId;
@@ -145,24 +184,20 @@ export function getCardImageUrl({
 
         const dpr = window?.devicePixelRatio || 1;
 
-        imgUrl = getImageApi(api).getItemImageUrlById(
-            itemId,
-            imgType,
-            {
-                // Dimensions must be rounded or the API will reject the request
-                fillHeight: height ? Math.ceil(height * dpr) : undefined,
-                fillWidth: width ? Math.ceil(width * dpr) : undefined,
-                quality: 96,
-                tag: imgTag
-            }
-        );
+        imgUrl = getImageApi(api).getItemImageUrlById(itemId, imgType, {
+            // Dimensions must be rounded or the API will reject the request
+            fillHeight: height ? Math.ceil(height * dpr) : undefined,
+            fillWidth: width ? Math.ceil(width * dpr) : undefined,
+            quality: 96,
+            tag: imgTag
+        });
     }
 
     const blurHashes = options.imageBlurhashes || item.ImageBlurHashes || {};
 
     return {
         imgUrl,
-        blurhash: (imgType && imgTag) ? blurHashes[imgType]?.[imgTag] : undefined,
+        blurhash: imgType && imgTag ? blurHashes[imgType]?.[imgTag] : undefined,
         forceName,
         coverImage
     };

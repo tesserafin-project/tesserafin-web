@@ -6,7 +6,7 @@ import type { DivergenceClass } from '../api/types';
 import getDivergenceClassColor from '../utils/getDivergenceClassColor';
 
 interface DivergenceBadgeProps {
-    divergenceClass: DivergenceClass
+    divergenceClass: DivergenceClass;
 }
 
 /** Renders a `DiagnosticComparison.DivergenceClass` value as a colored chip, same pattern as
@@ -14,7 +14,7 @@ interface DivergenceBadgeProps {
 const DivergenceBadge = ({ divergenceClass }: DivergenceBadgeProps) => {
     const label = useMemo(
         () => globalize.translate(`DivergenceClass.${divergenceClass}`),
-        [ divergenceClass ]
+        [divergenceClass]
     );
 
     return (

@@ -25,7 +25,13 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    rmSync,
+    writeFileSync
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,28 +48,37 @@ const SIBLING_REEFIN_ARTIFACTS = [
     '../reefin/tests/Reefin.Server.Integration.Tests/bin/Release/net10.0/openapi.json'
 ];
 
-const DEV_SERVER_URL = process.env.REEFIN_DEV_SERVER_URL || 'http://localhost:8096';
+const DEV_SERVER_URL =
+    process.env.REEFIN_DEV_SERVER_URL || 'http://localhost:8096';
 
 /** @returns {Promise<{ text: string, source: string }>} */
 async function resolveSpec() {
     const override = process.env.REEFIN_OPENAPI_SPEC;
     if (override) {
         if (/^https?:\/\//.test(override)) {
-            console.log(`[generate-reefin-sdk] Using REEFIN_OPENAPI_SPEC (URL): ${override}`);
+            console.log(
+                `[generate-reefin-sdk] Using REEFIN_OPENAPI_SPEC (URL): ${override}`
+            );
             return { text: await fetchText(override), source: override };
         }
         const path = resolve(REPO_ROOT, override);
         if (!existsSync(path)) {
-            throw new Error(`REEFIN_OPENAPI_SPEC points to a file that does not exist: ${path}`);
+            throw new Error(
+                `REEFIN_OPENAPI_SPEC points to a file that does not exist: ${path}`
+            );
         }
-        console.log(`[generate-reefin-sdk] Using REEFIN_OPENAPI_SPEC (file): ${path}`);
+        console.log(
+            `[generate-reefin-sdk] Using REEFIN_OPENAPI_SPEC (file): ${path}`
+        );
         return { text: readFileSync(path, 'utf-8'), source: path };
     }
 
     for (const relative of SIBLING_REEFIN_ARTIFACTS) {
         const path = resolve(REPO_ROOT, relative);
         if (existsSync(path)) {
-            console.log(`[generate-reefin-sdk] Using local reefin build artifact: ${path}`);
+            console.log(
+                `[generate-reefin-sdk] Using local reefin build artifact: ${path}`
+            );
             return { text: readFileSync(path, 'utf-8'), source: path };
         }
     }
@@ -71,23 +86,32 @@ async function resolveSpec() {
     const devUrl = `${DEV_SERVER_URL.replace(/\/$/, '')}/api-docs/openapi.json`;
     try {
         const text = await fetchText(devUrl, 1500);
-        console.log(`[generate-reefin-sdk] Using running dev server: ${devUrl}`);
+        console.log(
+            `[generate-reefin-sdk] Using running dev server: ${devUrl}`
+        );
         return { text, source: devUrl };
     } catch {
-        console.log(`[generate-reefin-sdk] No dev server reachable at ${devUrl}, trying pinned spec.`);
+        console.log(
+            `[generate-reefin-sdk] No dev server reachable at ${devUrl}, trying pinned spec.`
+        );
     }
 
     if (existsSync(PINNED_SPEC_PATH)) {
-        console.log(`[generate-reefin-sdk] Using previously pinned spec: ${PINNED_SPEC_PATH}`);
-        return { text: readFileSync(PINNED_SPEC_PATH, 'utf-8'), source: `${PINNED_SPEC_PATH} (pinned, stale)` };
+        console.log(
+            `[generate-reefin-sdk] Using previously pinned spec: ${PINNED_SPEC_PATH}`
+        );
+        return {
+            text: readFileSync(PINNED_SPEC_PATH, 'utf-8'),
+            source: `${PINNED_SPEC_PATH} (pinned, stale)`
+        };
     }
 
     throw new Error(
-        'No OpenAPI spec source available. Provide one via:\n'
-        + '  - REEFIN_OPENAPI_SPEC=<path-or-url> npm run generate:reefin-sdk\n'
-        + '  - a `reefin` server checkout at ../reefin with a built openapi.json test artifact\n'
-        + '  - a running dev server (default http://localhost:8096, override with REEFIN_DEV_SERVER_URL)\n'
-        + 'See src/lib/reefin-sdk/README.md.'
+        'No OpenAPI spec source available. Provide one via:\n' +
+            '  - REEFIN_OPENAPI_SPEC=<path-or-url> npm run generate:reefin-sdk\n' +
+            '  - a `reefin` server checkout at ../reefin with a built openapi.json test artifact\n' +
+            '  - a running dev server (default http://localhost:8096, override with REEFIN_DEV_SERVER_URL)\n' +
+            'See src/lib/reefin-sdk/README.md.'
     );
 }
 
@@ -126,11 +150,11 @@ function fixSchema(node) {
     }
     if (node && typeof node === 'object') {
         if (
-            Array.isArray(node.enum)
-            && Array.isArray(node.allOf)
-            && node.allOf.length === 1
-            && typeof node.allOf[0] === 'object'
-            && node.allOf[0].$ref
+            Array.isArray(node.enum) &&
+            Array.isArray(node.allOf) &&
+            node.allOf.length === 1 &&
+            typeof node.allOf[0] === 'object' &&
+            node.allOf[0].$ref
         ) {
             delete node.enum;
         }
@@ -155,17 +179,25 @@ function fixSchema(node) {
  */
 function unwrapIdSchemas(spec) {
     const schemas = (spec.components || {}).schemas || {};
-    for (const [ name, schema ] of Object.entries(schemas)) {
-        const properties = schema && typeof schema === 'object' ? schema.properties : undefined;
+    for (const [name, schema] of Object.entries(schemas)) {
+        const properties =
+            schema && typeof schema === 'object'
+                ? schema.properties
+                : undefined;
         if (
-            schema?.type === 'object'
-            && properties
-            && Object.keys(properties).length === 1
-            && Object.keys(properties)[0] === 'Value'
+            schema?.type === 'object' &&
+            properties &&
+            Object.keys(properties).length === 1 &&
+            Object.keys(properties)[0] === 'Value'
         ) {
             const description = schema.description;
-            schemas[name] = { ...properties.Value, ...(description ? { description } : {}) };
-            console.log(`[generate-reefin-sdk] Unwrapped single-property ID schema: ${name}`);
+            schemas[name] = {
+                ...properties.Value,
+                ...(description ? { description } : {})
+            };
+            console.log(
+                `[generate-reefin-sdk] Unwrapped single-property ID schema: ${name}`
+            );
         }
     }
 }
@@ -178,54 +210,88 @@ function main() {
         const info = spec.info || {};
 
         mkdirSync(SPEC_DIR, { recursive: true });
-        writeFileSync(PINNED_SPEC_PATH, JSON.stringify(spec, null, 2) + '\n', 'utf-8');
-        writeFileSync(PINNED_VERSION_PATH, JSON.stringify({
-            title: info.title ?? null,
-            version: info.version ?? null,
-            xReefinVersion: info['x-reefin-version'] ?? null,
-            openapi: spec.openapi ?? null,
-            pathCount: Object.keys(spec.paths || {}).length,
-            schemaCount: Object.keys((spec.components || {}).schemas || {}).length,
-            source,
-            generatedAt: new Date().toISOString()
-        }, null, 2) + '\n', 'utf-8');
+        writeFileSync(
+            PINNED_SPEC_PATH,
+            JSON.stringify(spec, null, 2) + '\n',
+            'utf-8'
+        );
+        writeFileSync(
+            PINNED_VERSION_PATH,
+            JSON.stringify(
+                {
+                    title: info.title ?? null,
+                    version: info.version ?? null,
+                    xReefinVersion: info['x-reefin-version'] ?? null,
+                    openapi: spec.openapi ?? null,
+                    pathCount: Object.keys(spec.paths || {}).length,
+                    schemaCount: Object.keys(
+                        (spec.components || {}).schemas || {}
+                    ).length,
+                    source,
+                    generatedAt: new Date().toISOString()
+                },
+                null,
+                2
+            ) + '\n',
+            'utf-8'
+        );
 
-        console.log(`[generate-reefin-sdk] Pinned spec: ${info.title} ${info.version} `
-            + `(${Object.keys(spec.paths || {}).length} paths, `
-            + `${Object.keys((spec.components || {}).schemas || {}).length} schemas)`);
+        console.log(
+            `[generate-reefin-sdk] Pinned spec: ${info.title} ${info.version} ` +
+                `(${Object.keys(spec.paths || {}).length} paths, ` +
+                `${Object.keys((spec.components || {}).schemas || {}).length} schemas)`
+        );
 
         mkdirSync(GENERATED_DIR, { recursive: true });
 
-        console.log('[generate-reefin-sdk] Running openapi-generator-cli (typescript-axios)...');
-        execFileSync('npx', [
-            '--yes',
-            '@openapitools/openapi-generator-cli',
-            'generate',
-            '--input-spec', PINNED_SPEC_PATH,
-            '--generator-name', 'typescript-axios',
-            '--output', GENERATED_DIR,
-            '--additional-properties', [
-                'supportsES6=true',
-                'withInterfaces=true',
-                'useSingleRequestParameter=false',
-                'withSeparateModelsAndApi=true',
-                'apiPackage=api',
-                'modelPackage=models'
-            ].join(','),
-            '--global-property', 'apiTests=false,modelTests=false,apiDocs=false,modelDocs=false'
-        ], { cwd: REPO_ROOT, stdio: 'inherit' });
+        console.log(
+            '[generate-reefin-sdk] Running openapi-generator-cli (typescript-axios)...'
+        );
+        execFileSync(
+            'npx',
+            [
+                '--yes',
+                '@openapitools/openapi-generator-cli',
+                'generate',
+                '--input-spec',
+                PINNED_SPEC_PATH,
+                '--generator-name',
+                'typescript-axios',
+                '--output',
+                GENERATED_DIR,
+                '--additional-properties',
+                [
+                    'supportsES6=true',
+                    'withInterfaces=true',
+                    'useSingleRequestParameter=false',
+                    'withSeparateModelsAndApi=true',
+                    'apiPackage=api',
+                    'modelPackage=models'
+                ].join(','),
+                '--global-property',
+                'apiTests=false,modelTests=false,apiDocs=false,modelDocs=false'
+            ],
+            { cwd: REPO_ROOT, stdio: 'inherit' }
+        );
 
         // Standalone-npm-package boilerplate the typescript-axios template always emits; irrelevant
         // here since generated/ is committed straight into this app rather than published on its own.
-        for (const stale of ['git_push.sh', '.gitignore', '.npmignore', '.openapi-generator-ignore']) {
+        for (const stale of [
+            'git_push.sh',
+            '.gitignore',
+            '.npmignore',
+            '.openapi-generator-ignore'
+        ]) {
             rmSync(join(GENERATED_DIR, stale), { force: true });
         }
 
-        console.log('[generate-reefin-sdk] Done. Review the diff under src/lib/reefin-sdk/ before committing.');
+        console.log(
+            '[generate-reefin-sdk] Done. Review the diff under src/lib/reefin-sdk/ before committing.'
+        );
     });
 }
 
-main().catch(err => {
+main().catch((err) => {
     console.error(`[generate-reefin-sdk] ${err.message}`);
     process.exitCode = 1;
 });

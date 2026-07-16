@@ -8,7 +8,12 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { type ActionFunctionArgs, Form, useActionData, useNavigation } from 'react-router-dom';
+import {
+    type ActionFunctionArgs,
+    Form,
+    useActionData,
+    useNavigation
+} from 'react-router-dom';
 import { getSystemApi } from '@jellyfin/sdk/lib/utils/api/system-api';
 import { QUERY_KEY, useConfiguration } from 'hooks/useConfiguration';
 import Loading from 'components/loading/LoadingComponent';
@@ -23,13 +28,16 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const formData = await request.formData();
 
     const bitrateLimit = formData.get('StreamingBitrateLimit')?.toString();
-    config.RemoteClientBitrateLimit = Math.trunc(1e6 * parseFloat(bitrateLimit || '0'));
+    config.RemoteClientBitrateLimit = Math.trunc(
+        1e6 * parseFloat(bitrateLimit || '0')
+    );
 
-    await getSystemApi(api)
-        .updateConfiguration({ serverConfiguration: config });
+    await getSystemApi(api).updateConfiguration({
+        serverConfiguration: config
+    });
 
     void queryClient.invalidateQueries({
-        queryKey: [ QUERY_KEY ]
+        queryKey: [QUERY_KEY]
     });
 
     return {
@@ -42,7 +50,11 @@ export const Component = () => {
     const actionData = useActionData() as ActionData | undefined;
     const isSubmitting = navigation.state === 'submitting';
 
-    const { isPending: isConfigurationPending, isError: isConfigurationError, data: defaultConfiguration } = useConfiguration();
+    const {
+        isPending: isConfigurationPending,
+        isError: isConfigurationError,
+        data: defaultConfiguration
+    } = useConfiguration();
 
     if (isConfigurationPending) {
         return <Loading />;
@@ -57,7 +69,9 @@ export const Component = () => {
             <Box className='content-primary'>
                 <Form method='POST'>
                     {isConfigurationError ? (
-                        <Alert severity='error'>{globalize.translate('StreamingLoadError')}</Alert>
+                        <Alert severity='error'>
+                            {globalize.translate('StreamingLoadError')}
+                        </Alert>
                     ) : (
                         <Stack spacing={3}>
                             <Typography variant='h1'>
@@ -74,9 +88,18 @@ export const Component = () => {
                                 type='number'
                                 inputMode='decimal'
                                 name='StreamingBitrateLimit'
-                                label={globalize.translate('LabelRemoteClientBitrateLimit')}
-                                helperText={globalize.translate('LabelRemoteClientBitrateLimitHelp')}
-                                defaultValue={defaultConfiguration.RemoteClientBitrateLimit ? defaultConfiguration.RemoteClientBitrateLimit / 1e6 : ''}
+                                label={globalize.translate(
+                                    'LabelRemoteClientBitrateLimit'
+                                )}
+                                helperText={globalize.translate(
+                                    'LabelRemoteClientBitrateLimitHelp'
+                                )}
+                                defaultValue={
+                                    defaultConfiguration.RemoteClientBitrateLimit
+                                        ? defaultConfiguration.RemoteClientBitrateLimit /
+                                          1e6
+                                        : ''
+                                }
                                 slotProps={{
                                     htmlInput: {
                                         min: 0,
@@ -85,10 +108,7 @@ export const Component = () => {
                                     }
                                 }}
                             />
-                            <Button
-                                type='submit'
-                                size='large'
-                            >
+                            <Button type='submit' size='large'>
                                 {globalize.translate('Save')}
                             </Button>
                         </Stack>

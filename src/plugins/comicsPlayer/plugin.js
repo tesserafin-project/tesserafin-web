@@ -15,7 +15,22 @@ import './style.scss';
 // supported book file extensions
 const FILE_EXTENSIONS = ['.cbr', '.cbt', '.cbz', '.cb7'];
 // the comic book archive supports any kind of image format as it's just a zip archive
-const IMAGE_FORMATS = ['jpg', 'jpeg', 'jpe', 'jif', 'jfif', 'jfi', 'png', 'avif', 'gif', 'bmp', 'dib', 'tiff', 'tif', 'webp'];
+const IMAGE_FORMATS = [
+    'jpg',
+    'jpeg',
+    'jpe',
+    'jif',
+    'jfif',
+    'jfi',
+    'png',
+    'avif',
+    'gif',
+    'bmp',
+    'dib',
+    'tiff',
+    'tif',
+    'webp'
+];
 
 export class ComicsPlayer {
     constructor() {
@@ -34,7 +49,8 @@ export class ComicsPlayer {
         this.pageCount = 0;
 
         const mediaSourceId = options.items[0].Id;
-        this.comicsPlayerSettings = userSettings.getComicsPlayerSettings(mediaSourceId);
+        this.comicsPlayerSettings =
+            userSettings.getComicsPlayerSettings(mediaSourceId);
 
         const elem = this.createMediaElement();
         return this.setCurrentSrc(elem, options);
@@ -50,7 +66,10 @@ export class ComicsPlayer {
         Events.trigger(this, 'stopped', [stopInfo]);
 
         const mediaSourceId = this.item.Id;
-        userSettings.setComicsPlayerSettings(this.comicsPlayerSettings, mediaSourceId);
+        userSettings.setComicsPlayerSettings(
+            this.comicsPlayerSettings,
+            mediaSourceId
+        );
 
         this.archiveSource?.release();
 
@@ -118,11 +137,17 @@ export class ComicsPlayer {
 
         this.swiperInstance.changeLanguageDirection(langDir);
 
-        const prevIcon = langDir === 'ltr' ? 'arrow_circle_left' : 'arrow_circle_right';
-        this.mediaElement.querySelector('.btnToggleLangDir > span').classList.remove(prevIcon);
+        const prevIcon =
+            langDir === 'ltr' ? 'arrow_circle_left' : 'arrow_circle_right';
+        this.mediaElement
+            .querySelector('.btnToggleLangDir > span')
+            .classList.remove(prevIcon);
 
-        const newIcon = langDir === 'ltr' ? 'arrow_circle_right' : 'arrow_circle_left';
-        this.mediaElement.querySelector('.btnToggleLangDir > span').classList.add(newIcon);
+        const newIcon =
+            langDir === 'ltr' ? 'arrow_circle_right' : 'arrow_circle_left';
+        this.mediaElement
+            .querySelector('.btnToggleLangDir > span')
+            .classList.add(newIcon);
 
         const dirTitle = langDir === 'ltr' ? 'Right To Left' : 'Left To Right';
         this.mediaElement.querySelector('.btnToggleLangDir').title = dirTitle;
@@ -151,10 +176,14 @@ export class ComicsPlayer {
         this.swiperInstance.params.slidesPerGroup = view;
 
         const prevIcon = view === 1 ? 'devices_fold' : 'import_contacts';
-        this.mediaElement.querySelector('.btnToggleView > span').classList.remove(prevIcon);
+        this.mediaElement
+            .querySelector('.btnToggleView > span')
+            .classList.remove(prevIcon);
 
         const newIcon = view === 1 ? 'import_contacts' : 'devices_fold';
-        this.mediaElement.querySelector('.btnToggleView > span').classList.add(newIcon);
+        this.mediaElement
+            .querySelector('.btnToggleView > span')
+            .classList.add(newIcon);
 
         const viewTitle = view === 1 ? 'Double Page View' : 'Single Page View';
         this.mediaElement.querySelector('.btnToggleView').title = viewTitle;
@@ -195,9 +224,19 @@ export class ComicsPlayer {
         const elem = this.mediaElement;
 
         elem?.addEventListener('close', this.onDialogClosed, { once: true });
-        elem?.querySelector('.btnExit').addEventListener('click', this.onDialogClosed, { once: true });
-        elem?.querySelector('.btnToggleLangDir').addEventListener('click', this.onDirChanged);
-        elem?.querySelector('.btnToggleView').addEventListener('click', this.onViewChanged);
+        elem?.querySelector('.btnExit').addEventListener(
+            'click',
+            this.onDialogClosed,
+            { once: true }
+        );
+        elem?.querySelector('.btnToggleLangDir').addEventListener(
+            'click',
+            this.onDirChanged
+        );
+        elem?.querySelector('.btnToggleView').addEventListener(
+            'click',
+            this.onViewChanged
+        );
     }
 
     bindEvents() {
@@ -210,9 +249,18 @@ export class ComicsPlayer {
         const elem = this.mediaElement;
 
         elem?.removeEventListener('close', this.onDialogClosed);
-        elem?.querySelector('.btnExit').removeEventListener('click', this.onDialogClosed);
-        elem?.querySelector('.btnToggleLangDir').removeEventListener('click', this.onDirChanged);
-        elem?.querySelector('.btnToggleView').removeEventListener('click', this.onViewChanged);
+        elem?.querySelector('.btnExit').removeEventListener(
+            'click',
+            this.onDialogClosed
+        );
+        elem?.querySelector('.btnToggleLangDir').removeEventListener(
+            'click',
+            this.onDirChanged
+        );
+        elem?.querySelector('.btnToggleView').removeEventListener(
+            'click',
+            this.onViewChanged
+        );
     }
 
     unbindEvents() {
@@ -238,8 +286,14 @@ export class ComicsPlayer {
                 removeOnClose: true
             });
 
-            const viewIcon = this.comicsPlayerSettings.pagesPerView === 1 ? 'import_contacts' : 'devices_fold';
-            const dirIcon = this.comicsPlayerSettings.langDir === 'ltr' ? 'arrow_circle_right' : 'arrow_circle_left';
+            const viewIcon =
+                this.comicsPlayerSettings.pagesPerView === 1
+                    ? 'import_contacts'
+                    : 'devices_fold';
+            const dirIcon =
+                this.comicsPlayerSettings.langDir === 'ltr'
+                    ? 'arrow_circle_right'
+                    : 'arrow_circle_left';
 
             elem.id = 'comicsPlayer';
             elem.classList.add('slideshowDialog');
@@ -266,10 +320,16 @@ export class ComicsPlayer {
 
         this.mediaElement = elem;
 
-        const dirTitle = this.comicsPlayerSettings.langDir === 'ltr' ? 'Right To Left' : 'Left To Right';
+        const dirTitle =
+            this.comicsPlayerSettings.langDir === 'ltr'
+                ? 'Right To Left'
+                : 'Left To Right';
         this.mediaElement.querySelector('.btnToggleLangDir').title = dirTitle;
 
-        const viewTitle = this.comicsPlayerSettings.pagesPerView === 1 ? 'Double Page View' : 'Single Page View';
+        const viewTitle =
+            this.comicsPlayerSettings.pagesPerView === 1
+                ? 'Double Page View'
+                : 'Single Page View';
         this.mediaElement.querySelector('.btnToggleView').title = viewTitle;
 
         this.bindEvents();
@@ -296,68 +356,81 @@ export class ComicsPlayer {
 
         const api = ServerConnections.getApi(item.ServerId);
         if (!api) {
-            console.error('[ComicsPlayer] no Api instance available for server', item.ServerId);
+            console.error(
+                '[ComicsPlayer] no Api instance available for server',
+                item.ServerId
+            );
             return;
         }
 
-        const downloadUrl = getLibraryApi(api).getDownloadUrl({ itemId: item.Id });
+        const downloadUrl = getLibraryApi(api).getDownloadUrl({
+            itemId: item.Id
+        });
         this.archiveSource = new ArchiveSource(downloadUrl);
 
         //eslint-disable-next-line import/no-unresolved
         import('swiper/css/bundle');
 
-        return this.archiveSource.load()
-            // eslint-disable-next-line import/no-unresolved
-            .then(() => import('swiper/bundle'))
-            .then(({ Swiper }) => {
-                loading.hide();
+        return (
+            this.archiveSource
+                .load()
+                // eslint-disable-next-line import/no-unresolved
+                .then(() => import('swiper/bundle'))
+                .then(({ Swiper }) => {
+                    loading.hide();
 
-                this.pageCount = this.archiveSource.urls.length;
-                this.currentPage = options.startPositionTicks / 10000 || 0;
+                    this.pageCount = this.archiveSource.urls.length;
+                    this.currentPage = options.startPositionTicks / 10000 || 0;
 
-                this.swiperInstance = new Swiper(elem.querySelector('.slideshowSwiperContainer'), {
-                    direction: 'horizontal',
-                    // loop is disabled due to the lack of Swiper support in virtual slides
-                    loop: false,
-                    zoom: {
-                        minRatio: 1,
-                        toggle: true,
-                        containerClass: 'slider-zoom-container'
-                    },
-                    autoplay: false,
-                    keyboard: {
-                        enabled: true
-                    },
-                    preloadImages: true,
-                    slidesPerView: this.comicsPlayerSettings.pagesPerView,
-                    slidesPerGroup: this.comicsPlayerSettings.pagesPerView,
-                    slidesPerColumn: 1,
-                    initialSlide: this.currentPage,
-                    navigation: {
-                        nextEl: '.swiper-button-next',
-                        prevEl: '.swiper-button-prev'
-                    },
-                    pagination: {
-                        el: '.swiper-pagination',
-                        clickable: true,
-                        type: 'fraction'
-                    },
-                    // reduces memory consumption for large libraries while allowing preloading of images
-                    virtual: {
-                        slides: this.archiveSource.urls,
-                        cache: true,
-                        renderSlide: this.getImgFromUrl,
-                        addSlidesBefore: 1,
-                        addSlidesAfter: 1
-                    }
-                });
+                    this.swiperInstance = new Swiper(
+                        elem.querySelector('.slideshowSwiperContainer'),
+                        {
+                            direction: 'horizontal',
+                            // loop is disabled due to the lack of Swiper support in virtual slides
+                            loop: false,
+                            zoom: {
+                                minRatio: 1,
+                                toggle: true,
+                                containerClass: 'slider-zoom-container'
+                            },
+                            autoplay: false,
+                            keyboard: {
+                                enabled: true
+                            },
+                            preloadImages: true,
+                            slidesPerView:
+                                this.comicsPlayerSettings.pagesPerView,
+                            slidesPerGroup:
+                                this.comicsPlayerSettings.pagesPerView,
+                            slidesPerColumn: 1,
+                            initialSlide: this.currentPage,
+                            navigation: {
+                                nextEl: '.swiper-button-next',
+                                prevEl: '.swiper-button-prev'
+                            },
+                            pagination: {
+                                el: '.swiper-pagination',
+                                clickable: true,
+                                type: 'fraction'
+                            },
+                            // reduces memory consumption for large libraries while allowing preloading of images
+                            virtual: {
+                                slides: this.archiveSource.urls,
+                                cache: true,
+                                renderSlide: this.getImgFromUrl,
+                                addSlidesBefore: 1,
+                                addSlidesAfter: 1
+                            }
+                        }
+                    );
 
-                // save current page ( a page is an image file inside the archive )
-                this.swiperInstance.on('slideChange', () => {
-                    this.currentPage = this.swiperInstance.activeIndex;
-                    Events.trigger(this, 'pause');
-                });
-            });
+                    // save current page ( a page is an image file inside the archive )
+                    this.swiperInstance.on('slideChange', () => {
+                        this.currentPage = this.swiperInstance.activeIndex;
+                        Events.trigger(this, 'pause');
+                    });
+                })
+        );
     }
 
     getImgFromUrl(url) {
@@ -373,7 +446,9 @@ export class ComicsPlayer {
     }
 
     canPlayItem(item) {
-        return item.Path && FILE_EXTENSIONS.some(ext => item.Path.endsWith(ext));
+        return (
+            item.Path && FILE_EXTENSIONS.some((ext) => item.Path.endsWith(ext))
+        );
     }
 }
 
@@ -401,7 +476,10 @@ class ArchiveSource {
         files = files.filter((file) => {
             const name = file.file.name;
             const index = name.lastIndexOf('.');
-            return index !== -1 && IMAGE_FORMATS.includes(name.slice(index + 1).toLowerCase());
+            return (
+                index !== -1 &&
+                IMAGE_FORMATS.includes(name.slice(index + 1).toLowerCase())
+            );
         });
         files.sort((a, b) => {
             if (a.file.name < b.file.name) {

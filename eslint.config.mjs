@@ -51,16 +51,16 @@ export default tseslint.config(
         plugins: {
             '@stylistic': stylistic
         },
-        extends: [ importPlugin.flatConfigs.typescript ],
+        extends: [importPlugin.flatConfigs.typescript],
         rules: {
-            'array-callback-return': ['error', { 'checkForEach': true }],
-            'curly': ['error', 'multi-line', 'consistent'],
+            'array-callback-return': ['error', { checkForEach: true }],
+            curly: ['error', 'multi-line', 'consistent'],
             'default-case-last': 'error',
             'max-params': ['error', 7],
             'new-cap': [
                 'error',
                 {
-                    'newIsCapExceptionPattern': String.raw`\.default$`
+                    newIsCapExceptionPattern: String.raw`\.default$`
                 }
             ],
             'no-duplicate-imports': 'error',
@@ -69,32 +69,45 @@ export default tseslint.config(
             'no-lonely-if': 'error',
             'no-nested-ternary': 'error',
             'no-redeclare': 'off',
-            '@typescript-eslint/no-redeclare': ['error', { builtinGlobals: false }],
+            '@typescript-eslint/no-redeclare': [
+                'error',
+                { builtinGlobals: false }
+            ],
             'no-restricted-globals': ['error'].concat(restrictedGlobals),
             'no-return-assign': 'error',
             'no-return-await': 'error',
-            'no-sequences': ['error', { 'allowInParentheses': false }],
+            'no-sequences': ['error', { allowInParentheses: false }],
             'no-shadow': 'off',
             '@typescript-eslint/no-shadow': 'error',
             'no-throw-literal': 'error',
             'no-undef-init': 'error',
             'no-unneeded-ternary': 'error',
             'no-unused-expressions': 'off',
-            '@typescript-eslint/no-unused-expressions': ['error', { 'allowShortCircuit': true, 'allowTernary': true, 'allowTaggedTemplates': true }],
+            '@typescript-eslint/no-unused-expressions': [
+                'error',
+                {
+                    allowShortCircuit: true,
+                    allowTernary: true,
+                    allowTaggedTemplates: true
+                }
+            ],
             'no-unused-private-class-members': 'error',
             '@typescript-eslint/no-unused-vars': 'error',
             'no-useless-rename': 'error',
             'no-useless-constructor': 'off',
             '@typescript-eslint/no-useless-constructor': 'error',
             'no-var': 'error',
-            'no-void': ['error', { 'allowAsStatement': true }],
-            'no-warning-comments': ['warn', { 'terms': ['hack', 'xxx'] }],
+            'no-void': ['error', { allowAsStatement: true }],
+            'no-warning-comments': ['warn', { terms: ['hack', 'xxx'] }],
             'one-var': ['error', 'never'],
-            'prefer-const': ['error', { 'destructuring': 'all' }],
-            'prefer-promise-reject-errors': ['warn', { 'allowEmptyReject': true }],
+            'prefer-const': ['error', { destructuring: 'all' }],
+            'prefer-promise-reject-errors': [
+                'warn',
+                { allowEmptyReject: true }
+            ],
             '@typescript-eslint/prefer-for-of': 'error',
-            'radix': 'error',
-            'yoda': 'error',
+            radix: 'error',
+            yoda: 'error',
 
             'sonarjs/fixme-tag': 'warn',
             'sonarjs/todo-tag': 'off',
@@ -112,23 +125,35 @@ export default tseslint.config(
 
             // TODO: Replace with stylistic.configs.customize()
             '@stylistic/block-spacing': 'error',
-            '@stylistic/brace-style': ['error', '1tbs', { 'allowSingleLine': true }],
+            '@stylistic/brace-style': [
+                'error',
+                '1tbs',
+                { allowSingleLine: true }
+            ],
             '@stylistic/comma-dangle': ['error', 'never'],
             '@stylistic/comma-spacing': 'error',
             '@stylistic/eol-last': 'error',
-            '@stylistic/indent': ['error', 4, { 'SwitchCase': 1 }],
+            '@stylistic/indent': ['error', 4, { SwitchCase: 1 }],
             '@stylistic/jsx-quotes': ['error', 'prefer-single'],
             '@stylistic/keyword-spacing': 'error',
             '@stylistic/max-statements-per-line': 'error',
             '@stylistic/no-floating-decimal': 'error',
             '@stylistic/no-mixed-spaces-and-tabs': 'error',
             '@stylistic/no-multi-spaces': 'error',
-            '@stylistic/no-multiple-empty-lines': ['error', { 'max': 1 }],
+            '@stylistic/no-multiple-empty-lines': ['error', { max: 1 }],
             '@stylistic/no-trailing-spaces': 'error',
             '@stylistic/object-curly-spacing': ['error', 'always'],
-            '@stylistic/operator-linebreak': ['error', 'before', { overrides: { '?': 'after', ':': 'after', '=': 'after' } }],
+            '@stylistic/operator-linebreak': [
+                'error',
+                'before',
+                { overrides: { '?': 'after', ':': 'after', '=': 'after' } }
+            ],
             '@stylistic/padded-blocks': ['error', 'never'],
-            '@stylistic/quotes': ['error', 'single', { 'avoidEscape': true, 'allowTemplateLiterals': false }],
+            '@stylistic/quotes': [
+                'error',
+                'single',
+                { avoidEscape: true, allowTemplateLiterals: false }
+            ],
             '@stylistic/semi': 'error',
             '@stylistic/space-before-blocks': 'error',
             '@stylistic/space-infix-ops': 'error',
@@ -170,7 +195,7 @@ export default tseslint.config(
 
     // Config files use node globals
     {
-        ignores: [ 'src' ],
+        ignores: ['src'],
         languageOptions: {
             globals: {
                 ...globals.node
@@ -180,8 +205,8 @@ export default tseslint.config(
 
     // Config files are commonjs by default
     {
-        files: [ '**/*.{cjs,js}' ],
-        ignores: [ 'src' ],
+        files: ['**/*.{cjs,js}'],
+        ignores: ['src'],
         languageOptions: {
             sourceType: 'commonjs'
         },
@@ -192,7 +217,7 @@ export default tseslint.config(
 
     // Node build/tooling scripts
     {
-        files: [ 'scripts/**/*.{js,mjs,ts}' ],
+        files: ['scripts/**/*.{js,mjs,ts}'],
         rules: {
             // Deliberately spawning devDependency CLIs (openapi-generator-cli) via `npx` from a
             // local dev/build script, not user-controlled input.
@@ -202,9 +227,7 @@ export default tseslint.config(
 
     // App files
     {
-        files: [
-            'src/**/*.{js,jsx,ts,tsx}'
-        ],
+        files: ['src/**/*.{js,jsx,ts,tsx}'],
         languageOptions: {
             parserOptions: {
                 projectService: true,
@@ -213,21 +236,21 @@ export default tseslint.config(
             globals: {
                 ...globals.browser,
                 // Tizen globals
-                'tizen': false,
-                'webapis': false,
+                tizen: false,
+                webapis: false,
                 // WebOS globals
-                'webOS': false,
+                webOS: false,
                 // Dependency globals
-                '$': false,
-                'jQuery': false,
+                $: false,
+                jQuery: false,
                 // Jellyfin globals
-                'ApiClient': true,
-                'Events': true,
-                'chrome': true,
-                'Emby': false,
-                'Hls': true,
-                'LibraryMenu': true,
-                'Windows': false,
+                ApiClient: true,
+                Events: true,
+                chrome: true,
+                Emby: false,
+                Hls: true,
+                LibraryMenu: true,
+                Windows: false,
                 // Build time definitions
                 __COMMIT_SHA__: false,
                 __JF_BUILD_VERSION__: false,
@@ -240,16 +263,8 @@ export default tseslint.config(
         settings: {
             'import/resolver': {
                 node: {
-                    extensions: [
-                        '.js',
-                        '.ts',
-                        '.jsx',
-                        '.tsx'
-                    ],
-                    moduleDirectory: [
-                        'node_modules',
-                        'src'
-                    ]
+                    extensions: ['.js', '.ts', '.jsx', '.tsx'],
+                    moduleDirectory: ['node_modules', 'src']
                 }
             }
         },
@@ -259,32 +274,32 @@ export default tseslint.config(
                 'error',
                 {
                     selector: 'default',
-                    format: [ 'camelCase', 'PascalCase' ],
+                    format: ['camelCase', 'PascalCase'],
                     leadingUnderscore: 'allow'
                 },
                 {
                     selector: 'variable',
-                    format: [ 'camelCase', 'PascalCase', 'UPPER_CASE' ],
+                    format: ['camelCase', 'PascalCase', 'UPPER_CASE'],
                     leadingUnderscore: 'allowSingleOrDouble',
                     trailingUnderscore: 'allowSingleOrDouble'
                 },
                 {
                     selector: 'typeLike',
-                    format: [ 'PascalCase' ]
+                    format: ['PascalCase']
                 },
                 {
                     selector: 'enumMember',
-                    format: [ 'PascalCase', 'UPPER_CASE' ]
+                    format: ['PascalCase', 'UPPER_CASE']
                 },
                 {
-                    selector: [ 'objectLiteralProperty', 'typeProperty' ],
-                    format: [ 'camelCase', 'PascalCase' ],
+                    selector: ['objectLiteralProperty', 'typeProperty'],
+                    format: ['camelCase', 'PascalCase'],
                     leadingUnderscore: 'allowSingleOrDouble',
                     trailingUnderscore: 'allowSingleOrDouble'
                 },
                 // Ignore numbers, locale strings (en-us), aria/data attributes and CSS selectors
                 {
-                    selector: [ 'objectLiteralProperty', 'typeProperty' ],
+                    selector: ['objectLiteralProperty', 'typeProperty'],
                     format: null,
                     filter: {
                         regex: '[ &\\-]|^([0-9]+)$',
@@ -300,12 +315,15 @@ export default tseslint.config(
 
     // React files
     {
-        files: [ 'src/**/*.{jsx,tsx}' ],
+        files: ['src/**/*.{jsx,tsx}'],
         plugins: {
             'react-hooks': reactHooks
         },
         rules: {
-            'react/jsx-filename-extension': ['error', { 'extensions': ['.jsx', '.tsx'] }],
+            'react/jsx-filename-extension': [
+                'error',
+                { extensions: ['.jsx', '.tsx'] }
+            ],
             'react/jsx-no-bind': 'error',
             'react/jsx-no-useless-fragment': 'error',
             'react/no-array-index-key': 'error',
@@ -316,7 +334,7 @@ export default tseslint.config(
 
     // Service worker
     {
-        files: [ 'src/serviceworker.js' ],
+        files: ['src/serviceworker.js'],
         languageOptions: {
             globals: {
                 ...globals.serviceworker
@@ -326,7 +344,7 @@ export default tseslint.config(
 
     // Legacy JS (less strict)
     {
-        files: [ 'src/**/*.{js,jsx}' ],
+        files: ['src/**/*.{js,jsx}'],
         rules: {
             '@typescript-eslint/no-floating-promises': 'off',
             '@typescript-eslint/no-this-alias': 'off',

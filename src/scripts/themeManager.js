@@ -1,7 +1,10 @@
 import Events from 'utils/events';
 import { EventType } from 'constants/eventType';
 
-import { getDefaultTheme, getThemes as getConfiguredThemes } from './settings/webSettings';
+import {
+    getDefaultTheme,
+    getThemes as getConfiguredThemes
+} from './settings/webSettings';
 
 let currentThemeId;
 
@@ -10,11 +13,11 @@ function getThemes() {
 }
 
 function getThemeStylesheetInfo(id) {
-    return getThemes().then(themes => {
+    return getThemes().then((themes) => {
         let theme;
 
         if (id) {
-            theme = themes.find(currentTheme => {
+            theme = themes.find((currentTheme) => {
                 return currentTheme.id === id;
             });
         }
@@ -48,7 +51,7 @@ function setTheme(id) {
             // set the meta theme color
             document.getElementById('themeColor').content = info.color;
 
-            Events.trigger(document, EventType.THEME_CHANGE, [ info.id ]);
+            Events.trigger(document, EventType.THEME_CHANGE, [info.id]);
         });
     });
 }

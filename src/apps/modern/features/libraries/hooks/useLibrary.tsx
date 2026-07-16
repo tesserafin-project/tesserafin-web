@@ -1,6 +1,12 @@
 import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 import { UseQueryResult } from '@tanstack/react-query';
-import React, { type FC, type PropsWithChildren, createContext, useContext, useMemo } from 'react';
+import React, {
+    type FC,
+    type PropsWithChildren,
+    createContext,
+    useContext,
+    useMemo
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
 
@@ -13,7 +19,10 @@ import { LibraryTabContent } from 'types/libraryTabContent';
 
 import { LibraryRoutes } from '../constants/libraryRoutes';
 import { isLibraryPath } from '../utils/path';
-import { getDefaultLibraryViewSettings, getSettingsKey } from '../utils/settings';
+import {
+    getDefaultLibraryViewSettings,
+    getSettingsKey
+} from '../utils/settings';
 import { getViewContent } from '../utils/viewContent';
 
 interface LibraryState {
@@ -30,27 +39,38 @@ const DEFAULT_LIBRARY_STATE: LibraryState = {
     isLibraryPath: false
 };
 
-export const LibraryContext = createContext<LibraryState>(DEFAULT_LIBRARY_STATE);
+export const LibraryContext = createContext<LibraryState>(
+    DEFAULT_LIBRARY_STATE
+);
 export const useLibrary = () => useContext(LibraryContext);
 
-export const LibraryProvider: FC<PropsWithChildren<unknown>> = ({ children }) => {
+export const LibraryProvider: FC<PropsWithChildren<unknown>> = ({
+    children
+}) => {
     const { pathname } = useLocation();
     const { libraryId, activeTab } = useCurrentTab();
 
-    const route = useMemo(() => LibraryRoutes.find(({ path }) => path === pathname), [pathname]);
+    const route = useMemo(
+        () => LibraryRoutes.find(({ path }) => path === pathname),
+        [pathname]
+    );
     const collectionType = route?.type;
     const isLibPath = isLibraryPath(pathname);
     const id = libraryId ?? undefined;
 
-    const content = useMemo(() => collectionType && getViewContent(collectionType, activeTab), [collectionType, activeTab]);
+    const content = useMemo(
+        () => collectionType && getViewContent(collectionType, activeTab),
+        [collectionType, activeTab]
+    );
     const viewType = content?.viewType;
 
     // Local storage requires the view type to be known upfront so default to movies if unknown
     const settingsViewType = viewType ?? LibraryTab.Movies;
-    const [viewSettings, setViewSettings] = useLocalStorage<LibraryViewSettings>(
-        getSettingsKey(settingsViewType, libraryId),
-        getDefaultLibraryViewSettings(settingsViewType)
-    );
+    const [viewSettings, setViewSettings] =
+        useLocalStorage<LibraryViewSettings>(
+            getSettingsKey(settingsViewType, libraryId),
+            getDefaultLibraryViewSettings(settingsViewType)
+        );
 
     const itemsResult = useGetItemsViewByType(
         viewType,
@@ -59,16 +79,27 @@ export const LibraryProvider: FC<PropsWithChildren<unknown>> = ({ children }) =>
         viewSettings
     );
 
-    const state = useMemo(() => ({
-        ...DEFAULT_LIBRARY_STATE,
-        collectionType,
-        isLibraryPath: isLibPath,
-        id,
-        content,
-        viewSettings,
-        setViewSettings,
-        itemsResult
-    }), [collectionType, isLibPath, id, content, viewSettings, setViewSettings, itemsResult]);
+    const state = useMemo(
+        () => ({
+            ...DEFAULT_LIBRARY_STATE,
+            collectionType,
+            isLibraryPath: isLibPath,
+            id,
+            content,
+            viewSettings,
+            setViewSettings,
+            itemsResult
+        }),
+        [
+            collectionType,
+            isLibPath,
+            id,
+            content,
+            viewSettings,
+            setViewSettings,
+            itemsResult
+        ]
+    );
 
     return (
         <LibraryContext.Provider value={state}>

@@ -36,7 +36,10 @@ function CircularProgressWithLabel(
                     component='div'
                     color='text.secondary'
                 >
-                    {toPercentString(props.value / 100, getCurrentDateTimeLocale())}
+                    {toPercentString(
+                        props.value / 100,
+                        getCurrentDateTimeLocale()
+                    )}
                 </Typography>
             </Box>
         </Box>
@@ -51,25 +54,33 @@ interface RefreshIndicatorProps {
 const RefreshIndicator: FC<RefreshIndicatorProps> = ({ item, className }) => {
     const { api } = useApi();
 
-    const [showProgressBar, setShowProgressBar] = useState(!!item.RefreshProgress);
+    const [showProgressBar, setShowProgressBar] = useState(
+        !!item.RefreshProgress
+    );
     const [progress, setProgress] = useState(item.RefreshProgress || 0);
 
-    const onRefreshProgress = useCallback(({ Data }: RefreshProgressMessage) => {
-        if (Data?.ItemId === item?.Id) {
-            const pct = Number.parseFloat(Data?.Progress ?? '0');
+    const onRefreshProgress = useCallback(
+        ({ Data }: RefreshProgressMessage) => {
+            if (Data?.ItemId === item?.Id) {
+                const pct = Number.parseFloat(Data?.Progress ?? '0');
 
-            if (pct && pct < 100) {
-                setShowProgressBar(true);
-            } else {
-                setShowProgressBar(false);
+                if (pct && pct < 100) {
+                    setShowProgressBar(true);
+                } else {
+                    setShowProgressBar(false);
+                }
+
+                setProgress(pct);
             }
-
-            setProgress(pct);
-        }
-    }, [item?.Id, setShowProgressBar, setProgress]);
+        },
+        [item?.Id, setShowProgressBar, setProgress]
+    );
 
     useEffect(() => {
-        return api?.subscribe([OutboundWebSocketMessageType.RefreshProgress], onRefreshProgress);
+        return api?.subscribe(
+            [OutboundWebSocketMessageType.RefreshProgress],
+            onRefreshProgress
+        );
     }, [api, onRefreshProgress]);
 
     const progressringClass = classNames('progressring', className);

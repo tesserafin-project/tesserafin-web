@@ -7,8 +7,8 @@ import globalize from 'lib/globalize';
 import { queryClient } from 'utils/query/queryClient';
 
 interface NewPlaylistButtonProps {
-    isTextVisible: boolean
-    queryKey: QueryKey
+    isTextVisible: boolean;
+    queryKey: QueryKey;
 }
 
 const NewPlaylistButton: FC<NewPlaylistButtonProps> = ({
@@ -30,10 +30,13 @@ const NewPlaylistButton: FC<NewPlaylistButtonProps> = ({
                     // closed playlist editor
                 }
             })
-            .catch(err => {
-                console.error('[NewPlaylist] failed to load playlist editor', err);
+            .catch((err) => {
+                console.error(
+                    '[NewPlaylist] failed to load playlist editor',
+                    err
+                );
             });
-    }, [ queryKey ]);
+    }, [queryKey]);
 
     return (
         <Button

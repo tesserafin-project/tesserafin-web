@@ -24,7 +24,7 @@ const hasNativeShell = !!window.NativeShell;
 const getArtwork = (item: ItemDto): MediaImage[] => {
     const artwork: MediaImage[] = [];
 
-    DEFAULT_IMAGE_SIZES.forEach(height => {
+    DEFAULT_IMAGE_SIZES.forEach((height) => {
         const src = getImageUrl(item, { height });
         if (src) {
             artwork.push({
@@ -55,17 +55,30 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
     }
 
     private bindNavigatorSession() {
-        const actions: MediaSessionAction[] = ['pause', 'play', 'previoustrack', 'nexttrack', 'stop', 'seekto'];
+        const actions: MediaSessionAction[] = [
+            'pause',
+            'play',
+            'previoustrack',
+            'nexttrack',
+            'stop',
+            'seekto'
+        ];
 
         // iOS will only show next/prev track controls or seek controls
         if (!browser.iOS) actions.push('seekbackward', 'seekforward');
 
         for (const action of actions) {
             try {
-                navigator.mediaSession.setActionHandler(action, this.onMediaSessionAction.bind(this));
+                navigator.mediaSession.setActionHandler(
+                    action,
+                    this.onMediaSessionAction.bind(this)
+                );
             } catch (err) {
                 // NOTE: Some legacy (TV) browsers lack support for the stop and seekto actions
-                console.warn(`[MediaSessionSubscriber] Failed to add "${action}" action handler`, err);
+                console.warn(
+                    `[MediaSessionSubscriber] Failed to add "${action}" action handler`,
+                    err
+                );
             }
         }
     }
@@ -83,13 +96,19 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
             case 'seekforward':
                 return this.playbackManager.fastForward(this.player);
             case 'seekto':
-                return this.playbackManager.seekMs((details.seekTime || 0) * MILLISECONDS_PER_SECOND, this.player);
+                return this.playbackManager.seekMs(
+                    (details.seekTime || 0) * MILLISECONDS_PER_SECOND,
+                    this.player
+                );
             case 'previoustrack':
                 return this.playbackManager.previousTrack(this.player);
             case 'nexttrack':
                 return this.playbackManager.nextTrack(this.player);
             default:
-                console.info('[MediaSessionSubscriber] Unhandled media session action', details);
+                console.info(
+                    '[MediaSessionSubscriber] Unhandled media session action',
+                    details
+                );
         }
     }
 
@@ -98,15 +117,21 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
         stateOverride?: PlayerState
     ) {
         if (!this.player) {
-            console.debug('[MediaSessionSubscriber] no active player; resetting media session');
+            console.debug(
+                '[MediaSessionSubscriber] no active player; resetting media session'
+            );
             return resetMediaSession();
         }
 
-        const state: PlayerState = stateOverride || this.playbackManager.getPlayerState(this.player);
+        const state: PlayerState =
+            stateOverride || this.playbackManager.getPlayerState(this.player);
         const item = state.NowPlayingItem;
 
         if (!item) {
-            console.debug('[MediaSessionSubscriber] no now playing item; resetting media session', state);
+            console.debug(
+                '[MediaSessionSubscriber] no now playing item; resetting media session',
+                state
+            );
             return resetMediaSession();
         }
 
@@ -115,12 +140,14 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
 
         // Local players do their own notifications
         if (isLocalPlayer && isVideo) {
-            console.debug('[MediaSessionSubscriber] ignoring local player update');
+            console.debug(
+                '[MediaSessionSubscriber] ignoring local player update'
+            );
             return;
         }
 
         const album = item.Album || undefined;
-        const [ line1, line2 ] = getItemTextLines(item, false) || [];
+        const [line1, line2] = getItemTextLines(item, false) || [];
         // The artist will be the second line if present or the first line otherwise
         const artist = line2 || line1;
         // The title will be the first line if there are two lines
@@ -128,10 +155,10 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
 
         if (hasNavigatorSession) {
             if (
-                !navigator.mediaSession.metadata
-                || navigator.mediaSession.metadata.album !== album
-                || navigator.mediaSession.metadata.artist !== artist
-                || navigator.mediaSession.metadata.title !== title
+                !navigator.mediaSession.metadata ||
+                navigator.mediaSession.metadata.album !== album ||
+                navigator.mediaSession.metadata.artist !== artist ||
+                navigator.mediaSession.metadata.title !== title
             ) {
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title,
@@ -148,8 +175,14 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
                 title,
                 artist,
                 album,
-                duration: item.RunTimeTicks ? Math.round(item.RunTimeTicks / TICKS_PER_MILLISECOND) : 0,
-                position: state.PlayState.PositionTicks ? Math.round(state.PlayState.PositionTicks / TICKS_PER_MILLISECOND) : 0,
+                duration: item.RunTimeTicks
+                    ? Math.round(item.RunTimeTicks / TICKS_PER_MILLISECOND)
+                    : 0,
+                position: state.PlayState.PositionTicks
+                    ? Math.round(
+                          state.PlayState.PositionTicks / TICKS_PER_MILLISECOND
+                      )
+                    : 0,
                 imageUrl: getImageUrl(item, { maxHeight: 3_000 }),
                 canSeek: !!state.PlayState.CanSeek,
                 isPaused: !!state.PlayState.IsPaused
@@ -183,7 +216,9 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
 }
 
 /** Bind a new MediaSessionSubscriber to the specified PlaybackManager */
-export const bindMediaSessionSubscriber = (playbackManager: PlaybackManager) => {
+export const bindMediaSessionSubscriber = (
+    playbackManager: PlaybackManager
+) => {
     if (hasNativeShell || hasNavigatorSession) {
         return new MediaSessionSubscriber(playbackManager);
     }

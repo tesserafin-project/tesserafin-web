@@ -12,10 +12,10 @@ import { appRouter } from 'components/router/appRouter';
 import type { MenuLink } from 'types/webConfig';
 
 interface UserViewsMenuProps extends MenuProps {
-    userViews: (BaseItemDto | MenuLink)[]
-    selectedId?: string
-    includeGlobalViews?: boolean
-    onMenuClose: () => void
+    userViews: (BaseItemDto | MenuLink)[];
+    selectedId?: string;
+    includeGlobalViews?: boolean;
+    onMenuClose: () => void;
 }
 
 const UserViewsMenu: FC<UserViewsMenuProps> = ({
@@ -25,12 +25,8 @@ const UserViewsMenu: FC<UserViewsMenuProps> = ({
     ...props
 }) => {
     return (
-        <Menu
-            {...props}
-            keepMounted
-            onClose={onMenuClose}
-        >
-            {userViews.map(navItem => {
+        <Menu {...props} keepMounted onClose={onMenuClose}>
+            {userViews.map((navItem) => {
                 if ('url' in navItem) {
                     return (
                         <MenuItem
@@ -44,9 +40,7 @@ const UserViewsMenu: FC<UserViewsMenuProps> = ({
                             <ListItemIcon>
                                 <Icon>{navItem.icon || 'link'}</Icon>
                             </ListItemIcon>
-                            <ListItemText>
-                                {navItem.name}
-                            </ListItemText>
+                            <ListItemText>{navItem.name}</ListItemText>
                         </MenuItem>
                     );
                 }
@@ -55,16 +49,18 @@ const UserViewsMenu: FC<UserViewsMenuProps> = ({
                     <MenuItem
                         key={navItem.Id}
                         component={Link}
-                        to={appRouter.getRouteUrl(navItem, { context: navItem.CollectionType }).substring(1)}
+                        to={appRouter
+                            .getRouteUrl(navItem, {
+                                context: navItem.CollectionType
+                            })
+                            .substring(1)}
                         onClick={onMenuClose}
                         selected={navItem.Id === selectedId}
                     >
                         <ListItemIcon>
                             <LibraryIcon item={navItem} />
                         </ListItemIcon>
-                        <ListItemText>
-                            {navItem.Name}
-                        </ListItemText>
+                        <ListItemText>{navItem.Name}</ListItemText>
                     </MenuItem>
                 );
             })}

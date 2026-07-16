@@ -10,7 +10,7 @@ import globalize from 'lib/globalize';
 import type { DiagnosticTimelineEntry } from '../api/types';
 
 interface DiagnosticTimelineProps {
-    entries: DiagnosticTimelineEntry[]
+    entries: DiagnosticTimelineEntry[];
 }
 
 /** Renders `PlaybackDiagnosticDetail.Timeline` — always at least one `Created` entry, even when
@@ -21,8 +21,8 @@ const DiagnosticTimeline = ({ entries }: DiagnosticTimelineProps) => {
     // The server does not document a strict ordering guarantee beyond "chronological"; sort
     // defensively rather than assuming array order.
     const sortedEntries = useMemo(
-        () => [ ...entries ].sort((a, b) => a.At.localeCompare(b.At)),
-        [ entries ]
+        () => [...entries].sort((a, b) => a.At.localeCompare(b.At)),
+        [entries]
     );
 
     return (
@@ -33,8 +33,12 @@ const DiagnosticTimeline = ({ entries }: DiagnosticTimelineProps) => {
                 // eslint-disable-next-line react/no-array-index-key
                 <ListItem key={`${entry.Stage}-${index}`} disableGutters>
                     <ListItemText
-                        primary={globalize.translate(`DiagnosticTimelineStage.${entry.Stage}`)}
-                        secondary={format(parseISO(entry.At), 'Pp', { locale: dateFnsLocale })}
+                        primary={globalize.translate(
+                            `DiagnosticTimelineStage.${entry.Stage}`
+                        )}
+                        secondary={format(parseISO(entry.At), 'Pp', {
+                            locale: dateFnsLocale
+                        })}
                     />
                 </ListItem>
             ))}

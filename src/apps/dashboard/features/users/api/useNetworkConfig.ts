@@ -6,7 +6,10 @@ import type { AxiosRequestConfig } from 'axios';
 import type { NetworkConfiguration } from '@jellyfin/sdk/lib/generated-client/models/network-configuration';
 
 const fetchNetworkConfig = async (api: Api, options?: AxiosRequestConfig) => {
-    const response = await getSystemApi(api).getNamedConfiguration({ key: 'network' }, options);
+    const response = await getSystemApi(api).getNamedConfiguration(
+        { key: 'network' },
+        options
+    );
 
     return response.data as NetworkConfiguration;
 };
@@ -15,7 +18,7 @@ export const useNetworkConfig = () => {
     const { api } = useApi();
 
     return useQuery({
-        queryKey: [ 'NetConfig' ],
+        queryKey: ['NetConfig'],
         queryFn: ({ signal }) => fetchNetworkConfig(api!, { signal }),
         enabled: !!api
     });

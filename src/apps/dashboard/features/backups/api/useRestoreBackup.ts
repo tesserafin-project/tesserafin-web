@@ -7,12 +7,11 @@ export const useRestoreBackup = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (fileName: string) => (
+        mutationFn: (fileName: string) =>
             getBackupApi(api!).startRestoreBackup({
                 backupRestoreRequestDto: {
                     ArchiveFileName: fileName
                 }
             })
-        )
     });
 };

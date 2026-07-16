@@ -21,47 +21,54 @@ export const Component = () => {
     const { userId, tab } = useParams();
     const { data: user, isPending, isError } = useUser({ userId });
 
-    const handleTabChange = useCallback((event: React.SyntheticEvent, newValue: UserTab) => {
-        navigate(`/dashboard/users/${userId}/${newValue}`);
-    }, [ navigate ]);
+    const handleTabChange = useCallback(
+        (event: React.SyntheticEvent, newValue: UserTab) => {
+            navigate(`/dashboard/users/${userId}/${newValue}`);
+        },
+        [navigate]
+    );
 
     if (isPending) return <Loading />;
 
     return (
-        <Page
-            id='usersEditPage'
-            className='mainAnimatedPage type-interior'
-        >
+        <Page id='usersEditPage' className='mainAnimatedPage type-interior'>
             <Box className='content-primary'>
                 {isError ? (
-                    <Alert
-                        severity='error'
-                        sx={{ marginBottom: 2 }}
-                    >
+                    <Alert severity='error' sx={{ marginBottom: 2 }}>
                         {globalize.translate('UsersEditPageError')}
                     </Alert>
                 ) : (
                     <Stack spacing={2}>
                         <Typography variant='h1'>{user.Name}</Typography>
                         <Tabs value={tab} onChange={handleTabChange}>
-                            <Tab label={globalize.translate('Profile')} value={UserTab.Profile} />
-                            <Tab label={globalize.translate('TabAccess')} value={UserTab.Access} />
-                            <Tab label={globalize.translate('TabParentalControl')} value={UserTab.ParentalControl} />
-                            <Tab label={globalize.translate('HeaderPassword')} value={UserTab.Password} />
+                            <Tab
+                                label={globalize.translate('Profile')}
+                                value={UserTab.Profile}
+                            />
+                            <Tab
+                                label={globalize.translate('TabAccess')}
+                                value={UserTab.Access}
+                            />
+                            <Tab
+                                label={globalize.translate(
+                                    'TabParentalControl'
+                                )}
+                                value={UserTab.ParentalControl}
+                            />
+                            <Tab
+                                label={globalize.translate('HeaderPassword')}
+                                value={UserTab.Password}
+                            />
                         </Tabs>
 
-                        {tab == UserTab.Profile && (
-                            <Profile userDto={user} />
-                        )}
+                        {tab == UserTab.Profile && <Profile userDto={user} />}
                         {tab == UserTab.Access && (
                             <Access userId={user.Id || ''} />
                         )}
                         {tab == UserTab.ParentalControl && (
                             <ParentalControl userId={user.Id || ''} />
                         )}
-                        {tab == UserTab.Password && (
-                            <Password user={user} />
-                        )}
+                        {tab == UserTab.Password && <Password user={user} />}
                     </Stack>
                 )}
             </Box>

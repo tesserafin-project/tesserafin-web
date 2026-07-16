@@ -9,7 +9,9 @@ const getSessionNowPlayingTime = (session: SessionInfoDto) => {
 
     if (nowPlayingItem) {
         if (session.PlayState?.PositionTicks) {
-            start = datetime.getDisplayRunningTime(session.PlayState.PositionTicks);
+            start = datetime.getDisplayRunningTime(
+                session.PlayState.PositionTicks
+            );
         }
 
         if (nowPlayingItem.RunTimeTicks) {

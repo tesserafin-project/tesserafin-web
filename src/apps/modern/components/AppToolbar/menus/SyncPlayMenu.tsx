@@ -27,7 +27,7 @@ import globalize from 'lib/globalize';
 export const ID = 'app-sync-play-menu';
 
 interface SyncPlayMenuProps extends MenuProps {
-    onMenuClose: () => void
+    onMenuClose: () => void;
 }
 
 const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
@@ -48,69 +48,92 @@ const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
     const leaveSyncPlayGroup = useLeaveSyncPlayGroup();
 
     const onGroupAddClick = useCallback(() => {
-        createSyncPlayGroup.mutate({
-            newGroupRequestDto: {
-                GroupName: globalize.translate('SyncPlayGroupDefaultTitle', user?.Name ?? '')
+        createSyncPlayGroup.mutate(
+            {
+                newGroupRequestDto: {
+                    GroupName: globalize.translate(
+                        'SyncPlayGroupDefaultTitle',
+                        user?.Name ?? ''
+                    )
+                }
+            },
+            {
+                onSettled: onMenuClose
             }
-        }, {
-            onSettled: onMenuClose
-        });
-    }, [ createSyncPlayGroup, onMenuClose, user ]);
+        );
+    }, [createSyncPlayGroup, onMenuClose, user]);
 
     const onGroupLeaveClick = useCallback(() => {
         leaveSyncPlayGroup.mutate(undefined, {
             onSettled: onMenuClose
         });
-    }, [ leaveSyncPlayGroup, onMenuClose ]);
+    }, [leaveSyncPlayGroup, onMenuClose]);
 
-    const onGroupJoinClick = useCallback((GroupId: string) => {
-        joinSyncPlayGroup.mutate({
-            joinGroupRequestDto: {
-                GroupId
-            }
-        }, {
-            onSettled: onMenuClose
-        });
-    }, [ joinSyncPlayGroup, onMenuClose ]);
+    const onGroupJoinClick = useCallback(
+        (GroupId: string) => {
+            joinSyncPlayGroup.mutate(
+                {
+                    joinGroupRequestDto: {
+                        GroupId
+                    }
+                },
+                {
+                    onSettled: onMenuClose
+                }
+            );
+        },
+        [joinSyncPlayGroup, onMenuClose]
+    );
 
     const onGroupSettingsClick = useCallback(async () => {
         if (!syncPlay) return;
 
         // TODO: Rewrite settings UI
-        const SyncPlaySettingsEditor = (await import('../../../../../plugins/syncPlay/ui/settings/SettingsEditor')).default;
+        const SyncPlaySettingsEditor = (
+            await import(
+                '../../../../../plugins/syncPlay/ui/settings/SettingsEditor'
+            )
+        ).default;
         new SyncPlaySettingsEditor(
             __legacyApiClient__,
             syncPlay.Manager.getTimeSyncCore(),
             {
                 groupInfo: currentGroup
-            })
+            }
+        )
             .embed()
-            .catch(err => {
+            .catch((err) => {
                 if (err) {
-                    console.error('[SyncPlayMenu] Error creating SyncPlay settings editor', err);
+                    console.error(
+                        '[SyncPlayMenu] Error creating SyncPlay settings editor',
+                        err
+                    );
                 }
             });
 
         onMenuClose();
-    }, [ __legacyApiClient__, currentGroup, onMenuClose, syncPlay ]);
+    }, [__legacyApiClient__, currentGroup, onMenuClose, syncPlay]);
 
     const onStartGroupPlaybackClick = useCallback(() => {
         if (__legacyApiClient__) {
             syncPlay?.Manager.resumeGroupPlayback(__legacyApiClient__);
             onMenuClose();
         }
-    }, [ __legacyApiClient__, onMenuClose, syncPlay ]);
+    }, [__legacyApiClient__, onMenuClose, syncPlay]);
 
     const onStopGroupPlaybackClick = useCallback(() => {
         if (__legacyApiClient__) {
             syncPlay?.Manager.haltGroupPlayback(__legacyApiClient__);
             onMenuClose();
         }
-    }, [ __legacyApiClient__, onMenuClose, syncPlay ]);
+    }, [__legacyApiClient__, onMenuClose, syncPlay]);
 
     const menuItems = [];
     if (isSyncPlayEnabled) {
-        if (!syncPlay?.Manager.isPlaylistEmpty() && !syncPlay?.Manager.isPlaybackActive()) {
+        if (
+            !syncPlay?.Manager.isPlaylistEmpty() &&
+            !syncPlay?.Manager.isPlaybackActive()
+        ) {
             menuItems.push(
                 <MenuItem
                     key='sync-play-start-playback'
@@ -119,7 +142,11 @@ const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
                     <ListItemIcon>
                         <PlayCircle />
                     </ListItemIcon>
-                    <ListItemText primary={globalize.translate('LabelSyncPlayResumePlayback')} />
+                    <ListItemText
+                        primary={globalize.translate(
+                            'LabelSyncPlayResumePlayback'
+                        )}
+                    />
                 </MenuItem>
             );
         } else if (syncPlay?.Manager.isPlaybackActive()) {
@@ -131,43 +158,52 @@ const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
                     <ListItemIcon>
                         <StopCircle />
                     </ListItemIcon>
-                    <ListItemText primary={globalize.translate('LabelSyncPlayHaltPlayback')} />
+                    <ListItemText
+                        primary={globalize.translate(
+                            'LabelSyncPlayHaltPlayback'
+                        )}
+                    />
                 </MenuItem>
             );
         }
 
         menuItems.push(
-            <MenuItem
-                key='sync-play-settings'
-                onClick={onGroupSettingsClick}
-            >
+            <MenuItem key='sync-play-settings' onClick={onGroupSettingsClick}>
                 <ListItemIcon>
                     <Tune />
                 </ListItemIcon>
-                <ListItemText
-                    primary={globalize.translate('Settings')}
-                />
+                <ListItemText primary={globalize.translate('Settings')} />
             </MenuItem>
         );
-    } else if (!groups?.length && user?.Policy?.SyncPlayAccess !== SyncPlayUserAccessType.CreateAndJoinGroups) {
+    } else if (
+        !groups?.length &&
+        user?.Policy?.SyncPlayAccess !==
+            SyncPlayUserAccessType.CreateAndJoinGroups
+    ) {
         menuItems.push(
             <MenuItem key='sync-play-unavailable' disabled>
                 <ListItemIcon>
                     <PersonOff />
                 </ListItemIcon>
-                <ListItemText primary={globalize.translate('LabelSyncPlayNoGroups')} />
+                <ListItemText
+                    primary={globalize.translate('LabelSyncPlayNoGroups')}
+                />
             </MenuItem>
         );
     } else {
         if (groups && groups.length > 0) {
-            groups.forEach(group => {
+            groups.forEach((group) => {
                 menuItems.push(
                     <ListItem key={group.GroupId}>
                         <SyncPlayGroupListItem
                             group={group}
                             button={{
-                                onClick: () => group.GroupId && onGroupJoinClick(group.GroupId),
-                                tooltip: globalize.translate('LabelSyncPlayJoinGroup'),
+                                onClick: () =>
+                                    group.GroupId &&
+                                    onGroupJoinClick(group.GroupId),
+                                tooltip: globalize.translate(
+                                    'LabelSyncPlayJoinGroup'
+                                ),
                                 Icon: PersonAdd
                             }}
                         />
@@ -175,48 +211,54 @@ const SyncPlayMenu: FC<SyncPlayMenuProps> = ({
                 );
             });
 
-            menuItems.push(
-                <Divider key='sync-play-groups-divider' />
-            );
+            menuItems.push(<Divider key='sync-play-groups-divider' />);
         }
 
-        if (user?.Policy?.SyncPlayAccess === SyncPlayUserAccessType.CreateAndJoinGroups) {
+        if (
+            user?.Policy?.SyncPlayAccess ===
+            SyncPlayUserAccessType.CreateAndJoinGroups
+        ) {
             menuItems.push(
-                <MenuItem
-                    key='sync-play-new-group'
-                    onClick={onGroupAddClick}
-                >
+                <MenuItem key='sync-play-new-group' onClick={onGroupAddClick}>
                     <ListItemIcon>
                         <GroupAdd />
                     </ListItemIcon>
-                    <ListItemText primary={globalize.translate('LabelSyncPlayNewGroupDescription')} />
+                    <ListItemText
+                        primary={globalize.translate(
+                            'LabelSyncPlayNewGroupDescription'
+                        )}
+                    />
                 </MenuItem>
             );
         }
     }
 
-    const MenuListProps = isSyncPlayEnabled ? {
-        'aria-labelledby': 'sync-play-active-subheader',
-        subheader: (
-            <>
-                <ListSubheader
-                    id='sync-play-active-subheader'
-                    component='div'
-                    sx={{ marginY: 1.75 }}
-                >
-                    <SyncPlayGroupListItem
-                        group={currentGroup!}
-                        button={{
-                            onClick: onGroupLeaveClick,
-                            tooltip: globalize.translate('LabelSyncPlayLeaveGroup'),
-                            Icon: PersonRemove
-                        }}
-                    />
-                </ListSubheader>
-                <Divider />
-            </>
-        )
-    } : undefined;
+    const MenuListProps = isSyncPlayEnabled
+        ? {
+              'aria-labelledby': 'sync-play-active-subheader',
+              subheader: (
+                  <>
+                      <ListSubheader
+                          id='sync-play-active-subheader'
+                          component='div'
+                          sx={{ marginY: 1.75 }}
+                      >
+                          <SyncPlayGroupListItem
+                              group={currentGroup!}
+                              button={{
+                                  onClick: onGroupLeaveClick,
+                                  tooltip: globalize.translate(
+                                      'LabelSyncPlayLeaveGroup'
+                                  ),
+                                  Icon: PersonRemove
+                              }}
+                          />
+                      </ListSubheader>
+                      <Divider />
+                  </>
+              )
+          }
+        : undefined;
 
     return (
         <Menu

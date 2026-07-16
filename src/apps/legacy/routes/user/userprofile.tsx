@@ -1,6 +1,12 @@
 import type { UserDto } from '@jellyfin/sdk/lib/generated-client';
 import { ImageType } from '@jellyfin/sdk/lib/generated-client/models/image-type';
-import React, { FunctionComponent, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, {
+    FunctionComponent,
+    useEffect,
+    useRef,
+    useCallback,
+    useMemo
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import Dashboard from '../../../../utils/dashboard';
@@ -17,10 +23,13 @@ import Loading from 'components/loading/LoadingComponent';
 import Button from 'elements/emby-button/Button';
 
 const UserProfile: FunctionComponent = () => {
-    const [ searchParams ] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const userId = searchParams.get('userId') || undefined;
     const { data: user, isPending: isUserPending } = useUser({ userId });
-    const libraryMenu = useMemo(async () => ((await import('../../../../scripts/libraryMenu')).default), []);
+    const libraryMenu = useMemo(
+        async () => (await import('../../../../scripts/libraryMenu')).default,
+        []
+    );
 
     const element = useRef<HTMLDivElement>(null);
 
@@ -36,7 +45,7 @@ const UserProfile: FunctionComponent = () => {
             throw new Error('Unexpected null user name or id');
         }
 
-        void libraryMenu.then(menu => menu.setTitle(user.Name));
+        void libraryMenu.then((menu) => menu.setTitle(user.Name));
 
         let imageUrl = 'assets/img/avatar.png';
         if (user.PrimaryImageTag) {
@@ -45,24 +54,42 @@ const UserProfile: FunctionComponent = () => {
                 type: 'Primary'
             });
         }
-        const userImage = (page.querySelector('#image') as HTMLDivElement);
+        const userImage = page.querySelector('#image') as HTMLDivElement;
         userImage.style.backgroundImage = 'url(' + imageUrl + ')';
 
-        Dashboard.getCurrentUser().then(function (loggedInUser: UserDto) {
-            if (!user.Policy) {
-                throw new Error('Unexpected null user.Policy');
-            }
+        Dashboard.getCurrentUser()
+            .then(function (loggedInUser: UserDto) {
+                if (!user.Policy) {
+                    throw new Error('Unexpected null user.Policy');
+                }
 
-            if (user.PrimaryImageTag) {
-                (page.querySelector('#btnAddImage') as HTMLButtonElement).classList.add('hide');
-                (page.querySelector('#btnDeleteImage') as HTMLButtonElement).classList.remove('hide');
-            } else if (appHost.supports('fileinput') && (loggedInUser?.Policy?.IsAdministrator || user.Policy.EnableUserPreferenceAccess)) {
-                (page.querySelector('#btnDeleteImage') as HTMLButtonElement).classList.add('hide');
-                (page.querySelector('#btnAddImage') as HTMLButtonElement).classList.remove('hide');
-            }
-        }).catch(err => {
-            console.error('[userprofile] failed to get current user', err);
-        });
+                if (user.PrimaryImageTag) {
+                    (
+                        page.querySelector('#btnAddImage') as HTMLButtonElement
+                    ).classList.add('hide');
+                    (
+                        page.querySelector(
+                            '#btnDeleteImage'
+                        ) as HTMLButtonElement
+                    ).classList.remove('hide');
+                } else if (
+                    appHost.supports('fileinput') &&
+                    (loggedInUser?.Policy?.IsAdministrator ||
+                        user.Policy.EnableUserPreferenceAccess)
+                ) {
+                    (
+                        page.querySelector(
+                            '#btnDeleteImage'
+                        ) as HTMLButtonElement
+                    ).classList.add('hide');
+                    (
+                        page.querySelector('#btnAddImage') as HTMLButtonElement
+                    ).classList.remove('hide');
+                }
+            })
+            .catch((err) => {
+                console.error('[userprofile] failed to get current user', err);
+            });
     }, [user, libraryMenu]);
 
     useEffect(() => {
@@ -95,7 +122,7 @@ const UserProfile: FunctionComponent = () => {
         };
 
         const setFiles = (evt: Event) => {
-            const userImage = (page.querySelector('#image') as HTMLDivElement);
+            const userImage = page.querySelector('#image') as HTMLDivElement;
             const target = evt.target as HTMLInputElement;
             const file = (target.files as FileList)[0];
 
@@ -113,14 +140,23 @@ const UserProfile: FunctionComponent = () => {
                 }
 
                 userImage.style.backgroundImage = 'url(' + reader.result + ')';
-                window.ApiClient.uploadUserImage(userId, ImageType.Primary, file).then(function () {
-                    loading.hide();
-                    void queryClient.invalidateQueries({
-                        queryKey: ['User']
+                window.ApiClient.uploadUserImage(
+                    userId,
+                    ImageType.Primary,
+                    file
+                )
+                    .then(function () {
+                        loading.hide();
+                        void queryClient.invalidateQueries({
+                            queryKey: ['User']
+                        });
+                    })
+                    .catch((err) => {
+                        console.error(
+                            '[userprofile] failed to upload image',
+                            err
+                        );
                     });
-                }).catch(err => {
-                    console.error('[userprofile] failed to upload image', err);
-                });
             };
 
             reader.readAsDataURL(file);
@@ -135,23 +171,32 @@ const UserProfile: FunctionComponent = () => {
             confirm(
                 globalize.translate('DeleteImageConfirmation'),
                 globalize.translate('DeleteImage')
-            ).then(function () {
-                loading.show();
-                window.ApiClient.deleteUserImage(userId, ImageType.Primary).then(function () {
-                    loading.hide();
-                    void queryClient.invalidateQueries({
-                        queryKey: ['User']
-                    });
-                }).catch(err => {
-                    console.error('[userprofile] failed to delete image', err);
+            )
+                .then(function () {
+                    loading.show();
+                    window.ApiClient.deleteUserImage(userId, ImageType.Primary)
+                        .then(function () {
+                            loading.hide();
+                            void queryClient.invalidateQueries({
+                                queryKey: ['User']
+                            });
+                        })
+                        .catch((err) => {
+                            console.error(
+                                '[userprofile] failed to delete image',
+                                err
+                            );
+                        });
+                })
+                .catch(() => {
+                    // confirm dialog closed
                 });
-            }).catch(() => {
-                // confirm dialog closed
-            });
         };
 
         const addImageClick = function () {
-            const uploadImage = page.querySelector('#uploadImage') as HTMLInputElement;
+            const uploadImage = page.querySelector(
+                '#uploadImage'
+            ) as HTMLInputElement;
             uploadImage.value = '';
             uploadImage.click();
         };
@@ -160,14 +205,26 @@ const UserProfile: FunctionComponent = () => {
             setFiles(e);
         };
 
-        (page.querySelector('#btnDeleteImage') as HTMLButtonElement).addEventListener('click', onDeleteImageClick);
-        (page.querySelector('#btnAddImage') as HTMLButtonElement).addEventListener('click', addImageClick);
-        (page.querySelector('#uploadImage') as HTMLInputElement).addEventListener('change', onUploadImage);
+        (
+            page.querySelector('#btnDeleteImage') as HTMLButtonElement
+        ).addEventListener('click', onDeleteImageClick);
+        (
+            page.querySelector('#btnAddImage') as HTMLButtonElement
+        ).addEventListener('click', addImageClick);
+        (
+            page.querySelector('#uploadImage') as HTMLInputElement
+        ).addEventListener('change', onUploadImage);
 
         return () => {
-            (page.querySelector('#btnDeleteImage') as HTMLButtonElement).removeEventListener('click', onDeleteImageClick);
-            (page.querySelector('#btnAddImage') as HTMLButtonElement).removeEventListener('click', addImageClick);
-            (page.querySelector('#uploadImage') as HTMLInputElement).removeEventListener('change', onUploadImage);
+            (
+                page.querySelector('#btnDeleteImage') as HTMLButtonElement
+            ).removeEventListener('click', onDeleteImageClick);
+            (
+                page.querySelector('#btnAddImage') as HTMLButtonElement
+            ).removeEventListener('click', addImageClick);
+            (
+                page.querySelector('#uploadImage') as HTMLInputElement
+            ).removeEventListener('change', onUploadImage);
         };
     }, [reloadUser, user, userId]);
 
@@ -181,28 +238,67 @@ const UserProfile: FunctionComponent = () => {
             title={globalize.translate('Profile')}
             className='mainAnimatedPage libraryPage userPreferencesPage userPasswordPage noSecondaryNavPage'
         >
-            <div ref={element} className='padded-left padded-right padded-bottom-page'>
+            <div
+                ref={element}
+                className='padded-left padded-right padded-bottom-page'
+            >
                 <div
                     className='readOnlyContent'
-                    style={{ margin: '0 auto', marginBottom: '1.8em', padding: '0 1em', display: 'flex', flexDirection: 'row', alignItems: 'center' }}
+                    style={{
+                        margin: '0 auto',
+                        marginBottom: '1.8em',
+                        padding: '0 1em',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'center'
+                    }}
                 >
                     <div
                         className='imagePlaceHolder'
-                        style={{ position: 'relative', display: 'inline-block', maxWidth: 200 }}
+                        style={{
+                            position: 'relative',
+                            display: 'inline-block',
+                            maxWidth: 200
+                        }}
                     >
                         <input
                             id='uploadImage'
                             type='file'
                             accept='image/*'
-                            style={{ position: 'absolute', right: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                            style={{
+                                position: 'absolute',
+                                right: 0,
+                                width: '100%',
+                                height: '100%',
+                                opacity: 0,
+                                cursor: 'pointer'
+                            }}
                         />
                         <div
                             id='image'
-                            style={{ width: 200, height: 200, backgroundRepeat: 'no-repeat', backgroundPosition: 'center', borderRadius: '100%', backgroundSize: 'cover' }}
+                            style={{
+                                width: 200,
+                                height: 200,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'center',
+                                borderRadius: '100%',
+                                backgroundSize: 'cover'
+                            }}
                         />
                     </div>
-                    <div style={{ verticalAlign: 'top', margin: '1em 2em', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <h2 className='username' style={{ margin: 0, fontSize: 'xx-large' }}>
+                    <div
+                        style={{
+                            verticalAlign: 'top',
+                            margin: '1em 2em',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center'
+                        }}
+                    >
+                        <h2
+                            className='username'
+                            style={{ margin: 0, fontSize: 'xx-large' }}
+                        >
                             {user?.Name}
                         </h2>
                         <br />
@@ -220,12 +316,9 @@ const UserProfile: FunctionComponent = () => {
                         />
                     </div>
                 </div>
-                <UserPasswordForm
-                    user={user}
-                />
+                <UserPasswordForm user={user} />
             </div>
         </Page>
-
     );
 };
 

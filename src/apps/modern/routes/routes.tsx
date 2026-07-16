@@ -48,7 +48,6 @@ export const APP_ROUTES: RouteObject[] = [
                     }
                 ]
             }
-
         ]
     }
 ];

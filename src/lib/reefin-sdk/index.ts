@@ -41,14 +41,14 @@ export const REEFIN_CLIENT_IDENTITY = {
 
 /** Client name/version pair sent as `Client="..."`/`Version="..."` in the `Authorization` header. */
 export interface ReefinClientInfo {
-    name: string
-    version: string
+    name: string;
+    version: string;
 }
 
 /** Device name/id pair sent as `Device="..."`/`DeviceId="..."` in the `Authorization` header. */
 export interface ReefinDeviceInfo {
-    name: string
-    id: string
+    name: string;
+    id: string;
 }
 
 /**
@@ -61,13 +61,14 @@ const buildAuthorizationHeader = (
     clientInfo: ReefinClientInfo,
     deviceInfo: ReefinDeviceInfo,
     accessToken: string
-): string => [
-    `MediaBrowser Client="${encodeURIComponent(clientInfo.name)}"`,
-    `Device="${encodeURIComponent(deviceInfo.name)}"`,
-    `DeviceId="${encodeURIComponent(deviceInfo.id)}"`,
-    `Version="${encodeURIComponent(clientInfo.version)}"`,
-    `Token="${encodeURIComponent(accessToken)}"`
-].join(', ');
+): string =>
+    [
+        `MediaBrowser Client="${encodeURIComponent(clientInfo.name)}"`,
+        `Device="${encodeURIComponent(deviceInfo.name)}"`,
+        `DeviceId="${encodeURIComponent(deviceInfo.id)}"`,
+        `Version="${encodeURIComponent(clientInfo.version)}"`,
+        `Token="${encodeURIComponent(accessToken)}"`
+    ].join(', ');
 
 /**
  * Configured access to the generated Reefin API client for one server connection - the
@@ -106,7 +107,9 @@ export class ReefinApi {
         accessToken = '',
         axiosInstance: AxiosInstance = globalAxios
     ) {
-        this._basePath = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+        this._basePath = basePath.endsWith('/')
+            ? basePath.slice(0, -1)
+            : basePath;
         this._clientInfo = clientInfo;
         this._deviceInfo = deviceInfo;
         this._accessToken = accessToken;
@@ -131,7 +134,11 @@ export class ReefinApi {
 
     /** The `Authorization` header value for this connection - see `buildAuthorizationHeader`. */
     get authorizationHeader(): string {
-        return buildAuthorizationHeader(this._clientInfo, this._deviceInfo, this._accessToken);
+        return buildAuthorizationHeader(
+            this._clientInfo,
+            this._deviceInfo,
+            this._accessToken
+        );
     }
 
     /**
@@ -160,10 +167,10 @@ export class ReefinApi {
      * re-login/token refresh, instead of every reader risking a stale `accessToken`.
      */
     update(data: {
-        basePath?: string
-        clientInfo?: ReefinClientInfo
-        deviceInfo?: ReefinDeviceInfo
-        accessToken?: string
+        basePath?: string;
+        clientInfo?: ReefinClientInfo;
+        deviceInfo?: ReefinDeviceInfo;
+        accessToken?: string;
     }): void {
         if (data.basePath) {
             this._basePath = data.basePath;
@@ -186,13 +193,26 @@ export class ReefinSdk {
     public readonly clientInfo: ReefinClientInfo;
     public readonly deviceInfo: ReefinDeviceInfo;
 
-    constructor(parameters: { clientInfo: ReefinClientInfo, deviceInfo: ReefinDeviceInfo }) {
+    constructor(parameters: {
+        clientInfo: ReefinClientInfo;
+        deviceInfo: ReefinDeviceInfo;
+    }) {
         this.clientInfo = parameters.clientInfo;
         this.deviceInfo = parameters.deviceInfo;
     }
 
-    createApi(basePath: string, accessToken?: string, axiosInstance?: AxiosInstance): ReefinApi {
-        return new ReefinApi(basePath, this.clientInfo, this.deviceInfo, accessToken, axiosInstance);
+    createApi(
+        basePath: string,
+        accessToken?: string,
+        axiosInstance?: AxiosInstance
+    ): ReefinApi {
+        return new ReefinApi(
+            basePath,
+            this.clientInfo,
+            this.deviceInfo,
+            accessToken,
+            axiosInstance
+        );
     }
 }
 
@@ -206,9 +226,17 @@ export const createReefinApi = (
     basePath: string,
     accessToken: string,
     deviceInfo: ReefinDeviceInfo,
-    clientInfo: ReefinClientInfo = { name: REEFIN_CLIENT_IDENTITY.name, version: '0.0.0' },
+    clientInfo: ReefinClientInfo = {
+        name: REEFIN_CLIENT_IDENTITY.name,
+        version: '0.0.0'
+    },
     axiosInstance?: AxiosInstance
-): ReefinApi => new ReefinSdk({ clientInfo, deviceInfo }).createApi(basePath, accessToken, axiosInstance);
+): ReefinApi =>
+    new ReefinSdk({ clientInfo, deviceInfo }).createApi(
+        basePath,
+        accessToken,
+        axiosInstance
+    );
 
 /**
  * Per-tag generated-client convenience factories, one per `*Api` class actually consumed so far -

@@ -12,9 +12,9 @@ import SearchButton from './SearchButton';
 import UserViewNav from './userViews/UserViewNav';
 
 interface AppToolbarProps {
-    isDrawerAvailable: boolean
-    isDrawerOpen: boolean
-    onDrawerButtonClick: (event: React.MouseEvent<HTMLElement>) => void
+    isDrawerAvailable: boolean;
+    isDrawerOpen: boolean;
+    onDrawerButtonClick: (event: React.MouseEvent<HTMLElement>) => void;
 }
 
 const AppToolbar: FC<AppToolbarProps> = ({
@@ -28,20 +28,23 @@ const AppToolbar: FC<AppToolbarProps> = ({
     if (location.pathname === '/video') return null;
 
     // Only show the back button in apps when appropriate
-    const isBackButtonAvailable = window.NativeShell && appRouter.canGoBack(location.pathname);
+    const isBackButtonAvailable =
+        window.NativeShell && appRouter.canGoBack(location.pathname);
 
     // Check if the current path is a public path to hide user content
     const isPublicPath = PUBLIC_PATHS.includes(location.pathname);
 
     return (
         <BaseToolbar
-            buttons={!isPublicPath && (
-                <>
-                    <SyncPlayButton />
-                    <RemotePlayButton />
-                    <SearchButton />
-                </>
-            )}
+            buttons={
+                !isPublicPath && (
+                    <>
+                        <SyncPlayButton />
+                        <RemotePlayButton />
+                        <SearchButton />
+                    </>
+                )
+            }
             isDrawerAvailable={isDrawerAvailable}
             isDrawerOpen={isDrawerOpen}
             onDrawerButtonClick={onDrawerButtonClick}
@@ -50,15 +53,10 @@ const AppToolbar: FC<AppToolbarProps> = ({
             className='padded-left padded-right'
         >
             {!isDrawerAvailable && (
-                <Stack
-                    direction='row'
-                    spacing={0.5}
-                >
+                <Stack direction='row' spacing={0.5}>
                     <ServerButton />
 
-                    {!isPublicPath && (
-                        <UserViewNav />
-                    )}
+                    {!isPublicPath && <UserViewNav />}
                 </Stack>
             )}
         </BaseToolbar>

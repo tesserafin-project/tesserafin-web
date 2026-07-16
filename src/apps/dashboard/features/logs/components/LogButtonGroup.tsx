@@ -21,23 +21,21 @@ const LogButtonGroup = ({
     isWatchModeEnabled
 }: LogButtonGroupProps) => (
     <ButtonGroup variant='contained' sx={{ mt: 2 }}>
-        <Button
-            startIcon={<ContentCopy />}
-            onClick={copyToClipboard}
-        >
+        <Button startIcon={<ContentCopy />} onClick={copyToClipboard}>
             {globalize.translate('Copy')}
         </Button>
-        <Button
-            startIcon={<FileDownload />}
-            onClick={downloadFile}
-        >
+        <Button startIcon={<FileDownload />} onClick={downloadFile}>
             {globalize.translate('Download')}
         </Button>
         <Button
-            startIcon={isWatchModeEnabled ? <VisibilityOffIcon /> : <VisibilityIcon />}
+            startIcon={
+                isWatchModeEnabled ? <VisibilityOffIcon /> : <VisibilityIcon />
+            }
             onClick={toggleWatchMode}
         >
-            {isWatchModeEnabled ? globalize.translate('Unwatch') : globalize.translate('Watch')}
+            {isWatchModeEnabled
+                ? globalize.translate('Unwatch')
+                : globalize.translate('Watch')}
         </Button>
     </ButtonGroup>
 );

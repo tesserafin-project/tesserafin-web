@@ -35,9 +35,9 @@ const PlayOrResumeButton: FC<PlayOrResumeButtonProps> = ({
         if (itemHelper.supportsMediaSourceSelection(item)) {
             return {
                 startPositionTicks:
-                    item.UserData && isResumable ?
-                        item.UserData.PlaybackPositionTicks :
-                        0,
+                    item.UserData && isResumable
+                        ? item.UserData.PlaybackPositionTicks
+                        : 0,
                 mediaSourceId: selectedMediaSourceId,
                 audioStreamIndex: selectedAudioTrack || null,
                 subtitleStreamIndex: selectedSubtitleTrack
@@ -58,20 +58,24 @@ const PlayOrResumeButton: FC<PlayOrResumeButtonProps> = ({
                     channelId: item.ChannelId
                 })
             );
-            playbackManager.play({
-                items: [channel]
-            }).catch(err => {
-                console.error('[PlayOrResumeButton] failed to play', err);
-            });
+            playbackManager
+                .play({
+                    items: [channel]
+                })
+                .catch((err) => {
+                    console.error('[PlayOrResumeButton] failed to play', err);
+                });
             return;
         }
 
-        playbackManager.play({
-            items: [item],
-            ...playOptions
-        }).catch(err => {
-            console.error('[PlayOrResumeButton] failed to play', err);
-        });
+        playbackManager
+            .play({
+                items: [item],
+                ...playOptions
+            })
+            .catch((err) => {
+                console.error('[PlayOrResumeButton] failed to play', err);
+            });
     }, [apiContext, item, playOptions, queryClient]);
 
     return (
@@ -79,9 +83,9 @@ const PlayOrResumeButton: FC<PlayOrResumeButtonProps> = ({
             className='button-flat btnPlayOrResume'
             data-action={isResumable ? ItemAction.Resume : ItemAction.Play}
             title={
-                isResumable ?
-                    globalize.translate('ButtonResume') :
-                    globalize.translate('Play')
+                isResumable
+                    ? globalize.translate('ButtonResume')
+                    : globalize.translate('Play')
             }
             onClick={onPlayClick}
         >

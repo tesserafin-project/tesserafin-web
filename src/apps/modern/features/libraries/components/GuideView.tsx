@@ -46,17 +46,19 @@ const GuideView: FC = () => {
         };
     }, [initGuide]);
 
-    return <Box
-        ref={tvGuideContainerRef}
-        className='absolutePageTabContent'
-        sx={{
-            display: 'flex !important',
-            width: 'auto',
-            paddingTop: '0',
-            paddingBottom: '0 !important',
-            top: '0 !important'
-        }}
-    />;
+    return (
+        <Box
+            ref={tvGuideContainerRef}
+            className='absolutePageTabContent'
+            sx={{
+                display: 'flex !important',
+                width: 'auto',
+                paddingTop: '0',
+                paddingBottom: '0 !important',
+                top: '0 !important'
+            }}
+        />
+    );
 };
 
 export default GuideView;

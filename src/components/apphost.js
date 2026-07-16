@@ -29,7 +29,10 @@ const BrowserName = {
 function getBaseProfileOptions(item) {
     const disableHlsVideoAudioCodecs = [];
 
-    if (item && htmlMediaHelper.enableHlsJsPlayer(item.RunTimeTicks, item.MediaType)) {
+    if (
+        item &&
+        htmlMediaHelper.enableHlsJsPlayer(item.RunTimeTicks, item.MediaType)
+    ) {
         if (browser.edge) {
             disableHlsVideoAudioCodecs.push('mp3');
         }
@@ -53,14 +56,20 @@ function getDeviceProfile(item) {
         let profile;
 
         if (window.NativeShell) {
-            profile = window.NativeShell.AppHost.getDeviceProfile(profileBuilder, __PACKAGE_JSON_VERSION__);
+            profile = window.NativeShell.AppHost.getDeviceProfile(
+                profileBuilder,
+                __PACKAGE_JSON_VERSION__
+            );
         } else {
             const builderOpts = getBaseProfileOptions(item);
             profile = profileBuilder(builderOpts);
         }
 
         const maxVideoWidth = appSettings.maxVideoWidth();
-        const maxTranscodingVideoWidth = maxVideoWidth < 0 ? appHost.screen()?.maxAllowedWidth : maxVideoWidth;
+        const maxTranscodingVideoWidth =
+            maxVideoWidth < 0
+                ? appHost.screen()?.maxAllowedWidth
+                : maxVideoWidth;
 
         if (maxTranscodingVideoWidth) {
             const conditionWidth = {
@@ -79,7 +88,9 @@ function getDeviceProfile(item) {
 
             profile.TranscodingProfiles.forEach((transcodingProfile) => {
                 if (transcodingProfile.Type === 'Video') {
-                    transcodingProfile.Conditions = (transcodingProfile.Conditions || []).filter((condition) => {
+                    transcodingProfile.Conditions = (
+                        transcodingProfile.Conditions || []
+                    ).filter((condition) => {
                         return condition.Property !== 'Width';
                     });
 
@@ -88,12 +99,16 @@ function getDeviceProfile(item) {
             });
         }
 
-        const preferredTranscodeVideoCodec = appSettings.preferredTranscodeVideoCodec();
+        const preferredTranscodeVideoCodec =
+            appSettings.preferredTranscodeVideoCodec();
         if (preferredTranscodeVideoCodec) {
             profile.TranscodingProfiles.forEach((transcodingProfile) => {
                 if (transcodingProfile.Type === 'Video') {
-                    const videoCodecs = transcodingProfile.VideoCodec.split(',');
-                    const index = videoCodecs.indexOf(preferredTranscodeVideoCodec);
+                    const videoCodecs =
+                        transcodingProfile.VideoCodec.split(',');
+                    const index = videoCodecs.indexOf(
+                        preferredTranscodeVideoCodec
+                    );
                     if (index !== -1) {
                         videoCodecs.splice(index, 1);
                         videoCodecs.unshift(preferredTranscodeVideoCodec);
@@ -103,12 +118,16 @@ function getDeviceProfile(item) {
             });
         }
 
-        const preferredTranscodeVideoAudioCodec = appSettings.preferredTranscodeVideoAudioCodec();
+        const preferredTranscodeVideoAudioCodec =
+            appSettings.preferredTranscodeVideoAudioCodec();
         if (preferredTranscodeVideoAudioCodec) {
             profile.TranscodingProfiles.forEach((transcodingProfile) => {
                 if (transcodingProfile.Type === 'Video') {
-                    const audioCodecs = transcodingProfile.AudioCodec.split(',');
-                    const index = audioCodecs.indexOf(preferredTranscodeVideoAudioCodec);
+                    const audioCodecs =
+                        transcodingProfile.AudioCodec.split(',');
+                    const index = audioCodecs.indexOf(
+                        preferredTranscodeVideoAudioCodec
+                    );
                     if (index !== -1) {
                         audioCodecs.splice(index, 1);
                         audioCodecs.unshift(preferredTranscodeVideoAudioCodec);
@@ -179,7 +198,13 @@ function supportsFullscreen() {
     }
 
     const element = document.documentElement;
-    return !!(element.requestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen || element.msRequestFullscreen || document.createElement('video').webkitEnterFullscreen);
+    return !!(
+        element.requestFullscreen ||
+        element.mozRequestFullScreen ||
+        element.webkitRequestFullscreen ||
+        element.msRequestFullscreen ||
+        document.createElement('video').webkitEnterFullscreen
+    );
 }
 
 function getDefaultLayout() {
@@ -187,7 +212,15 @@ function getDefaultLayout() {
 }
 
 function supportsHtmlMediaAutoplay() {
-    if (browser.edgeUwp || browser.tizen || browser.web0s || browser.orsay || browser.operaTv || browser.ps4 || browser.xboxOne) {
+    if (
+        browser.edgeUwp ||
+        browser.tizen ||
+        browser.web0s ||
+        browser.orsay ||
+        browser.operaTv ||
+        browser.ps4 ||
+        browser.xboxOne
+    ) {
         return true;
     }
 
@@ -227,7 +260,7 @@ function onAppHidden() {
     }
 }
 
-const supportedFeatures = function () {
+const supportedFeatures = (function () {
     const features = [];
 
     if (navigator.share) {
@@ -242,7 +275,13 @@ const supportedFeatures = function () {
         features.push(AppFeature.Exit);
     }
 
-    if (!browser.operaTv && !browser.tizen && !browser.orsay && !browser.web0s && !browser.ps4) {
+    if (
+        !browser.operaTv &&
+        !browser.tizen &&
+        !browser.orsay &&
+        !browser.web0s &&
+        !browser.ps4
+    ) {
         features.push(AppFeature.ExternalLinks);
     }
 
@@ -255,7 +294,13 @@ const supportedFeatures = function () {
         features.push(AppFeature.Fullscreen);
     }
 
-    if (browser.tv || browser.xboxOne || browser.ps4 || browser.mobile || browser.ipad) {
+    if (
+        browser.tv ||
+        browser.xboxOne ||
+        browser.ps4 ||
+        browser.mobile ||
+        browser.ipad
+    ) {
         features.push(AppFeature.PhysicalVolumeControl);
     }
 
@@ -263,7 +308,13 @@ const supportedFeatures = function () {
         features.push(AppFeature.RemoteControl);
     }
 
-    if (!browser.operaTv && !browser.tizen && !browser.orsay && !browser.web0s && !browser.edgeUwp) {
+    if (
+        !browser.operaTv &&
+        !browser.tizen &&
+        !browser.orsay &&
+        !browser.web0s &&
+        !browser.edgeUwp
+    ) {
         features.push(AppFeature.RemoteVideo);
     }
 
@@ -272,11 +323,14 @@ const supportedFeatures = function () {
     features.push(AppFeature.TargetBlank);
     features.push(AppFeature.Screensaver);
 
-    webSettings.getMultiServer().then(enabled => {
+    webSettings.getMultiServer().then((enabled) => {
         if (enabled) features.push(AppFeature.MultiServer);
     });
 
-    if (!browser.orsay && (browser.firefox || browser.ps4 || browser.edge || supportsCue())) {
+    if (
+        !browser.orsay &&
+        (browser.firefox || browser.ps4 || browser.edge || supportsCue())
+    ) {
         features.push(AppFeature.SubtitleAppearance);
     }
 
@@ -293,11 +347,11 @@ const supportedFeatures = function () {
     }
 
     return features;
-}();
+})();
 
 /**
-     * Do exit according to platform
-     */
+ * Do exit according to platform
+ */
 function doExit() {
     try {
         if (window.NativeShell?.AppHost?.exit) {
@@ -317,27 +371,30 @@ function doExit() {
 let exitPromise;
 
 /**
-     * Ask user for exit
-     */
+ * Ask user for exit
+ */
 function askForExit() {
     if (exitPromise) {
         return;
     }
 
     import('../components/actionSheet/actionSheet').then((actionsheet) => {
-        exitPromise = actionsheet.show({
-            title: globalize.translate('MessageConfirmAppExit'),
-            items: [
-                { id: 'yes', name: globalize.translate('Yes') },
-                { id: 'no', name: globalize.translate('No') }
-            ]
-        }).then(function (value) {
-            if (value === 'yes') {
-                doExit();
-            }
-        }).finally(function () {
-            exitPromise = null;
-        });
+        exitPromise = actionsheet
+            .show({
+                title: globalize.translate('MessageConfirmAppExit'),
+                items: [
+                    { id: 'yes', name: globalize.translate('Yes') },
+                    { id: 'no', name: globalize.translate('No') }
+                ]
+            })
+            .then(function (value) {
+                if (value === 'yes') {
+                    doExit();
+                }
+            })
+            .finally(function () {
+                exitPromise = null;
+            });
     });
 }
 
@@ -385,28 +442,36 @@ export const appHost = {
         };
     },
     deviceName: function () {
-        return window.NativeShell?.AppHost?.deviceName ?
-            window.NativeShell.AppHost.deviceName() : getDeviceName();
+        return window.NativeShell?.AppHost?.deviceName
+            ? window.NativeShell.AppHost.deviceName()
+            : getDeviceName();
     },
     deviceId: function () {
-        return window.NativeShell?.AppHost?.deviceId ?
-            window.NativeShell.AppHost.deviceId() : getDeviceId();
+        return window.NativeShell?.AppHost?.deviceId
+            ? window.NativeShell.AppHost.deviceId()
+            : getDeviceId();
     },
     appName: function () {
-        return window.NativeShell?.AppHost?.appName ?
-            window.NativeShell.AppHost.appName() : appName;
+        return window.NativeShell?.AppHost?.appName
+            ? window.NativeShell.AppHost.appName()
+            : appName;
     },
     appVersion: function () {
-        return window.NativeShell?.AppHost?.appVersion ?
-            window.NativeShell.AppHost.appVersion() : __PACKAGE_JSON_VERSION__;
+        return window.NativeShell?.AppHost?.appVersion
+            ? window.NativeShell.AppHost.appVersion()
+            : __PACKAGE_JSON_VERSION__;
     },
     getPushTokenInfo: function () {
         return {};
     },
     setUserScalable: function (scalable) {
         if (!browser.tv) {
-            const att = scalable ? 'width=device-width, initial-scale=1, minimum-scale=1, user-scalable=yes' : 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no';
-            document.querySelector('meta[name=viewport]').setAttribute('content', att);
+            const att = scalable
+                ? 'width=device-width, initial-scale=1, minimum-scale=1, user-scalable=yes'
+                : 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no';
+            document
+                .querySelector('meta[name=viewport]')
+                .setAttribute('content', att);
         }
     },
     screen: () => {
@@ -418,14 +483,21 @@ export const appHost = {
             hostScreen = appHostImpl.screen();
         } else if (window.screen && !browser.tv) {
             hostScreen = {
-                width: Math.floor(window.screen.width * window.devicePixelRatio),
-                height: Math.floor(window.screen.height * window.devicePixelRatio)
+                width: Math.floor(
+                    window.screen.width * window.devicePixelRatio
+                ),
+                height: Math.floor(
+                    window.screen.height * window.devicePixelRatio
+                )
             };
         }
 
         if (hostScreen) {
             // Use larger dimension to account for screen orientation changes
-            hostScreen.maxAllowedWidth = Math.max(hostScreen.width, hostScreen.height);
+            hostScreen.maxAllowedWidth = Math.max(
+                hostScreen.width,
+                hostScreen.height
+            );
         }
 
         return hostScreen;
@@ -444,13 +516,17 @@ if (typeof document.hidden !== 'undefined') {
     visibilityChange = 'webkitvisibilitychange';
 }
 
-document.addEventListener(visibilityChange, function () {
-    if (document[hidden]) {
-        onAppHidden();
-    } else {
-        onAppVisible();
-    }
-}, false);
+document.addEventListener(
+    visibilityChange,
+    function () {
+        if (document[hidden]) {
+            onAppHidden();
+        } else {
+            onAppVisible();
+        }
+    },
+    false
+);
 
 if (window.addEventListener) {
     window.addEventListener('focus', onAppVisible);

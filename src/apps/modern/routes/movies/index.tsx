@@ -4,9 +4,7 @@ import React, { type FC } from 'react';
 import LibraryPage from 'apps/modern/features/libraries/components/LibraryPage';
 
 const Movies: FC = () => {
-    return (
-        <LibraryPage type={CollectionType.Movies} />
-    );
+    return <LibraryPage type={CollectionType.Movies} />;
 };
 
 export default Movies;

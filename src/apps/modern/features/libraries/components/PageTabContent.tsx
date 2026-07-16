@@ -21,9 +21,7 @@ const PageTabContent: FC<PageTabContentProps> = ({ parentId, currentTab }) => {
         return (
             <SuggestionsSectionView
                 parentId={parentId}
-                sectionType={
-                    currentTab.sectionsView?.suggestionSections ?? []
-                }
+                sectionType={currentTab.sectionsView?.suggestionSections ?? []}
                 isMovieRecommendationEnabled={
                     currentTab.sectionsView?.isMovieRecommendations
                 }
@@ -31,22 +29,24 @@ const PageTabContent: FC<PageTabContentProps> = ({ parentId, currentTab }) => {
         );
     }
 
-    if (currentTab.viewType === LibraryTab.Programs || currentTab.viewType === LibraryTab.Recordings || currentTab.viewType === LibraryTab.Schedule) {
+    if (
+        currentTab.viewType === LibraryTab.Programs ||
+        currentTab.viewType === LibraryTab.Recordings ||
+        currentTab.viewType === LibraryTab.Schedule
+    ) {
         return (
             <ProgramsSectionView
                 parentId={parentId}
-                sectionType={
-                    currentTab.sectionsView?.programSections ?? []
+                sectionType={currentTab.sectionsView?.programSections ?? []}
+                isUpcomingRecordingsEnabled={
+                    currentTab.sectionsView?.isLiveTvUpcomingRecordings
                 }
-                isUpcomingRecordingsEnabled={currentTab.sectionsView?.isLiveTvUpcomingRecordings}
             />
         );
     }
 
     if (currentTab.viewType === LibraryTab.Upcoming) {
-        return (
-            <UpcomingView parentId={parentId} />
-        );
+        return <UpcomingView parentId={parentId} />;
     }
 
     if (currentTab.viewType === LibraryTab.Genres) {
@@ -60,14 +60,10 @@ const PageTabContent: FC<PageTabContentProps> = ({ parentId, currentTab }) => {
     }
 
     if (currentTab.viewType === LibraryTab.Guide) {
-        return (
-            <GuideView />
-        );
+        return <GuideView />;
     }
 
-    return (
-        <ItemsView />
-    );
+    return <ItemsView />;
 };
 
 export default PageTabContent;

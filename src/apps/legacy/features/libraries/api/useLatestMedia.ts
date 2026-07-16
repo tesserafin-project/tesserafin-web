@@ -11,26 +11,26 @@ const fetchLatestMedia = async (
     params?: LibraryApiGetLatestMediaRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getLibraryApi(api)
-        .getLatestMedia(params, options);
+    const response = await getLibraryApi(api).getLatestMedia(params, options);
     return response.data;
 };
 
 export const getLatestMediaQuery = (
     api?: Api,
     params?: LibraryApiGetLatestMediaRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'LatestMedia', params ],
-    queryFn: ({ signal }) => fetchLatestMedia(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'LatestMedia', params],
+        queryFn: ({ signal }) => fetchLatestMedia(api!, params, { signal }),
+        enabled: !!api
+    });
 
-export const useLatestMedia = (
-    params?: LibraryApiGetLatestMediaRequest
-) => {
+export const useLatestMedia = (params?: LibraryApiGetLatestMediaRequest) => {
     const { api, user } = useApi();
-    return useQuery(getLatestMediaQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getLatestMediaQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

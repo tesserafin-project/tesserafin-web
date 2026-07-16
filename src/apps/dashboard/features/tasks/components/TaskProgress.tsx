@@ -20,12 +20,13 @@ const TaskProgress: FunctionComponent<TaskProps> = ({ task }: TaskProps) => {
             {progress != null ? (
                 <>
                     <Box sx={{ width: '100%', mr: 1 }}>
-                        <LinearProgress variant='determinate' value={progress} />
+                        <LinearProgress
+                            variant='determinate'
+                            value={progress}
+                        />
                     </Box>
                     <Box>
-                        <Typography
-                            variant='body1'
-                        >{`${Math.round(progress)}%`}</Typography>
+                        <Typography variant='body1'>{`${Math.round(progress)}%`}</Typography>
                     </Box>
                 </>
             ) : (

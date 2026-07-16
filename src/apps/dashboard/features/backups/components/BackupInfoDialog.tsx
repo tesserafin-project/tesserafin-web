@@ -24,8 +24,12 @@ type IProps = {
     onClose: () => void;
 };
 
-const BackupInfoDialog: FunctionComponent<IProps> = ({ backup, open, onClose }: IProps) => {
-    const [ isCopiedToastOpen, setIsCopiedToastOpen ] = useState(false);
+const BackupInfoDialog: FunctionComponent<IProps> = ({
+    backup,
+    open,
+    onClose
+}: IProps) => {
+    const [isCopiedToastOpen, setIsCopiedToastOpen] = useState(false);
 
     const handleToastClose = useCallback(() => {
         setIsCopiedToastOpen(false);
@@ -36,45 +40,40 @@ const BackupInfoDialog: FunctionComponent<IProps> = ({ backup, open, onClose }: 
             await copy(backup.Path);
             setIsCopiedToastOpen(true);
         }
-    }, [ backup.Path ]);
+    }, [backup.Path]);
 
     return (
-        <Dialog
-            onClose={onClose}
-            open={open}
-            maxWidth={'sm'}
-            fullWidth
-        >
+        <Dialog onClose={onClose} open={open} maxWidth={'sm'} fullWidth>
             <Toast
                 open={isCopiedToastOpen}
                 onClose={handleToastClose}
                 message={globalize.translate('Copied')}
             />
-            <DialogTitle>
-                {backup.DateCreated}
-            </DialogTitle>
+            <DialogTitle>{backup.DateCreated}</DialogTitle>
 
             <DialogContent>
                 <Stack spacing={2}>
                     <Box>
-                        <Stack
-                            direction='row'
-                            spacing={2}
-                        >
-                            <Typography fontWeight='bold'>{globalize.translate('LabelPath')}</Typography>
+                        <Stack direction='row' spacing={2}>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelPath')}
+                            </Typography>
                             <Stack direction='row'>
-                                <Typography color='text.secondary'>{backup.Path}</Typography>
+                                <Typography color='text.secondary'>
+                                    {backup.Path}
+                                </Typography>
                                 <IconButton size='small' onClick={copyPath}>
                                     <ContentCopy fontSize='small' />
                                 </IconButton>
                             </Stack>
                         </Stack>
-                        <Stack
-                            direction='row'
-                            spacing={2}
-                        >
-                            <Typography fontWeight='bold'>{globalize.translate('LabelVersion')}</Typography>
-                            <Typography color='text.secondary'>{backup.ServerVersion}</Typography>
+                        <Stack direction='row' spacing={2}>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelVersion')}
+                            </Typography>
+                            <Typography color='text.secondary'>
+                                {backup.ServerVersion}
+                            </Typography>
                         </Stack>
                     </Box>
 
@@ -97,7 +96,9 @@ const BackupInfoDialog: FunctionComponent<IProps> = ({ backup, open, onClose }: 
                                 control={
                                     <Checkbox
                                         name='Metadata'
-                                        defaultChecked={backup.Options?.Metadata}
+                                        defaultChecked={
+                                            backup.Options?.Metadata
+                                        }
                                         disabled
                                     />
                                 }
@@ -110,7 +111,9 @@ const BackupInfoDialog: FunctionComponent<IProps> = ({ backup, open, onClose }: 
                                 control={
                                     <Checkbox
                                         name='Subtitles'
-                                        defaultChecked={backup.Options?.Subtitles}
+                                        defaultChecked={
+                                            backup.Options?.Subtitles
+                                        }
                                         disabled
                                     />
                                 }
@@ -123,7 +126,9 @@ const BackupInfoDialog: FunctionComponent<IProps> = ({ backup, open, onClose }: 
                                 control={
                                     <Checkbox
                                         name='Trickplay'
-                                        defaultChecked={backup.Options?.Trickplay}
+                                        defaultChecked={
+                                            backup.Options?.Trickplay
+                                        }
                                         disabled
                                     />
                                 }

@@ -6,11 +6,14 @@ import type { PlaybackMethod } from '../api/types';
 import getPlaybackMethodColor from '../utils/getPlaybackMethodColor';
 
 interface PlaybackMethodChipProps {
-    method: PlaybackMethod
+    method: PlaybackMethod;
 }
 
 const PlaybackMethodChip = ({ method }: PlaybackMethodChipProps) => {
-    const label = useMemo(() => globalize.translate(`PlaybackMethod.${method}`), [ method ]);
+    const label = useMemo(
+        () => globalize.translate(`PlaybackMethod.${method}`),
+        [method]
+    );
 
     return (
         <Chip

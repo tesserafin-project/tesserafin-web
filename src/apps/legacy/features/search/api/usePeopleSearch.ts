@@ -34,23 +34,27 @@ export const usePeopleSearch = (
     const { api, user } = useApi();
     const userId = user?.Id;
 
-    const isPeopleEnabled = (!collectionType || isMovies(collectionType) || isTVShows(collectionType));
+    const isPeopleEnabled =
+        !collectionType ||
+        isMovies(collectionType) ||
+        isTVShows(collectionType);
 
     return useQuery({
         queryKey: ['Search', 'People', collectionType, parentId, searchTerm],
-        queryFn: ({ signal }) => fetchPeople(
-            api!,
-            userId!,
-            {
-                searchTerm,
-                // TODO remove this exclusion when artists are migrated to the persons endpoint
-                excludePersonTypes: [
-                    PersonKind.Artist,
-                    PersonKind.AlbumArtist
-                ]
-            },
-            { signal }
-        ),
+        queryFn: ({ signal }) =>
+            fetchPeople(
+                api!,
+                userId!,
+                {
+                    searchTerm,
+                    // TODO remove this exclusion when artists are migrated to the persons endpoint
+                    excludePersonTypes: [
+                        PersonKind.Artist,
+                        PersonKind.AlbumArtist
+                    ]
+                },
+                { signal }
+            ),
         enabled: !!api && !!userId && isPeopleEnabled
     });
 };

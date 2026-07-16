@@ -17,12 +17,17 @@ const useLiveSessions = () => {
 
     const updateSessions = useCallback((sessions: SessionInfoDto[]) => {
         const newSessions = filterSessions(sessions);
-        const data = queryClient.getQueryData([ QUERY_KEY, QUERY_PARAMS ]) as SessionInfoDto[];
+        const data = queryClient.getQueryData([
+            QUERY_KEY,
+            QUERY_PARAMS
+        ]) as SessionInfoDto[];
         if (data) {
-            const currentSessions = [ ...data ];
+            const currentSessions = [...data];
 
             for (const session of newSessions) {
-                const sessionIndex = currentSessions.findIndex((value) => value.DeviceId === session.DeviceId);
+                const sessionIndex = currentSessions.findIndex(
+                    (value) => value.DeviceId === session.DeviceId
+                );
                 if (sessionIndex == -1) {
                     currentSessions.push(session);
                 } else {
@@ -37,9 +42,15 @@ const useLiveSessions = () => {
 
     useEffect(() => {
         // Return function for unsubscribing
-        return api?.subscribe([OutboundWebSocketMessageType.Sessions], ({ Data }) => {
-            queryClient.setQueryData([ QUERY_KEY, QUERY_PARAMS ], updateSessions(Data ?? []));
-        });
+        return api?.subscribe(
+            [OutboundWebSocketMessageType.Sessions],
+            ({ Data }) => {
+                queryClient.setQueryData(
+                    [QUERY_KEY, QUERY_PARAMS],
+                    updateSessions(Data ?? [])
+                );
+            }
+        );
     }, [api, updateSessions]);
 
     return sessionsQuery;

@@ -1,5 +1,8 @@
 import isEqual from 'lodash-es/isEqual';
-import { OutboundWebSocketMessageType, PeriodicListenerInterval } from '@jellyfin/sdk/lib/websocket';
+import {
+    OutboundWebSocketMessageType,
+    PeriodicListenerInterval
+} from '@jellyfin/sdk/lib/websocket';
 
 import { playbackManager } from 'components/playback/playbackmanager';
 import { PluginType } from 'constants/pluginType';
@@ -14,9 +17,11 @@ function getActivePlayerId() {
 function sendPlayCommand(apiClient, options, playType) {
     const sessionId = getActivePlayerId();
 
-    const ids = options.ids || options.items.map(function (i) {
-        return i.Id;
-    });
+    const ids =
+        options.ids ||
+        options.items.map(function (i) {
+            return i.Id;
+        });
 
     const remoteOptions = {
         ItemIds: ids.join(','),
@@ -86,7 +91,7 @@ function unsubscribeFromPlayerUpdates(instance) {
 
 async function updatePlaylist(instance, queue) {
     const options = {
-        ids: queue.map(i => i.Id),
+        ids: queue.map((i) => i.Id),
         serverId: getCurrentApiClient(instance).serverId()
     };
 
@@ -94,7 +99,10 @@ async function updatePlaylist(instance, queue) {
         Ids: options.ids.join(',')
     });
 
-    const items = await playbackManager.translateItemsForPlayback(result.Items, options);
+    const items = await playbackManager.translateItemsForPlayback(
+        result.Items,
+        options
+    );
 
     for (let i = 0; i < items.length; i++) {
         items[i].PlaylistItemId = queue[i].PlaylistItemId;
@@ -109,7 +117,10 @@ function compareQueues(q1, q2) {
     }
 
     for (let i = 0; i < q1.length; i++) {
-        if (q1[i].Id !== q2[i].Id || q1[i].PlaylistItemId !== q2[i].PlaylistItemId) {
+        if (
+            q1[i].Id !== q2[i].Id ||
+            q1[i].PlaylistItemId !== q2[i].PlaylistItemId
+        ) {
             return true;
         }
     }
@@ -139,7 +150,7 @@ function updateCurrentQueue(instance, session) {
 function processUpdatedSessions(instance, sessions, apiClient) {
     const serverId = apiClient.serverId();
 
-    sessions.forEach(s => {
+    sessions.forEach((s) => {
         if (s.NowPlayingItem) {
             s.NowPlayingItem.ServerId = serverId;
         }
@@ -159,7 +170,7 @@ function processUpdatedSessions(instance, sessions, apiClient) {
 
         instance.lastPlayerData = session;
 
-        eventNames.forEach(eventName => {
+        eventNames.forEach((eventName) => {
             Events.trigger(instance, eventName, [session]);
         });
     } else {
@@ -171,17 +182,26 @@ function processUpdatedSessions(instance, sessions, apiClient) {
 
 function getBasicEvents(oldPlayerData, newPlayerData) {
     const names = [];
-    if (oldPlayerData.PlayState.PositionTicks !== newPlayerData.PlayState.PositionTicks) {
+    if (
+        oldPlayerData.PlayState.PositionTicks !==
+        newPlayerData.PlayState.PositionTicks
+    ) {
         names.push('timeupdate');
     }
     if (oldPlayerData.PlayState.IsPaused !== newPlayerData.PlayState.IsPaused) {
         names.push(newPlayerData.PlayState.IsPaused ? 'pause' : 'unpause');
     }
-    if (oldPlayerData.PlayState.IsMuted !== newPlayerData.PlayState.IsMuted
-        || oldPlayerData.PlayState.VolumeLevel !== newPlayerData.PlayState.VolumeLevel) {
+    if (
+        oldPlayerData.PlayState.IsMuted !== newPlayerData.PlayState.IsMuted ||
+        oldPlayerData.PlayState.VolumeLevel !==
+            newPlayerData.PlayState.VolumeLevel
+    ) {
         names.push('volumechange');
     }
-    if (oldPlayerData.PlayState.RepeatMode !== newPlayerData.PlayState.RepeatMode) {
+    if (
+        oldPlayerData.PlayState.RepeatMode !==
+        newPlayerData.PlayState.RepeatMode
+    ) {
         names.push('repeatmodechange');
     }
     return names;
@@ -196,26 +216,58 @@ function copyNewStateOfBasicEvents(oldPlayerData, newPlayerData) {
         }
     };
 
-    prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'PositionTicks');
+    prepareOldData(
+        oldPlayerData.PlayState,
+        newPlayerData.PlayState,
+        'PositionTicks'
+    );
     if (oldPlayerData.TranscodingInfo) {
         // TranscodingInfo.CompletionPercentage and TranscodingInfo.Framerate change with time
         // so it's enough if we only trigger 'timeupdate' event
-        prepareOldData(oldPlayerData.TranscodingInfo, newPlayerData.TranscodingInfo, 'CompletionPercentage');
-        prepareOldData(oldPlayerData.TranscodingInfo, newPlayerData.TranscodingInfo, 'Framerate');
+        prepareOldData(
+            oldPlayerData.TranscodingInfo,
+            newPlayerData.TranscodingInfo,
+            'CompletionPercentage'
+        );
+        prepareOldData(
+            oldPlayerData.TranscodingInfo,
+            newPlayerData.TranscodingInfo,
+            'Framerate'
+        );
     }
     prepareOldData(oldPlayerData, newPlayerData, 'LastActivityDate');
     prepareOldData(oldPlayerData, newPlayerData, 'LastPlaybackCheckIn');
-    prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'IsPaused');
+    prepareOldData(
+        oldPlayerData.PlayState,
+        newPlayerData.PlayState,
+        'IsPaused'
+    );
     prepareOldData(oldPlayerData, newPlayerData, 'LastPausedDate');
     prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'IsMuted');
-    prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'VolumeLevel');
-    prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'RepeatMode');
-    prepareOldData(oldPlayerData.PlayState, newPlayerData.PlayState, 'OrderMode');
+    prepareOldData(
+        oldPlayerData.PlayState,
+        newPlayerData.PlayState,
+        'VolumeLevel'
+    );
+    prepareOldData(
+        oldPlayerData.PlayState,
+        newPlayerData.PlayState,
+        'RepeatMode'
+    );
+    prepareOldData(
+        oldPlayerData.PlayState,
+        newPlayerData.PlayState,
+        'OrderMode'
+    );
 }
 
 function getChangedEvents(oldPlayerData, newPlayerData) {
-    if (!oldPlayerData?.PlayState || !newPlayerData?.PlayState
-        || (oldPlayerData.TranscodingInfo !== newPlayerData.TranscodingInfo && (!oldPlayerData.TranscodingInfo || !newPlayerData.TranscodingInfo))) {
+    if (
+        !oldPlayerData?.PlayState ||
+        !newPlayerData?.PlayState ||
+        (oldPlayerData.TranscodingInfo !== newPlayerData.TranscodingInfo &&
+            (!oldPlayerData.TranscodingInfo || !newPlayerData.TranscodingInfo))
+    ) {
         return ['statechange'];
     }
 
@@ -237,7 +289,10 @@ function subscribeToPlayerUpdates(instance) {
     instance._unsubscribeSessions = apiClient.subscribe(
         [OutboundWebSocketMessageType.Sessions],
         ({ Data }) => processUpdatedSessions(instance, Data ?? [], apiClient),
-        { [OutboundWebSocketMessageType.Sessions]: new PeriodicListenerInterval(100, 800) }
+        {
+            [OutboundWebSocketMessageType.Sessions]:
+                new PeriodicListenerInterval(100, 800)
+        }
     );
 }
 
@@ -245,7 +300,10 @@ function normalizeImages(state, apiClient) {
     if (state?.NowPlayingItem) {
         const item = state.NowPlayingItem;
 
-        if (!item.ImageTags || !item.ImageTags.Primary && item.PrimaryImageTag) {
+        if (
+            !item.ImageTags ||
+            (!item.ImageTags.Primary && item.PrimaryImageTag)
+        ) {
             item.ImageTags = item.ImageTags || {};
             item.ImageTags.Primary = item.PrimaryImageTag;
         }
@@ -312,28 +370,35 @@ class SessionPlayer {
         if (apiClient) {
             const name = this.name;
 
-            return apiClient.getSessions(sessionQuery).then(function (sessions) {
-                return sessions.filter(function (s) {
-                    return s.DeviceId !== apiClient.deviceId();
-                }).map(function (s) {
-                    return {
-                        name: s.DeviceName,
-                        deviceName: s.DeviceName,
-                        deviceType: s.DeviceType,
-                        id: s.Id,
-                        playerName: name,
-                        appName: s.Client,
-                        playableMediaTypes: s.PlayableMediaTypes,
-                        isLocalPlayer: false,
-                        supportedCommands: s.Capabilities.SupportedCommands,
-                        user: s.UserId ? {
-                            Id: s.UserId,
-                            Name: s.UserName,
-                            PrimaryImageTag: s.UserPrimaryImageTag
-                        } : null
-                    };
+            return apiClient
+                .getSessions(sessionQuery)
+                .then(function (sessions) {
+                    return sessions
+                        .filter(function (s) {
+                            return s.DeviceId !== apiClient.deviceId();
+                        })
+                        .map(function (s) {
+                            return {
+                                name: s.DeviceName,
+                                deviceName: s.DeviceName,
+                                deviceType: s.DeviceType,
+                                id: s.Id,
+                                playerName: name,
+                                appName: s.Client,
+                                playableMediaTypes: s.PlayableMediaTypes,
+                                isLocalPlayer: false,
+                                supportedCommands:
+                                    s.Capabilities.SupportedCommands,
+                                user: s.UserId
+                                    ? {
+                                          Id: s.UserId,
+                                          Name: s.UserName,
+                                          PrimaryImageTag: s.UserPrimaryImageTag
+                                      }
+                                    : null
+                            };
+                        });
                 });
-            });
         } else {
             return Promise.resolve([]);
         }
@@ -361,11 +426,19 @@ class SessionPlayer {
     }
 
     shuffle(item) {
-        sendPlayCommand(getCurrentApiClient(this), { ids: [item.Id] }, 'PlayShuffle');
+        sendPlayCommand(
+            getCurrentApiClient(this),
+            { ids: [item.Id] },
+            'PlayShuffle'
+        );
     }
 
     instantMix(item) {
-        sendPlayCommand(getCurrentApiClient(this), { ids: [item.Id] }, 'PlayInstantMix');
+        sendPlayCommand(
+            getCurrentApiClient(this),
+            { ids: [item.Id] },
+            'PlayInstantMix'
+        );
     }
 
     queue(options) {
@@ -398,10 +471,9 @@ class SessionPlayer {
     }
 
     seek(positionTicks) {
-        sendPlayStateCommand(getCurrentApiClient(this), 'seek',
-            {
-                SeekPositionTicks: positionTicks
-            });
+        sendPlayStateCommand(getCurrentApiClient(this), 'seek', {
+            SeekPositionTicks: positionTicks
+        });
     }
 
     currentTime(val) {
@@ -554,7 +626,10 @@ class SessionPlayer {
 
     isPlaying(mediaType) {
         const state = this.lastPlayerData || {};
-        return state.NowPlayingItem != null && (state.NowPlayingItem.MediaType === mediaType || !mediaType);
+        return (
+            state.NowPlayingItem != null &&
+            (state.NowPlayingItem.MediaType === mediaType || !mediaType)
+        );
     }
 
     isPlayingVideo() {
@@ -584,7 +659,10 @@ class SessionPlayer {
             itemId = this.lastPlayerData.PlaylistItemId;
         }
 
-        if (this.playlist.length > 0 && (this.isPlaylistRendered || itemId !== this.lastPlaylistItemId)) {
+        if (
+            this.playlist.length > 0 &&
+            (this.isPlaylistRendered || itemId !== this.lastPlaylistItemId)
+        ) {
             this.isPlaylistRendered = false;
             this.lastPlaylistItemId = itemId;
             return Promise.resolve(this.playlist);
@@ -603,7 +681,7 @@ class SessionPlayer {
             currentIndex = newIndex;
         }
 
-        const append = (newIndex + 1 >= this.playlist.length);
+        const append = newIndex + 1 >= this.playlist.length;
 
         if (newIndex > index) newIndex++;
 
@@ -642,7 +720,7 @@ class SessionPlayer {
 
     setCurrentPlaylistItem(playlistItemId) {
         const options = {
-            ids: this.playlist.map(i => i.Id),
+            ids: this.playlist.map((i) => i.Id),
             startIndex: this.getTrackIndex(playlistItemId)
         };
         return sendPlayCommand(getCurrentApiClient(this), options, 'PlayNow');

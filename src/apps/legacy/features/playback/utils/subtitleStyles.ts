@@ -4,11 +4,12 @@ import type { UserSettings } from 'scripts/settings/userSettings';
 
 // TODO: This type override should be removed when userSettings are properly typed
 interface SubtitleAppearanceSettings {
-    subtitleStyling: SubtitleStylingOption
+    subtitleStyling: SubtitleStylingOption;
 }
 
 export function useCustomSubtitles(userSettings: UserSettings) {
-    const subtitleAppearance = userSettings.getSubtitleAppearanceSettings() as SubtitleAppearanceSettings;
+    const subtitleAppearance =
+        userSettings.getSubtitleAppearanceSettings() as SubtitleAppearanceSettings;
     switch (subtitleAppearance.subtitleStyling) {
         case SubtitleStylingOption.Native:
             return false;
@@ -22,7 +23,10 @@ export function useCustomSubtitles(userSettings: UserSettings) {
             }
 
             // Tizen 5 doesn't support displaying secondary subtitles
-            if ((browser.tizenVersion && browser.tizenVersion >= 5) || browser.web0s) {
+            if (
+                (browser.tizenVersion && browser.tizenVersion >= 5) ||
+                browser.web0s
+            ) {
                 return true;
             }
 

@@ -23,14 +23,13 @@ const fetchUser = async (
     return response.data;
 };
 
-export const getUserQuery = (
-    api?: Api,
-    { userId }: GetUserByIdParams = {}
-) => queryOptions({
-    queryKey: [ QUERY_KEY, userId ],
-    queryFn: ({ signal }) => fetchUser(api!, { userId: userId! }, { signal }),
-    enabled: !!api && !!userId
-});
+export const getUserQuery = (api?: Api, { userId }: GetUserByIdParams = {}) =>
+    queryOptions({
+        queryKey: [QUERY_KEY, userId],
+        queryFn: ({ signal }) =>
+            fetchUser(api!, { userId: userId! }, { signal }),
+        enabled: !!api && !!userId
+    });
 
 export const useUser = ({ userId }: GetUserByIdParams) => {
     const { api, user } = useApi();

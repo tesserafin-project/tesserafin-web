@@ -1,6 +1,17 @@
-import type { BaseItemDto, NameIdPair, SyncPlayUserAccessType, UserDto } from '@jellyfin/sdk/lib/generated-client';
+import type {
+    BaseItemDto,
+    NameIdPair,
+    SyncPlayUserAccessType,
+    UserDto
+} from '@jellyfin/sdk/lib/generated-client';
 import escapeHTML from 'escape-html';
-import React, { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useState,
+    useRef,
+    useMemo
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import globalize from 'lib/globalize';
@@ -23,27 +34,41 @@ interface ProfileProps {
 }
 
 type ResetProvider = BaseItemDto & {
-    checkedAttribute: string
+    checkedAttribute: string;
 };
 
-const getCheckedElementDataIds = (elements: NodeListOf<Element>) => (
-    Array.prototype.filter.call(elements, e => e.checked)
-        .map(e => e.getAttribute('data-id'))
-);
+const getCheckedElementDataIds = (elements: NodeListOf<Element>) =>
+    Array.prototype.filter
+        .call(elements, (e) => e.checked)
+        .map((e) => e.getAttribute('data-id'));
 
 const Profile = ({ userDto }: ProfileProps) => {
     const navigate = useNavigate();
-    const [ deleteFoldersAccess, setDeleteFoldersAccess ] = useState<ResetProvider[]>([]);
-    const libraryMenu = useMemo(async () => ((await import('scripts/libraryMenu')).default), []);
+    const [deleteFoldersAccess, setDeleteFoldersAccess] = useState<
+        ResetProvider[]
+    >([]);
+    const libraryMenu = useMemo(
+        async () => (await import('scripts/libraryMenu')).default,
+        []
+    );
 
-    const [ authenticationProviderId, setAuthenticationProviderId ] = useState('');
-    const [ passwordResetProviderId, setPasswordResetProviderId ] = useState('');
+    const [authenticationProviderId, setAuthenticationProviderId] =
+        useState('');
+    const [passwordResetProviderId, setPasswordResetProviderId] = useState('');
 
-    const { data: authProviders, isSuccess: isAuthProvidersSuccess } = useAuthProviders();
-    const { data: passwordResetProviders, isSuccess: isPasswordResetProvidersSuccess } = usePasswordResetProviders();
-    const { data: mediaFolders, isSuccess: isMediaFoldersSuccess } = useLibraryMediaFolders({ isHidden: false });
-    const { data: channels, isSuccess: isChannelsSuccess } = useChannels({ supportsMediaDeletion: true });
-    const { data: netConfig, isSuccess: isNetConfigSuccess } = useNetworkConfig();
+    const { data: authProviders, isSuccess: isAuthProvidersSuccess } =
+        useAuthProviders();
+    const {
+        data: passwordResetProviders,
+        isSuccess: isPasswordResetProvidersSuccess
+    } = usePasswordResetProviders();
+    const { data: mediaFolders, isSuccess: isMediaFoldersSuccess } =
+        useLibraryMediaFolders({ isHidden: false });
+    const { data: channels, isSuccess: isChannelsSuccess } = useChannels({
+        supportsMediaDeletion: true
+    });
+    const { data: netConfig, isSuccess: isNetConfigSuccess } =
+        useNetworkConfig();
 
     const updateUser = useUpdateUser();
     const updateUserPolicy = useUpdateUserPolicy();
@@ -55,53 +80,85 @@ const Profile = ({ userDto }: ProfileProps) => {
         select.dispatchEvent(evt);
     };
 
-    const loadAuthProviders = useCallback((page: HTMLDivElement, user: UserDto, providers: NameIdPair[]) => {
-        const fldSelectLoginProvider = page.querySelector('.fldSelectLoginProvider') as HTMLDivElement;
-        fldSelectLoginProvider.classList.toggle('hide', providers.length <= 1);
+    const loadAuthProviders = useCallback(
+        (page: HTMLDivElement, user: UserDto, providers: NameIdPair[]) => {
+            const fldSelectLoginProvider = page.querySelector(
+                '.fldSelectLoginProvider'
+            ) as HTMLDivElement;
+            fldSelectLoginProvider.classList.toggle(
+                'hide',
+                providers.length <= 1
+            );
 
-        const currentProviderId = user.Policy?.AuthenticationProviderId || '';
-        setAuthenticationProviderId(currentProviderId);
-    }, []);
+            const currentProviderId =
+                user.Policy?.AuthenticationProviderId || '';
+            setAuthenticationProviderId(currentProviderId);
+        },
+        []
+    );
 
-    const loadPasswordResetProviders = useCallback((page: HTMLDivElement, user: UserDto, providers: NameIdPair[]) => {
-        const fldSelectPasswordResetProvider = page.querySelector('.fldSelectPasswordResetProvider') as HTMLDivElement;
-        fldSelectPasswordResetProvider.classList.toggle('hide', providers.length <= 1);
+    const loadPasswordResetProviders = useCallback(
+        (page: HTMLDivElement, user: UserDto, providers: NameIdPair[]) => {
+            const fldSelectPasswordResetProvider = page.querySelector(
+                '.fldSelectPasswordResetProvider'
+            ) as HTMLDivElement;
+            fldSelectPasswordResetProvider.classList.toggle(
+                'hide',
+                providers.length <= 1
+            );
 
-        const currentProviderId = user.Policy?.PasswordResetProviderId || '';
-        setPasswordResetProviderId(currentProviderId);
-    }, []);
+            const currentProviderId =
+                user.Policy?.PasswordResetProviderId || '';
+            setPasswordResetProviderId(currentProviderId);
+        },
+        []
+    );
 
-    const loadDeleteFolders = useCallback((page: HTMLDivElement, user: UserDto, folders: BaseItemDto[]) => {
-        let isChecked;
-        let checkedAttribute;
-        const itemsArr: ResetProvider[] = [];
+    const loadDeleteFolders = useCallback(
+        (page: HTMLDivElement, user: UserDto, folders: BaseItemDto[]) => {
+            let isChecked;
+            let checkedAttribute;
+            const itemsArr: ResetProvider[] = [];
 
-        for (const mediaFolder of folders) {
-            isChecked = user.Policy?.EnableContentDeletion || user.Policy?.EnableContentDeletionFromFolders?.indexOf(mediaFolder.Id || '') != -1;
-            checkedAttribute = isChecked ? ' checked="checked"' : '';
-            itemsArr.push({
-                ...mediaFolder,
-                checkedAttribute: checkedAttribute
-            });
-        }
-
-        if (channels?.Items) {
-            for (const channel of channels.Items) {
-                isChecked = user.Policy?.EnableContentDeletion || user.Policy?.EnableContentDeletionFromFolders?.indexOf(channel.Id || '') != -1;
+            for (const mediaFolder of folders) {
+                isChecked =
+                    user.Policy?.EnableContentDeletion ||
+                    user.Policy?.EnableContentDeletionFromFolders?.indexOf(
+                        mediaFolder.Id || ''
+                    ) != -1;
                 checkedAttribute = isChecked ? ' checked="checked"' : '';
                 itemsArr.push({
-                    ...channel,
+                    ...mediaFolder,
                     checkedAttribute: checkedAttribute
                 });
             }
-        }
 
-        setDeleteFoldersAccess(itemsArr);
+            if (channels?.Items) {
+                for (const channel of channels.Items) {
+                    isChecked =
+                        user.Policy?.EnableContentDeletion ||
+                        user.Policy?.EnableContentDeletionFromFolders?.indexOf(
+                            channel.Id || ''
+                        ) != -1;
+                    checkedAttribute = isChecked ? ' checked="checked"' : '';
+                    itemsArr.push({
+                        ...channel,
+                        checkedAttribute: checkedAttribute
+                    });
+                }
+            }
 
-        const chkEnableDeleteAllFolders = page.querySelector('.chkEnableDeleteAllFolders') as HTMLInputElement;
-        chkEnableDeleteAllFolders.checked = user.Policy?.EnableContentDeletion || false;
-        triggerChange(chkEnableDeleteAllFolders);
-    }, [channels]);
+            setDeleteFoldersAccess(itemsArr);
+
+            const chkEnableDeleteAllFolders = page.querySelector(
+                '.chkEnableDeleteAllFolders'
+            ) as HTMLInputElement;
+            chkEnableDeleteAllFolders.checked =
+                user.Policy?.EnableContentDeletion || false;
+            triggerChange(chkEnableDeleteAllFolders);
+        },
+        [channels]
+    );
 
     useEffect(() => {
         const page = element.current;
@@ -124,10 +181,19 @@ const Profile = ({ userDto }: ProfileProps) => {
             return;
         }
 
-        if (userDto && isPasswordResetProvidersSuccess && passwordResetProviders != null) {
+        if (
+            userDto &&
+            isPasswordResetProvidersSuccess &&
+            passwordResetProviders != null
+        ) {
             loadPasswordResetProviders(page, userDto, passwordResetProviders);
         }
-    }, [passwordResetProviders, isPasswordResetProvidersSuccess, userDto, loadPasswordResetProviders]);
+    }, [
+        passwordResetProviders,
+        isPasswordResetProvidersSuccess,
+        userDto,
+        loadPasswordResetProviders
+    ]);
 
     useEffect(() => {
         const page = element.current;
@@ -137,10 +203,22 @@ const Profile = ({ userDto }: ProfileProps) => {
             return;
         }
 
-        if (userDto && isMediaFoldersSuccess && isChannelsSuccess && mediaFolders?.Items != null) {
+        if (
+            userDto &&
+            isMediaFoldersSuccess &&
+            isChannelsSuccess &&
+            mediaFolders?.Items != null
+        ) {
             loadDeleteFolders(page, userDto, mediaFolders.Items);
         }
-    }, [userDto, mediaFolders, isMediaFoldersSuccess, isChannelsSuccess, channels, loadDeleteFolders]);
+    }, [
+        userDto,
+        mediaFolders,
+        isMediaFoldersSuccess,
+        isChannelsSuccess,
+        channels,
+        loadDeleteFolders
+    ]);
 
     useEffect(() => {
         const page = element.current;
@@ -151,7 +229,9 @@ const Profile = ({ userDto }: ProfileProps) => {
         }
 
         if (netConfig && isNetConfigSuccess) {
-            (page.querySelector('.fldRemoteAccess') as HTMLDivElement).classList.toggle('hide', !netConfig.EnableRemoteAccess);
+            (
+                page.querySelector('.fldRemoteAccess') as HTMLDivElement
+            ).classList.toggle('hide', !netConfig.EnableRemoteAccess);
         }
     }, [netConfig, isNetConfigSuccess]);
 
@@ -163,43 +243,112 @@ const Profile = ({ userDto }: ProfileProps) => {
             return;
         }
 
-        const disabledUserBanner = page.querySelector('.disabledUserBanner') as HTMLDivElement;
-        disabledUserBanner.classList.toggle('hide', !userDto.Policy?.IsDisabled);
+        const disabledUserBanner = page.querySelector(
+            '.disabledUserBanner'
+        ) as HTMLDivElement;
+        disabledUserBanner.classList.toggle(
+            'hide',
+            !userDto.Policy?.IsDisabled
+        );
 
-        const txtUserName = page.querySelector('#txtUserName') as HTMLInputElement;
+        const txtUserName = page.querySelector(
+            '#txtUserName'
+        ) as HTMLInputElement;
         txtUserName.disabled = false;
         txtUserName.removeAttribute('disabled');
 
-        void libraryMenu.then(menu => menu.setTitle(userDto.Name));
+        void libraryMenu.then((menu) => menu.setTitle(userDto.Name));
 
-        (page.querySelector('#txtUserName') as HTMLInputElement).value = userDto.Name || '';
-        (page.querySelector('.chkIsAdmin') as HTMLInputElement).checked = !!userDto.Policy?.IsAdministrator;
-        (page.querySelector('.chkDisabled') as HTMLInputElement).checked = !!userDto.Policy?.IsDisabled;
-        (page.querySelector('.chkIsHidden') as HTMLInputElement).checked = !!userDto.Policy?.IsHidden;
-        (page.querySelector('.chkEnableCollectionManagement') as HTMLInputElement).checked = !!userDto.Policy?.EnableCollectionManagement;
-        (page.querySelector('.chkEnableSubtitleManagement') as HTMLInputElement).checked = !!userDto.Policy?.EnableSubtitleManagement;
-        (page.querySelector('.chkRemoteControlSharedDevices') as HTMLInputElement).checked = !!userDto.Policy?.EnableSharedDeviceControl;
-        (page.querySelector('.chkEnableRemoteControlOtherUsers') as HTMLInputElement).checked = !!userDto.Policy?.EnableRemoteControlOfOtherUsers;
-        (page.querySelector('.chkEnableDownloading') as HTMLInputElement).checked = !!userDto.Policy?.EnableContentDownloading;
-        (page.querySelector('.chkManageLiveTv') as HTMLInputElement).checked = !!userDto.Policy?.EnableLiveTvManagement;
-        (page.querySelector('.chkEnableLiveTvAccess') as HTMLInputElement).checked = !!userDto.Policy?.EnableLiveTvAccess;
-        (page.querySelector('.chkEnableMediaPlayback') as HTMLInputElement).checked = !!userDto.Policy?.EnableMediaPlayback;
-        (page.querySelector('.chkEnableAudioPlaybackTranscoding') as HTMLInputElement).checked = !!userDto.Policy?.EnableAudioPlaybackTranscoding;
-        (page.querySelector('.chkEnableVideoPlaybackTranscoding') as HTMLInputElement).checked = !!userDto.Policy?.EnableVideoPlaybackTranscoding;
-        (page.querySelector('.chkEnableVideoPlaybackRemuxing') as HTMLInputElement).checked = !!userDto.Policy?.EnablePlaybackRemuxing;
-        (page.querySelector('.chkForceRemoteSourceTranscoding') as HTMLInputElement).checked = !!userDto.Policy?.ForceRemoteSourceTranscoding;
-        (page.querySelector('.chkRemoteAccess') as HTMLInputElement).checked = userDto.Policy?.EnableRemoteAccess == null || userDto.Policy?.EnableRemoteAccess;
-        (page.querySelector('#txtRemoteClientBitrateLimit') as HTMLInputElement).value = userDto.Policy?.RemoteClientBitrateLimit && userDto.Policy?.RemoteClientBitrateLimit > 0 ?
-            (userDto.Policy?.RemoteClientBitrateLimit / 1e6).toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
-        (page.querySelector('#txtLoginAttemptsBeforeLockout') as HTMLInputElement).value = String(userDto.Policy?.LoginAttemptsBeforeLockout) || '-1';
-        (page.querySelector('#txtMaxActiveSessions') as HTMLInputElement).value = String(userDto.Policy?.MaxActiveSessions) || '0';
-        (page.querySelector('#selectSyncPlayAccess') as HTMLSelectElement).value = String(userDto.Policy?.SyncPlayAccess);
+        (page.querySelector('#txtUserName') as HTMLInputElement).value =
+            userDto.Name || '';
+        (page.querySelector('.chkIsAdmin') as HTMLInputElement).checked =
+            !!userDto.Policy?.IsAdministrator;
+        (page.querySelector('.chkDisabled') as HTMLInputElement).checked =
+            !!userDto.Policy?.IsDisabled;
+        (page.querySelector('.chkIsHidden') as HTMLInputElement).checked =
+            !!userDto.Policy?.IsHidden;
+        (
+            page.querySelector(
+                '.chkEnableCollectionManagement'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableCollectionManagement;
+        (
+            page.querySelector(
+                '.chkEnableSubtitleManagement'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableSubtitleManagement;
+        (
+            page.querySelector(
+                '.chkRemoteControlSharedDevices'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableSharedDeviceControl;
+        (
+            page.querySelector(
+                '.chkEnableRemoteControlOtherUsers'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableRemoteControlOfOtherUsers;
+        (
+            page.querySelector('.chkEnableDownloading') as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableContentDownloading;
+        (page.querySelector('.chkManageLiveTv') as HTMLInputElement).checked =
+            !!userDto.Policy?.EnableLiveTvManagement;
+        (
+            page.querySelector('.chkEnableLiveTvAccess') as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableLiveTvAccess;
+        (
+            page.querySelector('.chkEnableMediaPlayback') as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableMediaPlayback;
+        (
+            page.querySelector(
+                '.chkEnableAudioPlaybackTranscoding'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableAudioPlaybackTranscoding;
+        (
+            page.querySelector(
+                '.chkEnableVideoPlaybackTranscoding'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnableVideoPlaybackTranscoding;
+        (
+            page.querySelector(
+                '.chkEnableVideoPlaybackRemuxing'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.EnablePlaybackRemuxing;
+        (
+            page.querySelector(
+                '.chkForceRemoteSourceTranscoding'
+            ) as HTMLInputElement
+        ).checked = !!userDto.Policy?.ForceRemoteSourceTranscoding;
+        (page.querySelector('.chkRemoteAccess') as HTMLInputElement).checked =
+            userDto.Policy?.EnableRemoteAccess == null ||
+            userDto.Policy?.EnableRemoteAccess;
+        (
+            page.querySelector(
+                '#txtRemoteClientBitrateLimit'
+            ) as HTMLInputElement
+        ).value =
+            userDto.Policy?.RemoteClientBitrateLimit &&
+            userDto.Policy?.RemoteClientBitrateLimit > 0
+                ? (
+                      userDto.Policy?.RemoteClientBitrateLimit / 1e6
+                  ).toLocaleString(undefined, { maximumFractionDigits: 6 })
+                : '';
+        (
+            page.querySelector(
+                '#txtLoginAttemptsBeforeLockout'
+            ) as HTMLInputElement
+        ).value = String(userDto.Policy?.LoginAttemptsBeforeLockout) || '-1';
+        (
+            page.querySelector('#txtMaxActiveSessions') as HTMLInputElement
+        ).value = String(userDto.Policy?.MaxActiveSessions) || '0';
+        (
+            page.querySelector('#selectSyncPlayAccess') as HTMLSelectElement
+        ).value = String(userDto.Policy?.SyncPlayAccess);
         loading.hide();
-    }, [ userDto, libraryMenu ]);
+    }, [userDto, libraryMenu]);
 
     useEffect(() => {
         loadUser();
-    }, [ loadUser ]);
+    }, [loadUser]);
 
     useEffect(() => {
         const page = element.current;
@@ -214,49 +363,148 @@ const Profile = ({ userDto }: ProfileProps) => {
                 throw new Error('Unexpected null user id or policy');
             }
 
-            user.Name = (page.querySelector('#txtUserName') as HTMLInputElement).value.trim();
-            user.Policy.IsAdministrator = (page.querySelector('.chkIsAdmin') as HTMLInputElement).checked;
-            user.Policy.IsHidden = (page.querySelector('.chkIsHidden') as HTMLInputElement).checked;
-            user.Policy.IsDisabled = (page.querySelector('.chkDisabled') as HTMLInputElement).checked;
-            user.Policy.EnableRemoteControlOfOtherUsers = (page.querySelector('.chkEnableRemoteControlOtherUsers') as HTMLInputElement).checked;
-            user.Policy.EnableLiveTvManagement = (page.querySelector('.chkManageLiveTv') as HTMLInputElement).checked;
-            user.Policy.EnableLiveTvAccess = (page.querySelector('.chkEnableLiveTvAccess') as HTMLInputElement).checked;
-            user.Policy.EnableSharedDeviceControl = (page.querySelector('.chkRemoteControlSharedDevices') as HTMLInputElement).checked;
-            user.Policy.EnableMediaPlayback = (page.querySelector('.chkEnableMediaPlayback') as HTMLInputElement).checked;
-            user.Policy.EnableAudioPlaybackTranscoding = (page.querySelector('.chkEnableAudioPlaybackTranscoding') as HTMLInputElement).checked;
-            user.Policy.EnableVideoPlaybackTranscoding = (page.querySelector('.chkEnableVideoPlaybackTranscoding') as HTMLInputElement).checked;
-            user.Policy.EnablePlaybackRemuxing = (page.querySelector('.chkEnableVideoPlaybackRemuxing') as HTMLInputElement).checked;
-            user.Policy.EnableCollectionManagement = (page.querySelector('.chkEnableCollectionManagement') as HTMLInputElement).checked;
-            user.Policy.EnableSubtitleManagement = (page.querySelector('.chkEnableSubtitleManagement') as HTMLInputElement).checked;
-            user.Policy.ForceRemoteSourceTranscoding = (page.querySelector('.chkForceRemoteSourceTranscoding') as HTMLInputElement).checked;
-            user.Policy.EnableContentDownloading = (page.querySelector('.chkEnableDownloading') as HTMLInputElement).checked;
-            user.Policy.EnableRemoteAccess = (page.querySelector('.chkRemoteAccess') as HTMLInputElement).checked;
-            user.Policy.RemoteClientBitrateLimit = Math.floor(1e6 * parseFloat((page.querySelector('#txtRemoteClientBitrateLimit') as HTMLInputElement).value || '0'));
-            user.Policy.LoginAttemptsBeforeLockout = parseInt((page.querySelector('#txtLoginAttemptsBeforeLockout') as HTMLInputElement).value || '0', 10);
-            user.Policy.MaxActiveSessions = parseInt((page.querySelector('#txtMaxActiveSessions') as HTMLInputElement).value || '0', 10);
-            user.Policy.AuthenticationProviderId = (page.querySelector('#selectLoginProvider') as HTMLSelectElement).value;
-            user.Policy.PasswordResetProviderId = (page.querySelector('#selectPasswordResetProvider') as HTMLSelectElement).value;
-            user.Policy.EnableContentDeletion = (page.querySelector('.chkEnableDeleteAllFolders') as HTMLInputElement).checked;
-            user.Policy.EnableContentDeletionFromFolders = user.Policy.EnableContentDeletion ? [] : getCheckedElementDataIds(page.querySelectorAll('.chkFolder'));
-            user.Policy.SyncPlayAccess = (page.querySelector('#selectSyncPlayAccess') as HTMLSelectElement).value as SyncPlayUserAccessType;
+            user.Name = (
+                page.querySelector('#txtUserName') as HTMLInputElement
+            ).value.trim();
+            user.Policy.IsAdministrator = (
+                page.querySelector('.chkIsAdmin') as HTMLInputElement
+            ).checked;
+            user.Policy.IsHidden = (
+                page.querySelector('.chkIsHidden') as HTMLInputElement
+            ).checked;
+            user.Policy.IsDisabled = (
+                page.querySelector('.chkDisabled') as HTMLInputElement
+            ).checked;
+            user.Policy.EnableRemoteControlOfOtherUsers = (
+                page.querySelector(
+                    '.chkEnableRemoteControlOtherUsers'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableLiveTvManagement = (
+                page.querySelector('.chkManageLiveTv') as HTMLInputElement
+            ).checked;
+            user.Policy.EnableLiveTvAccess = (
+                page.querySelector('.chkEnableLiveTvAccess') as HTMLInputElement
+            ).checked;
+            user.Policy.EnableSharedDeviceControl = (
+                page.querySelector(
+                    '.chkRemoteControlSharedDevices'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableMediaPlayback = (
+                page.querySelector(
+                    '.chkEnableMediaPlayback'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableAudioPlaybackTranscoding = (
+                page.querySelector(
+                    '.chkEnableAudioPlaybackTranscoding'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableVideoPlaybackTranscoding = (
+                page.querySelector(
+                    '.chkEnableVideoPlaybackTranscoding'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnablePlaybackRemuxing = (
+                page.querySelector(
+                    '.chkEnableVideoPlaybackRemuxing'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableCollectionManagement = (
+                page.querySelector(
+                    '.chkEnableCollectionManagement'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableSubtitleManagement = (
+                page.querySelector(
+                    '.chkEnableSubtitleManagement'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.ForceRemoteSourceTranscoding = (
+                page.querySelector(
+                    '.chkForceRemoteSourceTranscoding'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableContentDownloading = (
+                page.querySelector('.chkEnableDownloading') as HTMLInputElement
+            ).checked;
+            user.Policy.EnableRemoteAccess = (
+                page.querySelector('.chkRemoteAccess') as HTMLInputElement
+            ).checked;
+            user.Policy.RemoteClientBitrateLimit = Math.floor(
+                1e6 *
+                    parseFloat(
+                        (
+                            page.querySelector(
+                                '#txtRemoteClientBitrateLimit'
+                            ) as HTMLInputElement
+                        ).value || '0'
+                    )
+            );
+            user.Policy.LoginAttemptsBeforeLockout = parseInt(
+                (
+                    page.querySelector(
+                        '#txtLoginAttemptsBeforeLockout'
+                    ) as HTMLInputElement
+                ).value || '0',
+                10
+            );
+            user.Policy.MaxActiveSessions = parseInt(
+                (
+                    page.querySelector(
+                        '#txtMaxActiveSessions'
+                    ) as HTMLInputElement
+                ).value || '0',
+                10
+            );
+            user.Policy.AuthenticationProviderId = (
+                page.querySelector('#selectLoginProvider') as HTMLSelectElement
+            ).value;
+            user.Policy.PasswordResetProviderId = (
+                page.querySelector(
+                    '#selectPasswordResetProvider'
+                ) as HTMLSelectElement
+            ).value;
+            user.Policy.EnableContentDeletion = (
+                page.querySelector(
+                    '.chkEnableDeleteAllFolders'
+                ) as HTMLInputElement
+            ).checked;
+            user.Policy.EnableContentDeletionFromFolders = user.Policy
+                .EnableContentDeletion
+                ? []
+                : getCheckedElementDataIds(page.querySelectorAll('.chkFolder'));
+            user.Policy.SyncPlayAccess = (
+                page.querySelector('#selectSyncPlayAccess') as HTMLSelectElement
+            ).value as SyncPlayUserAccessType;
 
-            updateUser.mutate({ userId: user.Id, userDto: user }, {
-                onSuccess: () => {
-                    if (user.Id) {
-                        updateUserPolicy.mutate({
-                            userId: user.Id,
-                            userPolicy: user.Policy || { PasswordResetProviderId: '', AuthenticationProviderId: '' }
-                        }, {
-                            onSuccess: () => {
-                                loading.hide();
-                                navigate('/dashboard/users', {
-                                    state: { openSavedToast: true }
-                                });
-                            }
-                        });
+            updateUser.mutate(
+                { userId: user.Id, userDto: user },
+                {
+                    onSuccess: () => {
+                        if (user.Id) {
+                            updateUserPolicy.mutate(
+                                {
+                                    userId: user.Id,
+                                    userPolicy: user.Policy || {
+                                        PasswordResetProviderId: '',
+                                        AuthenticationProviderId: ''
+                                    }
+                                },
+                                {
+                                    onSuccess: () => {
+                                        loading.hide();
+                                        navigate('/dashboard/users', {
+                                            state: { openSavedToast: true }
+                                        });
+                                    }
+                                }
+                            );
+                        }
                     }
                 }
-            });
+            );
         };
 
         const onSubmit = (e: Event) => {
@@ -273,28 +521,49 @@ const Profile = ({ userDto }: ProfileProps) => {
             window.history.back();
         };
 
-        (page.querySelector('.chkEnableDeleteAllFolders') as HTMLInputElement).addEventListener('change', function (this: HTMLInputElement) {
-            (page.querySelector('.deleteAccess') as HTMLDivElement).classList.toggle('hide', this.checked);
+        (
+            page.querySelector('.chkEnableDeleteAllFolders') as HTMLInputElement
+        ).addEventListener('change', function (this: HTMLInputElement) {
+            (
+                page.querySelector('.deleteAccess') as HTMLDivElement
+            ).classList.toggle('hide', this.checked);
         });
 
-        (page.querySelector('.editUserProfileForm') as HTMLFormElement).addEventListener('submit', onSubmit);
-        (page.querySelector('#btnCancel') as HTMLButtonElement).addEventListener('click', onBtnCancelClick);
+        (
+            page.querySelector('.editUserProfileForm') as HTMLFormElement
+        ).addEventListener('submit', onSubmit);
+        (
+            page.querySelector('#btnCancel') as HTMLButtonElement
+        ).addEventListener('click', onBtnCancelClick);
 
         return () => {
-            (page.querySelector('.editUserProfileForm') as HTMLFormElement).removeEventListener('submit', onSubmit);
-            (page.querySelector('#btnCancel') as HTMLButtonElement).removeEventListener('click', onBtnCancelClick);
+            (
+                page.querySelector('.editUserProfileForm') as HTMLFormElement
+            ).removeEventListener('submit', onSubmit);
+            (
+                page.querySelector('#btnCancel') as HTMLButtonElement
+            ).removeEventListener('click', onBtnCancelClick);
         };
     }, [updateUser, userDto, updateUserPolicy, navigate]);
 
     const optionLoginProvider = authProviders?.map((provider) => {
-        const selected = provider.Id === authenticationProviderId || authProviders.length < 2 ? ' selected' : '';
+        const selected =
+            provider.Id === authenticationProviderId || authProviders.length < 2
+                ? ' selected'
+                : '';
         return `<option value="${provider.Id}"${selected}>${escapeHTML(provider.Name)}</option>`;
     });
 
-    const optionPasswordResetProvider = passwordResetProviders?.map((provider) => {
-        const selected = provider.Id === passwordResetProviderId || passwordResetProviders.length < 2 ? ' selected' : '';
-        return `<option value="${provider.Id}"${selected}>${escapeHTML(provider.Name)}</option>`;
-    });
+    const optionPasswordResetProvider = passwordResetProviders?.map(
+        (provider) => {
+            const selected =
+                provider.Id === passwordResetProviderId ||
+                passwordResetProviders.length < 2
+                    ? ' selected'
+                    : '';
+            return `<option value="${provider.Id}"${selected}>${escapeHTML(provider.Name)}</option>`;
+        }
+    );
 
     const optionSyncPlayAccess = () => {
         let content = '';
@@ -310,7 +579,14 @@ const Profile = ({ userDto }: ProfileProps) => {
                 className='lnkEditUserPreferencesContainer'
                 style={{ paddingBottom: '1em' }}
             >
-                <LinkButton className='lnkEditUserPreferences button-link' href={userDto?.Id ? `mypreferencesmenu?userId=${userDto.Id}` : undefined}>
+                <LinkButton
+                    className='lnkEditUserPreferences button-link'
+                    href={
+                        userDto?.Id
+                            ? `mypreferencesmenu?userId=${userDto.Id}`
+                            : undefined
+                    }
+                >
                     {globalize.translate('ButtonEditOtherUserPreferences')}
                 </LinkButton>
             </div>
@@ -318,7 +594,9 @@ const Profile = ({ userDto }: ProfileProps) => {
                 <div className='disabledUserBanner hide'>
                     <div className='btn btnDarkAccent btnStatic'>
                         <div>
-                            {globalize.translate('HeaderThisUserIsCurrentlyDisabled')}
+                            {globalize.translate(
+                                'HeaderThisUserIsCurrentlyDisabled'
+                            )}
                         </div>
                         <div style={{ marginTop: 5 }}>
                             {globalize.translate('MessageReenableUser')}
@@ -384,7 +662,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                     <h2 className='paperListLabel'>
                         {globalize.translate('HeaderFeatureAccess')}
                     </h2>
-                    <div className='checkboxList paperList' style={{ padding: '.5em 1em' }}>
+                    <div
+                        className='checkboxList paperList'
+                        style={{ padding: '.5em 1em' }}
+                    >
                         <CheckBoxElement
                             className='chkEnableLiveTvAccess'
                             title='OptionAllowBrowsingLiveTv'
@@ -399,7 +680,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                     <h2 className='paperListLabel'>
                         {globalize.translate('HeaderPlayback')}
                     </h2>
-                    <div className='checkboxList paperList' style={{ padding: '.5em 1em' }}>
+                    <div
+                        className='checkboxList paperList'
+                        style={{ padding: '.5em 1em' }}
+                    >
                         <CheckBoxElement
                             className='chkEnableMediaPlayback'
                             title='OptionAllowMediaPlayback'
@@ -422,7 +706,9 @@ const Profile = ({ userDto }: ProfileProps) => {
                         />
                     </div>
                     <div className='fieldDescription'>
-                        {globalize.translate('OptionAllowMediaPlaybackTranscodingHelp')}
+                        {globalize.translate(
+                            'OptionAllowMediaPlaybackTranscodingHelp'
+                        )}
                     </div>
                 </div>
                 <br />
@@ -431,17 +717,23 @@ const Profile = ({ userDto }: ProfileProps) => {
                         <Input
                             type='number'
                             id='txtRemoteClientBitrateLimit'
-                            label={globalize.translate('LabelRemoteClientBitrateLimit')}
+                            label={globalize.translate(
+                                'LabelRemoteClientBitrateLimit'
+                            )}
                             inputMode='decimal'
                             pattern='[0-9]*(.[0-9]+)?'
                             min='0'
                             step='.25'
                         />
                         <div className='fieldDescription'>
-                            {globalize.translate('LabelRemoteClientBitrateLimitHelp')}
+                            {globalize.translate(
+                                'LabelRemoteClientBitrateLimitHelp'
+                            )}
                         </div>
                         <div className='fieldDescription'>
-                            {globalize.translate('LabelUserRemoteClientBitrateLimitHelp')}
+                            {globalize.translate(
+                                'LabelUserRemoteClientBitrateLimitHelp'
+                            )}
                         </div>
                     </div>
                 </div>
@@ -459,7 +751,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                     </div>
                 </div>
                 <div className='verticalSection'>
-                    <h2 className='checkboxListLabel' style={{ marginBottom: '1em' }}>
+                    <h2
+                        className='checkboxListLabel'
+                        style={{ marginBottom: '1em' }}
+                    >
                         {globalize.translate('HeaderAllowMediaDeletionFrom')}
                     </h2>
                     <div className='checkboxList paperList checkboxList-paperList'>
@@ -469,7 +764,7 @@ const Profile = ({ userDto }: ProfileProps) => {
                             title='AllLibraries'
                         />
                         <div className='deleteAccess'>
-                            {deleteFoldersAccess.map(Item => (
+                            {deleteFoldersAccess.map((Item) => (
                                 <CheckBoxElement
                                     key={Item.Id}
                                     className='chkFolder'
@@ -485,7 +780,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                     <h2 className='checkboxListLabel'>
                         {globalize.translate('HeaderRemoteControl')}
                     </h2>
-                    <div className='checkboxList paperList' style={{ padding: '.5em 1em' }}>
+                    <div
+                        className='checkboxList paperList'
+                        style={{ padding: '.5em 1em' }}
+                    >
                         <CheckBoxElement
                             className='chkEnableRemoteControlOtherUsers'
                             title='OptionAllowRemoteControlOthers'
@@ -496,7 +794,9 @@ const Profile = ({ userDto }: ProfileProps) => {
                         />
                     </div>
                     <div className='fieldDescription'>
-                        {globalize.translate('OptionAllowRemoteSharedDevicesHelp')}
+                        {globalize.translate(
+                            'OptionAllowRemoteSharedDevicesHelp'
+                        )}
                     </div>
                 </div>
                 <h2 className='checkboxListLabel'>
@@ -511,7 +811,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                         {globalize.translate('OptionAllowContentDownloadHelp')}
                     </div>
                 </div>
-                <div className='checkboxContainer checkboxContainer-withDescription' id='fldIsEnabled'>
+                <div
+                    className='checkboxContainer checkboxContainer-withDescription'
+                    id='fldIsEnabled'
+                >
                     <CheckBoxElement
                         className='chkDisabled'
                         title='OptionDisableUser'
@@ -520,7 +823,10 @@ const Profile = ({ userDto }: ProfileProps) => {
                         {globalize.translate('OptionDisableUserHelp')}
                     </div>
                 </div>
-                <div className='checkboxContainer checkboxContainer-withDescription' id='fldIsHidden'>
+                <div
+                    className='checkboxContainer checkboxContainer-withDescription'
+                    id='fldIsHidden'
+                >
                     <CheckBoxElement
                         className='chkIsHidden'
                         title='OptionHideUser'
@@ -531,18 +837,28 @@ const Profile = ({ userDto }: ProfileProps) => {
                 </div>
                 <br />
                 <div className='verticalSection'>
-                    <div className='inputContainer' id='fldLoginAttemptsBeforeLockout'>
+                    <div
+                        className='inputContainer'
+                        id='fldLoginAttemptsBeforeLockout'
+                    >
                         <Input
                             type='number'
                             id='txtLoginAttemptsBeforeLockout'
-                            label={globalize.translate('LabelUserLoginAttemptsBeforeLockout')}
-                            min={-1} step={1}
+                            label={globalize.translate(
+                                'LabelUserLoginAttemptsBeforeLockout'
+                            )}
+                            min={-1}
+                            step={1}
                         />
                         <div className='fieldDescription'>
-                            {globalize.translate('OptionLoginAttemptsBeforeLockout')}
+                            {globalize.translate(
+                                'OptionLoginAttemptsBeforeLockout'
+                            )}
                         </div>
                         <div className='fieldDescription'>
-                            {globalize.translate('OptionLoginAttemptsBeforeLockoutHelp')}
+                            {globalize.translate(
+                                'OptionLoginAttemptsBeforeLockoutHelp'
+                            )}
                         </div>
                     </div>
                 </div>
@@ -552,8 +868,11 @@ const Profile = ({ userDto }: ProfileProps) => {
                         <Input
                             type='number'
                             id='txtMaxActiveSessions'
-                            label={globalize.translate('LabelUserMaxActiveSessions')}
-                            min={0} step={1}
+                            label={globalize.translate(
+                                'LabelUserMaxActiveSessions'
+                            )}
+                            min={0}
+                            step={1}
                         />
                         <div className='fieldDescription'>
                             {globalize.translate('OptionMaxActiveSessions')}

@@ -25,18 +25,25 @@ interface DisplayPreferencesProps {
     values: DisplaySettingsValues;
 }
 
-export function DisplayPreferences({ onChange, values }: Readonly<DisplayPreferencesProps>) {
+export function DisplayPreferences({
+    onChange,
+    values
+}: Readonly<DisplayPreferencesProps>) {
     const { user } = useApi();
     const { screensavers } = useScreensavers();
     const { themes } = useThemes();
 
     return (
         <Stack spacing={3}>
-            <Typography variant='h2'>{globalize.translate('Display')}</Typography>
+            <Typography variant='h2'>
+                {globalize.translate('Display')}
+            </Typography>
 
-            { appHost.supports(AppFeature.DisplayMode) && (
+            {appHost.supports(AppFeature.DisplayMode) && (
                 <FormControl fullWidth>
-                    <InputLabel id='display-settings-layout-label'>{globalize.translate('LabelDisplayMode')}</InputLabel>
+                    <InputLabel id='display-settings-layout-label'>
+                        {globalize.translate('LabelDisplayMode')}
+                    </InputLabel>
                     <Select
                         aria-describedby='display-settings-layout-description'
                         inputProps={{
@@ -46,21 +53,34 @@ export function DisplayPreferences({ onChange, values }: Readonly<DisplayPrefere
                         onChange={onChange}
                         value={values.layout}
                     >
-                        <MenuItem value={LayoutMode.Auto}>{globalize.translate('Auto')}</MenuItem>
-                        <MenuItem value={LayoutMode.DesktopLegacy}>{globalize.translate('Desktop')}</MenuItem>
-                        <MenuItem value={LayoutMode.MobileLegacy}>{globalize.translate('Mobile')}</MenuItem>
-                        <MenuItem value={LayoutMode.Tv}>{globalize.translate('TV')}</MenuItem>
+                        <MenuItem value={LayoutMode.Auto}>
+                            {globalize.translate('Auto')}
+                        </MenuItem>
+                        <MenuItem value={LayoutMode.DesktopLegacy}>
+                            {globalize.translate('Desktop')}
+                        </MenuItem>
+                        <MenuItem value={LayoutMode.MobileLegacy}>
+                            {globalize.translate('Mobile')}
+                        </MenuItem>
+                        <MenuItem value={LayoutMode.Tv}>
+                            {globalize.translate('TV')}
+                        </MenuItem>
                     </Select>
-                    <FormHelperText component={Stack} id='display-settings-layout-description'>
+                    <FormHelperText
+                        component={Stack}
+                        id='display-settings-layout-description'
+                    >
                         <span>{globalize.translate('DisplayModeHelp')}</span>
                         <span>{globalize.translate('LabelPleaseRestart')}</span>
                     </FormHelperText>
                 </FormControl>
-            ) }
+            )}
 
-            { themes.length > 0 && (
+            {themes.length > 0 && (
                 <FormControl fullWidth>
-                    <InputLabel id='display-settings-theme-label'>{globalize.translate('LabelTheme')}</InputLabel>
+                    <InputLabel id='display-settings-theme-label'>
+                        {globalize.translate('LabelTheme')}
+                    </InputLabel>
                     <Select
                         inputProps={{
                             name: 'theme'
@@ -69,12 +89,14 @@ export function DisplayPreferences({ onChange, values }: Readonly<DisplayPrefere
                         onChange={onChange}
                         value={values.theme}
                     >
-                        { ...themes.map(({ id, name }) => (
-                            <MenuItem key={id} value={id}>{name}</MenuItem>
+                        {...themes.map(({ id, name }) => (
+                            <MenuItem key={id} value={id}>
+                                {name}
+                            </MenuItem>
                         ))}
                     </Select>
                 </FormControl>
-            ) }
+            )}
 
             <FormControl fullWidth>
                 <FormControlLabel
@@ -107,91 +129,108 @@ export function DisplayPreferences({ onChange, values }: Readonly<DisplayPrefere
                 </FormHelperText>
             </FormControl>
 
-            { themes.length > 0 && user?.Policy?.IsAdministrator && (
+            {themes.length > 0 && user?.Policy?.IsAdministrator && (
                 <FormControl fullWidth>
-                    <InputLabel id='display-settings-dashboard-theme-label'>{globalize.translate('LabelDashboardTheme')}</InputLabel>
+                    <InputLabel id='display-settings-dashboard-theme-label'>
+                        {globalize.translate('LabelDashboardTheme')}
+                    </InputLabel>
                     <Select
                         inputProps={{
                             name: 'dashboardTheme'
                         }}
                         labelId='display-settings-dashboard-theme-label'
-                        onChange={ onChange }
-                        value={ values.dashboardTheme }
+                        onChange={onChange}
+                        value={values.dashboardTheme}
                     >
-                        { ...themes.map(({ id, name }) => (
-                            <MenuItem key={ id } value={ id }>{ name }</MenuItem>
-                        )) }
+                        {...themes.map(({ id, name }) => (
+                            <MenuItem key={id} value={id}>
+                                {name}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
-            ) }
+            )}
 
-            { screensavers.length > 0 && appHost.supports(AppFeature.Screensaver) && (
-                <Fragment>
-                    <FormControl fullWidth>
-                        <InputLabel id='display-settings-screensaver-label'>{globalize.translate('LabelScreensaver')}</InputLabel>
-                        <Select
-                            inputProps={{
-                                name: 'screensaver'
-                            }}
-                            labelId='display-settings-screensaver-label'
-                            onChange={onChange}
-                            value={values.screensaver}
-                        >
-                            { ...screensavers.map(({ id, name }) => (
-                                <MenuItem key={id} value={id}>{name}</MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+            {screensavers.length > 0 &&
+                appHost.supports(AppFeature.Screensaver) && (
+                    <Fragment>
+                        <FormControl fullWidth>
+                            <InputLabel id='display-settings-screensaver-label'>
+                                {globalize.translate('LabelScreensaver')}
+                            </InputLabel>
+                            <Select
+                                inputProps={{
+                                    name: 'screensaver'
+                                }}
+                                labelId='display-settings-screensaver-label'
+                                onChange={onChange}
+                                value={values.screensaver}
+                            >
+                                {...screensavers.map(({ id, name }) => (
+                                    <MenuItem key={id} value={id}>
+                                        {name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
-                    <FormControl fullWidth>
-                        <TextField
-                            aria-describedby='display-settings-screensaver-time-description'
-                            value={values.screensaverTime}
-                            label={globalize.translate('LabelScreensaverTime')}
-                            name='screensaverTime'
-                            onChange={onChange}
-                            slotProps={{
-                                htmlInput: {
-                                    inputMode: 'numeric',
-                                    max: '3600',
-                                    min: '1',
-                                    pattern: '[0-9]',
-                                    required: true,
-                                    step: '1',
-                                    type: 'number'
-                                }
-                            }}
-                        />
-                        <FormHelperText id='display-settings-screensaver-time-description'>
-                            {globalize.translate('LabelScreensaverTimeHelp')}
-                        </FormHelperText>
-                    </FormControl>
+                        <FormControl fullWidth>
+                            <TextField
+                                aria-describedby='display-settings-screensaver-time-description'
+                                value={values.screensaverTime}
+                                label={globalize.translate(
+                                    'LabelScreensaverTime'
+                                )}
+                                name='screensaverTime'
+                                onChange={onChange}
+                                slotProps={{
+                                    htmlInput: {
+                                        inputMode: 'numeric',
+                                        max: '3600',
+                                        min: '1',
+                                        pattern: '[0-9]',
+                                        required: true,
+                                        step: '1',
+                                        type: 'number'
+                                    }
+                                }}
+                            />
+                            <FormHelperText id='display-settings-screensaver-time-description'>
+                                {globalize.translate(
+                                    'LabelScreensaverTimeHelp'
+                                )}
+                            </FormHelperText>
+                        </FormControl>
 
-                    <FormControl fullWidth>
-                        <TextField
-                            aria-describedby='display-settings-backdrop-screensaver-interval-description'
-                            value={values.backdropScreensaverInterval}
-                            label={globalize.translate('LabelBackdropScreensaverInterval')}
-                            name='backdropScreensaverInterval'
-                            onChange={onChange}
-                            slotProps={{
-                                htmlInput: {
-                                    inputMode: 'numeric',
-                                    max: '3600',
-                                    min: '1',
-                                    pattern: '[0-9]',
-                                    required: true,
-                                    step: '1',
-                                    type: 'number'
-                                }
-                            }}
-                        />
-                        <FormHelperText id='display-settings-backdrop-screensaver-interval-description'>
-                            {globalize.translate('LabelBackdropScreensaverIntervalHelp')}
-                        </FormHelperText>
-                    </FormControl>
-                </Fragment>
-            ) }
+                        <FormControl fullWidth>
+                            <TextField
+                                aria-describedby='display-settings-backdrop-screensaver-interval-description'
+                                value={values.backdropScreensaverInterval}
+                                label={globalize.translate(
+                                    'LabelBackdropScreensaverInterval'
+                                )}
+                                name='backdropScreensaverInterval'
+                                onChange={onChange}
+                                slotProps={{
+                                    htmlInput: {
+                                        inputMode: 'numeric',
+                                        max: '3600',
+                                        min: '1',
+                                        pattern: '[0-9]',
+                                        required: true,
+                                        step: '1',
+                                        type: 'number'
+                                    }
+                                }}
+                            />
+                            <FormHelperText id='display-settings-backdrop-screensaver-interval-description'>
+                                {globalize.translate(
+                                    'LabelBackdropScreensaverIntervalHelp'
+                                )}
+                            </FormHelperText>
+                        </FormControl>
+                    </Fragment>
+                )}
 
             <FormControl fullWidth>
                 <TextField

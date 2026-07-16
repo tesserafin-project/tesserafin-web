@@ -1,7 +1,10 @@
 import type { Api } from '@jellyfin/sdk';
 import { describe, expect, it, vi } from 'vitest';
 
-import { fetchPlaybackSessionFixture, fetchPlaybackSessions } from './playbackDiagnosticsApi';
+import {
+    fetchPlaybackSessionFixture,
+    fetchPlaybackSessions
+} from './playbackDiagnosticsApi';
 import type { PlaybackSessionListItem } from './types';
 
 /**
@@ -15,11 +18,12 @@ import type { PlaybackSessionListItem } from './types';
  * `defaults` is read (`axios.defaults.baseURL`) by that same helper before `request` is ever
  * called, so it has to exist on the mock even though its value doesn't matter here.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): Api => ({
-    axiosInstance: { request, defaults: {} },
-    basePath: 'https://example.com',
-    authorizationHeader: 'MediaBrowser Token="test-token"'
-} as unknown as Api);
+const createMockApi = (request: ReturnType<typeof vi.fn>): Api =>
+    ({
+        axiosInstance: { request, defaults: {} },
+        basePath: 'https://example.com',
+        authorizationHeader: 'MediaBrowser Token="test-token"'
+    }) as unknown as Api;
 
 describe('fetchPlaybackSessions()', () => {
     it('requests the diagnostics sessions route with the auth header attached', async () => {
@@ -33,7 +37,9 @@ describe('fetchPlaybackSessions()', () => {
             expect.objectContaining({
                 url: 'https://example.com/System/PlaybackDiagnostics/Sessions',
                 method: 'GET',
-                headers: expect.objectContaining({ Authorization: 'MediaBrowser Token="test-token"' })
+                headers: expect.objectContaining({
+                    Authorization: 'MediaBrowser Token="test-token"'
+                })
             })
         );
         expect(result).toBe(items);
@@ -48,13 +54,15 @@ describe('fetchPlaybackSessions()', () => {
 
         await fetchPlaybackSessions(api, signal);
 
-        expect(request).toHaveBeenCalledWith(expect.objectContaining({ signal }));
+        expect(request).toHaveBeenCalledWith(
+            expect.objectContaining({ signal })
+        );
     });
 });
 
 describe('fetchPlaybackSessionFixture()', () => {
     it('requests the Fixture sub-route as a blob, with the auth header attached', async () => {
-        const blob = new Blob([ '{}' ], { type: 'application/json' });
+        const blob = new Blob(['{}'], { type: 'application/json' });
         const request = vi.fn().mockResolvedValue({ data: blob });
         const api = createMockApi(request);
 
@@ -64,7 +72,9 @@ describe('fetchPlaybackSessionFixture()', () => {
             expect.objectContaining({
                 url: 'https://example.com/System/PlaybackDiagnostics/Sessions/session-1/Fixture',
                 method: 'GET',
-                headers: expect.objectContaining({ Authorization: 'MediaBrowser Token="test-token"' }),
+                headers: expect.objectContaining({
+                    Authorization: 'MediaBrowser Token="test-token"'
+                }),
                 responseType: 'blob'
             })
         );
@@ -72,13 +82,18 @@ describe('fetchPlaybackSessionFixture()', () => {
     });
 
     it('propagates the request rejection (e.g. a 422 for a session with no retained diagnostic)', async () => {
-        const notRetainedError = Object.assign(new Error('Request failed with status code 422'), {
-            isAxiosError: true,
-            response: { status: 422 }
-        });
+        const notRetainedError = Object.assign(
+            new Error('Request failed with status code 422'),
+            {
+                isAxiosError: true,
+                response: { status: 422 }
+            }
+        );
         const request = vi.fn().mockRejectedValue(notRetainedError);
         const api = createMockApi(request);
 
-        await expect(fetchPlaybackSessionFixture(api, 'session-1')).rejects.toBe(notRetainedError);
+        await expect(
+            fetchPlaybackSessionFixture(api, 'session-1')
+        ).rejects.toBe(notRetainedError);
     });
 });

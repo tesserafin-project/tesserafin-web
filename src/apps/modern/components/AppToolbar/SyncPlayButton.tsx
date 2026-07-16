@@ -5,7 +5,10 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import React, { useCallback, useState } from 'react';
 
-import { QUERY_KEY, useSyncPlayGroups } from 'apps/modern/features/syncPlay/hooks/api/useSyncPlayGroups';
+import {
+    QUERY_KEY,
+    useSyncPlayGroups
+} from 'apps/modern/features/syncPlay/hooks/api/useSyncPlayGroups';
 import { useSyncPlay } from 'apps/modern/features/syncPlay/hooks/useSyncPlay';
 import { pluginManager } from 'components/pluginManager';
 import { PluginType } from 'constants/pluginType';
@@ -21,24 +24,29 @@ const SyncPlayButton = () => {
     const { data: groups } = useSyncPlayGroups();
     const isAvailable = Boolean(groups && groups.length > 0);
 
-    const [ syncPlayMenuAnchorEl, setSyncPlayMenuAnchorEl ] = useState<null | HTMLElement>(null);
+    const [syncPlayMenuAnchorEl, setSyncPlayMenuAnchorEl] =
+        useState<null | HTMLElement>(null);
     const isSyncPlayMenuOpen = Boolean(syncPlayMenuAnchorEl);
 
-    const onSyncPlayButtonClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
-        // Refresh SyncPlay groups when opening the menu
-        void queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-        setSyncPlayMenuAnchorEl(event.currentTarget);
-    }, [ setSyncPlayMenuAnchorEl ]);
+    const onSyncPlayButtonClick = useCallback(
+        (event: React.MouseEvent<HTMLElement>) => {
+            // Refresh SyncPlay groups when opening the menu
+            void queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+            setSyncPlayMenuAnchorEl(event.currentTarget);
+        },
+        [setSyncPlayMenuAnchorEl]
+    );
 
     const onSyncPlayMenuClose = useCallback(() => {
         setSyncPlayMenuAnchorEl(null);
-    }, [ setSyncPlayMenuAnchorEl ]);
+    }, [setSyncPlayMenuAnchorEl]);
 
     if (
         // SyncPlay not enabled for user
-        (user?.Policy && user.Policy.SyncPlayAccess === SyncPlayUserAccessType.None)
+        (user?.Policy &&
+            user.Policy.SyncPlayAccess === SyncPlayUserAccessType.None) ||
         // SyncPlay plugin is not loaded
-        || pluginManager.ofType(PluginType.SyncPlay).length === 0
+        pluginManager.ofType(PluginType.SyncPlay).length === 0
     ) {
         return null;
     }

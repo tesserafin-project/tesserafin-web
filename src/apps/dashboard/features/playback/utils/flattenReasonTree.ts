@@ -4,13 +4,14 @@ import type { ReasonNode } from '../api/types';
  * a stable React key and the identity roving tabindex/keyboard navigation operates on. */
 export const ROOT_PATH = '0';
 
-export const getChildPath = (parentPath: string, index: number): string => `${parentPath}.${index}`;
+export const getChildPath = (parentPath: string, index: number): string =>
+    `${parentPath}.${index}`;
 
 export interface FlatReasonTreeItem {
-    path: string
-    node: ReasonNode
-    depth: number
-    parentPath: string | null
+    path: string;
+    node: ReasonNode;
+    depth: number;
+    parentPath: string | null;
 }
 
 /**
@@ -28,7 +29,12 @@ export const flattenVisibleReasonTree = (
 ): FlatReasonTreeItem[] => {
     const items: FlatReasonTreeItem[] = [];
 
-    const visit = (node: ReasonNode, path: string, depth: number, parentPath: string | null) => {
+    const visit = (
+        node: ReasonNode,
+        path: string,
+        depth: number,
+        parentPath: string | null
+    ) => {
         items.push({ path, node, depth, parentPath });
 
         if (node.Children.length > 0 && !isCollapsed(path)) {
@@ -49,9 +55,17 @@ export type ReasonTreeKeyAction =
     | { type: 'focus'; path: string }
     | { type: 'toggle'; path: string; expand: boolean };
 
-const NAVIGATION_KEYS = new Set([ 'ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft', 'Home', 'End' ]);
+const NAVIGATION_KEYS = new Set([
+    'ArrowDown',
+    'ArrowUp',
+    'ArrowRight',
+    'ArrowLeft',
+    'Home',
+    'End'
+]);
 
-export const isReasonTreeNavigationKey = (key: string): boolean => NAVIGATION_KEYS.has(key);
+export const isReasonTreeNavigationKey = (key: string): boolean =>
+    NAVIGATION_KEYS.has(key);
 
 const getArrowRightAction = (
     current: FlatReasonTreeItem,
@@ -66,7 +80,9 @@ const getArrowRightAction = (
         return { type: 'toggle', path: current.path, expand: true };
     }
     const next = flat[currentIndex + 1];
-    return next?.parentPath === current.path ? { type: 'focus', path: next.path } : undefined;
+    return next?.parentPath === current.path
+        ? { type: 'focus', path: next.path }
+        : undefined;
 };
 
 const getArrowLeftAction = (
@@ -76,7 +92,9 @@ const getArrowLeftAction = (
     if (current.node.Children.length > 0 && !isCollapsed(current.path)) {
         return { type: 'toggle', path: current.path, expand: false };
     }
-    return current.parentPath ? { type: 'focus', path: current.parentPath } : undefined;
+    return current.parentPath
+        ? { type: 'focus', path: current.parentPath }
+        : undefined;
 };
 
 /**
@@ -100,17 +118,28 @@ export const getReasonTreeKeyAction = (
 
     switch (key) {
         case 'ArrowDown':
-            return flat[currentIndex + 1] ? { type: 'focus', path: flat[currentIndex + 1].path } : undefined;
+            return flat[currentIndex + 1]
+                ? { type: 'focus', path: flat[currentIndex + 1].path }
+                : undefined;
         case 'ArrowUp':
-            return flat[currentIndex - 1] ? { type: 'focus', path: flat[currentIndex - 1].path } : undefined;
+            return flat[currentIndex - 1]
+                ? { type: 'focus', path: flat[currentIndex - 1].path }
+                : undefined;
         case 'ArrowRight':
-            return getArrowRightAction(current, flat, currentIndex, isCollapsed);
+            return getArrowRightAction(
+                current,
+                flat,
+                currentIndex,
+                isCollapsed
+            );
         case 'ArrowLeft':
             return getArrowLeftAction(current, isCollapsed);
         case 'Home':
             return flat[0] ? { type: 'focus', path: flat[0].path } : undefined;
         case 'End':
-            return flat.length > 0 ? { type: 'focus', path: flat[flat.length - 1].path } : undefined;
+            return flat.length > 0
+                ? { type: 'focus', path: flat[flat.length - 1].path }
+                : undefined;
         default:
             return undefined;
     }

@@ -11,26 +11,26 @@ const fetchResumeItems = async (
     params?: LibraryApiGetResumeItemsRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getLibraryApi(api)
-        .getResumeItems(params, options);
+    const response = await getLibraryApi(api).getResumeItems(params, options);
     return response.data;
 };
 
 export const getResumeItemsQuery = (
     api?: Api,
     params?: LibraryApiGetResumeItemsRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'ResumeItems', params ],
-    queryFn: ({ signal }) => fetchResumeItems(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'ResumeItems', params],
+        queryFn: ({ signal }) => fetchResumeItems(api!, params, { signal }),
+        enabled: !!api
+    });
 
-export const useResumeItems = (
-    params?: LibraryApiGetResumeItemsRequest
-) => {
+export const useResumeItems = (params?: LibraryApiGetResumeItemsRequest) => {
     const { api, user } = useApi();
-    return useQuery(getResumeItemsQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getResumeItemsQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

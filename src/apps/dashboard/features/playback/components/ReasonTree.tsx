@@ -6,7 +6,15 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import React, { type KeyboardEvent, createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import React, {
+    type KeyboardEvent,
+    createContext,
+    useCallback,
+    useContext,
+    useMemo,
+    useRef,
+    useState
+} from 'react';
 
 import globalize from 'lib/globalize';
 import type { ReasonNode, ReasonOutcome, ReasonSubject } from '../api/types';
@@ -47,12 +55,21 @@ const formatSubject = (subject: ReasonSubject): string => {
 };
 
 interface ReasonNodeHeaderProps {
-    node: ReasonNode
+    node: ReasonNode;
 }
 
 const ReasonNodeHeader = ({ node }: ReasonNodeHeaderProps) => (
-    <Stack direction='row' spacing={1} alignItems='center' sx={{ flexWrap: 'wrap' }}>
-        <Chip size='small' color={getOutcomeColor(node.Outcome)} label={globalize.translate(`ReasonOutcome.${node.Outcome}`)} />
+    <Stack
+        direction='row'
+        spacing={1}
+        alignItems='center'
+        sx={{ flexWrap: 'wrap' }}
+    >
+        <Chip
+            size='small'
+            color={getOutcomeColor(node.Outcome)}
+            label={globalize.translate(`ReasonOutcome.${node.Outcome}`)}
+        />
         <Typography component='span'>{formatReasonCode(node.Code)}</Typography>
         <Typography component='span' color='text.secondary' variant='body2'>
             {formatSubject(node.Subject)}
@@ -68,11 +85,11 @@ const ReasonNodeHeader = ({ node }: ReasonNodeHeaderProps) => (
  * `Accordion`'s own uncontrolled state, so the keyboard handler always knows what is visible.
  */
 interface ReasonTreeContextValue {
-    activePath: string
-    isCollapsed: (path: string) => boolean
-    setActivePath: (path: string) => void
-    toggleCollapsed: (path: string, expanded: boolean) => void
-    registerItemRef: (path: string, element: HTMLElement | null) => void
+    activePath: string;
+    isCollapsed: (path: string) => boolean;
+    setActivePath: (path: string) => void;
+    toggleCollapsed: (path: string, expanded: boolean) => void;
+    registerItemRef: (path: string, element: HTMLElement | null) => void;
 }
 
 const ReasonTreeContext = createContext<ReasonTreeContextValue | null>(null);
@@ -86,26 +103,41 @@ const useReasonTreeContext = (): ReasonTreeContextValue => {
 };
 
 interface ReasonTreeNodeProps {
-    node: ReasonNode
-    path: string
-    depth: number
+    node: ReasonNode;
+    path: string;
+    depth: number;
 }
 
 const ReasonTreeNode = ({ node, path, depth }: ReasonTreeNodeProps) => {
-    const { activePath, isCollapsed, setActivePath, toggleCollapsed, registerItemRef } = useReasonTreeContext();
+    const {
+        activePath,
+        isCollapsed,
+        setActivePath,
+        toggleCollapsed,
+        registerItemRef
+    } = useReasonTreeContext();
     const hasChildren = node.Children.length > 0;
     const tabIndex = activePath === path ? 0 : -1;
 
-    const setRef = useCallback((element: HTMLElement | null) => {
-        registerItemRef(path, element);
-    }, [ path, registerItemRef ]);
+    const setRef = useCallback(
+        (element: HTMLElement | null) => {
+            registerItemRef(path, element);
+        },
+        [path, registerItemRef]
+    );
 
     // Clicking/tabbing to a node makes it the tree's roving tabindex focus, same as ArrowUp/Down.
-    const onFocus = useCallback(() => setActivePath(path), [ path, setActivePath ]);
+    const onFocus = useCallback(
+        () => setActivePath(path),
+        [path, setActivePath]
+    );
 
-    const onAccordionChange = useCallback((_event: React.SyntheticEvent, isExpanded: boolean) => {
-        toggleCollapsed(path, isExpanded);
-    }, [ path, toggleCollapsed ]);
+    const onAccordionChange = useCallback(
+        (_event: React.SyntheticEvent, isExpanded: boolean) => {
+            toggleCollapsed(path, isExpanded);
+        },
+        [path, toggleCollapsed]
+    );
 
     if (!hasChildren) {
         return (
@@ -118,12 +150,19 @@ const ReasonTreeNode = ({ node, path, depth }: ReasonTreeNodeProps) => {
                 sx={{
                     paddingY: 1,
                     outlineOffset: 2,
-                    '&:focus-visible': { outline: '2px solid', outlineColor: 'primary.main' }
+                    '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main'
+                    }
                 }}
             >
                 <ReasonNodeHeader node={node} />
                 {node.Detail && (
-                    <Typography variant='body2' color='text.secondary' sx={{ marginTop: 0.5 }}>
+                    <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ marginTop: 0.5 }}
+                    >
                         {node.Detail}
                     </Typography>
                 )}
@@ -151,7 +190,11 @@ const ReasonTreeNode = ({ node, path, depth }: ReasonTreeNodeProps) => {
             </AccordionSummary>
             <AccordionDetails>
                 {node.Detail && (
-                    <Typography variant='body2' color='text.secondary' sx={{ marginBottom: 1 }}>
+                    <Typography
+                        variant='body2'
+                        color='text.secondary'
+                        sx={{ marginBottom: 1 }}
+                    >
                         {node.Detail}
                     </Typography>
                 )}
@@ -171,9 +214,9 @@ const ReasonTreeNode = ({ node, path, depth }: ReasonTreeNodeProps) => {
 };
 
 interface ReasonTreeProps {
-    root: ReasonNode
+    root: ReasonNode;
     /** Accessible name for the `role="tree"` container (e.g. the visible section heading). */
-    label: string
+    label: string;
 }
 
 /**
@@ -189,14 +232,19 @@ interface ReasonTreeProps {
  * `@mui/material/ButtonBase`'s `{...buttonProps, ...other}` merge order).
  */
 const ReasonTree = ({ root, label }: ReasonTreeProps) => {
-    const [ activePath, setActivePath ] = useState(ROOT_PATH);
-    const [ collapsedPaths, setCollapsedPaths ] = useState<Set<string>>(() => new Set());
+    const [activePath, setActivePath] = useState(ROOT_PATH);
+    const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(
+        () => new Set()
+    );
     const itemRefs = useRef(new Map<string, HTMLElement>());
 
-    const isCollapsed = useCallback((path: string) => collapsedPaths.has(path), [ collapsedPaths ]);
+    const isCollapsed = useCallback(
+        (path: string) => collapsedPaths.has(path),
+        [collapsedPaths]
+    );
 
     const toggleCollapsed = useCallback((path: string, expanded: boolean) => {
-        setCollapsedPaths(previous => {
+        setCollapsedPaths((previous) => {
             const next = new Set(previous);
             if (expanded) {
                 next.delete(path);
@@ -207,46 +255,62 @@ const ReasonTree = ({ root, label }: ReasonTreeProps) => {
         });
     }, []);
 
-    const registerItemRef = useCallback((path: string, element: HTMLElement | null) => {
-        if (element) {
-            itemRefs.current.set(path, element);
-        } else {
-            itemRefs.current.delete(path);
-        }
-    }, []);
+    const registerItemRef = useCallback(
+        (path: string, element: HTMLElement | null) => {
+            if (element) {
+                itemRefs.current.set(path, element);
+            } else {
+                itemRefs.current.delete(path);
+            }
+        },
+        []
+    );
 
     const focusPath = useCallback((path: string) => {
         setActivePath(path);
         itemRefs.current.get(path)?.focus();
     }, []);
 
-    const onKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
-        if (!isReasonTreeNavigationKey(event.key)) {
-            return;
-        }
+    const onKeyDown = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            if (!isReasonTreeNavigationKey(event.key)) {
+                return;
+            }
 
-        const flat = flattenVisibleReasonTree(root, isCollapsed);
-        const currentIndex = flat.findIndex(item => item.path === activePath);
-        const action = getReasonTreeKeyAction(event.key, flat, currentIndex, isCollapsed);
-        if (!action) {
-            return;
-        }
+            const flat = flattenVisibleReasonTree(root, isCollapsed);
+            const currentIndex = flat.findIndex(
+                (item) => item.path === activePath
+            );
+            const action = getReasonTreeKeyAction(
+                event.key,
+                flat,
+                currentIndex,
+                isCollapsed
+            );
+            if (!action) {
+                return;
+            }
 
-        event.preventDefault();
-        if (action.type === 'focus') {
-            focusPath(action.path);
-        } else {
-            toggleCollapsed(action.path, action.expand);
-        }
-    }, [ root, activePath, isCollapsed, toggleCollapsed, focusPath ]);
+            event.preventDefault();
+            if (action.type === 'focus') {
+                focusPath(action.path);
+            } else {
+                toggleCollapsed(action.path, action.expand);
+            }
+        },
+        [root, activePath, isCollapsed, toggleCollapsed, focusPath]
+    );
 
-    const contextValue = useMemo<ReasonTreeContextValue>(() => ({
-        activePath,
-        isCollapsed,
-        setActivePath,
-        toggleCollapsed,
-        registerItemRef
-    }), [ activePath, isCollapsed, toggleCollapsed, registerItemRef ]);
+    const contextValue = useMemo<ReasonTreeContextValue>(
+        () => ({
+            activePath,
+            isCollapsed,
+            setActivePath,
+            toggleCollapsed,
+            registerItemRef
+        }),
+        [activePath, isCollapsed, toggleCollapsed, registerItemRef]
+    );
 
     return (
         <ReasonTreeContext.Provider value={contextValue}>

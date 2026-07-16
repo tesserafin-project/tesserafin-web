@@ -41,7 +41,10 @@ function getWebDeviceIcon(browser: string | null | undefined) {
 }
 
 export function getDeviceIcon(info: DeviceInfoDto | SessionInfoDto) {
-    switch ((info as DeviceInfoDto).AppName || (info as SessionInfoDto).Client) {
+    switch (
+        (info as DeviceInfoDto).AppName ||
+        (info as SessionInfoDto).Client
+    ) {
         case 'Samsung Smart TV':
             return BASE_DEVICE_IMAGE_URL + 'samsungtv.svg';
         case 'Xbox One':
@@ -82,20 +85,29 @@ export function getDeviceIcon(info: DeviceInfoDto | SessionInfoDto) {
         case 'Finamp':
             return BASE_DEVICE_IMAGE_URL + 'finamp.svg';
         case 'Jellyfin Web':
-            return getWebDeviceIcon((info as DeviceInfoDto).Name || (info as SessionInfoDto).DeviceName);
+            return getWebDeviceIcon(
+                (info as DeviceInfoDto).Name ||
+                    (info as SessionInfoDto).DeviceName
+            );
         default:
             if (info.Capabilities?.IconUrl) {
                 try {
                     return new URL(info.Capabilities.IconUrl).toString();
                 } catch (err) {
-                    console.error('[getDeviceIcon] device capabilities has invalid IconUrl', info, err);
+                    console.error(
+                        '[getDeviceIcon] device capabilities has invalid IconUrl',
+                        info,
+                        err
+                    );
                 }
             }
             return BASE_DEVICE_IMAGE_URL + 'other.svg';
     }
 }
 
-export function getLibraryIcon(library: CollectionType | string | null | undefined) {
+export function getLibraryIcon(
+    library: CollectionType | string | null | undefined
+) {
     switch (library) {
         case CollectionType.Movies:
             return 'movie';
@@ -127,7 +139,10 @@ export function getLibraryIcon(library: CollectionType | string | null | undefin
     }
 }
 
-export function getItemTypeIcon(itemType: BaseItemKind | string | undefined, defaultIcon?: string) {
+export function getItemTypeIcon(
+    itemType: BaseItemKind | string | undefined,
+    defaultIcon?: string
+) {
     switch (itemType) {
         case BaseItemKind.MusicAlbum:
             return 'album';

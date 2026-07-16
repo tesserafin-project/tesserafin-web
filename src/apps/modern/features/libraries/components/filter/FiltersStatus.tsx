@@ -23,7 +23,9 @@ const mutuallyExclusiveFilters: Partial<Record<ItemFilter, ItemFilter>> = {
 interface FiltersStatusProps {
     viewType: LibraryTab;
     libraryViewSettings: LibraryViewSettings;
-    setLibraryViewSettings: React.Dispatch<React.SetStateAction<LibraryViewSettings>>;
+    setLibraryViewSettings: React.Dispatch<
+        React.SetStateAction<LibraryViewSettings>
+    >;
 }
 
 const FiltersStatus: FC<FiltersStatusProps> = ({
@@ -34,9 +36,11 @@ const FiltersStatus: FC<FiltersStatusProps> = ({
     let statusFiltersOptions = defaultFiltersOptions;
 
     if (viewType === LibraryTab.Books) {
-        statusFiltersOptions = defaultFiltersOptions.map((option) => (
-            option.value === ItemFilter.IsResumable ? { ...option, label: 'ContinueReading' } : option
-        ));
+        statusFiltersOptions = defaultFiltersOptions.map((option) =>
+            option.value === ItemFilter.IsResumable
+                ? { ...option, label: 'ContinueReading' }
+                : option
+        );
     }
 
     const onFiltersStatusChange = useCallback(
@@ -46,9 +50,14 @@ const FiltersStatus: FC<FiltersStatusProps> = ({
             const existingStatus = libraryViewSettings?.Filters?.Status ?? [];
             const exclusiveFilter = mutuallyExclusiveFilters[value];
 
-            const updatedStatus = existingStatus.includes(value) ?
-                existingStatus.filter((filter) => filter !== value) :
-                [...existingStatus.filter((filter) => filter !== exclusiveFilter), value];
+            const updatedStatus = existingStatus.includes(value)
+                ? existingStatus.filter((filter) => filter !== value)
+                : [
+                      ...existingStatus.filter(
+                          (filter) => filter !== exclusiveFilter
+                      ),
+                      value
+                  ];
 
             setLibraryViewSettings((prevState) => ({
                 ...prevState,
@@ -66,15 +75,15 @@ const FiltersStatus: FC<FiltersStatusProps> = ({
         const visibleFiltersStatus: ItemFilter[] = [ItemFilter.IsFavorite];
 
         if (
-            viewType !== LibraryTab.Albums
-            && viewType !== LibraryTab.Artists
-            && viewType !== LibraryTab.AlbumArtists
-            && viewType !== LibraryTab.Songs
-            && viewType !== LibraryTab.Channels
-            && viewType !== LibraryTab.PhotoAlbums
-            && viewType !== LibraryTab.Authors
-            && viewType !== LibraryTab.Photos
-            && viewType !== LibraryTab.Studios
+            viewType !== LibraryTab.Albums &&
+            viewType !== LibraryTab.Artists &&
+            viewType !== LibraryTab.AlbumArtists &&
+            viewType !== LibraryTab.Songs &&
+            viewType !== LibraryTab.Channels &&
+            viewType !== LibraryTab.PhotoAlbums &&
+            viewType !== LibraryTab.Authors &&
+            viewType !== LibraryTab.Photos &&
+            viewType !== LibraryTab.Studios
         ) {
             visibleFiltersStatus.push(ItemFilter.IsUnplayed);
             visibleFiltersStatus.push(ItemFilter.IsPlayed);
@@ -87,14 +96,18 @@ const FiltersStatus: FC<FiltersStatusProps> = ({
     return (
         <FormGroup>
             {statusFiltersOptions
-                .filter((filter) => getVisibleFiltersStatus().includes(filter.value))
+                .filter((filter) =>
+                    getVisibleFiltersStatus().includes(filter.value)
+                )
                 .map((filter) => (
                     <FormControlLabel
                         key={filter.value}
                         control={
                             <Checkbox
                                 checked={
-                                    !!libraryViewSettings?.Filters?.Status?.includes(filter.value)
+                                    !!libraryViewSettings?.Filters?.Status?.includes(
+                                        filter.value
+                                    )
                                 }
                                 onChange={onFiltersStatusChange}
                                 value={filter.value}

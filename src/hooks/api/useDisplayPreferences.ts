@@ -11,26 +11,38 @@ const fetchDisplayPreferences = async (
     params: DisplayPreferenceApiGetDisplayPreferencesRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getDisplayPreferenceApi(api)
-        .getDisplayPreferences(params, options);
+    const response = await getDisplayPreferenceApi(api).getDisplayPreferences(
+        params,
+        options
+    );
     return response.data;
 };
 
 export const getDisplayPreferencesQuery = (
     api?: Api,
     params?: DisplayPreferenceApiGetDisplayPreferencesRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'DisplayPreferences', params?.displayPreferencesId, params?.client ],
-    queryFn: ({ signal }) => fetchDisplayPreferences(api!, params!, { signal }),
-    enabled: !!api && !!params
-});
+) =>
+    queryOptions({
+        queryKey: [
+            'User',
+            params?.userId,
+            'DisplayPreferences',
+            params?.displayPreferencesId,
+            params?.client
+        ],
+        queryFn: ({ signal }) =>
+            fetchDisplayPreferences(api!, params!, { signal }),
+        enabled: !!api && !!params
+    });
 
 export const useDisplayPreferences = (
     params: DisplayPreferenceApiGetDisplayPreferencesRequest
 ) => {
     const { api, user } = useApi();
-    return useQuery(getDisplayPreferencesQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getDisplayPreferencesQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

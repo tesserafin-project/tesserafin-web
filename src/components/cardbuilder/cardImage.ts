@@ -56,8 +56,7 @@ export function buildCardImage(
         blurhashAttrib = `data-blurhash="${blurhash}"`;
     }
 
-    return (
-        `<div class="card ${shape}Card">
+    return `<div class="card ${shape}Card">
     <div class="cardBox">
         <div class="cardScalable">
             <div class="cardPadder cardPadder-${shape}">
@@ -71,6 +70,5 @@ export function buildCardImage(
             ></div>
         </div>
     </div>
-</div>`
-    );
+</div>`;
 }

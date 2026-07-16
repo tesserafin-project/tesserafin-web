@@ -7,8 +7,8 @@ import globalize from 'lib/globalize';
 import { queryClient } from 'utils/query/queryClient';
 
 interface NewCollectionButtonProps {
-    isTextVisible: boolean
-    queryKey: QueryKey
+    isTextVisible: boolean;
+    queryKey: QueryKey;
 }
 
 const NewCollectionButton: FC<NewCollectionButtonProps> = ({
@@ -30,10 +30,13 @@ const NewCollectionButton: FC<NewCollectionButtonProps> = ({
                     //closed collection editor
                 }
             })
-            .catch(err => {
-                console.error('[NewCollection] failed to load collection editor', err);
+            .catch((err) => {
+                console.error(
+                    '[NewCollection] failed to load collection editor',
+                    err
+                );
             });
-    }, [ queryKey ]);
+    }, [queryKey]);
 
     return (
         <Button
@@ -41,11 +44,7 @@ const NewCollectionButton: FC<NewCollectionButtonProps> = ({
             startIcon={isTextVisible ? <Add /> : undefined}
             onClick={showCollectionEditor}
         >
-            {isTextVisible ? (
-                globalize.translate('NewCollection')
-            ) : (
-                <Add />
-            )}
+            {isTextVisible ? globalize.translate('NewCollection') : <Add />}
         </Button>
     );
 };

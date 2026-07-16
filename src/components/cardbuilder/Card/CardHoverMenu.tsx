@@ -17,7 +17,7 @@ import type { ItemDto } from 'types/base/models/item-dto';
 import type { CardOptions } from 'types/cardOptions';
 
 interface CardHoverMenuProps {
-    action: ItemAction,
+    action: ItemAction;
     item: ItemDto;
     cardOptions: CardOptions;
 }
@@ -40,10 +40,7 @@ const CardHoverMenu: FC<CardHoverMenuProps> = ({
     const { IsFavorite, Played } = item.UserData ?? {};
 
     return (
-        <Box
-            className='cardOverlayContainer itemAction'
-            data-action={action}
-        >
+        <Box className='cardOverlayContainer itemAction' data-action={action}>
             <a
                 href={url}
                 aria-label={item.Name || ''}
@@ -59,24 +56,26 @@ const CardHoverMenu: FC<CardHoverMenuProps> = ({
             )}
 
             <ButtonGroup className='cardOverlayButton-br flex'>
-                {itemHelper.canMarkPlayed(item) && cardOptions.enablePlayedButton !== false && (
-                    <PlayedButton
-                        className={btnCssClass}
-                        isPlayed={Played}
-                        itemId={item.Id}
-                        itemType={item.Type}
-                        queryKey={cardOptions.queryKey}
-                    />
-                )}
+                {itemHelper.canMarkPlayed(item) &&
+                    cardOptions.enablePlayedButton !== false && (
+                        <PlayedButton
+                            className={btnCssClass}
+                            isPlayed={Played}
+                            itemId={item.Id}
+                            itemType={item.Type}
+                            queryKey={cardOptions.queryKey}
+                        />
+                    )}
 
-                {itemHelper.canRate(item) && cardOptions.enableRatingButton !== false && (
-                    <FavoriteButton
-                        className={btnCssClass}
-                        isFavorite={IsFavorite}
-                        itemId={item.Id}
-                        queryKey={cardOptions.queryKey}
-                    />
-                )}
+                {itemHelper.canRate(item) &&
+                    cardOptions.enableRatingButton !== false && (
+                        <FavoriteButton
+                            className={btnCssClass}
+                            isFavorite={IsFavorite}
+                            itemId={item.Id}
+                            queryKey={cardOptions.queryKey}
+                        />
+                    )}
 
                 <MoreVertIconButton className={btnCssClass} />
             </ButtonGroup>

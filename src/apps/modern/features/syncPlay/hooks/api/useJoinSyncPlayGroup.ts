@@ -11,9 +11,8 @@ export const useJoinSyncPlayGroup = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (joinGroup: SyncPlayApiSyncPlayJoinGroupRequest) => (
-            getSyncPlayApi(api!).syncPlayJoinGroup(joinGroup)
-        ),
+        mutationFn: (joinGroup: SyncPlayApiSyncPlayJoinGroupRequest) =>
+            getSyncPlayApi(api!).syncPlayJoinGroup(joinGroup),
         onSuccess: () => {
             // Invalidate any queries related to SyncPlay groups
             void queryClient.invalidateQueries({

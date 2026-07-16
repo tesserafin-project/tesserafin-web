@@ -26,14 +26,21 @@ export default class TableOfContents {
         const elem = this.elem;
 
         elem.addEventListener('close', this.onDialogClosed, { once: true });
-        elem.querySelector('.btnBookplayerTocClose').addEventListener('click', this.onDialogClosed, { once: true });
+        elem.querySelector('.btnBookplayerTocClose').addEventListener(
+            'click',
+            this.onDialogClosed,
+            { once: true }
+        );
     }
 
     unbindEvents() {
         const elem = this.elem;
 
         elem.removeEventListener('close', this.onDialogClosed);
-        elem.querySelector('.btnBookplayerTocClose').removeEventListener('click', this.onDialogClosed);
+        elem.querySelector('.btnBookplayerTocClose').removeEventListener(
+            'click',
+            this.onDialogClosed
+        );
     }
 
     onDialogClosed() {
@@ -57,12 +64,16 @@ export default class TableOfContents {
         let itemHtml = '<li>';
 
         // remove parent directory reference from href to fix certain books
-        const link = chapter.href.startsWith('../') ? chapter.href.slice(3) : chapter.href;
+        const link = chapter.href.startsWith('../')
+            ? chapter.href.slice(3)
+            : chapter.href;
         itemHtml += `<a style="color: ${layoutManager.mobile ? this.bookPlayer.THEMES[this.bookPlayer.theme].body.color : 'inherit'}" href="${escapeHTML(book.path.directory + link)}">${escapeHTML(chapter.label)}</a>`;
 
         if (chapter.subitems?.length) {
             const subHtml = chapter.subitems
-                .map((nestedChapter) => this.chapterTocItem(book, nestedChapter))
+                .map((nestedChapter) =>
+                    this.chapterTocItem(book, nestedChapter)
+                )
                 .join('');
 
             itemHtml += `<ul>${subHtml}</ul>`;
@@ -84,7 +95,8 @@ export default class TableOfContents {
         elem.id = 'dialogToc';
 
         let tocHtml = '<div class="topRightActionButtons">';
-        tocHtml += '<button is="paper-icon-button-light" class="autoSize bookplayerButton btnBookplayerTocClose hide-mouse-idle-tv" tabindex="-1"><span class="material-icons bookplayerButtonIcon close" aria-hidden="true"></span></button>';
+        tocHtml +=
+            '<button is="paper-icon-button-light" class="autoSize bookplayerButton btnBookplayerTocClose hide-mouse-idle-tv" tabindex="-1"><span class="material-icons bookplayerButtonIcon close" aria-hidden="true"></span></button>';
         tocHtml += '</div>';
         tocHtml += `<ul style="background-color: ${layoutManager.mobile ? this.bookPlayer.THEMES[this.bookPlayer.theme].body.background : 'inherit'}" class="toc">`;
         rendition.book.navigation.forEach((chapter) => {

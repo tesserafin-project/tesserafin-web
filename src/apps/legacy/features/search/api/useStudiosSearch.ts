@@ -33,19 +33,23 @@ export const useStudiosSearch = (
     const { api, user } = useApi();
     const userId = user?.Id;
 
-    const isStudiosEnabled = (!collectionType || isMovies(collectionType) || isTVShows(collectionType));
+    const isStudiosEnabled =
+        !collectionType ||
+        isMovies(collectionType) ||
+        isTVShows(collectionType);
 
     return useQuery({
         queryKey: ['Search', 'Studios', collectionType, parentId, searchTerm],
-        queryFn: ({ signal }) => fetchStudios(
-            api!,
-            userId!,
-            {
-                parentId,
-                searchTerm
-            },
-            { signal }
-        ),
+        queryFn: ({ signal }) =>
+            fetchStudios(
+                api!,
+                userId!,
+                {
+                    parentId,
+                    searchTerm
+                },
+                { signal }
+            ),
         enabled: !!api && !!userId && isStudiosEnabled
     });
 };

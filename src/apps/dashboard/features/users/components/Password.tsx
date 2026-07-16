@@ -10,9 +10,7 @@ const Password = ({ user }: PasswordProps) => {
     return (
         <div>
             <div className='readOnlyContent'>
-                <UserPasswordForm
-                    user={user}
-                />
+                <UserPasswordForm user={user} />
             </div>
         </div>
     );

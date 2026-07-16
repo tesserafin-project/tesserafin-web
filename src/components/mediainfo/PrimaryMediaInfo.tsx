@@ -104,12 +104,16 @@ const PrimaryMediaInfo: FC<PrimaryMediaInfoProps> = ({
                 />
             )}
 
-            {showEndsAtInfo
-                && MediaType === ItemMediaKind.Video
-                && RunTimeTicks
-                && !StartDate && (
-                <EndsAt className={infoclass} runTimeTicks={RunTimeTicks} positionTicks={PlaybackPositionTicks} />
-            )}
+            {showEndsAtInfo &&
+                MediaType === ItemMediaKind.Video &&
+                RunTimeTicks &&
+                !StartDate && (
+                    <EndsAt
+                        className={infoclass}
+                        runTimeTicks={RunTimeTicks}
+                        positionTicks={PlaybackPositionTicks}
+                    />
+                )}
 
             {getMissingIndicator?.()}
         </Box>

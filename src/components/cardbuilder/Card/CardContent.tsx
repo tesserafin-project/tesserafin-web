@@ -37,9 +37,7 @@ const CardContent: FC<CardContentProps> = ({
     );
 
     return (
-        <div
-            className={cardContentClass}
-        >
+        <div className={cardContentClass}>
             <CardImageContainer
                 item={item}
                 cardOptions={cardOptions}

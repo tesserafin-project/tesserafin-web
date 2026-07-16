@@ -20,9 +20,11 @@ describe('downloadBlob()', () => {
         const revokeObjectURL = vi.fn();
         URL.createObjectURL = createObjectURL;
         URL.revokeObjectURL = revokeObjectURL;
-        const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+        const clickSpy = vi
+            .spyOn(HTMLAnchorElement.prototype, 'click')
+            .mockImplementation(() => undefined);
 
-        const blob = new Blob([ '{}' ], { type: 'application/json' });
+        const blob = new Blob(['{}'], { type: 'application/json' });
         downloadBlob(blob, 'fixture.json');
 
         expect(createObjectURL).toHaveBeenCalledWith(blob);

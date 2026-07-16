@@ -127,5 +127,5 @@ export interface CardOptions {
     primaryImageAspectRatio?: number | null;
     rows?: number | null;
     imageType?: ImageType;
-    queryKey?: QueryKey
+    queryKey?: QueryKey;
 }

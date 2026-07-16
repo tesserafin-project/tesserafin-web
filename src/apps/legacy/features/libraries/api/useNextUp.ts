@@ -11,26 +11,23 @@ const fetchNextUp = async (
     params?: ShowApiGetNextUpRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getShowApi(api)
-        .getNextUp(params, options);
+    const response = await getShowApi(api).getNextUp(params, options);
     return response.data;
 };
 
-export const getNextUpQuery = (
-    api?: Api,
-    params?: ShowApiGetNextUpRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'NextUp', params ],
-    queryFn: ({ signal }) => fetchNextUp(api!, params, { signal }),
-    enabled: !!api
-});
+export const getNextUpQuery = (api?: Api, params?: ShowApiGetNextUpRequest) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'NextUp', params],
+        queryFn: ({ signal }) => fetchNextUp(api!, params, { signal }),
+        enabled: !!api
+    });
 
-export const useNextUp = (
-    params?: ShowApiGetNextUpRequest
-) => {
+export const useNextUp = (params?: ShowApiGetNextUpRequest) => {
     const { api, user } = useApi();
-    return useQuery(getNextUpQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getNextUpQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

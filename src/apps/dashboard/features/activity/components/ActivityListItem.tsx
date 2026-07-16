@@ -19,27 +19,44 @@ type ActivityListItemProps = {
     to: string;
 };
 
-const ActivityListItem = ({ item, displayShortOverview, to }: ActivityListItemProps) => {
+const ActivityListItem = ({
+    item,
+    displayShortOverview,
+    to
+}: ActivityListItemProps) => {
     const relativeDate = useMemo(() => {
         if (item.Date) {
-            return formatRelative(Date.parse(item.Date), Date.now(), { locale: getLocale() });
+            return formatRelative(Date.parse(item.Date), Date.now(), {
+                locale: getLocale()
+            });
         } else {
             return 'N/A';
         }
-    }, [ item ]);
+    }, [item]);
 
     return (
         <ListItem disablePadding>
             <ListItemLink to={to}>
                 <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: getLogLevelColor(item.Severity || LogLevel.Information) + '.main' }}>
+                    <Avatar
+                        sx={{
+                            bgcolor:
+                                getLogLevelColor(
+                                    item.Severity || LogLevel.Information
+                                ) + '.main'
+                        }}
+                    >
                         <Notifications sx={{ color: '#fff' }} />
                     </Avatar>
                 </ListItemAvatar>
 
                 <ListItemText
-                    primary={<Typography sx={{ whiteSpace: 'pre-wrap' }}>{item.Name}</Typography>}
-                    secondary={(
+                    primary={
+                        <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+                            {item.Name}
+                        </Typography>
+                    }
+                    secondary={
                         <Stack>
                             <Typography
                                 sx={{
@@ -64,7 +81,7 @@ const ActivityListItem = ({ item, displayShortOverview, to }: ActivityListItemPr
                                 </Typography>
                             )}
                         </Stack>
-                    )}
+                    }
                     disableTypography
                 />
             </ListItemLink>

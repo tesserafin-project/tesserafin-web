@@ -13,13 +13,13 @@ import { LibraryTab } from 'types/libraryTab';
 import type { ItemDto } from 'types/base/models/item-dto';
 
 interface ShuffleButtonProps {
-    item: ItemDto | undefined
-    items: ItemDto[]
-    viewType: LibraryTab
-    collectionType: CollectionType | undefined
-    hasFilters: boolean
-    isTextVisible: boolean
-    libraryViewSettings: LibraryViewSettings
+    item: ItemDto | undefined;
+    items: ItemDto[];
+    viewType: LibraryTab;
+    collectionType: CollectionType | undefined;
+    hasFilters: boolean;
+    isTextVisible: boolean;
+    libraryViewSettings: LibraryViewSettings;
 }
 
 const ShuffleButton: FC<ShuffleButtonProps> = ({
@@ -39,22 +39,38 @@ const ShuffleButton: FC<ShuffleButtonProps> = ({
         // For the Homevideos library Videos tab, pass items directly to playback since
         // the playback manager hardcodes MediaTypes: 'Photo' for the Homevideos library
         // which would exclude videos from the queue
-        if (item && !hasFilters && !(viewType === LibraryTab.Videos && collectionType === CollectionType.Homevideos)) {
+        if (
+            item &&
+            !hasFilters &&
+            !(
+                viewType === LibraryTab.Videos &&
+                collectionType === CollectionType.Homevideos
+            )
+        ) {
             playbackManager.shuffle(item);
         } else {
-            playbackManager.play({
-                items,
-                autoplay: true,
-                queryOptions: {
-                    ParentId: item?.Id ?? undefined,
-                    ...getFiltersQuery(viewType, libraryViewSettings),
-                    SortBy: [ItemSortBy.Random]
-                }
-            }).catch(err => {
-                console.error('[ShuffleButton] failed to play', err);
-            });
+            playbackManager
+                .play({
+                    items,
+                    autoplay: true,
+                    queryOptions: {
+                        ParentId: item?.Id ?? undefined,
+                        ...getFiltersQuery(viewType, libraryViewSettings),
+                        SortBy: [ItemSortBy.Random]
+                    }
+                })
+                .catch((err) => {
+                    console.error('[ShuffleButton] failed to play', err);
+                });
         }
-    }, [collectionType, hasFilters, item, items, libraryViewSettings, viewType]);
+    }, [
+        collectionType,
+        hasFilters,
+        item,
+        items,
+        libraryViewSettings,
+        viewType
+    ]);
 
     return (
         <Button
@@ -63,11 +79,7 @@ const ShuffleButton: FC<ShuffleButtonProps> = ({
             onClick={shuffle}
             disabled={isPending || totalRecordCount <= 1}
         >
-            {isTextVisible ? (
-                globalize.translate('Shuffle')
-            ) : (
-                <Shuffle />
-            )}
+            {isTextVisible ? globalize.translate('Shuffle') : <Shuffle />}
         </Button>
     );
 };

@@ -1,6 +1,12 @@
 import AppBar, { type AppBarProps } from '@mui/material/AppBar';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
-import React, { useLayoutEffect, useRef, useState, type FC, type PropsWithChildren } from 'react';
+import React, {
+    useLayoutEffect,
+    useRef,
+    useState,
+    type FC,
+    type PropsWithChildren
+} from 'react';
 
 /** The default height of an AppBar. */
 const DEFAULT_APP_BAR_HEIGHT = 64;
@@ -24,7 +30,9 @@ const OffsetAppBar: FC<PropsWithChildren<OffsetAppBarProps>> = ({
     ...props
 }) => {
     const appBarRef = useRef<HTMLHtmlElement>(null);
-    const [height, setHeight] = useState(dense ? DENSE_APP_BAR_HEIGHT : DEFAULT_APP_BAR_HEIGHT);
+    const [height, setHeight] = useState(
+        dense ? DENSE_APP_BAR_HEIGHT : DEFAULT_APP_BAR_HEIGHT
+    );
 
     const scrollTrigger = useScrollTrigger({
         disableHysteresis: true,
@@ -43,7 +51,7 @@ const OffsetAppBar: FC<PropsWithChildren<OffsetAppBarProps>> = ({
         updateHeight();
 
         // Use ResizeObserver for dynamic changes
-        const observer = new ResizeObserver(entries => {
+        const observer = new ResizeObserver((entries) => {
             // Use requestAnimationFrame to batch DOM writes
             window.requestAnimationFrame(() => {
                 for (const entry of entries) {

@@ -14,7 +14,7 @@ export const enum LayoutMode {
     MobileLegacy = 'mobile-legacy',
     /** The TV layout. */
     Tv = 'tv'
-};
+}
 
 /** The layout modes that use the legacy app. */
 export const LegacyLayoutModes = new Set([

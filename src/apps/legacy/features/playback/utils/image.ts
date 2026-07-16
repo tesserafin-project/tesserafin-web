@@ -5,10 +5,10 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import type { ItemDto } from 'types/base/models/item-dto';
 
 interface ImageOptions {
-    height?: number
-    maxHeight?: number
-    tag?: string
-    type?: ImageType
+    height?: number;
+    maxHeight?: number;
+    tag?: string;
+    type?: ImageType;
 }
 
 function getSeriesImageUrl(item: ItemDto, options: ImageOptions = {}) {
@@ -16,11 +16,18 @@ function getSeriesImageUrl(item: ItemDto, options: ImageOptions = {}) {
 
     const apiClient = ServerConnections.getApiClient(item.ServerId);
     if (!apiClient) {
-        console.error('[getSeriesImageUrl] No ApiClient instance available for serverId', item.ServerId);
+        console.error(
+            '[getSeriesImageUrl] No ApiClient instance available for serverId',
+            item.ServerId
+        );
         return null;
     }
 
-    if (item.SeriesId && options.type === ImageType.Primary && item.SeriesPrimaryImageTag) {
+    if (
+        item.SeriesId &&
+        options.type === ImageType.Primary &&
+        item.SeriesPrimaryImageTag
+    ) {
         options.tag = item.SeriesPrimaryImageTag;
 
         return apiClient.getScaledImageUrl(item.SeriesId, options);
@@ -48,13 +55,17 @@ export function getImageUrl(item: ItemDto, options: ImageOptions = {}) {
 
     const apiClient = ServerConnections.getApiClient(item.ServerId);
     if (!apiClient) {
-        console.error('[getImageUrl] No ApiClient instance available for serverId', item.ServerId);
+        console.error(
+            '[getImageUrl] No ApiClient instance available for serverId',
+            item.ServerId
+        );
         return null;
     }
 
     options.type = options.type || ImageType.Primary;
 
-    if (item.Type === BaseItemKind.Episode) return getSeriesImageUrl(item, options);
+    if (item.Type === BaseItemKind.Episode)
+        return getSeriesImageUrl(item, options);
 
     const itemId = item.PrimaryImageItemId || item.Id;
 

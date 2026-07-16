@@ -20,14 +20,11 @@ const fetchDevices = async (
     return response.data;
 };
 
-export const useDevices = (
-    requestParams: DeviceApiGetDevicesRequest
-) => {
+export const useDevices = (requestParams: DeviceApiGetDevicesRequest) => {
     const { api } = useApi();
     return useQuery({
         queryKey: [QUERY_KEY, requestParams],
-        queryFn: ({ signal }) =>
-            fetchDevices(api!, requestParams, { signal }),
+        queryFn: ({ signal }) => fetchDevices(api!, requestParams, { signal }),
         enabled: !!api,
         staleTime: 0 // ensure we load the latest device data
     });

@@ -41,9 +41,7 @@
                     "MaxBitrate": 100000000
                 }
             ],
-            "AudioCodecs": [
-                { "Codec": "aac", "MaxChannels": 8 }
-            ],
+            "AudioCodecs": [{ "Codec": "aac", "MaxChannels": 8 }],
             "SubtitleDelivery": [],
             "SupportsHls": true,
             "SupportsDash": false

@@ -21,26 +21,30 @@ interface TunerDeviceCardProps {
 const TunerDeviceCard = ({ tunerHost }: TunerDeviceCardProps) => {
     const navigate = useNavigate();
     const actionRef = useRef<HTMLButtonElement | null>(null);
-    const [ anchorEl, setAnchorEl ] = useState<HTMLElement | null>(null);
-    const [ isMenuOpen, setIsMenuOpen ] = useState(false);
-    const [ isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen ] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isConfirmDeleteDialogOpen, setIsConfirmDeleteDialogOpen] =
+        useState(false);
     const deleteTuner = useDeleteTuner();
 
     const navigateToEditPage = useCallback(() => {
         navigate(`/dashboard/livetv/tuner?id=${tunerHost.Id}`);
-    }, [ navigate, tunerHost ]);
+    }, [navigate, tunerHost]);
 
     const onDelete = useCallback(() => {
         if (tunerHost.Id) {
-            deleteTuner.mutate({
-                id: tunerHost.Id
-            }, {
-                onSettled: () => {
-                    setIsConfirmDeleteDialogOpen(false);
+            deleteTuner.mutate(
+                {
+                    id: tunerHost.Id
+                },
+                {
+                    onSettled: () => {
+                        setIsConfirmDeleteDialogOpen(false);
+                    }
                 }
-            });
+            );
         }
-    }, [ deleteTuner, tunerHost ]);
+    }, [deleteTuner, tunerHost]);
 
     const showDeleteDialog = useCallback(() => {
         setAnchorEl(null);
@@ -75,7 +79,9 @@ const TunerDeviceCard = ({ tunerHost }: TunerDeviceCardProps) => {
             />
 
             <BaseCard
-                title={tunerHost.FriendlyName || getTunerName(tunerHost.Type) || ''}
+                title={
+                    tunerHost.FriendlyName || getTunerName(tunerHost.Type) || ''
+                }
                 text={tunerHost.Url || ''}
                 icon={<DvrIcon sx={{ fontSize: 70 }} />}
                 action={true}
@@ -84,11 +90,7 @@ const TunerDeviceCard = ({ tunerHost }: TunerDeviceCardProps) => {
                 onClick={navigateToEditPage}
             />
 
-            <Menu
-                anchorEl={anchorEl}
-                open={isMenuOpen}
-                onClose={onMenuClose}
-            >
+            <Menu anchorEl={anchorEl} open={isMenuOpen} onClose={onMenuClose}>
                 <MenuItem onClick={navigateToEditPage}>
                     <ListItemIcon>
                         <EditIcon />

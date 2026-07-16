@@ -35,7 +35,11 @@ const ItemDetailsMetadataList: FC<ItemDetailsMetadataListProps> = ({
                 {items.map((metadataItem, index) => (
                     <Box key={metadataItem.Id} component='span'>
                         {index > 0 ? ', ' : ''}
-                        <LinkButton href={getLink(type, item, context, metadataItem)} className='button-link' style={{ color: 'inherit' }}>
+                        <LinkButton
+                            href={getLink(type, item, context, metadataItem)}
+                            className='button-link'
+                            style={{ color: 'inherit' }}
+                        >
                             {metadataItem.Name}
                         </LinkButton>
                     </Box>
@@ -45,14 +49,19 @@ const ItemDetailsMetadataList: FC<ItemDetailsMetadataListProps> = ({
     );
 };
 
-function getLabel(type: BaseItemKind | PersonKind, itemCount: number): string | null {
+function getLabel(
+    type: BaseItemKind | PersonKind,
+    itemCount: number
+): string | null {
     switch (type) {
         case PersonKind.Author:
             return globalize.translate(itemCount > 1 ? 'Authors' : 'Author');
         case PersonKind.Creator:
             return globalize.translate(itemCount > 1 ? 'Creators' : 'Creator');
         case PersonKind.Director:
-            return globalize.translate(itemCount > 1 ? 'Directors' : 'Director');
+            return globalize.translate(
+                itemCount > 1 ? 'Directors' : 'Director'
+            );
         case PersonKind.Writer:
             return globalize.translate(itemCount > 1 ? 'Writers' : 'Writer');
         case BaseItemKind.Studio:
@@ -64,7 +73,12 @@ function getLabel(type: BaseItemKind | PersonKind, itemCount: number): string | 
     return null;
 }
 
-function getLink(type: BaseItemKind | PersonKind, item: BaseItemDto, context: string, metadataItem: NameGuidPair): string {
+function getLink(
+    type: BaseItemKind | PersonKind,
+    item: BaseItemDto,
+    context: string,
+    metadataItem: NameGuidPair
+): string {
     const stubItem = {
         Id: metadataItem.Id,
         Name: metadataItem.Name,
@@ -75,7 +89,10 @@ function getLink(type: BaseItemKind | PersonKind, item: BaseItemDto, context: st
     return appRouter.getRouteUrl(stubItem, { context });
 }
 
-function getRouteType(type: BaseItemKind | PersonKind, context: string): string | null {
+function getRouteType(
+    type: BaseItemKind | PersonKind,
+    context: string
+): string | null {
     switch (type) {
         case PersonKind.Author:
         case PersonKind.Creator:
@@ -91,15 +108,25 @@ function getRouteType(type: BaseItemKind | PersonKind, context: string): string 
     return null;
 }
 
-function getMetadataItems(type: BaseItemKind | PersonKind, item: BaseItemDto): NameGuidPair[] | null {
+function getMetadataItems(
+    type: BaseItemKind | PersonKind,
+    item: BaseItemDto
+): NameGuidPair[] | null {
     switch (type) {
         case PersonKind.Author:
         case PersonKind.Creator:
         case PersonKind.Director:
         case PersonKind.Writer:
-            return item.People?.filter(person => person.Type === type).map(person => ({ Id: person.Id, Name: person.Name })) ?? null;
+            return (
+                item.People?.filter((person) => person.Type === type).map(
+                    (person) => ({ Id: person.Id, Name: person.Name })
+                ) ?? null
+            );
         case BaseItemKind.Studio:
-            if (item.Type === BaseItemKind.BoxSet || item.Type === BaseItemKind.Playlist) {
+            if (
+                item.Type === BaseItemKind.BoxSet ||
+                item.Type === BaseItemKind.Playlist
+            ) {
                 return null;
             }
             return item.Studios ?? null;

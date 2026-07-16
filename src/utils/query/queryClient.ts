@@ -1,5 +1,8 @@
 import { QueryCache, QueryClient } from '@tanstack/react-query';
-import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
+import type {
+    PersistedClient,
+    Persister
+} from '@tanstack/react-query-persist-client';
 import { get, set, del } from 'idb-keyval';
 
 // TODO: Move this file to lib/query
@@ -24,7 +27,10 @@ const queryCache = new QueryCache({
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const requestError = error as any;
-        const status = requestError?.response?.status || requestError?.status || requestError?.statusCode;
+        const status =
+            requestError?.response?.status ||
+            requestError?.status ||
+            requestError?.statusCode;
         if (status === HTTP_UNAUTHORIZED) {
             try {
                 // If a query fails due to authorization, cancel it and remove it from the cache to prevent showing
@@ -32,7 +38,10 @@ const queryCache = new QueryCache({
                 void queryClient.cancelQueries({ queryKey });
                 queryClient.setQueryData(queryKey, null);
             } catch (e) {
-                console.warn('[QueryCache] failed to remove unauthorized data', e);
+                console.warn(
+                    '[QueryCache] failed to remove unauthorized data',
+                    e
+                );
             }
         }
     }
@@ -51,7 +60,10 @@ queryClient = new QueryClient({
             retry: (failureCount, error) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const requestError = error as any;
-                const status = requestError?.response?.status || requestError?.status || requestError?.statusCode;
+                const status =
+                    requestError?.response?.status ||
+                    requestError?.status ||
+                    requestError?.statusCode;
                 // Don't retry if unauthorized
                 if (status === HTTP_UNAUTHORIZED) return false;
                 return failureCount < MAX_RETRIES;
@@ -61,16 +73,17 @@ queryClient = new QueryClient({
 });
 
 /** Create an IndexedDB persister for react-query-persist-client. Uses idb-keyval for simplicity. */
-const createIDBPersister = (idbValidKey: IDBValidKey = 'query-cache') => ({
-    persistClient: async (client: PersistedClient) => {
-        await set(idbValidKey, client);
-    },
-    restoreClient: () => {
-        return get<PersistedClient>(idbValidKey);
-    },
-    removeClient: async () => {
-        await del(idbValidKey);
-    }
-} satisfies Persister);
+const createIDBPersister = (idbValidKey: IDBValidKey = 'query-cache') =>
+    ({
+        persistClient: async (client: PersistedClient) => {
+            await set(idbValidKey, client);
+        },
+        restoreClient: () => {
+            return get<PersistedClient>(idbValidKey);
+        },
+        removeClient: async () => {
+            await del(idbValidKey);
+        }
+    }) satisfies Persister;
 
 export const persister = createIDBPersister('jellyfin-query-cache');

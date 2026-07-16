@@ -12,11 +12,7 @@ import type { ListOptions } from 'types/listOptions';
 import useIndicator from '../../indicators/useIndicator';
 import layoutManager from '../../layoutManager';
 import { getDefaultBackgroundClass } from '../../cardbuilder/utils/builder';
-import {
-    canResume,
-    getChannelImageUrl,
-    getImageUrl
-} from './listHelper';
+import { canResume, getChannelImageUrl, getImageUrl } from './listHelper';
 
 interface ListImageContainerProps {
     item: ItemDto;
@@ -36,10 +32,12 @@ const ListImageContainer: FC<ListImageContainerProps> = ({
     downloadWidth
 }) => {
     const { api } = useApi();
-    const { getMediaSourceIndicator, getProgressBar, getPlayedIndicator } = useIndicator(item);
-    const imgInfo = listOptions.imageSource === 'channel' ?
-        getChannelImageUrl(item, api, downloadWidth) :
-        getImageUrl(item, api, downloadWidth);
+    const { getMediaSourceIndicator, getProgressBar, getPlayedIndicator } =
+        useIndicator(item);
+    const imgInfo =
+        listOptions.imageSource === 'channel'
+            ? getChannelImageUrl(item, api, downloadWidth)
+            : getImageUrl(item, api, downloadWidth);
 
     const defaultCardImageIcon = listOptions.defaultCardImageIcon;
     const disableIndicators = listOptions.disableIndicators;
@@ -68,12 +66,13 @@ const ListImageContainer: FC<ListImageContainerProps> = ({
     const playbackPositionTicks = item?.UserData?.PlaybackPositionTicks;
 
     return (
-        <Box
-            data-action={imageAction}
-            className={imageClass}
-        >
-
-            <Media item={item} imgUrl={imgUrl} blurhash={blurhash ?? undefined} defaultCardImageIcon={defaultCardImageIcon} />
+        <Box data-action={imageAction} className={imageClass}>
+            <Media
+                item={item}
+                imgUrl={imgUrl}
+                blurhash={blurhash ?? undefined}
+                defaultCardImageIcon={defaultCardImageIcon}
+            />
 
             {disableIndicators !== true && mediaSourceIndicator}
 
@@ -87,12 +86,14 @@ const ListImageContainer: FC<ListImageContainerProps> = ({
                 <PlayArrowIconButton
                     className={btnCssClass}
                     action={
-                        canResume(playbackPositionTicks) ? ItemAction.Resume : ItemAction.Play
+                        canResume(playbackPositionTicks)
+                            ? ItemAction.Resume
+                            : ItemAction.Play
                     }
                     title={
-                        canResume(playbackPositionTicks) ?
-                            'ButtonResume' :
-                            'Play'
+                        canResume(playbackPositionTicks)
+                            ? 'ButtonResume'
+                            : 'Play'
                     }
                 />
             )}

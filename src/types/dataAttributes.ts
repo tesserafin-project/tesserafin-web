@@ -3,29 +3,33 @@ import type { UserItemDataDto } from '@jellyfin/sdk/lib/generated-client/models/
 
 import { ItemAction } from 'constants/itemAction';
 
-import type { NullableBoolean, NullableNumber, NullableString } from './base/common/shared/types';
+import type {
+    NullableBoolean,
+    NullableNumber,
+    NullableString
+} from './base/common/shared/types';
 
 export type AttributesOpts = {
-    context?: CollectionType | string,
-    parentId?: NullableString,
-    collectionId?: NullableString,
-    playlistId?: NullableString,
-    prefix?: NullableString,
-    action?: ItemAction | null,
-    itemServerId?: NullableString,
-    itemId?: NullableString,
-    itemTimerId?: NullableString,
-    itemSeriesTimerId?: NullableString,
-    itemChannelId?: NullableString,
-    itemPlaylistItemId?: NullableString,
-    itemType?: NullableString,
-    itemMediaType?: NullableString,
-    itemCollectionType?: NullableString,
-    itemIsFolder?: NullableBoolean,
-    itemPath?: NullableString,
-    itemStartDate?: NullableString,
-    itemEndDate?: NullableString,
-    itemUserData?: UserItemDataDto
+    context?: CollectionType | string;
+    parentId?: NullableString;
+    collectionId?: NullableString;
+    playlistId?: NullableString;
+    prefix?: NullableString;
+    action?: ItemAction | null;
+    itemServerId?: NullableString;
+    itemId?: NullableString;
+    itemTimerId?: NullableString;
+    itemSeriesTimerId?: NullableString;
+    itemChannelId?: NullableString;
+    itemPlaylistItemId?: NullableString;
+    itemType?: NullableString;
+    itemMediaType?: NullableString;
+    itemCollectionType?: NullableString;
+    itemIsFolder?: NullableBoolean;
+    itemPath?: NullableString;
+    itemStartDate?: NullableString;
+    itemEndDate?: NullableString;
+    itemUserData?: UserItemDataDto;
 };
 
 export type DataAttributes = {

@@ -11,7 +11,7 @@ interface FavoriteButtonProps {
     className?: string;
     isFavorite: boolean | undefined;
     itemId: string | null | undefined;
-    queryKey?: QueryKey
+    queryKey?: QueryKey;
 }
 
 const FavoriteButton: FC<FavoriteButtonProps> = ({
@@ -29,17 +29,21 @@ const FavoriteButton: FC<FavoriteButtonProps> = ({
                 throw new Error('Item has no Id');
             }
 
-            await toggleFavoriteMutation({
-                itemId,
-                isFavorite
-            },
-            { onSuccess: async() => {
-                await queryClient.invalidateQueries({
-                    queryKey,
-                    type: 'all',
-                    refetchType: 'active'
-                });
-            } });
+            await toggleFavoriteMutation(
+                {
+                    itemId,
+                    isFavorite
+                },
+                {
+                    onSuccess: async () => {
+                        await queryClient.invalidateQueries({
+                            queryKey,
+                            type: 'all',
+                            refetchType: 'active'
+                        });
+                    }
+                }
+            );
         } catch (e) {
             console.error(e);
         }
@@ -49,13 +53,15 @@ const FavoriteButton: FC<FavoriteButtonProps> = ({
         <IconButton
             data-action={ItemAction.None}
             className={className}
-            title={isFavorite ? globalize.translate('Favorite') : globalize.translate('AddToFavorites')}
+            title={
+                isFavorite
+                    ? globalize.translate('Favorite')
+                    : globalize.translate('AddToFavorites')
+            }
             size='small'
             onClick={onClick}
         >
-            <FavoriteIcon
-                color={isFavorite ? 'error' : undefined}
-            />
+            <FavoriteIcon color={isFavorite ? 'error' : undefined} />
         </IconButton>
     );
 };

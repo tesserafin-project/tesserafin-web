@@ -17,7 +17,12 @@ const CLIENT_ID = 'emby';
 function onSaveTimeout() {
     const self = this;
     self.saveTimeout = null;
-    self.currentApiClient.updateDisplayPreferences(DISPLAY_PREFERENCES_ID, self.displayPrefs, self.currentUserId, CLIENT_ID);
+    self.currentApiClient.updateDisplayPreferences(
+        DISPLAY_PREFERENCES_ID,
+        self.displayPrefs,
+        self.currentUserId,
+        CLIENT_ID
+    );
 }
 
 function saveServerPreferences(instance) {
@@ -32,16 +37,31 @@ const allowedSortSettings = ['SortBy', 'SortOrder'];
 
 const filterSettingsPostfix = '-filter';
 const allowedFilterSettings = [
-    'Filters', 'HasSubtitles', 'HasTrailer', 'HasSpecialFeature',
-    'HasThemeSong', 'HasThemeVideo', 'Genres', 'OfficialRatings',
-    'Tags', 'VideoTypes', 'IsSD', 'IsHD', 'Is4K', 'Is3D',
-    'IsFavorite', 'IsMissing', 'IsUnaired', 'ParentIndexNumber',
-    'SeriesStatus', 'Years'
+    'Filters',
+    'HasSubtitles',
+    'HasTrailer',
+    'HasSpecialFeature',
+    'HasThemeSong',
+    'HasThemeVideo',
+    'Genres',
+    'OfficialRatings',
+    'Tags',
+    'VideoTypes',
+    'IsSD',
+    'IsHD',
+    'Is4K',
+    'Is3D',
+    'IsFavorite',
+    'IsMissing',
+    'IsUnaired',
+    'ParentIndexNumber',
+    'SeriesStatus',
+    'Years'
 ];
 
 function filterQuerySettings(query, allowedItems) {
     return Object.keys(query)
-        .filter(field => allowedItems.includes(field))
+        .filter((field) => allowedItems.includes(field))
         .reduce((acc, field) => {
             acc[field] = query[field];
             return acc;
@@ -80,15 +100,14 @@ export class UserSettings {
 
         const api = ServerConnections.getApi(apiClient.serverId());
         return queryClient
-            .fetchQuery(getDisplayPreferencesQuery(
-                api,
-                {
+            .fetchQuery(
+                getDisplayPreferencesQuery(api, {
                     displayPreferencesId: DISPLAY_PREFERENCES_ID,
                     client: CLIENT_ID,
                     userId
-                }
-            ))
-            .then(result => {
+                })
+            )
+            .then((result) => {
                 result.CustomPrefs = result.CustomPrefs || {};
                 self.displayPrefs = result;
             });
@@ -107,7 +126,8 @@ export class UserSettings {
         const result = appSettings.set(name, value, userId);
 
         if (enableOnServer !== false && this.displayPrefs) {
-            this.displayPrefs.CustomPrefs[name] = value == null ? value : value.toString();
+            this.displayPrefs.CustomPrefs[name] =
+                value == null ? value : value.toString();
             saveServerPreferences(this);
         }
 
@@ -145,7 +165,7 @@ export class UserSettings {
                 .updateUserConfiguration(this.currentUserId, config)
                 .then(() => {
                     queryClient.invalidateQueries({
-                        queryKey: [ QUERY_KEY, this.currentUserId ]
+                        queryKey: [QUERY_KEY, this.currentUserId]
                     });
                 });
         }
@@ -153,7 +173,7 @@ export class UserSettings {
         const api = ServerConnections.getApi(apiClient.serverId());
         return queryClient
             .fetchQuery(getUserQuery(api, { userId: this.currentUserId }))
-            .then(user => user.Configuration);
+            .then((user) => user.Configuration);
     }
 
     /**
@@ -180,7 +200,13 @@ export class UserSettings {
         }
 
         // Enable it by default only for the platforms that play fMP4 for sure.
-        return toBoolean(this.get('preferFmp4HlsContainer', false), browser.safari || browser.firefox || browser.chrome || browser.edgeChromium);
+        return toBoolean(
+            this.get('preferFmp4HlsContainer', false),
+            browser.safari ||
+                browser.firefox ||
+                browser.chrome ||
+                browser.edgeChromium
+        );
     }
 
     /**
@@ -359,10 +385,17 @@ export class UserSettings {
      */
     useEpisodeImagesInNextUpAndResume(val) {
         if (val !== undefined) {
-            return this.set('useEpisodeImagesInNextUpAndResume', val.toString(), true);
+            return this.set(
+                'useEpisodeImagesInNextUpAndResume',
+                val.toString(),
+                true
+            );
         }
 
-        return toBoolean(this.get('useEpisodeImagesInNextUpAndResume', true), false);
+        return toBoolean(
+            this.get('useEpisodeImagesInNextUpAndResume', true),
+            false
+        );
     }
 
     /**
@@ -476,10 +509,16 @@ export class UserSettings {
      */
     backdropScreensaverInterval(val) {
         if (val !== undefined) {
-            return this.set('backdropScreensaverInterval', val.toString(), false);
+            return this.set(
+                'backdropScreensaverInterval',
+                val.toString(),
+                false
+            );
         }
 
-        return parseInt(this.get('backdropScreensaverInterval', false), 10) || 5;
+        return (
+            parseInt(this.get('backdropScreensaverInterval', false), 10) || 5
+        );
     }
 
     /**
@@ -518,7 +557,10 @@ export class UserSettings {
             return this.set('libraryPageSize', val.toString(), false);
         }
 
-        const libraryPageSize = parseInt(this.get('libraryPageSize', false), 10);
+        const libraryPageSize = parseInt(
+            this.get('libraryPageSize', false),
+            10
+        );
         if (libraryPageSize === 0) {
             // Explicitly return 0 to avoid returning 100 because 0 is falsy.
             return 0;
@@ -537,7 +579,10 @@ export class UserSettings {
             return this.set('maxDaysForNextUp', val.toString(), false);
         }
 
-        const maxDaysForNextUp = parseInt(this.get('maxDaysForNextUp', false), 10);
+        const maxDaysForNextUp = parseInt(
+            this.get('maxDaysForNextUp', false),
+            10
+        );
         if (maxDaysForNextUp === 0) {
             // Explicitly return 0 to avoid returning 100 because 0 is falsy.
             return 0;
@@ -582,14 +627,17 @@ export class UserSettings {
             return this.set('stillWatchingPrompt', val, false);
         }
 
-        return this.get('stillWatchingPrompt', false) || StillWatchingOptions.Default;
+        return (
+            this.get('stillWatchingPrompt', false) ||
+            StillWatchingOptions.Default
+        );
     }
 
     /**
-    * @typedef {Object} Query
-    * @property {number} StartIndex - query StartIndex.
-    * @property {number} Limit - query Limit.
-    */
+     * @typedef {Object} Query
+     * @property {number} StartIndex - query StartIndex.
+     * @property {number} Limit - query Limit.
+     */
 
     /**
      * Load query settings.
@@ -602,10 +650,16 @@ export class UserSettings {
         let filterSettings = this.get(key + filterSettingsPostfix, false);
 
         if (sortSettings) {
-            sortSettings = filterQuerySettings(JSON.parse(sortSettings), allowedSortSettings);
+            sortSettings = filterQuerySettings(
+                JSON.parse(sortSettings),
+                allowedSortSettings
+            );
         }
         if (filterSettings) {
-            filterSettings = filterQuerySettings(JSON.parse(filterSettings), allowedFilterSettings);
+            filterSettings = filterQuerySettings(
+                JSON.parse(filterSettings),
+                allowedFilterSettings
+            );
         }
 
         return Object.assign(query, sortSettings, filterSettings);
@@ -618,10 +672,17 @@ export class UserSettings {
      */
     saveQuerySettings(key, query) {
         const sortSettings = filterQuerySettings(query, allowedSortSettings);
-        const filterSettings = filterQuerySettings(query, allowedFilterSettings);
+        const filterSettings = filterQuerySettings(
+            query,
+            allowedFilterSettings
+        );
 
         this.set(key, JSON.stringify(sortSettings));
-        this.set(key + filterSettingsPostfix, JSON.stringify(filterSettings), false);
+        this.set(
+            key + filterSettingsPostfix,
+            JSON.stringify(filterSettings),
+            false
+        );
     }
 
     /**
@@ -649,7 +710,10 @@ export class UserSettings {
      */
     getSubtitleAppearanceSettings(key) {
         key = key || 'localplayersubtitleappearance3';
-        return Object.assign(defaultSubtitleAppearanceSettings, JSON.parse(this.get(key, false) || '{}'));
+        return Object.assign(
+            defaultSubtitleAppearanceSettings,
+            JSON.parse(this.get(key, false) || '{}')
+        );
     }
 
     /**
@@ -668,8 +732,13 @@ export class UserSettings {
      * @return {Object} Comics player settings.
      */
     getComicsPlayerSettings(mediaSourceId) {
-        const settings = JSON.parse(this.get('comicsPlayerSettings', false) || '{}');
-        return Object.assign(defaultComicsPlayerSettings, settings[mediaSourceId]);
+        const settings = JSON.parse(
+            this.get('comicsPlayerSettings', false) || '{}'
+        );
+        return Object.assign(
+            defaultComicsPlayerSettings,
+            settings[mediaSourceId]
+        );
     }
 
     /**
@@ -678,9 +747,15 @@ export class UserSettings {
      * @param {string} mediaSourceId - Media Source Id.
      */
     setComicsPlayerSettings(value, mediaSourceId) {
-        const settings = JSON.parse(this.get('comicsPlayerSettings', false) || '{}');
+        const settings = JSON.parse(
+            this.get('comicsPlayerSettings', false) || '{}'
+        );
         settings[mediaSourceId] = value;
-        return this.set('comicsPlayerSettings', JSON.stringify(settings), false);
+        return this.set(
+            'comicsPlayerSettings',
+            JSON.stringify(settings),
+            false
+        );
     }
 
     /**
@@ -712,58 +787,95 @@ export class UserSettings {
     getSortValuesLegacy(key, defaultSortBy) {
         return {
             sortBy: this.getFilter(key + '-sortby') || defaultSortBy,
-            sortOrder: this.getFilter(key + '-sortorder') === 'Descending' ? 'Descending' : 'Ascending'
+            sortOrder:
+                this.getFilter(key + '-sortorder') === 'Descending'
+                    ? 'Descending'
+                    : 'Ascending'
         };
     }
 }
 
-export const currentSettings = new UserSettings;
+export const currentSettings = new UserSettings();
 
 // Wrappers for non-ES6 modules and backward compatibility
 export const setUserInfo = currentSettings.setUserInfo.bind(currentSettings);
 export const set = currentSettings.set.bind(currentSettings);
 export const get = currentSettings.get.bind(currentSettings);
 export const serverConfig = currentSettings.serverConfig.bind(currentSettings);
-export const allowedAudioChannels = currentSettings.allowedAudioChannels.bind(currentSettings);
-export const preferFmp4HlsContainer = currentSettings.preferFmp4HlsContainer.bind(currentSettings);
-export const limitSegmentLength = currentSettings.limitSegmentLength.bind(currentSettings);
-export const enableCinemaMode = currentSettings.enableCinemaMode.bind(currentSettings);
-export const selectAudioNormalization = currentSettings.selectAudioNormalization.bind(currentSettings);
-export const enableNextVideoInfoOverlay = currentSettings.enableNextVideoInfoOverlay.bind(currentSettings);
-export const enableVideoRemainingTime = currentSettings.enableVideoRemainingTime.bind(currentSettings);
-export const enableThemeSongs = currentSettings.enableThemeSongs.bind(currentSettings);
-export const enableThemeVideos = currentSettings.enableThemeVideos.bind(currentSettings);
-export const enableFastFadein = currentSettings.enableFastFadein.bind(currentSettings);
-export const enableBlurhash = currentSettings.enableBlurhash.bind(currentSettings);
-export const enableBackdrops = currentSettings.enableBackdrops.bind(currentSettings);
-export const detailsBanner = currentSettings.detailsBanner.bind(currentSettings);
-export const useEpisodeImagesInNextUpAndResume = currentSettings.useEpisodeImagesInNextUpAndResume.bind(currentSettings);
+export const allowedAudioChannels =
+    currentSettings.allowedAudioChannels.bind(currentSettings);
+export const preferFmp4HlsContainer =
+    currentSettings.preferFmp4HlsContainer.bind(currentSettings);
+export const limitSegmentLength =
+    currentSettings.limitSegmentLength.bind(currentSettings);
+export const enableCinemaMode =
+    currentSettings.enableCinemaMode.bind(currentSettings);
+export const selectAudioNormalization =
+    currentSettings.selectAudioNormalization.bind(currentSettings);
+export const enableNextVideoInfoOverlay =
+    currentSettings.enableNextVideoInfoOverlay.bind(currentSettings);
+export const enableVideoRemainingTime =
+    currentSettings.enableVideoRemainingTime.bind(currentSettings);
+export const enableThemeSongs =
+    currentSettings.enableThemeSongs.bind(currentSettings);
+export const enableThemeVideos =
+    currentSettings.enableThemeVideos.bind(currentSettings);
+export const enableFastFadein =
+    currentSettings.enableFastFadein.bind(currentSettings);
+export const enableBlurhash =
+    currentSettings.enableBlurhash.bind(currentSettings);
+export const enableBackdrops =
+    currentSettings.enableBackdrops.bind(currentSettings);
+export const detailsBanner =
+    currentSettings.detailsBanner.bind(currentSettings);
+export const useEpisodeImagesInNextUpAndResume =
+    currentSettings.useEpisodeImagesInNextUpAndResume.bind(currentSettings);
 export const language = currentSettings.language.bind(currentSettings);
-export const dateTimeLocale = currentSettings.dateTimeLocale.bind(currentSettings);
-export const skipBackLength = currentSettings.skipBackLength.bind(currentSettings);
-export const skipForwardLength = currentSettings.skipForwardLength.bind(currentSettings);
-export const dashboardTheme = currentSettings.dashboardTheme.bind(currentSettings);
+export const dateTimeLocale =
+    currentSettings.dateTimeLocale.bind(currentSettings);
+export const skipBackLength =
+    currentSettings.skipBackLength.bind(currentSettings);
+export const skipForwardLength =
+    currentSettings.skipForwardLength.bind(currentSettings);
+export const dashboardTheme =
+    currentSettings.dashboardTheme.bind(currentSettings);
 export const skin = currentSettings.skin.bind(currentSettings);
 export const theme = currentSettings.theme.bind(currentSettings);
 export const screensaver = currentSettings.screensaver.bind(currentSettings);
-export const backdropScreensaverInterval = currentSettings.backdropScreensaverInterval.bind(currentSettings);
-export const slideshowInterval = currentSettings.slideshowInterval.bind(currentSettings);
-export const screensaverTime = currentSettings.screensaverTime.bind(currentSettings);
-export const libraryPageSize = currentSettings.libraryPageSize.bind(currentSettings);
-export const maxDaysForNextUp = currentSettings.maxDaysForNextUp.bind(currentSettings);
-export const enableRewatchingInNextUp = currentSettings.enableRewatchingInNextUp.bind(currentSettings);
+export const backdropScreensaverInterval =
+    currentSettings.backdropScreensaverInterval.bind(currentSettings);
+export const slideshowInterval =
+    currentSettings.slideshowInterval.bind(currentSettings);
+export const screensaverTime =
+    currentSettings.screensaverTime.bind(currentSettings);
+export const libraryPageSize =
+    currentSettings.libraryPageSize.bind(currentSettings);
+export const maxDaysForNextUp =
+    currentSettings.maxDaysForNextUp.bind(currentSettings);
+export const enableRewatchingInNextUp =
+    currentSettings.enableRewatchingInNextUp.bind(currentSettings);
 export const soundEffects = currentSettings.soundEffects.bind(currentSettings);
-export const stillWatchingPrompt = currentSettings.stillWatchingPrompt.bind(currentSettings);
-export const loadQuerySettings = currentSettings.loadQuerySettings.bind(currentSettings);
-export const saveQuerySettings = currentSettings.saveQuerySettings.bind(currentSettings);
-export const getSubtitleAppearanceSettings = currentSettings.getSubtitleAppearanceSettings.bind(currentSettings);
-export const setSubtitleAppearanceSettings = currentSettings.setSubtitleAppearanceSettings.bind(currentSettings);
-export const getComicsPlayerSettings = currentSettings.getComicsPlayerSettings.bind(currentSettings);
-export const setComicsPlayerSettings = currentSettings.setComicsPlayerSettings.bind(currentSettings);
+export const stillWatchingPrompt =
+    currentSettings.stillWatchingPrompt.bind(currentSettings);
+export const loadQuerySettings =
+    currentSettings.loadQuerySettings.bind(currentSettings);
+export const saveQuerySettings =
+    currentSettings.saveQuerySettings.bind(currentSettings);
+export const getSubtitleAppearanceSettings =
+    currentSettings.getSubtitleAppearanceSettings.bind(currentSettings);
+export const setSubtitleAppearanceSettings =
+    currentSettings.setSubtitleAppearanceSettings.bind(currentSettings);
+export const getComicsPlayerSettings =
+    currentSettings.getComicsPlayerSettings.bind(currentSettings);
+export const setComicsPlayerSettings =
+    currentSettings.setComicsPlayerSettings.bind(currentSettings);
 export const setFilter = currentSettings.setFilter.bind(currentSettings);
 export const getFilter = currentSettings.getFilter.bind(currentSettings);
 export const customCss = currentSettings.customCss.bind(currentSettings);
-export const disableCustomCss = currentSettings.disableCustomCss.bind(currentSettings);
+export const disableCustomCss =
+    currentSettings.disableCustomCss.bind(currentSettings);
 export const getSavedView = currentSettings.getSavedView.bind(currentSettings);
-export const saveViewSetting = currentSettings.saveViewSetting.bind(currentSettings);
-export const getSortValuesLegacy = currentSettings.getSortValuesLegacy.bind(currentSettings);
+export const saveViewSetting =
+    currentSettings.saveViewSetting.bind(currentSettings);
+export const getSortValuesLegacy =
+    currentSettings.getSortValuesLegacy.bind(currentSettings);

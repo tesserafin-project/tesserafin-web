@@ -24,7 +24,7 @@ class LayoutManager {
     modern = false;
 
     setLayout(layout = '', save = true) {
-        const layoutValue = (!layout || layout === LayoutMode.Auto) ? '' : layout;
+        const layoutValue = !layout || layout === LayoutMode.Auto ? '' : layout;
         const isLegacyLayout = LegacyLayoutModes.has(layoutValue);
         // Normalize layout mode to the base mode (e.g. 'mobile-legacy' -> 'mobile')
         const normalizedLayout = layoutValue.split('-')[0];
@@ -40,8 +40,13 @@ class LayoutManager {
         console.debug('[LayoutManager] using layout mode', normalizedLayout);
         this.modern = !isLegacyLayout;
         if (layoutValue === LayoutMode.Modern) {
-            const legacyLayoutMode = browser.mobile ? LayoutMode.Mobile : LayoutMode.Desktop;
-            console.debug('[LayoutManager] using legacy layout mode', legacyLayoutMode);
+            const legacyLayoutMode = browser.mobile
+                ? LayoutMode.Mobile
+                : LayoutMode.Desktop;
+            console.debug(
+                '[LayoutManager] using legacy layout mode',
+                legacyLayoutMode
+            );
             setLayout(this, legacyLayoutMode, legacyLayoutMode);
         }
 
@@ -62,7 +67,10 @@ class LayoutManager {
         // Take a guess at initial layout. The consuming app can override.
         // NOTE: The fallback to TV mode seems like an outdated choice. TVs should be detected properly or override the
         // default layout.
-        this.setLayout(browser.tv ? LayoutMode.Tv : this.defaultLayout || LayoutMode.Tv, false);
+        this.setLayout(
+            browser.tv ? LayoutMode.Tv : this.defaultLayout || LayoutMode.Tv,
+            false
+        );
     }
 
     init() {

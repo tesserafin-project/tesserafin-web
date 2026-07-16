@@ -36,15 +36,25 @@ const ServerInfoWidget = ({
             href='/dashboard/settings'
         >
             <Stack spacing={2}>
-                <Paper sx={{
-                    padding: 2
-                }}>
+                <Paper
+                    sx={{
+                        padding: 2
+                    }}
+                >
                     <Stack direction='row'>
                         <Stack flexGrow={1} spacing={1}>
-                            <Typography fontWeight='bold'>{globalize.translate('LabelServerName')}</Typography>
-                            <Typography fontWeight='bold'>{globalize.translate('LabelServerVersion')}</Typography>
-                            <Typography fontWeight='bold'>{globalize.translate('LabelWebVersion')}</Typography>
-                            <Typography fontWeight='bold'>{globalize.translate('LabelBuildVersion')}</Typography>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelServerName')}
+                            </Typography>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelServerVersion')}
+                            </Typography>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelWebVersion')}
+                            </Typography>
+                            <Typography fontWeight='bold'>
+                                {globalize.translate('LabelBuildVersion')}
+                            </Typography>
                         </Stack>
                         <Stack flexGrow={5} spacing={1}>
                             <>
@@ -55,8 +65,12 @@ const ServerInfoWidget = ({
                                     </>
                                 ) : (
                                     <>
-                                        <Typography>{systemInfo?.ServerName}</Typography>
-                                        <Typography>{displayServerVersion}</Typography>
+                                        <Typography>
+                                            {systemInfo?.ServerName}
+                                        </Typography>
+                                        <Typography>
+                                            {displayServerVersion}
+                                        </Typography>
                                     </>
                                 )}
                                 <Typography>{displayWebVersion}</Typography>
@@ -66,10 +80,7 @@ const ServerInfoWidget = ({
                     </Stack>
                 </Paper>
 
-                <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={1.5}
-                >
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
                     <Button
                         onClick={onScanLibrariesClick}
                         startIcon={<RefreshIcon />}

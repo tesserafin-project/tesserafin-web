@@ -35,15 +35,18 @@ const SuggestionsSectionView: FC<SuggestionsSectionViewProps> = ({
     const {
         isLoading: isRecommendationsLoading,
         data: movieRecommendationsItems
-    } = useMovieRecommendations({
-        parentId: parentId || undefined,
-        fields: [
-            ItemFields.PrimaryImageAspectRatio,
-            ItemFields.MediaSourceCount
-        ],
-        categoryLimit: 6,
-        itemLimit: 20
-    }, isMovieRecommendationEnabled);
+    } = useMovieRecommendations(
+        {
+            parentId: parentId || undefined,
+            fields: [
+                ItemFields.PrimaryImageAspectRatio,
+                ItemFields.MediaSourceCount
+            ],
+            categoryLimit: 6,
+            itemLimit: 20
+        },
+        isMovieRecommendationEnabled
+    );
 
     if (isLoading || isRecommendationsLoading) {
         return <Loading />;

@@ -71,7 +71,10 @@ const sortOptionsMapping: SortOptionsMapping = {
         { label: 'OptionRandom', value: ItemSortBy.Random },
         { label: 'OptionCommunityRating', value: ItemSortBy.CommunityRating },
         { label: 'OptionDateShowAdded', value: ItemSortBy.DateCreated },
-        { label: 'OptionDateEpisodeAdded', value: ItemSortBy.DateLastContentAdded },
+        {
+            label: 'OptionDateEpisodeAdded',
+            value: ItemSortBy.DateLastContentAdded
+        },
         { label: 'OptionDatePlayed', value: ItemSortBy.SeriesDatePlayed },
         { label: 'OptionParentalRating', value: ItemSortBy.OfficialRating },
         { label: 'OptionReleaseDate', value: ItemSortBy.PremiereDate }
@@ -120,14 +123,17 @@ const sortOptionsMapping: SortOptionsMapping = {
         { label: 'Name', value: ItemSortBy.SortName },
         { label: 'OptionRandom', value: ItemSortBy.Random },
         { label: 'OptionDateAdded', value: ItemSortBy.DateCreated },
-        { label: 'OptionDatePlaylistUpdated', value: ItemSortBy.DateLastContentAdded },
+        {
+            label: 'OptionDatePlaylistUpdated',
+            value: ItemSortBy.DateLastContentAdded
+        },
         { label: 'OptionReleaseDate', value: ItemSortBy.PremiereDate },
         { label: 'Runtime', value: ItemSortBy.Runtime }
     ],
     [LibraryTab.PhotoAlbums]: photosOrPhotoAlbumsOptions,
     [LibraryTab.Photos]: photosOrPhotoAlbumsOptions,
-    [LibraryTab.Videos]:videoOrMusicVideoOptions,
-    [LibraryTab.MusicVideos]:videoOrMusicVideoOptions,
+    [LibraryTab.Videos]: videoOrMusicVideoOptions,
+    [LibraryTab.MusicVideos]: videoOrMusicVideoOptions,
     [LibraryTab.Folders]: [
         { label: 'Name', value: ItemSortBy.SortName },
         { label: 'OptionRandom', value: ItemSortBy.Random },
@@ -146,7 +152,10 @@ const sortOptionsMapping: SortOptionsMapping = {
         { label: 'OptionCommunityRating', value: ItemSortBy.CommunityRating },
         { label: 'OptionCriticRating', value: ItemSortBy.CriticRating },
         { label: 'OptionDateAdded', value: ItemSortBy.DateCreated },
-        { label: 'OptionDateEpisodeAdded', value: ItemSortBy.DateLastContentAdded },
+        {
+            label: 'OptionDateEpisodeAdded',
+            value: ItemSortBy.DateLastContentAdded
+        },
         { label: 'OptionDatePlayed', value: ItemSortBy.DatePlayed },
         { label: 'OptionParentalRating', value: ItemSortBy.OfficialRating },
         { label: 'OptionPlayCount', value: ItemSortBy.PlayCount },
@@ -191,7 +200,10 @@ const SortButton: FC<SortButtonProps> = ({
                 let sortOrder: SortOrder = SortOrder.Ascending;
                 // If the user clicks the currently selected sort option, toggle the sort order
                 if (prevState.SortBy === sortBy) {
-                    sortOrder = prevState.SortOrder === SortOrder.Ascending ? SortOrder.Descending : SortOrder.Ascending;
+                    sortOrder =
+                        prevState.SortOrder === SortOrder.Ascending
+                            ? SortOrder.Descending
+                            : SortOrder.Ascending;
                 }
 
                 return {
@@ -232,27 +244,26 @@ const SortButton: FC<SortButtonProps> = ({
                 }}
             >
                 <MenuList>
-                    {sortMenuOptions
-                        .map((option) => (
-                            <MenuItem
-                                key={option.value}
-                                // eslint-disable-next-line react/jsx-no-bind
-                                onClick={() => onMenuItemClick(option.value)}
-                            >
-                                <ListItemText>
-                                    {globalize.translate(option.label)}
-                                </ListItemText>
-                                <ListItemIcon sx={{ justifyContent: 'flex-end' }}>
-                                    {libraryViewSettings.SortBy === option.value && (
-                                        libraryViewSettings.SortOrder === SortOrder.Ascending ? (
-                                            <ArrowUpward fontSize='small' />
-                                        ) : (
-                                            <ArrowDownward fontSize='small' />
-                                        ))
-                                    }
-                                </ListItemIcon>
-                            </MenuItem>
-                        ))}
+                    {sortMenuOptions.map((option) => (
+                        <MenuItem
+                            key={option.value}
+                            // eslint-disable-next-line react/jsx-no-bind
+                            onClick={() => onMenuItemClick(option.value)}
+                        >
+                            <ListItemText>
+                                {globalize.translate(option.label)}
+                            </ListItemText>
+                            <ListItemIcon sx={{ justifyContent: 'flex-end' }}>
+                                {libraryViewSettings.SortBy === option.value &&
+                                    (libraryViewSettings.SortOrder ===
+                                    SortOrder.Ascending ? (
+                                        <ArrowUpward fontSize='small' />
+                                    ) : (
+                                        <ArrowDownward fontSize='small' />
+                                    ))}
+                            </ListItemIcon>
+                        </MenuItem>
+                    ))}
                 </MenuList>
             </Popover>
         </>

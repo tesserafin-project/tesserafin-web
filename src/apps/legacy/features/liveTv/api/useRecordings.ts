@@ -18,18 +18,19 @@ const fetchRecordings = async (
 export const getRecordingsQuery = (
     api?: Api,
     params?: LiveTvApiGetRecordingsRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'Recordings', params ],
-    queryFn: ({ signal }) => fetchRecordings(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'Recordings', params],
+        queryFn: ({ signal }) => fetchRecordings(api!, params, { signal }),
+        enabled: !!api
+    });
 
-export const useRecordings = (
-    params?: LiveTvApiGetRecordingsRequest
-) => {
+export const useRecordings = (params?: LiveTvApiGetRecordingsRequest) => {
     const { api, user } = useApi();
-    return useQuery(getRecordingsQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getRecordingsQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

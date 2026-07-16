@@ -17,19 +17,17 @@ const fetchSystemStorage = async (
     api: ReefinApi,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getSystemApi(api)
-        .getSystemStorage(options);
+    const response = await getSystemApi(api).getSystemStorage(options);
     return response.data;
 };
 
-const getSystemStorageQuery = (
-    api?: ReefinApi
-) => queryOptions({
-    queryKey: [ 'SystemStorage' ],
-    queryFn: ({ signal }) => fetchSystemStorage(api!, { signal }),
-    enabled: !!api,
-    refetchOnWindowFocus: false
-});
+const getSystemStorageQuery = (api?: ReefinApi) =>
+    queryOptions({
+        queryKey: ['SystemStorage'],
+        queryFn: ({ signal }) => fetchSystemStorage(api!, { signal }),
+        enabled: !!api,
+        refetchOnWindowFocus: false
+    });
 
 export const useSystemStorage = () => {
     const { reefinApi } = useApi();

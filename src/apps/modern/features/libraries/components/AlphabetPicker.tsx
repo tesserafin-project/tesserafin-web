@@ -15,7 +15,35 @@ interface AlphabetPickerProps {
     >;
 }
 
-const LETTER_VALUES = ['#', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+const LETTER_VALUES = [
+    '#',
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'F',
+    'G',
+    'H',
+    'I',
+    'J',
+    'K',
+    'L',
+    'M',
+    'N',
+    'O',
+    'P',
+    'Q',
+    'R',
+    'S',
+    'T',
+    'U',
+    'V',
+    'W',
+    'X',
+    'Y',
+    'Z'
+];
 
 const AlphabetPicker: React.FC<AlphabetPickerProps> = ({
     libraryViewSettings,
@@ -39,7 +67,7 @@ const AlphabetPicker: React.FC<AlphabetPickerProps> = ({
         <Box
             className='alphaPicker-fixed-right'
             // eslint-disable-next-line react/jsx-no-bind
-            sx={theme => ({
+            sx={(theme) => ({
                 position: 'fixed',
                 top: '112px', // This is the height of the AppBar + Tabs, this should be dynamic
                 bottom: 0,

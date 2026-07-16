@@ -5,7 +5,11 @@ import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-
 import { getStudioApi } from '@jellyfin/sdk/lib/utils/api/studio-api';
 
 import cardBuilder from 'components/cardbuilder/cardBuilder';
-import { getBackdropShape, getPortraitShape, getSquareShape } from 'components/cardbuilder/utils/shape';
+import {
+    getBackdropShape,
+    getPortraitShape,
+    getSquareShape
+} from 'components/cardbuilder/utils/shape';
 import focusManager from 'components/focusManager';
 import layoutManager from 'components/layoutManager';
 import { appRouter } from 'components/router/appRouter';
@@ -21,168 +25,186 @@ function enableScrollX() {
 }
 
 function getSections() {
-    return [{
-        name: 'Movies',
-        types: 'Movie',
-        shape: getPortraitShape(enableScrollX()),
-        showTitle: true,
-        showYear: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Shows',
-        types: 'Series',
-        shape: getPortraitShape(enableScrollX()),
-        showTitle: true,
-        showYear: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'HeaderSeasons',
-        types: BaseItemKind.Season,
-        shape: getPortraitShape(enableScrollX()),
-        showTitle: true,
-        showParentTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Episodes',
-        types: 'Episode',
-        shape: getBackdropShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        showParentTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'HeaderVideos',
-        types: 'Video',
-        shape: getBackdropShape(enableScrollX()),
-        preferThumb: true,
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'MusicVideos',
-        types: 'MusicVideo',
-        shape: getBackdropShape(enableScrollX()),
-        preferThumb: true,
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Collections',
-        types: 'BoxSet',
-        shape: getPortraitShape(enableScrollX()),
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Playlists',
-        types: 'Playlist',
-        shape: getSquareShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        overlayText: false,
-        showParentTitle: false,
-        centerText: true,
-        overlayPlayButton: true,
-        coverImage: true
-    }, {
-        name: 'Studios',
-        types: BaseItemKind.Studio,
-        shape: getBackdropShape(enableScrollX()),
-        preferThumb: true,
-        showTitle: true,
-        overlayText: false,
-        centerText: true,
-        overlayPlayButton: true
-    }, {
-        name: 'People',
-        types: 'Person',
-        shape: getPortraitShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        overlayText: false,
-        showParentTitle: false,
-        centerText: true,
-        overlayPlayButton: true,
-        coverImage: true
-    }, {
-        name: 'Artists',
-        types: 'MusicArtist',
-        shape: getSquareShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        overlayText: false,
-        showParentTitle: false,
-        centerText: true,
-        overlayPlayButton: true,
-        coverImage: true
-    }, {
-        name: 'Albums',
-        types: 'MusicAlbum',
-        shape: getSquareShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        overlayText: false,
-        showParentTitle: true,
-        centerText: true,
-        overlayPlayButton: true,
-        coverImage: true
-    }, {
-        name: 'Songs',
-        types: 'Audio',
-        shape: getSquareShape(enableScrollX()),
-        preferThumb: false,
-        showTitle: true,
-        overlayText: false,
-        showParentTitle: true,
-        centerText: true,
-        overlayMoreButton: true,
-        action: 'instantmix',
-        coverImage: true
-    }, {
-        name: 'Books',
-        types: 'Book',
-        shape: getPortraitShape(enableScrollX()),
-        showTitle: true,
-        showYear: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Channels',
-        types: 'LiveTVChannel',
-        shape: getBackdropShape(enableScrollX()),
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'HeaderPhotoAlbums',
-        types: 'PhotoAlbum',
-        shape: getBackdropShape(enableScrollX()),
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }, {
-        name: 'Photos',
-        types: 'Photo',
-        shape: getBackdropShape(enableScrollX()),
-        showTitle: true,
-        overlayPlayButton: true,
-        overlayText: false,
-        centerText: true
-    }];
+    return [
+        {
+            name: 'Movies',
+            types: 'Movie',
+            shape: getPortraitShape(enableScrollX()),
+            showTitle: true,
+            showYear: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Shows',
+            types: 'Series',
+            shape: getPortraitShape(enableScrollX()),
+            showTitle: true,
+            showYear: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'HeaderSeasons',
+            types: BaseItemKind.Season,
+            shape: getPortraitShape(enableScrollX()),
+            showTitle: true,
+            showParentTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Episodes',
+            types: 'Episode',
+            shape: getBackdropShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            showParentTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'HeaderVideos',
+            types: 'Video',
+            shape: getBackdropShape(enableScrollX()),
+            preferThumb: true,
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'MusicVideos',
+            types: 'MusicVideo',
+            shape: getBackdropShape(enableScrollX()),
+            preferThumb: true,
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Collections',
+            types: 'BoxSet',
+            shape: getPortraitShape(enableScrollX()),
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Playlists',
+            types: 'Playlist',
+            shape: getSquareShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            overlayText: false,
+            showParentTitle: false,
+            centerText: true,
+            overlayPlayButton: true,
+            coverImage: true
+        },
+        {
+            name: 'Studios',
+            types: BaseItemKind.Studio,
+            shape: getBackdropShape(enableScrollX()),
+            preferThumb: true,
+            showTitle: true,
+            overlayText: false,
+            centerText: true,
+            overlayPlayButton: true
+        },
+        {
+            name: 'People',
+            types: 'Person',
+            shape: getPortraitShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            overlayText: false,
+            showParentTitle: false,
+            centerText: true,
+            overlayPlayButton: true,
+            coverImage: true
+        },
+        {
+            name: 'Artists',
+            types: 'MusicArtist',
+            shape: getSquareShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            overlayText: false,
+            showParentTitle: false,
+            centerText: true,
+            overlayPlayButton: true,
+            coverImage: true
+        },
+        {
+            name: 'Albums',
+            types: 'MusicAlbum',
+            shape: getSquareShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            overlayText: false,
+            showParentTitle: true,
+            centerText: true,
+            overlayPlayButton: true,
+            coverImage: true
+        },
+        {
+            name: 'Songs',
+            types: 'Audio',
+            shape: getSquareShape(enableScrollX()),
+            preferThumb: false,
+            showTitle: true,
+            overlayText: false,
+            showParentTitle: true,
+            centerText: true,
+            overlayMoreButton: true,
+            action: 'instantmix',
+            coverImage: true
+        },
+        {
+            name: 'Books',
+            types: 'Book',
+            shape: getPortraitShape(enableScrollX()),
+            showTitle: true,
+            showYear: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Channels',
+            types: 'LiveTVChannel',
+            shape: getBackdropShape(enableScrollX()),
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'HeaderPhotoAlbums',
+            types: 'PhotoAlbum',
+            shape: getBackdropShape(enableScrollX()),
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        },
+        {
+            name: 'Photos',
+            types: 'Photo',
+            shape: getBackdropShape(enableScrollX()),
+            showTitle: true,
+            overlayPlayButton: true,
+            overlayText: false,
+            centerText: true
+        }
+    ];
 }
 
 function getFetchDataFn(section) {
@@ -204,7 +226,10 @@ function getFetchDataFn(section) {
         if (section.types === BaseItemKind.Studio) {
             const api = ServerConnections.getApi(apiClient.serverId());
             if (!api) {
-                console.error('[Favorites] no Api instance available for server', apiClient.serverId());
+                console.error(
+                    '[Favorites] no Api instance available for server',
+                    apiClient.serverId()
+                );
                 return Promise.resolve(undefined);
             }
 
@@ -247,12 +272,16 @@ function getItemsHtmlFn(section) {
         // let cardLayout = appHost.preferVisualCards && section.autoCardLayout && section.showTitle;
         const cardLayout = false;
         const serverId = this.apiClient.serverId();
-        const leadingButtons = layoutManager.tv ? [{
-            name: globalize.translate('All'),
-            id: 'more',
-            icon: 'favorite',
-            routeUrl: getRouteUrl(section, serverId)
-        }] : null;
+        const leadingButtons = layoutManager.tv
+            ? [
+                  {
+                      name: globalize.translate('All'),
+                      id: 'more',
+                      icon: 'favorite',
+                      routeUrl: getRouteUrl(section, serverId)
+                  }
+              ]
+            : null;
         let lines = 0;
 
         if (section.showTitle) {
@@ -301,21 +330,30 @@ function createSections(instance, elem, apiClient) {
         }
 
         html += '<div class="' + sectionClass + ' hide">';
-        html += '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
+        html +=
+            '<div class="sectionTitleContainer sectionTitleContainer-cards padded-left">';
 
         if (layoutManager.tv) {
-            html += '<h2 class="sectionTitle sectionTitle-cards">' + globalize.translate(section.name) + '</h2>';
+            html +=
+                '<h2 class="sectionTitle sectionTitle-cards">' +
+                globalize.translate(section.name) +
+                '</h2>';
         } else {
-            html += '<a is="emby-linkbutton" href="' + getRouteUrl(section, apiClient.serverId()) + '" class="more button-flat button-flat-mini sectionTitleTextButton">';
+            html +=
+                '<a is="emby-linkbutton" href="' +
+                getRouteUrl(section, apiClient.serverId()) +
+                '" class="more button-flat button-flat-mini sectionTitleTextButton">';
             html += '<h2 class="sectionTitle sectionTitle-cards">';
             html += globalize.translate(section.name);
             html += '</h2>';
-            html += '<span class="material-icons chevron_right" aria-hidden="true"></span>';
+            html +=
+                '<span class="material-icons chevron_right" aria-hidden="true"></span>';
             html += '</a>';
         }
 
         html += '</div>';
-        html += '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true"><div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x" data-monitor="markfavorite"></div></div>';
+        html +=
+            '<div is="emby-scroller" class="padded-top-focusscale padded-bottom-focusscale" data-centerfocus="true"><div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x" data-monitor="markfavorite"></div></div>';
         html += '</div>';
     }
 
@@ -327,8 +365,13 @@ function createSections(instance, elem, apiClient) {
     for (let i = 0, length = elems.length; i < length; i++) {
         const itemsContainer = elems[i];
         itemsContainer.fetchData = getFetchDataFn(sections[i]).bind(instance);
-        itemsContainer.getItemsHtml = getItemsHtmlFn(sections[i]).bind(instance);
-        itemsContainer.parentContainer = dom.parentWithClass(itemsContainer, 'verticalSection');
+        itemsContainer.getItemsHtml = getItemsHtmlFn(sections[i]).bind(
+            instance
+        );
+        itemsContainer.parentContainer = dom.parentWithClass(
+            itemsContainer,
+            'verticalSection'
+        );
     }
 }
 
@@ -344,7 +387,8 @@ class FavoritesTab {
     onResume(options) {
         const promises = [];
         const view = this.view;
-        const elems = this.sectionsContainer.querySelectorAll('.itemsContainer');
+        const elems =
+            this.sectionsContainer.querySelectorAll('.itemsContainer');
 
         for (const elem of elems) {
             promises.push(elem.resume(options));
@@ -359,8 +403,11 @@ class FavoritesTab {
 
     onPause() {
         if (this.sectionsContainer) {
-            Array.from(this.sectionsContainer.querySelectorAll('.itemsContainer'))
-                .forEach(e => { e.pause(); });
+            Array.from(
+                this.sectionsContainer.querySelectorAll('.itemsContainer')
+            ).forEach((e) => {
+                e.pause();
+            });
         }
     }
 
@@ -368,7 +415,8 @@ class FavoritesTab {
         this.view = null;
         this.params = null;
         this.apiClient = null;
-        const elems = this.sectionsContainer.querySelectorAll('.itemsContainer');
+        const elems =
+            this.sectionsContainer.querySelectorAll('.itemsContainer');
 
         for (const elem of elems) {
             elem.fetchData = null;

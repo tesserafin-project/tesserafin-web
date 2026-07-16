@@ -10,16 +10,23 @@ vi.mock('lib/globalize', () => ({
 
 describe('formatReasonCode()', () => {
     it('translates using the ReasonCode.<code> dotted-key convention', () => {
-        expect(formatReasonCode('TonemapRequired')).toBe('translated(ReasonCode.TonemapRequired)');
+        expect(formatReasonCode('TonemapRequired')).toBe(
+            'translated(ReasonCode.TonemapRequired)'
+        );
     });
 
     it('works for every reason code without throwing', () => {
         const codes: Parameters<typeof formatReasonCode>[0][] = [
-            'ContainerNotSupported', 'MethodChosen', 'NoViablePlan', 'RequestedSourceNotFound'
+            'ContainerNotSupported',
+            'MethodChosen',
+            'NoViablePlan',
+            'RequestedSourceNotFound'
         ];
 
         for (const code of codes) {
-            expect(formatReasonCode(code)).toBe(`translated(ReasonCode.${code})`);
+            expect(formatReasonCode(code)).toBe(
+                `translated(ReasonCode.${code})`
+            );
         }
     });
 });

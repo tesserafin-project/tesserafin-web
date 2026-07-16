@@ -11,26 +11,32 @@ const fetchRecommendedPrograms = async (
     params?: LiveTvApiGetRecommendedProgramsRequest,
     options?: AxiosRequestConfig
 ) => {
-    const response = await getLiveTvApi(api)
-        .getRecommendedPrograms(params, options);
+    const response = await getLiveTvApi(api).getRecommendedPrograms(
+        params,
+        options
+    );
     return response.data;
 };
 
 export const getRecommendedProgramsQuery = (
     api?: Api,
     params?: LiveTvApiGetRecommendedProgramsRequest
-) => queryOptions({
-    queryKey: [ 'User', params?.userId, 'RecommendedPrograms', params ],
-    queryFn: ({ signal }) => fetchRecommendedPrograms(api!, params, { signal }),
-    enabled: !!api
-});
+) =>
+    queryOptions({
+        queryKey: ['User', params?.userId, 'RecommendedPrograms', params],
+        queryFn: ({ signal }) =>
+            fetchRecommendedPrograms(api!, params, { signal }),
+        enabled: !!api
+    });
 
 export const useRecommendedPrograms = (
     params?: LiveTvApiGetRecommendedProgramsRequest
 ) => {
     const { api, user } = useApi();
-    return useQuery(getRecommendedProgramsQuery(api, {
-        ...params,
-        userId: params?.userId || user?.Id
-    }));
+    return useQuery(
+        getRecommendedProgramsQuery(api, {
+            ...params,
+            userId: params?.userId || user?.Id
+        })
+    );
 };

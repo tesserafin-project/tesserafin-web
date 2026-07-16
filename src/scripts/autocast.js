@@ -3,7 +3,10 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from 'utils/events.ts';
 
 export function enable(enabled) {
-    console.debug('[autocast] %s cast player', enabled ? 'enabling' : 'disabling');
+    console.debug(
+        '[autocast] %s cast player',
+        enabled ? 'enabling' : 'disabling'
+    );
     if (enabled) {
         const currentPlayerInfo = playbackManager.getPlayerInfo();
 
@@ -34,7 +37,7 @@ function onOpen() {
     playbackManager.getTargets().then(function (targets) {
         console.debug('[autocast] playback targets', targets);
 
-        const player = targets.find(target => target.id === playerId);
+        const player = targets.find((target) => target.id === playerId);
         if (player) {
             console.debug('[autocast] found target player', player);
             playbackManager.trySetActivePlayer(player.playerName, player);
@@ -48,7 +51,7 @@ export function initialize() {
     console.debug('[autoCast] initializing connection listener');
 
     // Restore cast player if already signed in (e.g. on page reload)
-    if (ServerConnections.getApiClients().some(c => c.accessToken())) {
+    if (ServerConnections.getApiClients().some((c) => c.accessToken())) {
         onOpen();
     }
 

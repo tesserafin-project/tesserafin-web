@@ -25,10 +25,13 @@ type MenuEntry = {
 
 const UserProfiles = () => {
     const location = useLocation();
-    const [ isSettingsSavedToastOpen, setIsSettingsSavedToastOpen ] = useState(false);
+    const [isSettingsSavedToastOpen, setIsSettingsSavedToastOpen] =
+        useState(false);
     const element = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
-    const { data: users, isPending } = useUsers(undefined, { forceRefresh: true });
+    const { data: users, isPending } = useUsers(undefined, {
+        forceRefresh: true
+    });
     const deleteUser = useDeleteUser();
 
     const handleToastClose = useCallback(() => {
@@ -81,38 +84,53 @@ const UserProfiles = () => {
                 icon: 'delete'
             });
 
-            import('../../../../components/actionSheet/actionSheet').then(({ default: actionsheet }) => {
-                actionsheet.show({
-                    items: menuItems,
-                    positionTo: card,
-                    callback: function (id: string) {
-                        switch (id) {
-                            case 'open':
-                                navigate(`/dashboard/users/${userId}/${UserTab.Profile}`);
-                                break;
+            import('../../../../components/actionSheet/actionSheet')
+                .then(({ default: actionsheet }) => {
+                    actionsheet
+                        .show({
+                            items: menuItems,
+                            positionTo: card,
+                            callback: function (id: string) {
+                                switch (id) {
+                                    case 'open':
+                                        navigate(
+                                            `/dashboard/users/${userId}/${UserTab.Profile}`
+                                        );
+                                        break;
 
-                            case 'access':
-                                navigate(`/dashboard/users/${userId}/${UserTab.Access}`);
-                                break;
+                                    case 'access':
+                                        navigate(
+                                            `/dashboard/users/${userId}/${UserTab.Access}`
+                                        );
+                                        break;
 
-                            case 'parentalcontrol':
-                                navigate(`/dashboard/users/${userId}/${UserTab.ParentalControl}`);
-                                break;
+                                    case 'parentalcontrol':
+                                        navigate(
+                                            `/dashboard/users/${userId}/${UserTab.ParentalControl}`
+                                        );
+                                        break;
 
-                            case 'delete':
-                                confirmDeleteUser(userId, username);
-                        }
-                    }
-                }).catch(() => {
-                    // action sheet closed
+                                    case 'delete':
+                                        confirmDeleteUser(userId, username);
+                                }
+                            }
+                        })
+                        .catch(() => {
+                            // action sheet closed
+                        });
+                })
+                .catch((err) => {
+                    console.error(
+                        '[userprofiles] failed to load action sheet',
+                        err
+                    );
                 });
-            }).catch(err => {
-                console.error('[userprofiles] failed to load action sheet', err);
-            });
         };
 
         const confirmDeleteUser = (id: string, username?: string | null) => {
-            const title = username ? globalize.translate('DeleteName', username) : globalize.translate('DeleteUser');
+            const title = username
+                ? globalize.translate('DeleteName', username)
+                : globalize.translate('DeleteUser');
             const text = globalize.translate('DeleteUserConfirmation');
 
             confirm({
@@ -120,33 +138,42 @@ const UserProfiles = () => {
                 text,
                 confirmText: globalize.translate('Delete'),
                 primary: 'delete'
-            }).then(function () {
-                deleteUser.mutate({
-                    userId: id
+            })
+                .then(function () {
+                    deleteUser.mutate({
+                        userId: id
+                    });
+                })
+                .catch(() => {
+                    // confirm dialog closed
                 });
-            }).catch(() => {
-                // confirm dialog closed
-            });
         };
 
         const onPageClick = function (e: MouseEvent) {
-            const btnUserMenu = dom.parentWithClass(e.target as HTMLElement, 'btnUserMenu');
+            const btnUserMenu = dom.parentWithClass(
+                e.target as HTMLElement,
+                'btnUserMenu'
+            );
 
             if (btnUserMenu) {
                 showUserMenu(btnUserMenu);
             }
         };
 
-        const onAddUserClick = function() {
+        const onAddUserClick = function () {
             navigate('/dashboard/users/add');
         };
 
         page.addEventListener('click', onPageClick);
-        (page.querySelector('#btnAddUser') as HTMLButtonElement).addEventListener('click', onAddUserClick);
+        (
+            page.querySelector('#btnAddUser') as HTMLButtonElement
+        ).addEventListener('click', onAddUserClick);
 
         return () => {
             page.removeEventListener('click', onPageClick);
-            (page.querySelector('#btnAddUser') as HTMLButtonElement).removeEventListener('click', onAddUserClick);
+            (
+                page.querySelector('#btnAddUser') as HTMLButtonElement
+            ).removeEventListener('click', onAddUserClick);
         };
     }, [navigate, deleteUser, location.state?.openSavedToast]);
 
@@ -178,13 +205,12 @@ const UserProfiles = () => {
                 </div>
 
                 <div className='localUsers itemsContainer vertical-wrap'>
-                    {users?.map(user => {
+                    {users?.map((user) => {
                         return <UserCardBox key={user.Id} user={user} />;
                     })}
                 </div>
             </div>
         </Page>
-
     );
 };
 

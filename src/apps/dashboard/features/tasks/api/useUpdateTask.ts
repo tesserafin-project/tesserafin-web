@@ -9,13 +9,11 @@ export const useUpdateTask = () => {
     const { api } = useApi();
 
     return useMutation({
-        mutationFn: (params: ScheduledTaskApiUpdateTaskRequest) => (
-            getScheduledTaskApi(api!)
-                .updateTask(params)
-        ),
+        mutationFn: (params: ScheduledTaskApiUpdateTaskRequest) =>
+            getScheduledTaskApi(api!).updateTask(params),
         onSuccess: (_data, params) => {
             void queryClient.invalidateQueries({
-                queryKey: [ QUERY_KEY, params.taskId ]
+                queryKey: [QUERY_KEY, params.taskId]
             });
         }
     });

@@ -24,19 +24,21 @@ import { DASHBOARD_APP_PATHS } from './routes/routes';
 import './AppOverrides.scss';
 
 export const Component: FC = () => {
-    const [ isDrawerActive, setIsDrawerActive ] = useState(false);
+    const [isDrawerActive, setIsDrawerActive] = useState(false);
     const location = useLocation();
     const { user } = useApi();
     const { dateFnsLocale } = useLocale();
 
     const isMediumScreen = useMediaQuery((t: Theme) => t.breakpoints.up('md'));
-    const isMetadataManager = location.pathname.startsWith(`/${DASHBOARD_APP_PATHS.MetadataManager}`);
+    const isMetadataManager = location.pathname.startsWith(
+        `/${DASHBOARD_APP_PATHS.MetadataManager}`
+    );
     const isDrawerAvailable = Boolean(user) && !isMetadataManager;
     const isDrawerOpen = isDrawerActive && isDrawerAvailable;
 
     const onToggleDrawer = useCallback(() => {
         setIsDrawerActive(!isDrawerActive);
-    }, [ isDrawerActive, setIsDrawerActive ]);
+    }, [isDrawerActive, setIsDrawerActive]);
 
     // Update body class
     useEffect(() => {
@@ -48,7 +50,10 @@ export const Component: FC = () => {
     }, []);
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={dateFnsLocale}>
+        <LocalizationProvider
+            dateAdapter={AdapterDateFns}
+            adapterLocale={dateFnsLocale}
+        >
             <Box
                 sx={{
                     display: 'flex',
@@ -63,7 +68,9 @@ export const Component: FC = () => {
                         sx={{
                             width: {
                                 xs: '100%',
-                                md: isDrawerAvailable ? `calc(100% - ${DRAWER_WIDTH}px)` : '100%'
+                                md: isDrawerAvailable
+                                    ? `calc(100% - ${DRAWER_WIDTH}px)`
+                                    : '100%'
                             },
                             ml: {
                                 xs: 0,
@@ -73,31 +80,27 @@ export const Component: FC = () => {
                     >
                         <AppToolbar
                             isBackButtonAvailable={appRouter.canGoBack()}
-                            isDrawerAvailable={!isMediumScreen && isDrawerAvailable}
+                            isDrawerAvailable={
+                                !isMediumScreen && isDrawerAvailable
+                            }
                             isDrawerOpen={isDrawerOpen}
                             onDrawerButtonClick={onToggleDrawer}
-                            buttons={
-                                <HelpButton />
-                            }
+                            buttons={<HelpButton />}
                             className='dashboard-appBar'
                         >
-                            {isMetadataManager && (
-                                <ServerButton />
-                            )}
+                            {isMetadataManager && <ServerButton />}
 
                             <AppTabs isDrawerOpen={isDrawerOpen} />
                         </AppToolbar>
                     </OffsetAppBar>
 
-                    {
-                        isDrawerAvailable && (
-                            <AppDrawer
-                                open={isDrawerOpen}
-                                onClose={onToggleDrawer}
-                                onOpen={onToggleDrawer}
-                            />
-                        )
-                    }
+                    {isDrawerAvailable && (
+                        <AppDrawer
+                            open={isDrawerOpen}
+                            onClose={onToggleDrawer}
+                            onOpen={onToggleDrawer}
+                        />
+                    )}
                 </StrictMode>
 
                 <Box

@@ -7,13 +7,13 @@ import type { PlayOptions } from './playOptions';
 
 export interface Plugin {
     /** The name of the plugin */
-    name: string
+    name: string;
     /** The unique identifier for the plugin */
-    id: string
+    id: string;
     /** The type of the plugin */
-    type: PluginType | string
+    type: PluginType | string;
     /** The priority of the plugin, used to determine the order of execution */
-    priority?: number
+    priority?: number;
 }
 
 export abstract class PlayerPlugin implements Plugin {
@@ -30,9 +30,9 @@ export abstract class PlayerPlugin implements Plugin {
 
 export interface InterceptOptions extends PlayOptions {
     /** The item being played */
-    item: BaseItemDto
+    item: BaseItemDto;
     /** The media type of the item */
-    mediaType?: MediaType
+    mediaType?: MediaType;
 }
 
 export abstract class PreplayInterceptPlugin implements Plugin {

@@ -8,7 +8,10 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     const apiClient = ServerConnections.getApiClient(item.ServerId);
     if (!apiClient) {
-        console.error('[getNowPlayingImageUrl] No ApiClient instance available for serverId', item.ServerId);
+        console.error(
+            '[getNowPlayingImageUrl] No ApiClient instance available for serverId',
+            item.ServerId
+        );
         return null;
     }
 
@@ -16,7 +19,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
                 elements that aren't created yet. */
     if (item?.BackdropImageTags?.length && item.Id) {
         return apiClient.getScaledImageUrl(item.Id, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Backdrop,
             tag: item.BackdropImageTags[0]
         });
@@ -24,7 +27,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     if (item?.ParentBackdropImageTags?.length && item.ParentBackdropItemId) {
         return apiClient.getScaledImageUrl(item.ParentBackdropItemId, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Backdrop,
             tag: item.ParentBackdropImageTags[0]
         });
@@ -34,7 +37,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     if (item?.Id && imageTags.Thumb) {
         return apiClient.getScaledImageUrl(item.Id, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Thumb,
             tag: imageTags.Thumb
         });
@@ -42,7 +45,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     if (item?.ParentThumbImageTag && item.ParentThumbItemId) {
         return apiClient.getScaledImageUrl(item.ParentThumbItemId, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Thumb,
             tag: item.ParentThumbImageTag
         });
@@ -50,7 +53,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     if (item?.Id && imageTags.Primary) {
         return apiClient.getScaledImageUrl(item.Id, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Primary,
             tag: imageTags.Primary
         });
@@ -58,7 +61,7 @@ const getNowPlayingImageUrl = (item: BaseItemDto) => {
 
     if (item?.AlbumPrimaryImageTag && item.AlbumId) {
         return apiClient.getScaledImageUrl(item.AlbumId, {
-            maxWidth: Math.round(dom.getScreenWidth() * 0.20),
+            maxWidth: Math.round(dom.getScreenWidth() * 0.2),
             type: ImageType.Primary,
             tag: item.AlbumPrimaryImageTag
         });

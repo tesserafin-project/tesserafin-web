@@ -8,11 +8,13 @@ import globalize from 'lib/globalize';
 import type { LibraryViewSettings } from 'types/library';
 
 interface PaginationProps {
-    setLibraryViewSettings: React.Dispatch<React.SetStateAction<LibraryViewSettings>>
-    index: number
-    pageSize: number
-    total: number
-    disabled?: boolean
+    setLibraryViewSettings: React.Dispatch<
+        React.SetStateAction<LibraryViewSettings>
+    >;
+    index: number;
+    pageSize: number;
+    total: number;
+    disabled?: boolean;
 }
 
 const Pagination: FC<PaginationProps> = ({
@@ -39,10 +41,7 @@ const Pagination: FC<PaginationProps> = ({
     }, [index, pageSize, setLibraryViewSettings]);
 
     return (
-        <ButtonGroup
-            color='inherit'
-            variant='text'
-        >
+        <ButtonGroup color='inherit' variant='text'>
             <Button
                 title={globalize.translate('Previous')}
                 disabled={disabled || index == 0}

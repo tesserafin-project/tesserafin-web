@@ -2,20 +2,25 @@ import Box from '@mui/material/Box/Box';
 import Stack from '@mui/material/Stack/Stack';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 import Typography from '@mui/material/Typography/Typography';
-import { type MRT_RowData, type MRT_TableInstance, type MRT_TableOptions, MaterialReactTable } from 'material-react-table';
+import {
+    type MRT_RowData,
+    type MRT_TableInstance,
+    type MRT_TableOptions,
+    MaterialReactTable
+} from 'material-react-table';
 import React from 'react';
 
 import Page, { type PageProps } from 'components/Page';
 import Alert from '@mui/material/Alert';
 
 interface TablePageProps<T extends MRT_RowData> extends PageProps {
-    title: string
-    subtitle?: string
-    table: MRT_TableInstance<T>
-    isError?: boolean
-    errorMessage?: string
+    title: string;
+    subtitle?: string;
+    table: MRT_TableInstance<T>;
+    isError?: boolean;
+    errorMessage?: string;
     /** Optional content (e.g. an informational Alert) rendered between the title and the table. */
-    notice?: React.ReactNode
+    notice?: React.ReactNode;
 }
 
 export const DEFAULT_TABLE_OPTIONS: Partial<MRT_TableOptions<MRT_RowData>> = {
@@ -44,10 +49,7 @@ const TablePage = <T extends MRT_RowData>({
     ...pageProps
 }: TablePageProps<T>) => {
     return (
-        <Page
-            title={title}
-            {...pageProps}
-        >
+        <Page title={title} {...pageProps}>
             <Box
                 className='content-primary'
                 sx={{
@@ -66,14 +68,8 @@ const TablePage = <T extends MRT_RowData>({
                                 marginBottom: 1
                             }}
                         >
-                            <Typography variant='h1'>
-                                {title}
-                            </Typography>
-                            {subtitle && (
-                                <Typography>
-                                    {subtitle}
-                                </Typography>
-                            )}
+                            <Typography variant='h1'>{title}</Typography>
+                            {subtitle && <Typography>{subtitle}</Typography>}
                         </Stack>
                         {notice}
                         <MaterialReactTable table={table} />

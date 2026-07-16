@@ -21,20 +21,19 @@ const fetchAncestors = async (
 };
 
 /** Query options for fetching the hierarchy of ancestors of a given item. */
-export const getAncestorsQuery = (
-    api?: Api,
-    params?: AncestorsParams
-) => queryOptions({
-    queryKey: [ 'Items', params?.itemId, 'Ancestors' ],
-    queryFn: ({ signal }) => fetchAncestors(api!, params as LibraryApiGetAncestorsRequest, { signal }),
-    staleTime: Infinity, // Ancestors are unlikely to change
-    enabled: !!api && !!params?.itemId
-});
+export const getAncestorsQuery = (api?: Api, params?: AncestorsParams) =>
+    queryOptions({
+        queryKey: ['Items', params?.itemId, 'Ancestors'],
+        queryFn: ({ signal }) =>
+            fetchAncestors(api!, params as LibraryApiGetAncestorsRequest, {
+                signal
+            }),
+        staleTime: Infinity, // Ancestors are unlikely to change
+        enabled: !!api && !!params?.itemId
+    });
 
 /** Hook to fetch the hierarchy of ancestors of a given item. */
-export const useAncestors = (
-    params: AncestorsParams
-) => {
+export const useAncestors = (params: AncestorsParams) => {
     const apiContext = useApi();
     const { api } = apiContext;
     return useQuery(getAncestorsQuery(api, params));

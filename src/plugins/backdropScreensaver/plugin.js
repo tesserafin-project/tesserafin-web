@@ -23,23 +23,29 @@ class BackdropScreensaver {
         };
 
         const apiClient = ServerConnections.currentApiClient();
-        apiClient.getItems(apiClient.getCurrentUserId(), query).then((result) => {
-            if (result.Items.length) {
-                import('../../components/slideshow/slideshow').then(({ default: Slideshow }) => {
-                    const newSlideShow = new Slideshow({
-                        showTitle: true,
-                        cover: true,
-                        items: result.Items,
-                        autoplay: {
-                            delay: userSettings.backdropScreensaverInterval() * 1000
-                        }
-                    });
+        apiClient
+            .getItems(apiClient.getCurrentUserId(), query)
+            .then((result) => {
+                if (result.Items.length) {
+                    import('../../components/slideshow/slideshow')
+                        .then(({ default: Slideshow }) => {
+                            const newSlideShow = new Slideshow({
+                                showTitle: true,
+                                cover: true,
+                                items: result.Items,
+                                autoplay: {
+                                    delay:
+                                        userSettings.backdropScreensaverInterval() *
+                                        1000
+                                }
+                            });
 
-                    newSlideShow.show();
-                    this.currentSlideshow = newSlideShow;
-                }).catch(console.error);
-            }
-        });
+                            newSlideShow.show();
+                            this.currentSlideshow = newSlideShow;
+                        })
+                        .catch(console.error);
+                }
+            });
     }
 
     hide() {

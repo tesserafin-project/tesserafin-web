@@ -17,18 +17,15 @@ import LogButtonGroup from 'apps/dashboard/features/logs/components/LogButtonGro
 export const Component = () => {
     const { file: fileName } = useParams();
     const contentPrimaryRef = useRef<HTMLDivElement | null>(null);
-    const [ isCopiedToastOpen, setIsCopiedToastOpen ] = useState(false);
-    const [ isWatchModeEnabled, setIsWatchModeEnabled ] = useState(false);
-    const [ wasAtBottom, setWasAtBottom ] = useState<boolean>(false);
+    const [isCopiedToastOpen, setIsCopiedToastOpen] = useState(false);
+    const [isWatchModeEnabled, setIsWatchModeEnabled] = useState(false);
+    const [wasAtBottom, setWasAtBottom] = useState<boolean>(false);
     const {
         isError: error,
         isPending: loading,
         data: log,
         refetch
-    } = useServerLog(
-        fileName ?? '',
-        isWatchModeEnabled ? 2000 : false
-    );
+    } = useServerLog(fileName ?? '', isWatchModeEnabled ? 2000 : false);
 
     const retry = useCallback(() => refetch(), [refetch]);
 
@@ -75,7 +72,9 @@ export const Component = () => {
     useEffect(() => {
         const onScroll = () => {
             if (contentPrimaryRef.current) {
-                const isAtBottom = window.innerHeight + Math.round(window.scrollY) >= contentPrimaryRef.current.offsetHeight - 5;
+                const isAtBottom =
+                    window.innerHeight + Math.round(window.scrollY) >=
+                    contentPrimaryRef.current.offsetHeight - 5;
                 setWasAtBottom(isAtBottom);
             }
         };
@@ -91,7 +90,7 @@ export const Component = () => {
         if (wasAtBottom) {
             scrollToBottom();
         }
-    }, [ log, scrollToBottom, wasAtBottom ]);
+    }, [log, scrollToBottom, wasAtBottom]);
 
     return (
         <Page
@@ -144,12 +143,14 @@ export const Component = () => {
 
                             <Paper sx={{ mt: 2 }}>
                                 <code>
-                                    <pre style={{
-                                        overflow:'auto',
-                                        margin: 0,
-                                        padding: '16px',
-                                        whiteSpace: 'pre-wrap'
-                                    }}>
+                                    <pre
+                                        style={{
+                                            overflow: 'auto',
+                                            margin: 0,
+                                            padding: '16px',
+                                            whiteSpace: 'pre-wrap'
+                                        }}
+                                    >
                                         {log}
                                     </pre>
                                 </code>

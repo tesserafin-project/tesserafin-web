@@ -59,14 +59,18 @@ class Manager {
         this.queueCore.init(this);
         this.controller.init(this);
 
-        Events.on(this.timeSyncCore, 'time-sync-server-update', (event, timeOffset, ping) => {
-            // Report ping back to server.
-            if (this.syncEnabled) {
-                this.getApiClient().sendSyncPlayPing({
-                    Ping: ping
-                });
+        Events.on(
+            this.timeSyncCore,
+            'time-sync-server-update',
+            (event, timeOffset, ping) => {
+                // Report ping back to server.
+                if (this.syncEnabled) {
+                    this.getApiClient().sendSyncPlayPing({
+                        Ping: ping
+                    });
+                }
             }
-        });
+        );
     }
 
     /**
@@ -194,7 +198,9 @@ class Manager {
                 this.queueCore.updatePlayQueue(apiClient, cmd.Data);
                 break;
             case 'UserJoined':
-                toast(globalize.translate('MessageSyncPlayUserJoined', cmd.Data));
+                toast(
+                    globalize.translate('MessageSyncPlayUserJoined', cmd.Data)
+                );
                 if (!this.groupInfo.Participants) {
                     this.groupInfo.Participants = [cmd.Data];
                 } else {
@@ -205,14 +211,17 @@ class Manager {
             case 'UserLeft':
                 toast(globalize.translate('MessageSyncPlayUserLeft', cmd.Data));
                 if (this.groupInfo.Participants) {
-                    this.groupInfo.Participants = this.groupInfo.Participants.filter((user) => user !== cmd.Data);
+                    this.groupInfo.Participants =
+                        this.groupInfo.Participants.filter(
+                            (user) => user !== cmd.Data
+                        );
                 }
                 Events.trigger(this, 'group-update', [{ ...this.groupInfo }]);
                 break;
             case 'GroupJoined':
                 cmd.Data.LastUpdatedAt = new Date(cmd.Data.LastUpdatedAt);
                 this.enableSyncPlay(apiClient, cmd.Data, true);
-                Events.trigger(this, 'group-update', [ cmd.Data ]);
+                Events.trigger(this, 'group-update', [cmd.Data]);
                 break;
             case 'SyncPlayIsDisabled':
                 toast(globalize.translate('MessageSyncPlayIsDisabled'));
@@ -225,10 +234,13 @@ class Manager {
             case 'GroupUpdate':
                 cmd.Data.LastUpdatedAt = new Date(cmd.Data.LastUpdatedAt);
                 this.groupInfo = cmd.Data;
-                Events.trigger(this, 'group-update', [ cmd.Data ]);
+                Events.trigger(this, 'group-update', [cmd.Data]);
                 break;
             case 'StateUpdate':
-                Events.trigger(this, 'group-state-update', [cmd.Data.State, cmd.Data.Reason]);
+                Events.trigger(this, 'group-state-update', [
+                    cmd.Data.State,
+                    cmd.Data.Reason
+                ]);
                 break;
             case 'GroupDoesNotExist':
                 toast(globalize.translate('MessageSyncPlayGroupDoesNotExist'));
@@ -240,10 +252,14 @@ class Manager {
                 toast(globalize.translate('MessageSyncPlayJoinGroupDenied'));
                 break;
             case 'LibraryAccessDenied':
-                toast(globalize.translate('MessageSyncPlayLibraryAccessDenied'));
+                toast(
+                    globalize.translate('MessageSyncPlayLibraryAccessDenied')
+                );
                 break;
             default:
-                console.error(`[SyncPlay.Manager] processGroupUpdate: command ${cmd.Type} not recognised.`);
+                console.error(
+                    `[SyncPlay.Manager] processGroupUpdate: command ${cmd.Type} not recognised.`
+                );
                 break;
         }
     }
@@ -258,21 +274,32 @@ class Manager {
         if (typeof cmd.When === 'string') {
             cmd.When = new Date(cmd.When);
             cmd.EmittedAt = new Date(cmd.EmittedAt);
-            cmd.PositionTicks = cmd.PositionTicks ? parseInt(cmd.PositionTicks, 10) : null;
+            cmd.PositionTicks = cmd.PositionTicks
+                ? parseInt(cmd.PositionTicks, 10)
+                : null;
         }
 
         if (!this.isSyncPlayEnabled()) {
-            console.debug('SyncPlay processCommand: SyncPlay not enabled, ignoring command.', cmd);
+            console.debug(
+                'SyncPlay processCommand: SyncPlay not enabled, ignoring command.',
+                cmd
+            );
             return;
         }
 
         if (cmd.EmittedAt.getTime() < this.syncPlayEnabledAt.getTime()) {
-            console.debug('SyncPlay processCommand: ignoring old command.', cmd);
+            console.debug(
+                'SyncPlay processCommand: ignoring old command.',
+                cmd
+            );
             return;
         }
 
         if (!this.syncPlayReady) {
-            console.debug('SyncPlay processCommand: SyncPlay not ready, queued command.', cmd);
+            console.debug(
+                'SyncPlay processCommand: SyncPlay not ready, queued command.',
+                cmd
+            );
             this.queuedCommand = cmd;
             return;
         }
@@ -287,11 +314,16 @@ class Manager {
         // Make sure command matches playing item in playlist.
         const playlistItemId = this.queueCore.getCurrentPlaylistItemId();
         if (cmd.PlaylistItemId !== playlistItemId && cmd.Command !== 'Stop') {
-            console.error('SyncPlay processCommand: playlist item does not match!', cmd);
+            console.error(
+                'SyncPlay processCommand: playlist item does not match!',
+                cmd
+            );
             return;
         }
 
-        console.log(`SyncPlay will ${cmd.Command} at ${cmd.When} (in ${cmd.When.getTime() - Date.now()} ms)${cmd.PositionTicks ? '' : ' from ' + cmd.PositionTicks}.`);
+        console.log(
+            `SyncPlay will ${cmd.Command} at ${cmd.When} (in ${cmd.When.getTime() - Date.now()} ms)${cmd.PositionTicks ? '' : ' from ' + cmd.PositionTicks}.`
+        );
 
         this.playbackCore.applyCommand(cmd);
     }
@@ -301,14 +333,21 @@ class Manager {
      * @param {Object|null} update The group state update.
      */
     processStateChange(update) {
-        if (update === null || update.State === null || update.Reason === null) return;
+        if (update === null || update.State === null || update.Reason === null)
+            return;
 
         if (!this.isSyncPlayEnabled()) {
-            console.debug('SyncPlay processStateChange: SyncPlay not enabled, ignoring group state update.', update);
+            console.debug(
+                'SyncPlay processStateChange: SyncPlay not enabled, ignoring group state update.',
+                update
+            );
             return;
         }
 
-        Events.trigger(this, 'group-state-change', [update.State, update.Reason]);
+        Events.trigger(this, 'group-state-change', [
+            update.State,
+            update.Reason
+        ]);
     }
 
     /**
@@ -364,10 +403,14 @@ class Manager {
     enableSyncPlay(apiClient, groupInfo, showMessage = false) {
         if (this.isSyncPlayEnabled()) {
             if (groupInfo.GroupId === this.groupInfo.GroupId) {
-                console.debug(`SyncPlay enableSyncPlay: group ${this.groupInfo.GroupId} already joined.`);
+                console.debug(
+                    `SyncPlay enableSyncPlay: group ${this.groupInfo.GroupId} already joined.`
+                );
                 return;
             } else {
-                console.warn(`SyncPlay enableSyncPlay: switching from group ${this.groupInfo.GroupId} to group ${groupInfo.GroupId}.`);
+                console.warn(
+                    `SyncPlay enableSyncPlay: switching from group ${this.groupInfo.GroupId} to group ${groupInfo.GroupId}.`
+                );
                 this.disableSyncPlay(false);
             }
 
@@ -382,7 +425,10 @@ class Manager {
         Events.trigger(this, 'enabled', [true]);
 
         // Wait for time sync to be ready.
-        Helper.waitForEventOnce(this.timeSyncCore, 'time-sync-server-update').then(() => {
+        Helper.waitForEventOnce(
+            this.timeSyncCore,
+            'time-sync-server-update'
+        ).then(() => {
             this.syncPlayReady = true;
             this.processCommand(this.queuedCommand, apiClient);
             this.queuedCommand = null;

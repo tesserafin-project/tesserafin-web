@@ -18,7 +18,13 @@ const getNowPlayingName = (session: SessionInfoDto): NowPlayingInfo => {
     // how dates are returned by the server when the session is active and show something like 'Active now', instead of past/future sentences
     if (!nowPlayingItem) {
         return {
-            bottomText: globalize.translate('LastSeen', formatDistanceToNow(Date.parse(session.LastActivityDate!), getLocaleWithSuffix()))
+            bottomText: globalize.translate(
+                'LastSeen',
+                formatDistanceToNow(
+                    Date.parse(session.LastActivityDate!),
+                    getLocaleWithSuffix()
+                )
+            )
         };
     }
 
@@ -45,12 +51,15 @@ const getNowPlayingName = (session: SessionInfoDto): NowPlayingInfo => {
                 type: 'Logo'
             });
         } else if (nowPlayingItem.ParentLogoImageTag) {
-            imgUrl = apiClient.getScaledImageUrl(nowPlayingItem.ParentLogoItemId!, {
-                tag: nowPlayingItem.ParentLogoImageTag,
-                maxHeight: 24,
-                maxWidth: 130,
-                type: 'Logo'
-            });
+            imgUrl = apiClient.getScaledImageUrl(
+                nowPlayingItem.ParentLogoItemId!,
+                {
+                    tag: nowPlayingItem.ParentLogoImageTag,
+                    maxHeight: 24,
+                    maxWidth: 130,
+                    type: 'Logo'
+                }
+            );
         }
     }
 

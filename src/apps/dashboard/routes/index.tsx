@@ -19,17 +19,20 @@ import ItemCountsWidget from '../components/widgets/ItemCountsWidget';
 import { TaskState } from '@jellyfin/sdk/lib/generated-client/models/task-state';
 
 export const Component = () => {
-    const [ isRestartConfirmDialogOpen, setIsRestartConfirmDialogOpen ] = useState(false);
-    const [ isShutdownConfirmDialogOpen, setIsShutdownConfirmDialogOpen ] = useState(false);
+    const [isRestartConfirmDialogOpen, setIsRestartConfirmDialogOpen] =
+        useState(false);
+    const [isShutdownConfirmDialogOpen, setIsShutdownConfirmDialogOpen] =
+        useState(false);
     const startTask = useStartTask();
     const restartServer = useRestartServer();
     const shutdownServer = useShutdownServer();
 
     const { data: tasks } = useLiveTasks({ isHidden: false });
 
-    const librariesTask = useMemo(() => (
-        tasks?.find((value) => value.Key === 'RefreshLibrary')
-    ), [ tasks ]);
+    const librariesTask = useMemo(
+        () => tasks?.find((value) => value.Key === 'RefreshLibrary'),
+        [tasks]
+    );
 
     const promptRestart = useCallback(() => {
         setIsRestartConfirmDialogOpen(true);
@@ -48,24 +51,26 @@ export const Component = () => {
     }, []);
 
     const onScanLibraries = useCallback(() => {
-        const scanLibrariesTask = tasks?.find((value) => value.Key === 'RefreshLibrary');
+        const scanLibrariesTask = tasks?.find(
+            (value) => value.Key === 'RefreshLibrary'
+        );
 
         if (scanLibrariesTask?.Id) {
             startTask.mutate({
                 taskId: scanLibrariesTask.Id
             });
         }
-    }, [ startTask, tasks ]);
+    }, [startTask, tasks]);
 
     const onRestartConfirm = useCallback(() => {
         restartServer.mutate();
         setIsRestartConfirmDialogOpen(false);
-    }, [ restartServer ]);
+    }, [restartServer]);
 
     const onShutdownConfirm = useCallback(() => {
         shutdownServer.mutate();
         setIsShutdownConfirmDialogOpen(false);
-    }, [ shutdownServer ]);
+    }, [shutdownServer]);
 
     return (
         <Page
@@ -99,7 +104,9 @@ export const Component = () => {
                                 onScanLibrariesClick={onScanLibraries}
                                 onRestartClick={promptRestart}
                                 onShutdownClick={promptShutdown}
-                                isScanning={librariesTask?.State !== TaskState.Idle}
+                                isScanning={
+                                    librariesTask?.State !== TaskState.Idle
+                                }
                             />
                             <ItemCountsWidget />
                             <RunningTasksWidget tasks={tasks} />
