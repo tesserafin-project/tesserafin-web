@@ -386,7 +386,9 @@ const config = {
                         options: {
                             cacheCompression: false,
                             cacheDirectory: true,
-                            plugins: ['@babel/transform-modules-umd']
+                            configFile: false,
+                            babelrc: false,
+                            plugins: ['@babel/plugin-transform-modules-umd']
                         }
                     }
                 ]
