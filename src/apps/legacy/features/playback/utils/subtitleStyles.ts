@@ -22,14 +22,6 @@ export function useCustomSubtitles(userSettings: UserSettings) {
                 return true;
             }
 
-            // Tizen 5 doesn't support displaying secondary subtitles
-            if (
-                (browser.tizenVersion && browser.tizenVersion >= 5) ||
-                browser.web0s
-            ) {
-                return true;
-            }
-
             if (browser.edge) {
                 return true;
             }
