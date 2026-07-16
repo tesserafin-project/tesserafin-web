@@ -1,0 +1,10 @@
+{
+  "title": "Reefin API",
+  "version": "12.0.0",
+  "xReefinVersion": "12.0.0",
+  "openapi": "3.0.4",
+  "pathCount": 299,
+  "schemaCount": 395,
+  "source": "/home/alex/Repos/reefin/tests/Reefin.Server.Integration.Tests/bin/Debug/net10.0/openapi.json",
+  "generatedAt": "2026-07-16T16:36:14.398Z"
+}
