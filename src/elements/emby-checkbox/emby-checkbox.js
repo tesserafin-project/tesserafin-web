@@ -23,8 +23,7 @@ function onKeyDown(e) {
     }
 }
 
-const enableRefreshHack =
-    browser.tizen || browser.orsay || browser.operaTv || browser.web0s;
+const enableRefreshHack = browser.tizen || browser.web0s;
 
 function forceRefresh(loading) {
     const elem = this.parentNode;

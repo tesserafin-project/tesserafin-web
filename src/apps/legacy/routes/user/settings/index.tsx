@@ -47,7 +47,7 @@ const UserSettingsPage: FC = () => {
         return <Loading />;
     }
 
-    // gamepad toggle unavailable on EdgeUWP, and smoothscroll unavailable on non-TV layout
+    // gamepad toggle unavailable on Xbox, and smoothscroll unavailable on non-TV layout
     const isControlsPageEmpty =
         !keyboardNavigation.canEnableGamepad() && !layoutManager.tv;
 

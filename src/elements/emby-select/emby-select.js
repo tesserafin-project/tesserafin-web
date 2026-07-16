@@ -8,12 +8,12 @@ const EmbySelectPrototype = Object.create(HTMLSelectElement.prototype);
 
 function enableNativeMenu() {
     // WebView 2 creates dropdown that doesn't work with controller.
-    if (browser.edgeUwp || browser.xboxOne) {
+    if (browser.xboxOne) {
         return false;
     }
 
     // Doesn't seem to work at all
-    if (browser.tizen || browser.orsay || browser.web0s) {
+    if (browser.tizen || browser.web0s) {
         return false;
     }
 

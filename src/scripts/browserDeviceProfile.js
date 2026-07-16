@@ -122,7 +122,7 @@ function canPlayHlsWithMSE() {
 }
 
 function supportsAc3(videoTestElement) {
-    if (browser.edgeUwp || browser.tizen || browser.web0s) {
+    if (browser.tizen || browser.web0s) {
         return true;
     }
 
@@ -227,11 +227,11 @@ function canPlayAudioFormat(format) {
     let typeString;
 
     if (format === 'flac' || format === 'asf') {
-        if (browser.tizen || browser.web0s || browser.edgeUwp) {
+        if (browser.tizen || browser.web0s) {
             return true;
         }
     } else if (format === 'wma') {
-        if (browser.tizen || browser.edgeUwp) {
+        if (browser.tizen) {
             return true;
         }
     } else if (format === 'opus') {
@@ -294,22 +294,21 @@ function testCanPlayMkv(videoTestElement) {
         return true;
     }
 
-    return !!browser.edgeUwp;
+    return false;
 }
 
 function testCanPlayTs() {
-    return browser.tizen || browser.web0s || browser.edgeUwp;
+    return browser.tizen || browser.web0s;
 }
 
 function supportsMpeg2Video() {
-    return browser.tizen || browser.web0s || browser.edgeUwp;
+    return browser.tizen || browser.web0s;
 }
 
 function supportsVc1(videoTestElement) {
     return (
         browser.tizen ||
         browser.web0s ||
-        browser.edgeUwp ||
         videoTestElement
             .canPlayType('video/mp4; codecs="vc-1"')
             .replace(/no/, '')
@@ -394,9 +393,9 @@ function supportsAnamorphicVideo() {
     // stretching non-square pixels to the correct display aspect ratio.
     //
     // Tizen 6+ confirmed working in commit 08f8b2d2f. WebOS 5+ is similar (2020+ LG TVs).
-    // Desktop browsers, Edge UWP (Xbox), and mobile platforms all handle anamorphic correctly.
+    // Desktop browsers and mobile platforms all handle anamorphic correctly.
     //
-    // Platforms NOT included (need testing): vidaa, hisense, ps4, titanos, operaTv, vega
+    // Platforms NOT included (need testing): vidaa, hisense, ps4, titanos, vega
     return (
         browser.tizenVersion >= 6 ||
         browser.web0sVersion >= 5 ||
@@ -404,7 +403,6 @@ function supportsAnamorphicVideo() {
         browser.firefox ||
         browser.safari ||
         browser.edgeChromium ||
-        browser.edgeUwp ||
         browser.iOS ||
         browser.android
     );
@@ -423,11 +421,11 @@ function getDirectPlayProfileForVideoContainer(
     switch (container) {
         case 'asf':
         case 'wmv':
-            supported = browser.tizen || browser.web0s || browser.edgeUwp;
+            supported = browser.tizen || browser.web0s;
             videoAudioCodecs = [];
             break;
         case 'avi':
-            supported = browser.tizen || browser.web0s || browser.edgeUwp;
+            supported = browser.tizen || browser.web0s;
             // New Samsung TV don't support XviD/DivX
             // Explicitly add supported codecs to make other codecs be transcoded
             if (browser.tizenVersion >= 4) {
@@ -439,7 +437,7 @@ function getDirectPlayProfileForVideoContainer(
             break;
         case 'mpg':
         case 'mpeg':
-            supported = browser.tizen || browser.web0s || browser.edgeUwp;
+            supported = browser.tizen || browser.web0s;
             break;
         case 'flv':
             supported = browser.tizen;
@@ -457,12 +455,11 @@ function getDirectPlayProfileForVideoContainer(
                 browser.tizen ||
                 browser.web0s ||
                 browser.chrome ||
-                browser.edgeChromium ||
-                browser.edgeUwp;
+                browser.edgeChromium;
             videoCodecs.push('h264');
             break;
         case 'm2ts':
-            supported = browser.tizen || browser.web0s || browser.edgeUwp;
+            supported = browser.tizen || browser.web0s;
             videoCodecs.push('h264');
             if (supportsVc1(videoTestElement)) {
                 videoCodecs.push('vc1');
@@ -673,8 +670,7 @@ export default function (options) {
 
     let supportsMp2VideoAudio = options.supportsMp2VideoAudio;
     if (supportsMp2VideoAudio == null) {
-        supportsMp2VideoAudio =
-            browser.edgeUwp || browser.tizen || browser.web0s;
+        supportsMp2VideoAudio = browser.tizen || browser.web0s;
 
         // If the browser supports MP3, it presumably supports MP2 as well
         if (
@@ -1688,7 +1684,7 @@ export default function (options) {
         });
     }
 
-    if (!browser.edgeUwp && !browser.tizen && !browser.web0s) {
+    if (!browser.tizen && !browser.web0s) {
         h264CodecProfileConditions.push({
             Condition: 'NotEquals',
             Property: 'IsInterlaced',

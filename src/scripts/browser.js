@@ -64,13 +64,6 @@ function hasKeyboard(browser) {
         return true;
     }
 
-    if (browser.edgeUwp) {
-        // This is OK for now, but this won't always be true
-        // Should we use this?
-        // https://gist.github.com/wagonli/40d8a31bd0d6f0dd7a5d
-        return true;
-    }
-
     return !!browser.tv;
 }
 
@@ -312,12 +305,6 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
 
     browser.tv =
         browser.ps4 || browser.vega || browser.xboxOne || isTv(normalizedUA);
-    browser.operaTv = browser.tv && normalizedUA.includes('opr/');
-
-    browser.edgeUwp =
-        (browser.edge || browser.edgeChromium) &&
-        (normalizedUA.includes('msapphost') ||
-            normalizedUA.includes('webview'));
 
     if (browser.web0s) {
         browser.web0sVersion = web0sVersion(browser);
@@ -333,8 +320,7 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
         delete browser.chrome;
         delete browser.safari;
     } else if (browser.titanos) {
-        // UserAgent string contains 'Opr' and 'Safari', but we only want 'titanos' to be true
-        delete browser.operaTv;
+        // UserAgent string contains 'Safari', but we only want 'titanos' to be true
         delete browser.safari;
     } else if (browser.vega) {
         // UserAgent string contains 'Chrome' and 'Safari', but we only want 'vega' to be true
@@ -342,8 +328,6 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
         delete browser.safari;
         // UserAgent string contains 'Mobile Chrome', but it is a TV
         delete browser.mobile;
-    } else {
-        browser.orsay = normalizedUA.includes('smarthub');
     }
 
     if (browser.mobile || browser.tv) {
