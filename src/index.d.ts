@@ -8,3 +8,6 @@ declare module '*.scss' {
     const value: string;
     export default value;
 }
+
+// Side-effect only CSS package (no type declarations, resolved by the bundler).
+declare module 'material-design-icons-iconfont';
