@@ -1,0 +1,559 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"files": {
+		"includes": [
+			"**",
+			"!node_modules",
+			"!coverage",
+			"!dist",
+			"!.idea",
+			"!.vscode",
+			"!src/lib/reefin-sdk/generated"
+		]
+	},
+	"formatter": {
+		"enabled": false,
+		"indentStyle": "space",
+		"indentWidth": 4
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "none",
+			"a11y": {
+				"noAccessKey": "error",
+				"noAmbiguousAnchorText": "off",
+				"noAriaUnsupportedElements": "error",
+				"noAutofocus": "warn",
+				"noDistractingElements": "error",
+				"noHeaderScope": "error",
+				"noInteractiveElementToNoninteractiveRole": "error",
+				"noLabelWithoutControl": "error",
+				"noNoninteractiveElementInteractions": "error",
+				"noNoninteractiveElementToInteractiveRole": "error",
+				"noNoninteractiveTabindex": "error",
+				"noPositiveTabindex": "error",
+				"noRedundantAlt": "error",
+				"noRedundantRoles": "error",
+				"noStaticElementInteractions": "error",
+				"useAltText": "error",
+				"useAnchorContent": "warn",
+				"useAriaActivedescendantWithTabindex": "error",
+				"useAriaPropsForRole": "error",
+				"useAriaPropsSupportedByRole": "error",
+				"useFocusableInteractive": "error",
+				"useHeadingContent": "warn",
+				"useHtmlLang": "warn",
+				"useIframeTitle": "error",
+				"useKeyWithClickEvents": "error",
+				"useKeyWithMouseEvents": "error",
+				"useMediaCaption": "error",
+				"useValidAnchor": "warn",
+				"useValidAriaProps": "error",
+				"useValidAriaRole": "error",
+				"useValidAriaValues": "error",
+				"useValidAutocomplete": "error"
+			},
+			"complexity": {
+				"noAdjacentSpacesInRegex": "error",
+				"noBannedTypes": "error",
+				"noCommaOperator": "error",
+				"noExcessiveCognitiveComplexity": "warn",
+				"noExtraBooleanCast": "warn",
+				"noUselessCatch": "error",
+				"noUselessConstructor": "error",
+				"noUselessEscapeInRegex": "error",
+				"noUselessRename": "error",
+				"noUselessTernary": "error",
+				"noUselessThisAlias": "error",
+				"noUselessTypeConstraint": "error",
+				"noUselessUndefinedInitialization": "error",
+				"noVoid": "off",
+				"useMaxParams": {
+					"level": "error",
+					"options": { "max": 7 }
+				},
+				"useWhile": "error"
+			},
+			"correctness": {
+				"noChildrenProp": "error",
+				"noConstAssign": "error",
+				"noConstantCondition": "error",
+				"noEmptyCharacterClassInRegex": "error",
+				"noEmptyPattern": "error",
+				"noGlobalObjectCalls": "error",
+				"noInvalidBuiltinInstantiation": "error",
+				"noInvalidConstructorSuper": "error",
+				"noNonoctalDecimalEscape": "error",
+				"noPrecisionLoss": "error",
+				"noSelfAssign": "error",
+				"noSetterReturn": "error",
+				"noSwitchDeclarations": "error",
+				"noUndeclaredVariables": "error",
+				"noUnreachable": "error",
+				"noUnreachableSuper": "error",
+				"noUnresolvedImports": "off",
+				"noUnsafeFinally": "error",
+				"noUnsafeOptionalChaining": "error",
+				"noUnusedLabels": "error",
+				"noUnusedPrivateClassMembers": "error",
+				"noUnusedVariables": "warn",
+				"useIsNan": "error",
+				"useJsxKeyInIterable": "error",
+				"useParseIntRadix": "error",
+				"useValidForDirection": "error",
+				"useValidTypeof": "error",
+				"useYield": "error"
+			},
+			"security": {
+				"noBlankTarget": "error",
+				"noDangerouslySetInnerHtmlWithChildren": "warn"
+			},
+			"style": {
+				"noCommonJs": "error",
+				"noNamespace": "warn",
+				"noNestedTernary": "error",
+				"noRestrictedGlobals": {
+					"level": "error",
+					"options": {
+						"deniedGlobals": {
+							"defaultStatus": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"status": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scroll": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"outerHeight": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"screenX": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"opener": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onfocus": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"pageYOffset": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"addEventListener": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"defaultstatus": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"history": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"frames": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"screenY": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"focus": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"outerWidth": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"opera": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"external": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"innerHeight": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"closed": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"frameElement": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scrollY": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"self": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onblur": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"find": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"parent": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"top": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"moveBy": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"menubar": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"length": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onerror": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onresize": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"removeEventListener": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onload": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scrollTo": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"moveTo": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scrollX": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"name": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"toolbar": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"innerWidth": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"location": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"locationbar": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scrollBy": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"resizeTo": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"stop": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"scrollbars": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"blur": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"screenTop": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"confirm": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"screen": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"screenLeft": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"event": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"onunload": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"pageXOffset": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"resizeBy": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"statusbar": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"close": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"open": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property.",
+							"print": "Ambiguous global (confusing-browser-globals) - likely meant a local variable, not the window property."
+						}
+					}
+				},
+				"noYodaExpression": "error",
+				"useArrayLiterals": "error",
+				"useAsConstAssertion": "error",
+				"useBlockStatements": "off",
+				"useCollapsedElseIf": "error",
+				"useConst": "error",
+				"useForOf": "error",
+				"useSingleVarDeclarator": "error",
+				"useThrowOnlyError": "error"
+			},
+			"suspicious": {
+				"noAssignInExpressions": "error",
+				"noAsyncPromiseExecutor": "error",
+				"noCatchAssign": "error",
+				"noClassAssign": "error",
+				"noCommentText": "error",
+				"noCompareNegZero": "error",
+				"noConstantBinaryExpressions": "warn",
+				"noControlCharactersInRegex": "warn",
+				"noDebugger": "error",
+				"noDuplicateCase": "error",
+				"noDuplicateClassMembers": "error",
+				"noDuplicateElseIf": "error",
+				"noDuplicateEnumValues": "error",
+				"noDuplicateJsxProps": "error",
+				"noDuplicateObjectKeys": "error",
+				"noDuplicateParameters": "error",
+				"noEmptyBlockStatements": "warn",
+				"noExplicitAny": "warn",
+				"noExtraNonNullAssertion": "error",
+				"noFallthroughSwitchClause": "error",
+				"noFunctionAssign": "error",
+				"noGlobalAssign": "error",
+				"noImportAssign": "error",
+				"noIrregularWhitespace": "error",
+				"noMisleadingCharacterClass": "error",
+				"noMisleadingInstantiator": "error",
+				"noNonNullAssertedOptionalChain": "error",
+				"noPrototypeBuiltins": "warn",
+				"noRedeclare": "error",
+				"noReturnAssign": "error",
+				"noShadow": { "level": "warn", "options": {} },
+				"noShadowRestrictedNames": "warn",
+				"noSparseArray": "error",
+				"noTsIgnore": "error",
+				"noUnknownAttribute": "error",
+				"noUnsafeDeclarationMerging": "warn",
+				"noUnsafeNegation": "error",
+				"noUnusedExpressions": "off",
+				"noUselessRegexBackrefs": "error",
+				"noVar": "error",
+				"noWith": "error",
+				"useDefaultSwitchClauseLast": "error",
+				"useGetterReturn": "error",
+				"useIterableCallbackReturn": {
+					"level": "error",
+					"options": { "checkForEach": true }
+				},
+				"useNamespaceKeyword": "error"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"jsxQuoteStyle": "single",
+			"semicolons": "always",
+			"trailingCommas": "none"
+		},
+		"globals": []
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+			"linter": {
+				"rules": {
+					"complexity": { "noArguments": "error" },
+					"correctness": {
+						"noConstAssign": "off",
+						"noGlobalObjectCalls": "off",
+						"noInvalidBuiltinInstantiation": "off",
+						"noInvalidConstructorSuper": "off",
+						"noSetterReturn": "off",
+						"noUndeclaredVariables": "off",
+						"noUnreachable": "off",
+						"noUnreachableSuper": "off"
+					},
+					"style": { "useConst": "error", "useSpreadOverApply": "error" },
+					"suspicious": {
+						"noClassAssign": "off",
+						"noDuplicateClassMembers": "off",
+						"noDuplicateObjectKeys": "off",
+						"noDuplicateParameters": "off",
+						"noFunctionAssign": "off",
+						"noImportAssign": "off",
+						"noRedeclare": "off",
+						"noUnsafeNegation": "off",
+						"noVar": "error",
+						"noWith": "off",
+						"useGetterReturn": "off"
+					}
+				}
+			}
+		},
+		{ "includes": ["**", "!src"], "javascript": { "globals": ["exports"] } },
+		{
+			"includes": ["**/*.{cjs,js}", "!src"],
+			"javascript": { "globals": [] },
+			"linter": { "rules": { "style": { "noCommonJs": "off" } } }
+		},
+		{ "includes": ["scripts/**/*.{js,mjs,ts}"], "linter": { "rules": {} } },
+		{
+			"includes": ["src/**/*.{js,jsx,ts,tsx}"],
+			"javascript": {
+				"globals": [
+					"tizen",
+					"webapis",
+					"webOS",
+					"$",
+					"jQuery",
+					"Emby",
+					"Windows",
+					"YT",
+					"arguments",
+					"__COMMIT_SHA__",
+					"__JF_BUILD_VERSION__",
+					"__PACKAGE_JSON_NAME__",
+					"__PACKAGE_JSON_VERSION__",
+					"__USE_SYSTEM_FONTS__",
+					"__WEBPACK_SERVE__",
+					"onanimationend",
+					"ongamepadconnected",
+					"onlostpointercapture",
+					"onanimationiteration",
+					"onkeyup",
+					"onmousedown",
+					"onanimationstart",
+					"onslotchange",
+					"onprogress",
+					"ontransitionstart",
+					"onpause",
+					"onended",
+					"onpointerover",
+					"onscrollend",
+					"onformdata",
+					"ontransitionrun",
+					"onanimationcancel",
+					"ondrag",
+					"onchange",
+					"onbeforeinstallprompt",
+					"onbeforexrselect",
+					"chrome",
+					"Hls",
+					"onpointerdown",
+					"onmessage",
+					"ontransitioncancel",
+					"onabort",
+					"onpointerout",
+					"oncuechange",
+					"ongotpointercapture",
+					"onscrollsnapchanging",
+					"onsearch",
+					"onsubmit",
+					"onstalled",
+					"onsuspend",
+					"onreset",
+					"onerror",
+					"onmouseenter",
+					"ondragover",
+					"ongamepaddisconnected",
+					"onresize",
+					"onbeforetoggle",
+					"onmouseover",
+					"onpagehide",
+					"onmousemove",
+					"onratechange",
+					"oncommand",
+					"onmessageerror",
+					"onwheel",
+					"ondevicemotion",
+					"onauxclick",
+					"ontransitionend",
+					"onpaste",
+					"onpageswap",
+					"ononline",
+					"ondeviceorientationabsolute",
+					"onkeydown",
+					"onclose",
+					"onselect",
+					"onpageshow",
+					"onpointercancel",
+					"onbeforematch",
+					"onpointerrawupdate",
+					"ondragleave",
+					"onscrollsnapchange",
+					"onseeked",
+					"onwaiting",
+					"onbeforeunload",
+					"onplaying",
+					"onvolumechange",
+					"ondragend",
+					"onstorage",
+					"onloadeddata",
+					"onfocus",
+					"onoffline",
+					"onplay",
+					"onafterprint",
+					"onclick",
+					"oncut",
+					"onmouseout",
+					"ondblclick",
+					"oncanplay",
+					"onloadstart",
+					"onappinstalled",
+					"onpointermove",
+					"ontoggle",
+					"oncontextmenu",
+					"onblur",
+					"oncancel",
+					"onbeforeprint",
+					"oncontextrestored",
+					"Events",
+					"onloadedmetadata",
+					"onpointerup",
+					"onlanguagechange",
+					"oncopy",
+					"onselectstart",
+					"onscroll",
+					"onload",
+					"ondragstart",
+					"onbeforeinput",
+					"oncanplaythrough",
+					"oninput",
+					"oninvalid",
+					"ontimeupdate",
+					"ondurationchange",
+					"onselectionchange",
+					"LibraryMenu",
+					"onmouseup",
+					"ApiClient",
+					"onkeypress",
+					"location",
+					"onpointerleave",
+					"oncontextlost",
+					"ondrop",
+					"onsecuritypolicyviolation",
+					"oncontentvisibilityautostatechange",
+					"ondeviceorientation",
+					"onseeking",
+					"onrejectionhandled",
+					"onunload",
+					"onmouseleave",
+					"onhashchange",
+					"onpointerenter",
+					"onmousewheel",
+					"onunhandledrejection",
+					"ondragenter",
+					"onpopstate",
+					"onpagereveal",
+					"onemptied"
+				]
+			},
+			"linter": {
+				"rules": {
+					"style": {
+						"useNamingConvention": {
+							"level": "off",
+							"options": {
+								"strictCase": false,
+								"requireAscii": false,
+								"conventions": [
+									{
+										"selector": { "kind": "enumMember" },
+										"formats": ["PascalCase", "CONSTANT_CASE"]
+									},
+									{
+										"selector": { "kind": "objectLiteralProperty" },
+										"match": "_?_?([^_]*)_?_?",
+										"formats": ["camelCase", "PascalCase"]
+									},
+									{
+										"selector": { "kind": "typeProperty" },
+										"match": "_?_?([^_]*)_?_?",
+										"formats": ["camelCase", "PascalCase"]
+									},
+									{
+										"selector": { "kind": "variable" },
+										"match": "_?_?([^_]*)_?_?",
+										"formats": ["camelCase", "PascalCase", "CONSTANT_CASE"]
+									},
+									{
+										"selector": { "kind": "typeLike" },
+										"formats": ["PascalCase"]
+									},
+									{
+										"match": "_?([^_]*)",
+										"formats": ["camelCase", "PascalCase"]
+									}
+								]
+							}
+						}
+					},
+					"suspicious": { "noDeprecatedImports": "warn" }
+				}
+			}
+		},
+		{
+			"includes": ["src/**/*.{jsx,tsx}"],
+			"linter": {
+				"rules": {
+					"complexity": { "noUselessFragments": "warn" },
+					"correctness": {
+						"useExhaustiveDependencies": "warn",
+						"useHookAtTopLevel": "error"
+					},
+					"performance": { "noJsxPropsBind": "warn" },
+					"suspicious": { "noArrayIndexKey": "warn" }
+				}
+			}
+		},
+		{
+			"includes": ["src/serviceworker.js"],
+			"javascript": {
+				"globals": [
+					"onnotificationclose",
+					"onbackgroundfetchfail",
+					"onactivate",
+					"onerror",
+					"onpaymentrequest",
+					"onpushsubscriptionchange",
+					"onbackgroundfetchabort",
+					"onabortpayment",
+					"onsync",
+					"onpush",
+					"onfetch",
+					"oninstall",
+					"onbackgroundfetchsuccess",
+					"onmessage",
+					"onperiodicsync",
+					"oncanmakepayment",
+					"oncookiechange",
+					"onoffline",
+					"onrejectionhandled",
+					"onbackgroundfetchclick",
+					"onmessageerror",
+					"onunhandledrejection",
+					"onnotificationclick",
+					"ononline",
+					"onlanguagechange"
+				]
+			},
+			"linter": {
+				"rules": { "style": { "noRestrictedGlobals": "off" } }
+			}
+		},
+		{
+			"includes": ["src/**/*.worker.ts"],
+			"linter": {
+				"rules": { "style": { "noRestrictedGlobals": "off" } }
+			}
+		},
+		{
+			"includes": ["src/**/*.{js,jsx}"],
+			"linter": {
+				"rules": {
+					"complexity": {
+						"noExcessiveCognitiveComplexity": "off",
+						"noUselessThisAlias": "off"
+					}
+				}
+			}
+		}
+	],
+	"assist": {
+		"enabled": true,
+		"actions": { "source": { "organizeImports": "off" } }
+	}
+}
