@@ -14,6 +14,8 @@ interface TablePageProps<T extends MRT_RowData> extends PageProps {
     table: MRT_TableInstance<T>
     isError?: boolean
     errorMessage?: string
+    /** Optional content (e.g. an informational Alert) rendered between the title and the table. */
+    notice?: React.ReactNode
 }
 
 export const DEFAULT_TABLE_OPTIONS: Partial<MRT_TableOptions<MRT_RowData>> = {
@@ -37,6 +39,7 @@ const TablePage = <T extends MRT_RowData>({
     table,
     isError,
     errorMessage,
+    notice,
     children,
     ...pageProps
 }: TablePageProps<T>) => {
@@ -72,6 +75,7 @@ const TablePage = <T extends MRT_RowData>({
                                 </Typography>
                             )}
                         </Stack>
+                        {notice}
                         <MaterialReactTable table={table} />
                     </>
                 )}
