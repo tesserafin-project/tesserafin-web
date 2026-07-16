@@ -40,27 +40,14 @@ const KeyNames = {
     211: 'GamepadLeftThumbUp',
     212: 'GamepadLeftThumbDown',
     214: 'GamepadLeftThumbLeft',
-    213: 'GamepadLeftThumbRight',
+    213: 'GamepadLeftThumbRight'
     // End of UWP WebView Section
 
-    // MediaRewind (Tizen/WebOS)
-    412: 'MediaRewind',
-    // MediaStop (Tizen/WebOS)
-    413: 'MediaStop',
-    // MediaPlay (Tizen/WebOS)
-    415: 'MediaPlay',
-    // MediaFastForward (Tizen/WebOS)
-    417: 'MediaFastForward',
-    // Back (WebOS)
-    461: 'Back',
-    // Back (Tizen)
-    10009: 'Back',
-    // MediaTrackPrevious (Tizen)
-    10232: 'MediaTrackPrevious',
-    // MediaTrackNext (Tizen)
-    10233: 'MediaTrackNext',
-    // MediaPlayPause (Tizen)
-    10252: 'MediaPlayPause'
+    // These numeric keyCodes were Tizen/webOS-specific remote-control codes
+    // (retired platforms, see RFC-0004). The equivalent MediaKeys names
+    // ('MediaPlay', 'MediaTrackNext', etc., handled below) are still reached
+    // generically via the standard KeyboardEvent.code fallback in
+    // getKeyName() for any real multimedia keyboard/remote.
 };
 
 const KeyAliases = {

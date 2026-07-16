@@ -3,7 +3,6 @@ import browser from '../scripts/browser';
 import Events from '../utils/events.ts';
 import * as htmlMediaHelper from '../components/htmlMediaHelper';
 import * as webSettings from '../scripts/settings/webSettings';
-import globalize from '../lib/globalize';
 import profileBuilder from '../scripts/browserDeviceProfile';
 import { AppFeature } from 'constants/appFeature';
 import { LayoutMode } from 'constants/layoutMode';
@@ -11,8 +10,6 @@ import { LayoutMode } from 'constants/layoutMode';
 const appName = 'Jellyfin Web';
 
 const BrowserName = {
-    tizen: 'Samsung Smart TV',
-    web0s: 'LG Smart TV',
     titanos: 'Titan OS',
     vega: 'Vega OS',
     xboxOne: 'Xbox One',
@@ -211,7 +208,7 @@ function getDefaultLayout() {
 }
 
 function supportsHtmlMediaAutoplay() {
-    if (browser.tizen || browser.web0s || browser.ps4 || browser.xboxOne) {
+    if (browser.ps4 || browser.xboxOne) {
         return true;
     }
 
@@ -262,11 +259,7 @@ const supportedFeatures = (function () {
         features.push(AppFeature.FileDownload);
     }
 
-    if (browser.tizen || browser.web0s) {
-        features.push(AppFeature.Exit);
-    }
-
-    if (!browser.tizen && !browser.web0s && !browser.ps4) {
+    if (!browser.ps4) {
         features.push(AppFeature.ExternalLinks);
     }
 
@@ -293,9 +286,7 @@ const supportedFeatures = (function () {
         features.push(AppFeature.RemoteControl);
     }
 
-    if (!browser.tizen && !browser.web0s) {
-        features.push(AppFeature.RemoteVideo);
-    }
+    features.push(AppFeature.RemoteVideo);
 
     features.push(AppFeature.DisplayLanguage);
     features.push(AppFeature.DisplayMode);
@@ -330,46 +321,12 @@ function doExit() {
     try {
         if (window.NativeShell?.AppHost?.exit) {
             window.NativeShell.AppHost.exit();
-        } else if (browser.tizen) {
-            tizen.application.getCurrentApplication().exit();
-        } else if (browser.web0s) {
-            webOS.platformBack();
         } else {
             window.close();
         }
     } catch (err) {
         console.error('error closing application: ' + err);
     }
-}
-
-let exitPromise;
-
-/**
- * Ask user for exit
- */
-function askForExit() {
-    if (exitPromise) {
-        return;
-    }
-
-    import('../components/actionSheet/actionSheet').then((actionsheet) => {
-        exitPromise = actionsheet
-            .show({
-                title: globalize.translate('MessageConfirmAppExit'),
-                items: [
-                    { id: 'yes', name: globalize.translate('Yes') },
-                    { id: 'no', name: globalize.translate('No') }
-                ]
-            })
-            .then(function (value) {
-                if (value === 'yes') {
-                    doExit();
-                }
-            })
-            .finally(function () {
-                exitPromise = null;
-            });
-    });
 }
 
 let deviceId;
@@ -383,11 +340,7 @@ export const appHost = {
         alert('setWindowState is not supported and should not be called');
     },
     exit: function () {
-        if (!!window.appMode && browser.tizen) {
-            askForExit();
-        } else {
-            doExit();
-        }
+        doExit();
     },
     supports: function (command) {
         if (window.NativeShell) {
