@@ -303,10 +303,10 @@ const config = {
                 ],
                 use: [
                     {
-                        loader: 'babel-loader',
+                        loader: 'esbuild-loader',
                         options: {
-                            cacheCompression: false,
-                            cacheDirectory: true
+                            loader: 'jsx',
+                            target: 'es2020'
                         }
                     }
                 ]
@@ -325,10 +325,10 @@ const config = {
                 },
                 use: [
                     {
-                        loader: 'babel-loader',
+                        loader: 'esbuild-loader',
                         options: {
-                            cacheCompression: false,
-                            cacheDirectory: true
+                            loader: 'jsx',
+                            target: 'es2020'
                         }
                     }
                 ]
@@ -339,21 +339,36 @@ const config = {
                 use: [
                     'worker-loader',
                     {
-                        loader: 'ts-loader',
+                        loader: 'esbuild-loader',
                         options: {
-                            transpileOnly: true
+                            loader: 'ts',
+                            target: 'es2020'
                         }
                     }
                 ]
             },
             {
-                test: /\.(ts|tsx)$/,
+                test: /\.ts$/,
                 exclude: /node_modules/,
                 use: [
                     {
-                        loader: 'ts-loader',
+                        loader: 'esbuild-loader',
                         options: {
-                            transpileOnly: true
+                            loader: 'ts',
+                            target: 'es2020'
+                        }
+                    }
+                ]
+            },
+            {
+                test: /\.tsx$/,
+                exclude: /node_modules/,
+                use: [
+                    {
+                        loader: 'esbuild-loader',
+                        options: {
+                            loader: 'tsx',
+                            target: 'es2020'
                         }
                     }
                 ]
