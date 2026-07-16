@@ -2,7 +2,6 @@ const fg = require('fast-glob');
 const path = require('path');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
-const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { DefinePlugin, IgnorePlugin } = require('webpack');
@@ -106,11 +105,6 @@ const config = {
         new IgnorePlugin({
             resourceRegExp: /worker-bundle\.js$/,
             contextRegExp: /libarchive.js/
-        }),
-        new ForkTsCheckerWebpackPlugin({
-            typescript: {
-                configFile: path.resolve(__dirname, 'tsconfig.json')
-            }
         }),
         new MiniCssExtractPlugin({
             filename: (pathData) => {
