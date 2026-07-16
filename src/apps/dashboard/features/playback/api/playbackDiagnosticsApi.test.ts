@@ -1,7 +1,7 @@
 import type { Api } from '@jellyfin/sdk';
 import { describe, expect, it, vi } from 'vitest';
 
-import { fetchPlaybackSessions } from './playbackDiagnosticsApi';
+import { fetchPlaybackSessionFixture, fetchPlaybackSessions } from './playbackDiagnosticsApi';
 import type { PlaybackSessionListItem } from './types';
 
 /**
@@ -44,5 +44,35 @@ describe('fetchPlaybackSessions()', () => {
             expect.any(String),
             expect.objectContaining({ signal })
         );
+    });
+});
+
+describe('fetchPlaybackSessionFixture()', () => {
+    it('requests the Fixture sub-route as a blob, with the auth header attached', async () => {
+        const blob = new Blob([ '{}' ], { type: 'application/json' });
+        const get = vi.fn().mockResolvedValue({ data: blob });
+        const api = createMockApi(get);
+
+        const result = await fetchPlaybackSessionFixture(api, 'session-1');
+
+        expect(get).toHaveBeenCalledWith(
+            'https://example.com/System/PlaybackDiagnostics/Sessions/session-1/Fixture',
+            expect.objectContaining({
+                headers: { Authorization: 'MediaBrowser Token="test-token"' },
+                responseType: 'blob'
+            })
+        );
+        expect(result).toBe(blob);
+    });
+
+    it('propagates the request rejection (e.g. a 422 for a session with no retained diagnostic)', async () => {
+        const notRetainedError = Object.assign(new Error('Request failed with status code 422'), {
+            isAxiosError: true,
+            response: { status: 422 }
+        });
+        const get = vi.fn().mockRejectedValue(notRetainedError);
+        const api = createMockApi(get);
+
+        await expect(fetchPlaybackSessionFixture(api, 'session-1')).rejects.toBe(notRetainedError);
     });
 });
