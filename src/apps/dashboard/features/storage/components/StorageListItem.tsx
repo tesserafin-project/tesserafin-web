@@ -1,4 +1,4 @@
-import type { FolderStorageDto } from '@jellyfin/sdk/lib/generated-client';
+import type { FolderStorageDto } from 'lib/reefin-sdk';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import ListItem from '@mui/material/ListItem';

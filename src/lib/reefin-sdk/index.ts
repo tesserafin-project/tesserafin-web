@@ -10,7 +10,7 @@ export * from './generated';
 
 import globalAxios, { type AxiosInstance } from 'axios';
 
-import { Configuration } from './generated';
+import { Configuration, SystemApi } from './generated';
 
 /**
  * The protocol-level client identity sent to the server as part of the `Authorization` header
@@ -25,12 +25,14 @@ import { Configuration } from './generated';
  * together if this value ever does - see the design doc §4.4 for the full articulation-point
  * rationale.
  *
- * This constant is the single point that a future rename touches on the `reefin-sdk` side. It is
- * NOT wired into `useApi()`/the connection layer yet (see the class doc comments below) - today's
- * requests still carry the identity `utils/jellyfin-apiclient/compat.ts` (`toApi()`) computes from
- * `appHost.appName()`, which resolves to this exact same literal by a different path. Centralizing
- * it here does not change what is sent to the server; it gives the future connection-layer PR
- * (design doc §4.2/§8 PR3) one constant to edit instead of two coupled call sites.
+ * This constant is the single point a future rename touches on the `reefin-sdk` side.
+ * `utils/jellyfin-apiclient/compat.ts`'s `toReefinApi()` (design doc §8 PR3) reads it when building
+ * the parallel `ReefinApi` instance described on the `ReefinApi` class below; `toApi()` (the
+ * `@jellyfin/sdk` instance every existing call site still uses) is untouched and keeps deriving the
+ * *same* literal from `appHost.appName()` - both paths send an identical `Authorization` header
+ * today, so wiring this constant in changed nothing observable server-side. It gives a future
+ * connection-layer PR one constant to edit instead of the two coupled call sites
+ * (`apphost.js:11`/`image.ts:84`) once a real rename is coordinated with the server.
  */
 export const REEFIN_CLIENT_IDENTITY = {
     /** Sent as `Client="..."` in the `Authorization` header. */
@@ -74,12 +76,19 @@ const buildAuthorizationHeader = (
  * connection/session lifecycle concerns (design doc §4.2, "successor of `jellyfin-apiclient`"),
  * out of scope for the SDK construction wrapper itself.
  *
- * **Not used by any consumer yet.** `useApi()` (`hooks/useApi.tsx`) still builds and exposes a
- * `@jellyfin/sdk` `Api` instance via `utils/jellyfin-apiclient/compat.ts`'s `toApi()`. This class
- * exists so that swap has a concrete target: a later PR replaces the body of `toApi()` (or its
- * caller) with `createReefinApi(...)`, at which point every generated-client call site already
- * written against the shape this class exposes (`basePath`/`axiosInstance`/`authorizationHeader`/
- * `configuration`) keeps working unchanged.
+ * **Exposed in parallel, not as a replacement (design doc §8 PR3).** `useApi()`
+ * (`hooks/useApi.tsx`) exposes this as `reefinApi`, alongside the still-primary `@jellyfin/sdk`
+ * `api` field it has always exposed. `api` is NOT being replaced in this PR: an audit before this
+ * change found ~134 files calling `useApi()` and ~15+ files calling `api.subscribe(...)`
+ * (WebSocket - SyncPlay, live sessions/tasks dashboards, item-refresh indicators, cache
+ * invalidation, playback remote control, guide timers) - `ReefinApi` has no WebSocket support, so
+ * swapping the primary `api` field today would silently break all of that. `reefinApi` is additive:
+ * a second, fully independent field new call sites can opt into (this PR's proof is
+ * `apps/dashboard/features/storage`), while every existing `api`/`__legacyApiClient__` consumer
+ * keeps working completely unchanged. `utils/jellyfin-apiclient/connectionManager.js` caches this
+ * instance on the legacy `ApiClient` as `_reefinSdk` (mirroring the existing `_sdk` cache for
+ * `@jellyfin/sdk`) and calls `.update()` on it at the same two points it already updates `_sdk`, so
+ * it stays current across re-login/token refresh without needing its own reconnect logic.
  */
 export class ReefinApi {
     private _basePath: string;
@@ -141,6 +150,34 @@ export class ReefinApi {
             }
         });
     }
+
+    /**
+     * Updates this instance's identity/session fields in place - same purpose as `@jellyfin/sdk`'s
+     * `Api.update()`, minus the WebSocket reconnection it also does there (`ReefinApi` has no
+     * WebSocket, by design - see the class doc comment). Exists so `utils/jellyfin-apiclient/
+     * connectionManager.js` can keep a long-lived `ReefinApi` (cached on the legacy `ApiClient`,
+     * mirroring how it already caches the `@jellyfin/sdk` instance as `_sdk`) current across
+     * re-login/token refresh, instead of every reader risking a stale `accessToken`.
+     */
+    update(data: {
+        basePath?: string
+        clientInfo?: ReefinClientInfo
+        deviceInfo?: ReefinDeviceInfo
+        accessToken?: string
+    }): void {
+        if (data.basePath) {
+            this._basePath = data.basePath;
+        }
+        if (data.clientInfo) {
+            this._clientInfo = data.clientInfo;
+        }
+        if (data.deviceInfo) {
+            this._deviceInfo = data.deviceInfo;
+        }
+        if (data.accessToken !== undefined) {
+            this._accessToken = data.accessToken;
+        }
+    }
 }
 
 /** The `reefin-sdk` equivalent of `@jellyfin/sdk`'s `Jellyfin` class: holds the identity for a
@@ -172,3 +209,15 @@ export const createReefinApi = (
     clientInfo: ReefinClientInfo = { name: REEFIN_CLIENT_IDENTITY.name, version: '0.0.0' },
     axiosInstance?: AxiosInstance
 ): ReefinApi => new ReefinSdk({ clientInfo, deviceInfo }).createApi(basePath, accessToken, axiosInstance);
+
+/**
+ * Per-tag generated-client convenience factories, one per `*Api` class actually consumed so far -
+ * same naming/shape as `@jellyfin/sdk`'s own `get*Api(api)` helpers
+ * (`node_modules/@jellyfin/sdk/lib/utils/api/system-api.js`: `new SystemApi(api.configuration,
+ * undefined, api.axiosInstance)`), so a call site migrating from `@jellyfin/sdk` to `reefin-sdk`
+ * changes its import source, not its call shape (design doc §3's "mechanical swap" claim - this is
+ * what makes it true in practice). Add one of these per generated `*Api` class as a second/third
+ * consumer needs it, rather than inlining `new XApi(api.configuration, ...)` at every call site.
+ */
+export const getSystemApi = (api: ReefinApi): SystemApi =>
+    new SystemApi(api.configuration, undefined, api.axiosInstance);

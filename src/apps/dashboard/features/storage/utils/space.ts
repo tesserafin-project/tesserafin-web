@@ -1,4 +1,4 @@
-import type { FolderStorageDto } from '@jellyfin/sdk/lib/generated-client/models/folder-storage-dto';
+import type { FolderStorageDto } from 'lib/reefin-sdk';
 
 export const calculateTotal = (folder?: FolderStorageDto) => {
     if (typeof folder?.UsedSpace === 'undefined' || folder.UsedSpace < 0) {

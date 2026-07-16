@@ -10,6 +10,9 @@
   (catégorie 1 — identifiant client protocolaire).
 - **Portée** : design d'architecture. Répond à RFC-0001 §9 Q2 (« génération automatique ou
   maintenance manuelle ? »). Aucun code produit par ce document.
+- **Implémentation** : PR1 pipeline de génération (commit `ce75215`), PR2 migration playback
+  diagnostics (commit `1bcd6c6`), PR3 bascule connexion (parallèle, pas remplacement — voir §9) +
+  migration `features/storage` — faites. Détail et écarts réels vs plan initial en §9.
 
 ---
 
@@ -365,15 +368,18 @@ imports sans toucher à un écran réel.
 
 ## 8. Les 3 premières étapes (PR-sized)
 
-**PR1 — Pipeline de génération, aucune migration**
+**PR1 — Pipeline de génération, aucune migration — ✅ Fait (`ce75215`)**
 - Script `generate:reefin-sdk`, dossier `src/lib/reefin-sdk/generated/` produit et committé, wrapper
   `Jellyfin`/`Api`/`createApi` compatible en forme avec l'usage actuel de `@jellyfin/sdk`.
 - Job CI `reefin-sdk-contract-check.yml` (§6) et script `verify:reefin-sdk-fresh`.
 - `versions.ts` : `MINIMUM_VERSION` dérivé de `x-reefin-version`, corrige le constat de §2.1.
 - Rien dans le reste du dépôt ne change — vérifiable indépendamment, testable contre un serveur
   `reefin` de dev réel (spec `unstable`).
+- **Écart réel vs plan** : le job CI `reefin-sdk-contract-check.yml` et `verify:reefin-sdk-fresh`
+  n'ont **pas** été livrés dans ce PR (§9.4) — tout le reste l'a été. Deux passes de normalisation
+  de spec non anticipées ont dû être ajoutées au script (§9.1).
 
-**PR2 — Premier consommateur réel : remplacer le mirror manuel playback diagnostics**
+**PR2 — Premier consommateur réel : remplacer le mirror manuel playback diagnostics — ✅ Fait (`1bcd6c6`)**
 - Supprime `features/playback/api/types.ts` (mirror manuel de PR91/PR92) et
   `playbackDiagnosticsApi.ts` (appels `axios` bruts), les remplace par les classes générées
   `reefin-sdk` pour `PlaybackDiagnosticsSessionsController` (`PlaybackSessionResponse`,
@@ -383,20 +389,169 @@ imports sans toucher à un écran réel.
   ni l'autre, génération centralisée » — la question elle-même disparaît.
 - Preuve de concept end-to-end de tout ce document sur un cas déjà designé et testé plutôt que sur
   du code jamais éprouvé.
+- **Écart réel vs plan** : `types.ts` n'a pas disparu comme annoncé — il existe toujours, mais son
+  contenu est dérivé des types générés (`DeepRequired<T>`) plutôt que retapé à la main ; un pont
+  (`systemApiFor`) reste nécessaire à l'appel (§9.2). Le principe (génération = source de vérité,
+  plus de mirror manuel du DTO C#) est respecté ; la promesse littérale « le fichier disparaît »
+  ne l'était pas.
 
-**PR3 — Bascule du point de construction + premier module `apps/dashboard` existant migré**
+**PR3 — Bascule du point de construction + premier module `apps/dashboard` existant migré — ✅ Fait**
 - `compat.ts`/`connectionManager.js` (§4.2) construisent une instance `reefin-sdk` en parallèle de
   `@jellyfin/sdk` (les deux exposées via `useApi()`, comme `api`/`__legacyApiClient__` le sont déjà
-  aujourd'hui).
+  aujourd'hui). **Confirmé exactement comme prévu ici — voir §9.3 pour pourquoi une bascule
+  complète (remplacer `api` plutôt que le compléter) a été explicitement écartée.**
 - Un module `apps/dashboard` déjà consommateur de `@jellyfin/sdk` sur des routes **héritées**
-  Jellyfin (ex. `features/storage`, qui utilise déjà des DTO du SDK stock) migre entièrement vers
-  `reefin-sdk` — c'est le test de la promesse centrale de §3 : un swap mécanique de classe `*Api` et
-  de point de construction, sans réécriture de la logique métier du composant. Si ce n'est pas
-  mécanique en pratique, c'est le signal à recueillir avant de généraliser en §7.
+  Jellyfin (`features/storage` — devinée juste en §8 d'origine) migre entièrement vers `reefin-sdk` —
+  test de la promesse centrale de §3 : un swap mécanique de classe `*Api` et de point de
+  construction, sans réécriture de la logique métier du composant. **Confirmé mécanique en
+  pratique** : seuls les imports (`@jellyfin/sdk` → `lib/reefin-sdk`) et le champ lu sur `useApi()`
+  (`api` → `reefinApi`) ont changé dans `useSystemStorage.ts`/`StorageListItem.tsx`/`space.ts`/
+  `space.test.ts` — zéro changement de logique, zéro changement de JSX, zéro changement de test
+  autre que l'import.
 
 ---
 
-## 9. Risques et limites connues
+## 9. État d'implémentation et écarts réels
+
+PR1-3 sont faites (§8). Cette section documente ce qui a divergé du plan initial en le construisant
+réellement, et ce qui reste — pas une nouvelle ronde de design, un constat après coup.
+
+### 9.1 PR1 — deux passes de normalisation de spec non anticipées
+
+Le plan (§4.1) prévoyait « corrige les incompatibilités connues du générateur si besoin (miroir de
+`fix-schema` dans `@jellyfin/sdk`) » au conditionnel — en pratique, deux corrections concrètes ont
+été nécessaires dans `scripts/generate-reefin-sdk.mjs`, toutes deux des artefacts
+Swashbuckle/`openapi-generator-cli`, pas de la logique métier Reefin :
+
+1. **Enums avec `allOf`+`enum` redondants** : Swashbuckle émet `{ enum: [...], allOf: [{ $ref }] }`
+   pour tout paramètre/propriété de type enum (257 occurrences dans la spec courante).
+   `openapi-generator-cli` 7.11.0 (template `typescript-axios`) ne sait pas résoudre cette forme —
+   il tente d'importer chaque *valeur* d'enum comme un nom de type
+   (`import type { 'Drop' } from '../models';`, TypeScript invalide). Fix : supprimer l'`enum`
+   inline, garder le `$ref` (porte la même information).
+2. **Identifiants forts « wrapper »** : Reefin utilise des ID typés côté serveur (ex.
+   `PlaybackSessionId { Value: string }`) qui sérialisent comme une simple chaîne via un convertisseur
+   custom que Swashbuckle ignore — le schéma généré reflète donc la forme *C#* (objet), pas la forme
+   *wire* (chaîne), et le paramètre de route généré (`id: PlaybackSessionId`) produirait
+   `"[object Object]"` une fois interpolé dans l'URL. Fix : `unwrapIdSchemas()` déplie tout schéma
+   `components.schemas` à une seule propriété `Value` vers le schéma de cette propriété — générique
+   (pas un cas spécial `PlaybackSessionId`), donc couvre tout futur wrapper du même genre sans
+   modification du script.
+
+Les deux sont documentées en détail (rationale complet) dans `scripts/generate-reefin-sdk.mjs` et
+`src/lib/reefin-sdk/README.md`. Aucune des deux n'est spécifique à une route Reefin métier — ce sont
+des frictions Swashbuckle ↔ `openapi-generator-cli` génériques, à revalider (pas forcément à
+réécrire) à chaque montée de version du générateur.
+
+### 9.2 PR2 — deux ponts non prévus par le plan initial
+
+Le plan (§4.3, §8) annonçait une suppression pure et simple du mirror manuel. En pratique, deux
+mécanismes de pont ont été nécessaires, documentés en tête de fichier à chaque endroit :
+
+- **`asContract<T>()` (`playbackDiagnosticsApi.ts`) et `DeepRequired<T>` (`types.ts`)** : les modèles
+  générés marquent **tous** les champs optionnels (`'Foo'?: T`), y compris ceux que le contrat wire
+  garantit toujours présents — Swashbuckle ne marque pas les propriétés C# non-nullables comme
+  `required` dans le schéma OpenAPI ici (contrairement à `FolderStorageDto`/`SystemStorageDto`,
+  §9.3, où il le fait correctement — l'inconsistance elle-même est un fait à noter, pas un bug d'un
+  côté ou l'autre). `DeepRequired<T>` restaure le required/nullable exact que le mirror manuel
+  encodait à la main, dérivé désormais de la structure générée plutôt que retapé depuis le source
+  C#. `asContract<T>()` est le seul endroit où ce pont est franchi côté exécution (un cast documenté
+  à la frontière du client généré). Un seul champ reste réellement retapé à la main :
+  `DiagnosticTimelineEntry.Stage` (généré en `string` brut, cinq valeurs non modélisées comme enum
+  côté serveur).
+- **`systemApiFor(api: Api): SystemApi` (`playbackDiagnosticsApi.ts`)** : construit le `SystemApi`
+  généré à partir de la session `@jellyfin/sdk` **existante** (`api.basePath`/`axiosInstance`/
+  `authorizationHeader`), plutôt que via `createReefinApi()` (le point de construction indépendant
+  du wrapper `reefin-sdk`, §4.1). Nécessaire parce qu'au moment de PR2 le point de construction
+  n'était pas encore basculé (PR3) — construire une identité indépendante à ce stade aurait risqué
+  un second `DeviceId` pour la même session. Ce pont disparaît une fois `usePlaybackSessions`/
+  `usePlaybackSessionDetail`/`useExportFixture` migrés vers `reefinApi` (§9.5, backlog).
+
+### 9.3 PR3 — bascule connexion : parallèle, pas remplacement (décision motivée, avec preuves)
+
+Le message qui a déclenché ce PR demandait explicitement d'évaluer si une bascule complète (`api`
+remplacé par `ReefinApi` dans `useApi()`/`toApi()`/`compat.ts`) était trop risquée, et de préférer la
+version minimale sûre du §8 PR3 d'origine (construction **parallèle**) en le documentant si c'était
+le cas. Audit fait avant d'écrire du code :
+
+- **~134 fichiers appellent `useApi()`**, ~147 sites d'appel.
+- **`api.subscribe(...)` (WebSocket) est utilisé dans 15+ fichiers** pour des fonctionnalités
+  temps réel non négociables : SyncPlay (`serverNotifications.js`), sessions et tâches live du
+  dashboard admin (`useLiveSessions.ts`, `useLiveTasks.ts`), indicateurs de rafraîchissement
+  d'image (`emby-itemrefreshindicator`), invalidation de cache sur `UserDataChanged`/
+  `TimerCreated`/etc. (`ItemsContainer.tsx`, `emby-itemscontainer.js`), contrôle à distance de
+  lecture (`playbackmanager.js`), minuteries du guide TV (`guide.js`, `recordingfields.js`).
+- **`ReefinApi` n'a pas de WebSocket** (choix assumé du wrapper, §4.1/§4.2 — c'est une préoccupation
+  de couche connexion, pas de SDK typé) et **`connectionManager.js` mute `_sdk` en place via
+  `.update()`** (pas de reconstruction) sur re-login/refresh de token — deux mécanismes que
+  `ReefinApi` ne reproduisait pas nativement.
+
+**Conclusion** : remplacer `api` aurait cassé silencieusement tout ce qui précède (aucune erreur
+`tsc` en JS non typé, échec seulement à l'exécution). C'est exactement le risque que le message
+demandait d'évaluer avant d'agir — la version minimale sûre a donc été retenue, **comme prévu par
+le plan d'origine**, pas comme un repli de dernière minute.
+
+**Ce qui a été construit** (additif, zéro ligne existante modifiée dans `connectionManager.js` —
+uniquement des lignes ajoutées en miroir des lignes `_sdk` existantes) :
+
+- `ReefinApi.update(data)` — même rôle que `Api.update()` de `@jellyfin/sdk`, sans la partie
+  WebSocket (`ReefinApi` n'en a pas).
+- `toReefinApi(apiClient): ReefinApi` (`utils/jellyfin-apiclient/compat.ts`) — miroir exact de
+  `toApi()`, même `serverAddress`/`accessToken`/`deviceName`/`deviceId` (donc **même `DeviceId`**,
+  exigence explicite du message), seule différence délibérée : `clientInfo.name` vient de
+  `REEFIN_CLIENT_IDENTITY.name` plutôt que d'être re-dérivé via `apiClient.appName()` → même valeur
+  littérale (`'Jellyfin Web'`) aujourd'hui, donc **aucun changement observable côté serveur** — c'est
+  le point d'articulation unique de §4.4, maintenant réellement câblé.
+- `connectionManager.js` : `apiClient._reefinSdk ??= toReefinApi(apiClient)` ajouté aux 2 sites de
+  création qui exposent l'instance à un consommateur externe (`addApiClient`, `_getOrAddApiClient`,
+  plus la méthode `getReefinApi(serverId)` elle-même qui fait le lazy-create) ; `apiClient._reefinSdk
+  ?.update(...)` ajouté aux 2 sites où `apiClient._sdk?.update(...)` existe déjà (les deux points de
+  login). `getReefinApi(serverId)` ajouté en miroir de `getApi(serverId)`.
+- `useApi()` expose `reefinApi?: ReefinApi`, calculé dans le même effet et sur le même déclencheur
+  que `api` (changement de `legacyApiClient`) — additif, `api`/`__legacyApiClient__` inchangés.
+- Question ouverte §11.1 (nom de champ) **tranchée** : `reefinApi`, à côté de `api`.
+
+**Limite résiduelle assumée** : `reefinApi` est tenu à jour par mutation en place
+(`_reefinSdk.update(...)`), donc toujours current au moment de l'appel (même mécanisme que `_sdk`,
+pas de re-render nécessaire) — **sauf** si un futur consommateur ignore `.update()` et snapshotte
+`reefinApi.accessToken`/`authorizationHeader` dans une variable au lieu de les lire au moment de
+l'appel. Même piège que `@jellyfin/sdk`'s `api` aujourd'hui, pas un piège nouveau introduit ici — mais
+à rappeler dans toute revue de code d'un futur consommateur `reefinApi`.
+
+### 9.4 CI contract-check (§6) — toujours pas fait
+
+Ni PR1 ni PR2 ni PR3 n'ont livré `reefin-sdk-contract-check.yml`/`verify:reefin-sdk-fresh` (§6). Le
+script de génération produit déjà `spec/version.json` (tout ce qu'il faut pour un futur job de diff),
+mais le job CI lui-même reste à écrire. Ne bloque rien de ce qui a été fait jusqu'ici — signalé comme
+dette explicite, pas oublié silencieusement.
+
+Point d'attention noté sans être bloquant (rappel §2.1/README) : la spec utilisée pour générer
+provient d'un checkout local `reefin` encore en version serveur `12.0.0`, alors que `reefin-web`
+(`package.json`) est passé à `13.0.0` entre-temps. C'est exactement le genre de dérive que le job CI
+de ce paragraphe détecterait automatiquement une fois écrit.
+
+### 9.5 Prochaines étapes de migration — ordre proposé
+
+`features/storage` (§8 PR3) a validé la mécanique sur un module à un seul endpoint, lecture seule,
+sans WebSocket. Audit du volume `@jellyfin/sdk` restant par feature `apps/dashboard/features/*`
+(nombre de fichiers avec un import `@jellyfin/sdk`) pour proposer un ordre — **backlog indicatif, pas
+une campagne dédiée** (§7 reste le principe : une feature migre quand une tranche verticale la
+traverse, pas par lot séparé) :
+
+| Ordre | Feature | Fichiers `@jellyfin/sdk` | Pourquoi ce rang |
+| --- | --- | --- | --- |
+| ✅ | `playback` | 0 (migré PR2) | Fait |
+| ✅ | `storage` | 0 (migré PR3) | Fait |
+| 1 | `metrics`, `branding`, `settings` (`useLocalizationOptions`) | 1 chacun | Même profil que `storage` : un seul fichier, une seule route GET, pas de mutation, pas de WebSocket — prochaine preuve la moins chère. |
+| 2 | `system` (`useShutdownServer`/`useRestartServer`), `logs` | 2-3 | Toujours pas de WebSocket ; `system` introduit une route d'action (POST sans body complexe), `logs` un premier cas à plusieurs fichiers cohérents. |
+| 3 | `keys` | 3 | Premier candidat avec de vraies mutations (create/revoke), bon test de la promesse « mécanique » au-delà du GET simple. |
+| 4 | `devices`, `livetv` | 4-5 | Volume modéré, à auditer un par un pour du WebSocket avant de migrer (pas vérifié ici). |
+| **Exclus pour l'instant** | `sessions`, `tasks` | 9, 12 | Utilisent `api.subscribe(...)` (`useLiveSessions.ts`, `useLiveTasks.ts`) — **bloqués tant que `ReefinApi`/`reefin-connection` n'a pas de WebSocket** (§4.2, hors périmètre de ce document). Ne pas migrer partiellement (le endpoint REST sur `reefinApi`, le WebSocket resté sur `api`) sans re-vérifier que ça ne viole pas la règle « bascule all-or-nothing au niveau fichier » de §7. |
+| Non auditées ici | `activity`, `backups`, `libraries`, `users`, `plugins` | 6-17 | Plus gros volume, à auditer avant de proposer un ordre fin — probable présence de WebSocket/mutations complexes vu la taille. |
+
+---
+
+## 10. Risques et limites connues
 
 - **Dépendance Java/`openapi-generator-cli`** : coût d'outillage réel (déjà payé par `@jellyfin/sdk`
   aujourd'hui, mais devient un choix explicite de `reefin-web` plutôt qu'une dépendance transitive
@@ -418,11 +573,10 @@ imports sans toucher à un écran réel.
 
 ---
 
-## 10. Questions ouvertes
+## 11. Questions ouvertes
 
-1. Nom de champ définitif exposé par `useApi()` une fois les deux SDK en coexistence (§7) — garder
-   `api`/`__legacyApiClient__`, ou introduire un troisième champ explicite le temps de la transition ?
-   Tranché en PR3.
+1. ~~Nom de champ définitif exposé par `useApi()`~~ **Tranchée (§9.3)** : `reefinApi`, additif à côté
+   de `api`/`__legacyApiClient__` — pas un remplacement, voir §9.3 pour l'audit qui a motivé ce choix.
 2. Faut-il publier `reefin-sdk` comme paquet npm interne séparé dès que `reefin-web` n'est plus l'unique
    consommateur (ex. futur client TV/mobile maintenu par Reefin), ou rester en module local
    indéfiniment ? Hors périmètre tant qu'un seul dépôt le consomme (RFC-0001 §5 exclut déjà les
@@ -430,8 +584,13 @@ imports sans toucher à un écran réel.
 3. Cadence de régénération : sur chaque merge serveur touchant l'OpenAPI (bruyant), sur une cadence
    fixe (hebdomadaire), ou à la demande d'une tranche verticale qui en a besoin ? Le job CI de §6
    fonctionne dans les trois cas (il détecte la dérive quelle que soit la cadence choisie) — la
-   cadence elle-même n'a pas besoin d'être tranchée avant PR1.
+   cadence elle-même n'a pas besoin d'être tranchée avant PR1. **Toujours ouverte** : le job lui-même
+   n'est pas encore écrit (§9.4).
 4. Renommage effectif de l'identifiant client (`'Jellyfin Web'` → identité Reefin, §4.4) : ce document
    prépare le point d'articulation unique mais ne le déclenche pas — nécessite son propre RFC
    coordonné avec le serveur (migration de sessions actives, Quick Connect), comme
-   `branding-audit.md` catégorie 1 le pose déjà.
+   `branding-audit.md` catégorie 1 le pose déjà. **Toujours ouverte** : le point d'articulation
+   (`REEFIN_CLIENT_IDENTITY`) est maintenant réellement câblé (§9.3), mais sa valeur n'a pas changé.
+5. **Nouvelle (§9.3)** : `ReefinApi`/`reefin-connection` doit-il un jour porter le WebSocket, pour
+   débloquer la migration de `sessions`/`tasks` (§9.5) ? Pas tranché ici — dépend du RFC de
+   renommage/réécriture de la couche connexion évoqué en §4.2, hors périmètre de ce document.

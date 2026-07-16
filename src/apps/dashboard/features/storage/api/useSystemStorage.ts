@@ -1,12 +1,20 @@
-import type { Api } from '@jellyfin/sdk';
-import { getSystemApi } from '@jellyfin/sdk/lib/utils/api/system-api';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
+import { type ReefinApi, getSystemApi } from 'lib/reefin-sdk';
 
+/**
+ * Migrated from `@jellyfin/sdk`'s `getSystemApi`/`Api` to the generated `reefin-sdk` equivalents
+ * (docs/reefin/design-reefin-api-layer.md §8 PR3) - `/System/Storage` is a route inherited from
+ * stock Jellyfin (unchanged by Reefin), and this feature was already a thin, single-endpoint,
+ * read-only consumer, which is exactly why it was picked as the first non-playback migration: the
+ * only things that changed below are the import source (`lib/reefin-sdk` instead of `@jellyfin/sdk`)
+ * and which `useApi()` field is read (`reefinApi` instead of `api`) - `getSystemApi(x).
+ * getSystemStorage(options)` is identical in both SDKs.
+ */
 const fetchSystemStorage = async (
-    api: Api,
+    api: ReefinApi,
     options?: AxiosRequestConfig
 ) => {
     const response = await getSystemApi(api)
@@ -15,7 +23,7 @@ const fetchSystemStorage = async (
 };
 
 const getSystemStorageQuery = (
-    api?: Api
+    api?: ReefinApi
 ) => queryOptions({
     queryKey: [ 'SystemStorage' ],
     queryFn: ({ signal }) => fetchSystemStorage(api!, { signal }),
@@ -24,6 +32,6 @@ const getSystemStorageQuery = (
 });
 
 export const useSystemStorage = () => {
-    const { api } = useApi();
-    return useQuery(getSystemStorageQuery(api));
+    const { reefinApi } = useApi();
+    return useQuery(getSystemStorageQuery(reefinApi));
 };
