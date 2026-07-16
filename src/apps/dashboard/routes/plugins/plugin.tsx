@@ -116,7 +116,7 @@ const PluginPage: FC = () => {
                 isEnabled: (isEnabledOverride && pluginInfo?.Status === PluginStatus.Restart)
                     ?? pluginInfo?.Status !== PluginStatus.Disabled,
                 name: pluginName || pluginInfo?.Name || packageInfo?.name,
-                owner: pluginInfo?.CanUninstall === false ? 'jellyfin' : packageInfo?.owner,
+                owner: pluginInfo?.CanUninstall === false ? 'reefin' : packageInfo?.owner,
                 status: pluginInfo?.Status,
                 configurationPage: findBestConfigurationPage(configurationPages || [], pluginId),
                 version,
