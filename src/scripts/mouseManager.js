@@ -101,10 +101,6 @@ function enableFocusWithMouse() {
         return false;
     }
 
-    if (browser.web0s) {
-        return false;
-    }
-
     return !!browser.tv;
 }
 

@@ -1,5 +1,3 @@
-import browser from '../../scripts/browser';
-import dom from '../../utils/dom';
 import './emby-checkbox.scss';
 import 'webcomponents.js/webcomponents-lite';
 
@@ -7,8 +5,7 @@ const EmbyCheckboxPrototype = Object.create(HTMLInputElement.prototype);
 
 function onKeyDown(e) {
     // Don't submit form on enter
-    // Real (non-emulator) Tizen does nothing on Space
-    if (e.keyCode === 13 || (e.keyCode === 32 && browser.tizen)) {
+    if (e.keyCode === 13) {
         e.preventDefault();
 
         this.checked = !this.checked;
@@ -21,24 +18,6 @@ function onKeyDown(e) {
 
         return false;
     }
-}
-
-const enableRefreshHack = browser.tizen || browser.web0s;
-
-function forceRefresh(loading) {
-    const elem = this.parentNode;
-
-    elem.style.webkitAnimationName = 'repaintChrome';
-    elem.style.webkitAnimationDelay = loading === true ? '500ms' : '';
-    elem.style.webkitAnimationDuration = '10ms';
-    elem.style.webkitAnimationIterationCount = '1';
-
-    setTimeout(
-        function () {
-            elem.style.webkitAnimationName = '';
-        },
-        loading === true ? 520 : 20
-    );
 }
 
 EmbyCheckboxPrototype.attachedCallback = function () {
@@ -85,39 +64,10 @@ EmbyCheckboxPrototype.attachedCallback = function () {
     labelTextElement.classList.add('checkboxLabel');
 
     this.addEventListener('keydown', onKeyDown);
-
-    if (enableRefreshHack) {
-        forceRefresh.call(this, true);
-        dom.addEventListener(this, 'click', forceRefresh, {
-            passive: true
-        });
-        dom.addEventListener(this, 'blur', forceRefresh, {
-            passive: true
-        });
-        dom.addEventListener(this, 'focus', forceRefresh, {
-            passive: true
-        });
-        dom.addEventListener(this, 'change', forceRefresh, {
-            passive: true
-        });
-    }
 };
 
 EmbyCheckboxPrototype.detachedCallback = function () {
     this.removeEventListener('keydown', onKeyDown);
-
-    dom.removeEventListener(this, 'click', forceRefresh, {
-        passive: true
-    });
-    dom.removeEventListener(this, 'blur', forceRefresh, {
-        passive: true
-    });
-    dom.removeEventListener(this, 'focus', forceRefresh, {
-        passive: true
-    });
-    dom.removeEventListener(this, 'change', forceRefresh, {
-        passive: true
-    });
 };
 
 document.registerElement('emby-checkbox', {
