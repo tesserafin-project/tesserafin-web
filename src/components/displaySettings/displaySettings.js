@@ -6,7 +6,6 @@ import { getUserQuery } from 'hooks/api/useUser';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { queryClient } from 'utils/query/queryClient';
 
-import browser from '../../scripts/browser';
 import layoutManager from '../layoutManager';
 import { pluginManager } from '../pluginManager';
 import { appHost } from '../apphost';
@@ -72,13 +71,6 @@ function loadScreensavers(context, userSettings) {
 }
 
 function showOrHideMissingEpisodesField(context) {
-    if (browser.tizen || browser.web0s) {
-        context
-            .querySelector('.fldDisplayMissingEpisodes')
-            .classList.add('hide');
-        return;
-    }
-
     context
         .querySelector('.fldDisplayMissingEpisodes')
         .classList.remove('hide');
