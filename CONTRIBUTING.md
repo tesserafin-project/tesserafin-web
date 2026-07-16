@@ -24,6 +24,18 @@ If you have any questions, please join one of our [development chat rooms](https
 * Translation changes or additions **MUST** be made via the [Jellyfin Weblate instance](https://translate.jellyfin.org/) except for the source language (`en-us`).
 * Existing translation keys **SHOULD NOT** be renamed without a significant reason. Weblate cannot track key name changes so a key name change requires retranslation in ALL languages.
 
+### Git Blame
+
+This repository maintains a [`.git-blame-ignore-revs`](./.git-blame-ignore-revs) file listing large mechanical commits (e.g. codebase-wide reformatting) that should be skipped by `git blame` so it keeps pointing to the commit that meaningfully changed a line.
+
+To use it locally, run:
+
+```sh
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+GitHub also picks up this file automatically when browsing blame views on the web.
+
 ### Pull Requests
 
 * **MUST** follow [project guidelines](https://jellyfin.org/docs/general/contributing/development#pull-request-guidelines).

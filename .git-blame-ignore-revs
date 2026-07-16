@@ -1,0 +1,10 @@
+# This file contains a list of commits that are not "interesting" when
+# running `git blame`, e.g. large mechanical reformatting commits.
+#
+# Enable it locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# Add one commit SHA per line, with a comment explaining what it did.
+
+# style: reformat codebase with Biome (RFC-0002 step 4)
+2e0be3b640ee6afff9871bf38f80f432b5ae4d8e
