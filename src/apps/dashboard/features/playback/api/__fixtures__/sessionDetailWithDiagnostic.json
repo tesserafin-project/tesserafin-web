@@ -1,0 +1,126 @@
+{
+    "Id": "9c858901-8a57-4791-81fe-4c455b099bc9",
+    "Kind": "Video",
+    "DecisionVersion": 0,
+    "Method": "Transcode",
+    "Output": {
+        "Container": "mp4",
+        "VideoCodec": "hevc",
+        "AudioCodec": "aac",
+        "Resolution": { "Width": 3840, "Height": 2160 },
+        "VideoRange": "SDR",
+        "AudioChannels": 6,
+        "TotalBitrate": 100000000,
+        "VideoBitrate": 100000000,
+        "Protocol": "Http"
+    },
+    "SelectedStreams": { "Video": 0, "Audio": 1 },
+    "Transforms": ["TranscodeVideo", "Tonemap", "CopyAudio"],
+    "Reasons": ["VideoRangeTypeNotSupported"],
+    "CreatedAt": "2026-07-16T10:00:00Z",
+    "UpdatedAt": "2026-07-16T10:00:05Z",
+    "RequestContext": {
+        "RequestId": "b1f6b1d2-8f2e-4a3e-9a4e-2a7f9b7a5d21",
+        "ItemId": "6d1f6b1d-2f8e-4a3e-9a4e-2a7f9b7a5d22",
+        "UserId": "1f6b1d2f-8e4a-3e9a-4e2a-7f9b7a5d2123",
+        "MediaKind": "Video",
+        "RequestedAt": "2026-07-16T09:59:58Z",
+        "EngineVersion": 6
+    },
+    "Capabilities": {
+        "Decode": {
+            "DirectPlayProfiles": [],
+            "VideoCodecs": [
+                {
+                    "Codec": "hevc",
+                    "Profiles": [],
+                    "MaxLevel": 153,
+                    "MaxBitDepth": 10,
+                    "VideoRangeTypes": ["SDR"],
+                    "MaxResolution": { "Width": 3840, "Height": 2160 },
+                    "MaxBitrate": 100000000
+                }
+            ],
+            "AudioCodecs": [
+                { "Codec": "aac", "MaxChannels": 8 }
+            ],
+            "SubtitleDelivery": [],
+            "SupportsHls": true,
+            "SupportsDash": false
+        },
+        "OutputProfiles": [
+            {
+                "Type": "Video",
+                "Protocol": "Http",
+                "Container": "mp4",
+                "VideoCodecs": ["hevc"],
+                "AudioCodecs": ["aac"]
+            }
+        ]
+    },
+    "SourceSnapshot": [
+        {
+            "MediaSourceId": "src-1",
+            "Container": "mp4",
+            "Protocol": "file",
+            "Bitrate": 30000000,
+            "VideoStreams": [
+                {
+                    "Index": 0,
+                    "Codec": "hevc",
+                    "Profile": "main10",
+                    "Level": 150,
+                    "Width": 3840,
+                    "Height": 2160,
+                    "BitDepth": 10,
+                    "VideoRange": "HDR10",
+                    "Bitrate": 25000000,
+                    "IsAnamorphic": false,
+                    "IsInterlaced": false
+                }
+            ],
+            "AudioStreams": [
+                {
+                    "Index": 1,
+                    "Codec": "aac",
+                    "Channels": 6,
+                    "IsDefault": true
+                }
+            ],
+            "SubtitleStreams": [],
+            "SupportsDirectPlay": true,
+            "SupportsDirectStream": true,
+            "SupportsTranscoding": true
+        }
+    ],
+    "Reasoning": {
+        "Code": "MethodChosen",
+        "Outcome": "Chosen",
+        "Subject": { "Kind": "Method" },
+        "Children": [
+            {
+                "Code": "VideoRangeTypeNotSupported",
+                "Outcome": "Rejected",
+                "Subject": { "Kind": "VideoStream", "StreamIndex": 0 },
+                "Detail": "Client declares SDR-only support; source is HDR10.",
+                "Children": []
+            },
+            {
+                "Code": "TonemapRequired",
+                "Outcome": "Accepted",
+                "Subject": { "Kind": "VideoStream", "StreamIndex": 0 },
+                "Children": []
+            }
+        ]
+    },
+    "Comparison": {
+        "LegacyMethod": "Transcode",
+        "LegacyReasons": ["VideoRangeTypeNotSupported"],
+        "DivergenceClass": "Equivalent"
+    },
+    "Timeline": [
+        { "Stage": "Created", "At": "2026-07-16T10:00:00Z" },
+        { "Stage": "FfmpegStarted", "At": "2026-07-16T10:00:02Z" },
+        { "Stage": "PlaybackStarted", "At": "2026-07-16T10:00:05Z" }
+    ]
+}

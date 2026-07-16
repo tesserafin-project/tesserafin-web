@@ -1,0 +1,26 @@
+{
+    "Id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "Kind": "Video",
+    "DecisionVersion": 0,
+    "Method": "Transcode",
+    "Output": {
+        "Container": "mp4",
+        "VideoCodec": "h264",
+        "AudioCodec": "aac",
+        "Resolution": { "Width": 1920, "Height": 1080 },
+        "VideoRange": "SDR",
+        "AudioChannels": 2,
+        "TotalBitrate": 8000000,
+        "VideoBitrate": 7500000,
+        "AudioBitrate": 192000,
+        "Protocol": "Http"
+    },
+    "SelectedStreams": { "Video": 0, "Audio": 1 },
+    "Transforms": ["TranscodeVideo", "CopyAudio"],
+    "Reasons": ["VideoCodecNotSupported", "MethodChosen"],
+    "CreatedAt": "2026-07-16T10:00:00Z",
+    "UpdatedAt": "2026-07-16T10:00:05Z",
+    "Timeline": [
+        { "Stage": "Created", "At": "2026-07-16T10:00:00Z" }
+    ]
+}

@@ -7,11 +7,12 @@ import { useTheme } from '@mui/material/styles';
 import format from 'date-fns/format';
 import parseISO from 'date-fns/parseISO';
 import { type MRT_Cell, type MRT_ColumnDef, type MRT_TableOptions, type MRT_Theme, useMaterialReactTable } from 'material-react-table';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import TablePage, { DEFAULT_TABLE_OPTIONS } from 'apps/dashboard/components/table/TablePage';
 import { usePlaybackSessions } from 'apps/dashboard/features/playback/api/usePlaybackSessions';
 import type { PlaybackMethod, PlaybackSessionListItem } from 'apps/dashboard/features/playback/api/types';
+import DiagnosticDrawer from 'apps/dashboard/features/playback/components/DiagnosticDrawer';
 import PlaybackMethodChip from 'apps/dashboard/features/playback/components/PlaybackMethodChip';
 import { formatOutputSpec } from 'apps/dashboard/features/playback/utils/formatOutputSpec';
 import { useLocale } from 'hooks/useLocale';
@@ -58,6 +59,11 @@ export const Component = () => {
     const { data, isPending, isError } = usePlaybackSessions();
     const sessions = useMemo(() => data ?? [], [ data ]);
     const theme = useTheme();
+
+    // Clicking a row opens the detail drawer for that session's id, without navigation (design
+    // doc §5.3) — avoids duplicating list state in a route param.
+    const [ selectedSessionId, setSelectedSessionId ] = useState<string>();
+    const onCloseDrawer = useCallback(() => setSelectedSessionId(undefined), []);
 
     // The server-side shadow mode is disabled by default (design doc §2.3): on a default Reefin
     // instance, HasDiagnostic will be false for every session. That is the expected, nominal
@@ -128,6 +134,11 @@ export const Component = () => {
         columns,
         data: sessions,
 
+        muiTableBodyRowProps: ({ row }) => ({
+            onClick: () => setSelectedSessionId(row.original.Session.Id),
+            sx: { cursor: 'pointer' }
+        }),
+
         initialState: {
             density: 'compact',
             pagination: {
@@ -154,15 +165,18 @@ export const Component = () => {
     );
 
     return (
-        <TablePage
-            id='playbackDiagnosticsPage'
-            title={globalize.translate('HeaderPlaybackDiagnostics')}
-            className='mainAnimatedPage type-interior'
-            table={mrTable}
-            isError={isError}
-            errorMessage={globalize.translate('PlaybackDiagnosticsLoadError')}
-            notice={notice}
-        />
+        <>
+            <TablePage
+                id='playbackDiagnosticsPage'
+                title={globalize.translate('HeaderPlaybackDiagnostics')}
+                className='mainAnimatedPage type-interior'
+                table={mrTable}
+                isError={isError}
+                errorMessage={globalize.translate('PlaybackDiagnosticsLoadError')}
+                notice={notice}
+            />
+            <DiagnosticDrawer sessionId={selectedSessionId} onClose={onCloseDrawer} />
+        </>
     );
 };
 
