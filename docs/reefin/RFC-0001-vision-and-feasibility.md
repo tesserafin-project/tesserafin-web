@@ -101,8 +101,11 @@ Le critère n'est pas « est-ce que Jellyfin le fait déjà en plugin » mais **
 | UX cohérente à travers les clients (web, TV, mobile) | Notifications / webhooks |
 | Traitements qui exigent un modèle serveur stable (intros/crédits, diagnostics de lecture, pré-transcodage) | Catalogues spécialisés |
 | Collections intelligentes | — |
+| Fiabilité et diagnosticabilité du **workflow** d'identification métadonnées (retry, repli entre fournisseurs, ré-identification/correction manuelle traçable) | Les fournisseurs de métadonnées eux-mêmes (IMDb, TMDb, OMDb, MusicBrainz...) et leurs spécificités |
 
 Ce n'est pas une frontière figée : une extension qui devient un besoin universel (comme watchlist ou 2FA le sont déjà) migre vers le core via RFC, jamais silencieusement.
+
+La dernière ligne mérite d'être explicitée car elle sépare deux choses qu'on confond facilement : **quel fournisseur répond** (IMDb vs TMDb vs un fournisseur régional/niche) reste une question de plugin, comme le reste déjà cette frontière — mais **ce qui se passe quand ce fournisseur échoue, répond mal, ou qu'un item est mal identifié** (l'auto-titrage) touche directement le parcours quotidien de tous les utilisateurs (une bibliothèque mal titrée est visible en permanence, pas seulement en admin) et bénéficie d'un contrat serveur stable pour être diagnosticable — donc core, au même titre que les diagnostics de lecture (§1.3, §7 phase 2/3). Voir §5 et §9 pour l'état des lieux et les questions ouvertes associées.
 
 ---
 
@@ -125,6 +128,7 @@ Le backlog `features.jellyfin.org` most-wanted est traité comme un **réservoir
 | Livres audio/podcasts | nouveau domaine média complet | Élevée |
 | Offline/transcoded downloads | jobs serveur + protocole sync + clients natifs | Très élevée |
 | MySQL/MariaDB | persistance serveur | Très élevée, pas forcément stratégique |
+| Auto-titrage/identification métadonnées plus robuste et corrigible (IMDb, TMDb, OMDb...) | serveur (retry, repli entre fournisseurs) + web (diagnostic d'échec, ré-identification/correction) | Moyenne — le pipeline (`Reefin.Providers/Manager/ProviderManager.cs`, `ItemLookupController`) est déjà en place côté serveur (stock Jellyfin, seulement renommé), avec un ordre de fournisseurs configurable mais **aucun retry ni repli automatique** ; c'est un ajout ciblé au pipeline existant, pas une réécriture |
 
 **Hors périmètre de reefin-web** : les clients Android, Swiftfin, AppleTV, Tizen, Vidaa ne sont pas maintenus dans ce dépôt. Reefin fournira les APIs et protocoles nécessaires (auth, sync offline, diagnostics) ; leur consommation par ces clients tiers/natifs est de leur ressort.
 
@@ -168,7 +172,7 @@ Chaque tranche livre une fonctionnalité complète (UI + intégration API + test
    - rebranding minimal du dépôt (`package.json`, manifest, identité visuelle de base) ;
    - premier client de la couche API typée sur les DTO stables de PR91/PR92 dès leur disponibilité serveur (PR112) ;
    - page de diagnostics de lecture côté admin, alignée sur le contrat `PlaybackDiagnosticDetail` de PR92 (`/System/PlaybackDiagnostics/Sessions`) — premier cas d'usage concret de la couche API et premier écran qui n'a **aucune** dépendance à `playbackmanager.js`.
-3. **Administration simplifiée** — onboarding (`apps/wizard`), gestion des bibliothèques et des utilisateurs, diagnostics de lecture (suite de la phase 2), sélection automatique de l'accélération matérielle (pilier 2).
+3. **Administration simplifiée** — onboarding (`apps/wizard`), gestion des bibliothèques et des utilisateurs, diagnostics de lecture (suite de la phase 2), sélection automatique de l'accélération matérielle (pilier 2), **fiabilisation et diagnosticabilité de l'auto-titrage métadonnées** : côté serveur, retry et repli entre fournisseurs configurés dans `Reefin.Providers/Manager/ProviderManager.cs` (aujourd'hui : ordre configurable mais un échec de fournisseur est seulement loggué, jamais retenté ni basculé automatiquement) ; côté web, écran de diagnostic des échecs d'identification et intégration de la ré-identification/correction manuelle (`ItemLookupController`, dialogue « Identify » déjà existant dans `src/components/itemidentifier/`) au nouveau shell — même logique que les diagnostics de lecture (§1.3) : le serveur reste la source de vérité et fait le gros du travail, le web expose et rend l'erreur corrigible sans devoir passer par du support/du bricolage manuel en base.
 4. **Expérience quotidienne** — accueil, watchlist, continuer à regarder (avec retrait manuel), historique de visionnage, recherche, filtres, lazy loading des bibliothèques, lecteur modernisé (première tranche qui attaque sérieusement l'encapsulation de `playbackmanager.js`, §6.2).
 5. **Fonctions intégrées** — OIDC/2FA, smart playlists, intros/crédits, partage temporaire, pré-transcodage, téléchargements optimisés.
 6. **Protocoles multi-clients** — synchronisation offline, capacités mobiles/TV. Reefin Web ne réécrit pas les clients tiers mais stabilise ici les protocoles qu'ils consommeront (cf. §5, hors périmètre direct).
@@ -203,3 +207,4 @@ Chaque tranche verticale qui « ferme » une zone à l'upstream doit le document
 4. Quel est le sort de `src/apps/legacy` une fois toutes ses routes migrées : suppression complète, ou conservation temporaire derrière un flag pour rollback ?
 5. Le pilier 2 (configuration guidée) dépend de bancs d'essai de transcodage côté serveur qui ne sont pas encore documentés dans un RFC `reefin` équivalent à PR91/PR92 — faut-il un RFC serveur dédié avant d'engager la phase 3 côté web, ou l'assistant web peut-il être conçu en parallèle sur un contrat provisoire ?
 6. Le partage temporaire (jetons limités) et le device flow du 2FA soulèvent des questions de sécurité qui dépassent le périmètre de ce RFC — nécessitent-ils chacun leur propre RFC de sécurité dédié avant implémentation ?
+7. La fiabilisation de l'auto-titrage (§4, §5, §7 phase 3) mérite-t-elle son propre RFC serveur avant tout code, sur le modèle de PR91/PR92 pour la lecture ? Le pipeline actuel (`ProviderManager.cs`) n'a ni retry ni repli automatique entre fournisseurs — la question à trancher côté serveur est le modèle de repli (essayer le fournisseur suivant dans l'ordre configuré après N échecs ? santé/latence par fournisseur avec un état persistant ? backoff simple sans état ?) avant qu'un design web puisse s'appuyer dessus, exactement comme la page de diagnostics de lecture a attendu que PR91/PR92 stabilisent le contrat serveur plutôt que de se caler sur `playbackmanager.js`. Séparément : l'écran de diagnostic/ré-identification web peut sans doute être conçu contre le contrat `ItemLookupController` déjà stable, sans attendre ce RFC serveur — à confirmer au moment du design doc.
