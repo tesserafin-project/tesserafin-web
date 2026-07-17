@@ -589,7 +589,41 @@ d'introduire de nouvelles dépendances de test dans la même PR qu'une fonctionn
 
 ---
 
-## 9. Questions ouvertes
+## 9. Travail serveur planifié (repo `reefin`, hors périmètre de ce document)
+
+PR116e (`reefin-web`, durcissement bundle du call-site shadow décrit en §8/§9 du design de migration
+client PR116, dépôt `reefin`) a mis en évidence trois besoins côté serveur qui touchent directement
+la valeur de cette page de diagnostics. Ils sont **planifiés, pas implémentés** — aucun code serveur
+n'accompagne cette section ; elle sert de point d'ancrage pour la PR `reefin` qui les traitera.
+
+1. **`CorrelationId` distinct du `PlaySessionId`.** Le call réel (`PlaybackInfo`) et l'appel shadow
+   (`POST Playback/Sessions`, PR116b) génèrent aujourd'hui deux `PlaySessionId` volontairement
+   différents (§4.2 du design PR116b : réutiliser le `PlaySessionId` réel clobberait son
+   `V2PlanRecord`). Conséquence : rien ne permet actuellement de retrouver, côté serveur, quelle
+   requête shadow correspond à quelle requête réelle pour une même tentative de lecture. Un
+   `CorrelationId` séparé (généré côté client une fois par tentative, transmis sur les deux appels)
+   comblerait ce trou — nécessaire pour toute analyse a posteriori qui voudrait mettre en regard
+   `PlaybackSessionResponse` (réel) et `PlaybackSessionResponse` (shadow) d'une même lecture.
+2. **Conservation diagnostique du payload natif brut côté serveur.** Le builder natif
+   `reefinPlaybackCapabilities.ts` (PR116a) produit `Capabilities`/`Constraints` tels qu'envoyés par
+   le navigateur admin ou par le client courant. Rien ne garantit aujourd'hui que le serveur retient
+   ce payload brut (par opposition à la version reconstruite/normalisée qu'il utilise pour décider) —
+   or c'est justement ce payload brut qui permettrait de diagnostiquer un écart entre « ce qui a été
+   envoyé » et « ce que le serveur a compris avoir reçu ».
+3. **La comparaison PR116c est un diagnostic de référence, pas une preuve de parité — jamais un
+   gate.** `CapabilitiesComparison.tsx`/`compareClientCapabilities.ts` (PR116c) comparent les
+   capacités du navigateur admin **courant** (celles avec lesquelles l'admin a chargé la page) à des
+   capacités **reconstruites** pour une autre session/un autre client. C'est un outil de triage utile
+   (« est-ce que ça se ressemble ? ») mais ce n'est ni une capture fidèle du client d'origine, ni une
+   preuve d'équivalence fonctionnelle. Il ne doit **jamais** servir de condition de bascule pour la
+   lecture réelle (flag `enableV2PlaybackPath`, PR116d) — seule une comparaison shadow-vs-legacy sur
+   la même session, mesurée côté serveur, peut légitimement jouer ce rôle. Ce point mérite d'être
+   rappelé explicitement dans le design du feature-flag/canary serveur (PR115, cf. §2.3 point 1 sur
+   l'état actuel du shadow mode) au moment où il sera écrit.
+
+---
+
+## 10. Questions ouvertes
 
 1. Faut-il committer un extrait de `tests/PlaybackCompat/fixtures/` du dépôt `reefin` dans
    `reefin-web` (§7.2), ou le référencer en submodule/script de sync ? Impact sur la stratégie de
