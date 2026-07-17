@@ -279,6 +279,26 @@ class AppSettings {
     }
 
     /**
+     * Get or set 'Enable v2 playback URL path' state (docs/pr116-client-migration-design.md PR116d,
+     * docs/pr116d-url-contract-design.md, `reefin` repo) - when enabled, the real playback-start
+     * flow tries `POST Playback/Sessions` + `GET Playback/Sessions/{id}/Stream` (PR117) and uses the
+     * returned descriptor's URL instead of the legacy `mediaSource.TranscodingUrl`-derived one. Any
+     * failure along that path falls back to the legacy URL silently. Independent of, and unrelated
+     * to, the read-only diagnostics shadow flag `enablePlaybackSessionShadow` above - this flag can
+     * actually change what gets played. Default off: dormant until explicitly opted into.
+     * @param {boolean} [val] - Flag to enable the v2 playback URL path or undefined (optional, same
+     * reasoning as `enablePlaybackSessionShadow`'s JSDoc above - zero-arg TS-side reads).
+     * @return {boolean} v2 playback URL path enabled state.
+     */
+    enableV2PlaybackPath(val) {
+        if (val !== undefined) {
+            return this.set('enableV2PlaybackPath', val.toString());
+        }
+
+        return toBoolean(this.get('enableV2PlaybackPath'), false);
+    }
+
+    /**
      * Get or set the preferred video aspect ratio.
      * @param {string|undefined} val - The aspect ratio or undefined.
      * @returns {string} The saved aspect ratio state.
