@@ -1,0 +1,71 @@
+/**
+ * Tabs (RFC-0005 §6). Only `--rf-*` custom properties are read here, with static fallbacks —
+ * no historical class name or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-tabs {
+    display: flex;
+    gap: var(--rf-spacing-xs, 4px);
+    overflow-x: auto;
+}
+
+.rf-tabs__tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    background: transparent;
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-md, 1rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+    line-height: 1.5;
+    border: 0;
+    transition:
+        color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease);
+
+    &:hover {
+        color: var(--rf-color-text, #fff);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    &[aria-selected='true'] {
+        color: var(--rf-color-primary, #00a4dc);
+    }
+}
+
+.rf-tabs--underline {
+    border-bottom: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+
+    .rf-tabs__tab {
+        padding: var(--rf-spacing-sm, 8px) var(--rf-spacing-md, 16px);
+        border-bottom: 2px solid transparent;
+
+        &[aria-selected='true'] {
+            border-bottom-color: var(--rf-color-primary, #00a4dc);
+        }
+    }
+}
+
+.rf-tabs--pills {
+    .rf-tabs__tab {
+        padding: var(--rf-spacing-xs, 4px) var(--rf-spacing-md, 16px);
+        border-radius: var(--rf-shape-radius-full, 999px);
+
+        &[aria-selected='true'] {
+            color: var(--rf-color-on-primary, #fff);
+            background: var(--rf-color-primary, #00a4dc);
+        }
+    }
+}

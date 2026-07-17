@@ -1,13 +1,11 @@
-import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
-import Box from '@mui/material/Box';
-import Tab from '@mui/material/Tab';
-import Tabs from '@mui/material/Tabs';
-import React, { type SyntheticEvent, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
 import { clearBackdrop } from 'components/backdrop/backdrop';
 import Page from 'components/Page';
 import globalize from 'lib/globalize';
+import { BaseItemKind } from 'lib/reefin-sdk';
+import { Tabs, type TabItem } from 'ui';
 
 import FavoritesTab from '../features/home/components/FavoritesTab';
 import HomeTab from '../features/home/components/HomeTab';
@@ -34,6 +32,9 @@ const Home = () => {
 
     // Same `.skinHeader.noHomeButtonHeader` toggling the previous `onResume`/`onPause` did, now
     // scoped to mount/unmount since there's no per-tab controller lifecycle left to hook into.
+    // TODO(RFC-0005 §4.2/design-reefin-shell-and-routing.md): retire this once the shell
+    // (`AppLayout`/`components/`) is migrated onto `src/ui` and exposes a declarative way to hide
+    // the home button instead of a legacy DOM class toggle on `.skinHeader`.
     useEffect(() => {
         const header = document.querySelector('.skinHeader');
         header?.classList.add('noHomeButtonHeader');
@@ -43,8 +44,21 @@ const Home = () => {
         };
     }, []);
 
-    const onTabChange = (_event: SyntheticEvent, newValue: number) => {
-        searchParams.set('tab', homeTabIndexToParam(newValue));
+    const tabItems: TabItem[] = [
+        {
+            id: tabId(0),
+            label: globalize.translate('Home'),
+            panelId: tabPanelId(0)
+        },
+        {
+            id: tabId(1),
+            label: globalize.translate('Favorites'),
+            panelId: tabPanelId(1)
+        }
+    ];
+
+    const onTabChange = (index: number) => {
+        searchParams.set('tab', homeTabIndexToParam(index));
         setSearchParams(searchParams);
     };
 
@@ -59,35 +73,24 @@ const Home = () => {
                 BaseItemKind.Book
             ]}
         >
-            <Tabs value={activeTab} onChange={onTabChange}>
-                <Tab
-                    label={globalize.translate('Home')}
-                    id={tabId(0)}
-                    aria-controls={tabPanelId(0)}
-                />
-                <Tab
-                    label={globalize.translate('Favorites')}
-                    id={tabId(1)}
-                    aria-controls={tabPanelId(1)}
-                />
-            </Tabs>
+            <Tabs items={tabItems} value={activeTab} onChange={onTabChange} />
 
-            <Box
+            <div
                 role='tabpanel'
                 id={tabPanelId(0)}
                 aria-labelledby={tabId(0)}
                 hidden={activeTab !== 0}
             >
                 {activeTab === 0 && <HomeTab />}
-            </Box>
-            <Box
+            </div>
+            <div
                 role='tabpanel'
                 id={tabPanelId(1)}
                 aria-labelledby={tabId(1)}
                 hidden={activeTab !== 1}
             >
                 {activeTab === 1 && <FavoritesTab />}
-            </Box>
+            </div>
         </Page>
     );
 };

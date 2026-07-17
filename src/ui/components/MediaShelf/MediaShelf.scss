@@ -1,0 +1,64 @@
+/**
+ * MediaShelf (RFC-0005 §6). Only `--rf-*` custom properties are read here, with static fallbacks —
+ * no historical class name (`.verticalSection`, `.scrollSlider`…) or id selector, no dependency on
+ * `emby-scroller`, per RFC-0005 §6/§7.3.
+ */
+
+.rf-media-shelf {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-sm, 8px);
+}
+
+.rf-media-shelf__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-spacing-sm, 8px);
+}
+
+.rf-media-shelf__title {
+    margin: 0;
+    color: var(--rf-color-text, #fff);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-lg, 1.17rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+.rf-media-shelf__view-all {
+    flex-shrink: 0;
+    color: var(--rf-color-primary, #00a4dc);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+}
+
+.rf-media-shelf__scroller {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+
+    > * {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+    }
+}
+
+.rf-media-shelf__scroller--comfortable {
+    gap: var(--rf-spacing-md, 16px);
+}
+
+.rf-media-shelf__scroller--compact {
+    gap: var(--rf-spacing-xs, 4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-media-shelf__scroller {
+        scroll-behavior: auto;
+    }
+}

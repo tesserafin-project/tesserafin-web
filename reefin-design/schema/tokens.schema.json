@@ -1,0 +1,160 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:reefin-design:schema:tokens",
+    "title": "Reefin design tokens",
+    "description": "Universal design tokens (RFC-0005 §7.1/§7.3): color (per mode), typography, shape, spacing, elevation, motion, density, blur. One tokens.json per theme directory under reefin-design/themes/<id>/, generated per platform (§3.2) — src/ui/tokens/<id>.css and .ts are the Web renderer's output.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "color",
+        "typography",
+        "shape",
+        "spacing",
+        "elevation",
+        "motion",
+        "density",
+        "blur"
+    ],
+    "properties": {
+        "color": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["light", "dark"],
+            "properties": {
+                "light": { "$ref": "#/$defs/colorGroup" },
+                "dark": { "$ref": "#/$defs/colorGroup" }
+            }
+        },
+        "typography": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["fontFamily", "fontSize", "fontWeight"],
+            "properties": {
+                "fontFamily": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["base"],
+                    "properties": {
+                        "base": { "type": "string", "minLength": 1 },
+                        "mono": { "type": "string", "minLength": 1 }
+                    }
+                },
+                "fontSize": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/$defs/cssLength" },
+                    "required": ["xs", "sm", "md", "lg", "xl", "xxl"]
+                },
+                "fontWeight": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer",
+                        "minimum": 100,
+                        "maximum": 900
+                    },
+                    "required": ["regular", "medium", "bold"]
+                }
+            }
+        },
+        "shape": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["radius"],
+            "properties": {
+                "radius": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/$defs/cssLength" },
+                    "required": ["sm", "md", "lg", "full"]
+                }
+            }
+        },
+        "spacing": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/$defs/cssLength" },
+            "required": ["xs", "sm", "md", "lg", "xl"]
+        },
+        "elevation": {
+            "type": "object",
+            "description": "CSS box-shadow values (Web renderer). Non-Web renderers translate levels to their own shadow/elevation primitive.",
+            "additionalProperties": { "type": "string", "minLength": 1 },
+            "required": ["level0", "level1", "level2", "level3"]
+        },
+        "motion": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["duration", "easing"],
+            "properties": {
+                "duration": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/$defs/cssDuration" },
+                    "required": ["fast", "normal", "slow"]
+                },
+                "easing": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "required": ["standard", "decelerate", "accelerate"]
+                }
+            }
+        },
+        "density": {
+            "type": "string",
+            "enum": ["compact", "comfortable", "spacious"]
+        },
+        "blur": {
+            "type": "object",
+            "additionalProperties": { "$ref": "#/$defs/cssLength" },
+            "required": ["sm", "md", "lg"]
+        }
+    },
+    "$defs": {
+        "colorGroup": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "background",
+                "surface",
+                "surfaceVariant",
+                "text",
+                "textMuted",
+                "primary",
+                "onPrimary",
+                "accent",
+                "error",
+                "warning",
+                "success",
+                "focus",
+                "divider"
+            ],
+            "properties": {
+                "background": { "$ref": "#/$defs/colorValue" },
+                "surface": { "$ref": "#/$defs/colorValue" },
+                "surfaceVariant": { "$ref": "#/$defs/colorValue" },
+                "text": { "$ref": "#/$defs/colorValue" },
+                "textMuted": { "$ref": "#/$defs/colorValue" },
+                "primary": { "$ref": "#/$defs/colorValue" },
+                "onPrimary": { "$ref": "#/$defs/colorValue" },
+                "accent": { "$ref": "#/$defs/colorValue" },
+                "error": { "$ref": "#/$defs/colorValue" },
+                "warning": { "$ref": "#/$defs/colorValue" },
+                "success": { "$ref": "#/$defs/colorValue" },
+                "focus": { "$ref": "#/$defs/colorValue" },
+                "divider": { "$ref": "#/$defs/colorValue" }
+            }
+        },
+        "colorValue": {
+            "type": "string",
+            "pattern": "^(#[0-9a-fA-F]{3,8}|rgba?\\([^)]+\\)|hsla?\\([^)]+\\))$"
+        },
+        "cssLength": {
+            "type": "string",
+            "description": "A CSS length with a unit, or the bare unitless zero (\"0\") that stylelint's length-zero-no-unit rule requires.",
+            "pattern": "^0$|^-?\\d*\\.?\\d+(px|em|rem|%)$"
+        },
+        "cssDuration": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(ms|s)$"
+        }
+    }
+}

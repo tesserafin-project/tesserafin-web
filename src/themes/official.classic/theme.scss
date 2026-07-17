@@ -1,0 +1,38 @@
+/*
+ * Reefin Classic (RFC-0005 §8.1) legacy CSS payload.
+ * Identical to `themes/dark/theme.scss` by design — Classic's default mode absorbs the legacy
+ * "Dark" theme as-is (see `themes/official.classic/index.ts` for the MUI color scheme side of the
+ * same decision). Kept as a separate file (rather than aliasing the URL in ThemeCss.tsx) so the
+ * existing per-theme webpack entry/MiniCssExtractPlugin pattern (RFC-0005 §9.1) needs no changes.
+ */
+@use '../_base/theme';
+
+/* Card background color variants */
+.defaultCardBackground1 {
+    background-color: #00455c;
+}
+
+.defaultCardBackground2 {
+    background-color: #44bae1;
+}
+
+.defaultCardBackground3 {
+    background-color: #00a4db;
+}
+
+.defaultCardBackground4 {
+    background-color: #1c4c5c;
+}
+
+.defaultCardBackground5 {
+    background-color: #007ea8;
+}
+
+/* Detail ribbon on item details pages */
+.detailRibbon {
+    background: rgba(var(--jf-palette-background-paperChannel, 32 32 32) / 0.8);
+
+    .layout-tv & {
+        background: none;
+    }
+}

@@ -1,18 +1,9 @@
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Skeleton from '@mui/material/Skeleton';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import React, { type FC, type PropsWithChildren } from 'react';
 
 import globalize from 'lib/globalize';
+import { EmptyState, ErrorState, LoadingState } from 'ui';
 
-const SECTION_HEADER_CLASS =
-    'sectionTitleContainer sectionTitleContainer-cards padded-left';
-const SECTION_TITLE_CLASS = 'sectionTitle sectionTitle-cards';
-
-const LOADING_PLACEHOLDER_KEYS = [0, 1, 2, 3, 4, 5];
+import './HomeSection.scss';
 
 export interface HomeSectionProps {
     title: string;
@@ -29,17 +20,20 @@ export interface HomeSectionProps {
 }
 
 const SectionHeading: FC<{ title: string }> = ({ title }) => (
-    <Box className={SECTION_HEADER_CLASS}>
-        <Typography className={SECTION_TITLE_CLASS} variant='h2'>
-            {title}
-        </Typography>
-    </Box>
+    <h2 className='rf-home-section__title'>{title}</h2>
 );
 
 /**
  * Generic loading/error/empty/success wrapper for one home-page section (design doc §3.3: every
  * section must decide these four states explicitly - there's no shared skeleton/empty widget at
- * the `AppLayout` level to fall back on).
+ * the `AppLayout` level to fall back on). Built on `ui`'s `LoadingState`/`ErrorState`/`EmptyState`
+ * (RFC-0005 §6/§11 W13.6, WP4) rather than MUI `Alert`/`Skeleton` and the historical
+ * `sectionTitleContainer*`/`verticalSection` classes it replaced.
+ *
+ * The section title is always rendered as its own heading above the active state, deliberately
+ * kept out of `ErrorState.title`/`EmptyState.title` (which default to "something went wrong"/the
+ * empty message itself) - `tests/e2e/home.spec.ts` waits for the "Mes médias" section title to be
+ * visible regardless of which of the four states it lands in.
  */
 const HomeSection: FC<PropsWithChildren<HomeSectionProps>> = ({
     title,
@@ -52,43 +46,23 @@ const HomeSection: FC<PropsWithChildren<HomeSectionProps>> = ({
 }) => {
     if (isLoading) {
         return (
-            <Box className='verticalSection'>
+            <div className='rf-home-section'>
                 <SectionHeading title={title} />
-                <Stack
-                    direction='row'
-                    spacing={2}
-                    sx={{ px: 2, overflow: 'hidden' }}
-                >
-                    {LOADING_PLACEHOLDER_KEYS.map((key) => (
-                        <Skeleton
-                            key={key}
-                            variant='rounded'
-                            width={260}
-                            height={146}
-                            sx={{ flexShrink: 0 }}
-                        />
-                    ))}
-                </Stack>
-            </Box>
+                <LoadingState variant='shelf' />
+            </div>
         );
     }
 
     if (isError) {
         return (
-            <Box className='verticalSection'>
+            <div className='rf-home-section'>
                 <SectionHeading title={title} />
-                <Alert
-                    severity='error'
-                    sx={{ mx: 2 }}
-                    action={
-                        <Button color='inherit' size='small' onClick={onRetry}>
-                            {globalize.translate('Retry')}
-                        </Button>
-                    }
-                >
-                    {globalize.translate('ErrorDefault')}
-                </Alert>
-            </Box>
+                <ErrorState
+                    message={globalize.translate('ErrorDefault')}
+                    retryLabel={globalize.translate('Retry')}
+                    onRetry={onRetry}
+                />
+            </div>
         );
     }
 
@@ -96,16 +70,10 @@ const HomeSection: FC<PropsWithChildren<HomeSectionProps>> = ({
         if (!emptyLabel) return null;
 
         return (
-            <Box className='verticalSection'>
+            <div className='rf-home-section'>
                 <SectionHeading title={title} />
-                <Typography
-                    variant='body2'
-                    color='text.secondary'
-                    sx={{ px: 2 }}
-                >
-                    {emptyLabel}
-                </Typography>
-            </Box>
+                <EmptyState title={emptyLabel} />
+            </div>
         );
     }
 
