@@ -10,7 +10,13 @@ export * from './generated';
 
 import globalAxios, { type AxiosInstance } from 'axios';
 
-import { Configuration, SystemApi } from './generated';
+import {
+    Configuration,
+    LibraryApi,
+    ShowApi,
+    SystemApi,
+    UserViewApi
+} from './generated';
 
 /**
  * The protocol-level client identity sent to the server as part of the `Authorization` header
@@ -249,3 +255,12 @@ export const createReefinApi = (
  */
 export const getSystemApi = (api: ReefinApi): SystemApi =>
     new SystemApi(api.configuration, undefined, api.axiosInstance);
+
+export const getLibraryApi = (api: ReefinApi): LibraryApi =>
+    new LibraryApi(api.configuration, undefined, api.axiosInstance);
+
+export const getUserViewApi = (api: ReefinApi): UserViewApi =>
+    new UserViewApi(api.configuration, undefined, api.axiosInstance);
+
+export const getShowApi = (api: ReefinApi): ShowApi =>
+    new ShowApi(api.configuration, undefined, api.axiosInstance);
