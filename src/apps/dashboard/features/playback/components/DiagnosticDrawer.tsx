@@ -23,6 +23,7 @@ import type {
     PlaybackDiagnosticDetail,
     ReasonCode
 } from 'apps/dashboard/features/playback/api/types';
+import CapabilitiesComparison from 'apps/dashboard/features/playback/components/CapabilitiesComparison';
 import DiagnosticTimeline from 'apps/dashboard/features/playback/components/DiagnosticTimeline';
 import DivergenceBadge from 'apps/dashboard/features/playback/components/DivergenceBadge';
 import NoDiagnosticNotice from 'apps/dashboard/features/playback/components/NoDiagnosticNotice';
@@ -395,6 +396,23 @@ const DiagnosticDrawer = ({ sessionId, onClose }: DiagnosticDrawerProps) => {
                                             }
                                         />
                                     </Stack>
+                                </Section>
+                            )}
+
+                            {/* Gated on Capabilities specifically, independent of hasDiagnostic/
+                                Comparison above: PlaybackDiagnosticDetail.Capabilities is its own
+                                nullable field, populated whenever the v2 shadow planner evaluated
+                                this session at all (design doc PR116c) - it can be present even
+                                when Comparison is null. */}
+                            {!!detail.Capabilities && (
+                                <Section
+                                    title={globalize.translate(
+                                        'HeaderPlaybackCapabilitiesComparison'
+                                    )}
+                                >
+                                    <CapabilitiesComparison
+                                        reconstructed={detail.Capabilities}
+                                    />
                                 </Section>
                             )}
 
