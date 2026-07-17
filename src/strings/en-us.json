@@ -1418,6 +1418,8 @@
     "PackageInstallCompleted": "{0} (version {1}) installation completed.",
     "PackageInstallFailed": "{0} (version {1}) installation failed.",
     "PageNotFound": "This is not the page you are looking for.",
+    "Pagination": "Pagination",
+    "PaginationPageLabel": "Page {0} of {1}",
     "ParentalRating": "Parental rating",
     "PasswordMatchError": "Password and password confirmation must match.",
     "PasswordRequiredForAdmin": "A password is required for admin accounts.",

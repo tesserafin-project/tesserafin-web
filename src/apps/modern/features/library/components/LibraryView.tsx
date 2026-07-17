@@ -29,6 +29,7 @@ import {
     type LibraryItemsParams,
     useLibraryItems
 } from '../api/useLibraryItems';
+import { useCanonicalPage } from '../hooks/useCanonicalPage';
 import {
     DEFAULT_DENSITY,
     DENSITY_QUERY_PARAM,
@@ -117,6 +118,11 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     onNextPage
 }) => {
     const onRetry = useCallback(() => void itemsQuery.refetch(), [itemsQuery]);
+    const pageLabel = useCallback(
+        (currentPage: number, pageCount: number) =>
+            globalize.translate('PaginationPageLabel', currentPage, pageCount),
+        []
+    );
 
     if (itemsQuery.isPending) {
         return <LoadingState variant='grid' />;
@@ -130,6 +136,20 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
                 onRetry={onRetry}
             />
         );
+    }
+
+    // Bridges the two windows an out-of-range `page` (e.g. `?page=999`) opens up around the
+    // `useCanonicalPage` correction (in `LibraryView`): (1) `page > totalPages` right after
+    // `TotalRecordCount` lands but before the `replace` navigation to the clamped page has fired, and
+    // (2) once that navigation lands, `page` is back in range but `keepPreviousData` is still showing
+    // the previous, empty, out-of-range response (`isPlaceholderData` with 0 items) while the
+    // corrected page's fetch is in flight. Without both, this window renders a misleading "no items"
+    // for a library that isn't actually empty.
+    const isCorrectingOutOfRangePage =
+        page > totalPages ||
+        (itemsQuery.isPlaceholderData && !itemsQuery.data?.Items?.length);
+    if (isCorrectingOutOfRangePage) {
+        return <LoadingState variant='grid' />;
     }
 
     if (!itemsQuery.data?.Items?.length) {
@@ -157,6 +177,8 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
                     totalPages={totalPages}
                     previousLabel={globalize.translate('Previous')}
                     nextLabel={globalize.translate('Next')}
+                    pageLabel={pageLabel}
+                    aria-label={globalize.translate('Pagination')}
                     onPreviousPage={onPreviousPage}
                     onNextPage={onNextPage}
                 />
@@ -291,6 +313,18 @@ const LibraryView: FC = () => {
         () => onPageChange(clampPage(queryState.page + 1, totalPages)),
         [onPageChange, queryState.page, totalPages]
     );
+
+    // Corrects an out-of-range `page` (e.g. a shared `?page=999` link, or a page that outlived a
+    // filter/deletion shrinking the result set) once `TotalRecordCount` is known: clamps down to
+    // `totalPages` and canonicalizes the URL via the same `replace` navigation `updateQueryState`
+    // already uses elsewhere, so the correction doesn't add a history entry.
+    useCanonicalPage(
+        queryState.page,
+        totalPages,
+        itemsQuery.isSuccess,
+        onPageChange
+    );
+
     const onInfoRetry = useCallback(
         () => void infoQuery.refetch(),
         [infoQuery]

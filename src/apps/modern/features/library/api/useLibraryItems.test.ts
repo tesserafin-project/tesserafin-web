@@ -149,7 +149,9 @@ describe('fetchLibraryItems()', () => {
 
 describe('getLibraryItemsQueryKey()', () => {
     it('accepts undefined params without throwing (initial renders, CollectionType still loading)', () => {
-        expect(() => getLibraryItemsQueryKey('user-1', undefined)).not.toThrow();
+        expect(() =>
+            getLibraryItemsQueryKey('user-1', undefined)
+        ).not.toThrow();
         expect(getLibraryItemsQueryKey('user-1', undefined)).not.toEqual(
             getLibraryItemsQueryKey('user-1', baseParams)
         );
