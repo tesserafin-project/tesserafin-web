@@ -1,10 +1,21 @@
 # RFC-0001 — Vision et faisabilité de Reefin Web
 
-- **Statut** : Draft
+- **Statut** : Accepted
 - **Date** : 2026-07-16
 - **Auteur** : Reefin Team
 - **Dépôt** : `reefin-web` (fork de `jellyfin-web`)
 - **Relation** : compagnon web du serveur `reefin` (fork de Jellyfin Server). Voir notamment `docs/pr91-rfc-playback-decision-v2.md` et `docs/pr92-design-playback-api-and-diagnostics.md` côté serveur pour le contrat de lecture v2 dont ce RFC dépend en phase 3.
+- **Note de suivi (W13.1, 2026-07-16)** : `RFC-0003-product-rupture.md` est le **successeur** de ce
+  document sur les points qu'il précise, tranche ou étend explicitement — en premier lieu **§4
+  (frontière core/plugins)** : RFC-0003 §9 point 12 confirme le tracé de RFC-0001 §4 terme à terme
+  (pas de réinvention) et y ajoute deux entrées non couvertes ici (« sauvegardes » côté core,
+  « domotique » côté extension), à reporter dans une prochaine révision de §4 plutôt que laissées en
+  divergence tacite entre les deux documents. RFC-0003 tranche aussi explicitement **§9 Q3/Q4**
+  (nature du nouveau shell et des nouvelles routes, laissées ouvertes ici) — voir RFC-0003 §1.1.
+  RFC-0001 reste la référence pour la vision produit (§2), la politique de breaking changes (§3,
+  dont RFC-0003 §2 précise l'application plutôt qu'il ne la remplace) et la stratégie de tranches
+  verticales (§6.5) : RFC-0003 ne s'y substitue pas, il les applique à un plan concret plus large que
+  celui anticipé en §9 au moment de la rédaction de ce document.
 
 ---
 

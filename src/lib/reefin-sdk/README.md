@@ -69,6 +69,48 @@ this the generator produces route parameters typed as an object (`id: PlaybackSe
 interpolated into the URL as `"[object Object]"`. See the function's doc comment in the script for
 the full story.
 
+Finally, the script strips the `/* eslint-disable */` line the `typescript-axios` template
+unconditionally emits in every generated file's header (`stripEslintDisableHeaders()`) - dead
+weight since this repo has had no ESLint since RFC-0002 step 5 (Biome doesn't read that pragma).
+Without this the regenerated tree would never match what's committed, even with zero spec changes.
+
+## Freshness check (`verify:reefin-sdk-fresh`)
+
+```sh
+npm run verify:reefin-sdk-fresh
+```
+
+Regenerates the SDK **strictly from the spec already committed** at `spec/openapi.json`
+(`REEFIN_OPENAPI_SPEC` forced to that file, bypassing the sibling-checkout/dev-server resolution
+order above on purpose - this check must be reproducible regardless of what else is checked out
+next to this repo) and fails if that regeneration produces any diff on `generated/` or
+`spec/openapi.json`. It also asserts `spec/version.json` carries an explicit, non-null spec
+version (`version`, `xReefinVersion`, `serverVersion`, `webAppVersion`) - a stale/never-pinned
+version is treated as a failure, not a silent gap. `generatedAt`/`source` churn in `version.json`
+is expected on every run and is not part of the check (the file is reset to its committed content
+afterwards either way, so a run never leaves the working tree dirty as a side effect).
+
+**Known, tracked version skew**: `spec/version.json`'s `serverVersion` (`12.0.0`) does not match
+`webAppVersion` (`13.0.0`, this package's own version) - the pinned spec was captured from a Reefin
+12.0.0 server before `reefin-web` bumped to 13.0.0. This is deliberate, not a bug to paper over
+with a fabricated newer spec: `versionSkewNote` records it explicitly, and the check prints it as
+an informational note (not a failure) whenever it's non-null. Upgrading the pinned spec to a
+13.0.0 server is tracked for **W14.1**, not this slice.
+
+**Local Docker equivalent** (CI quota is currently exhausted - see
+`docs/reefin/design-reefin-api-layer.md` for the CI pipeline this substitutes for locally):
+
+```sh
+docker run --rm -v "$PWD":/workspace -w /workspace node:24-bookworm bash -c "
+  apt-get update && apt-get install -y --no-install-recommends default-jre-headless &&
+  npm ci --no-audit &&
+  npm run verify:reefin-sdk-fresh
+"
+```
+
+(`openapi-generator-cli` needs a JVM - `node:24-bookworm` doesn't ship one, hence the `apt-get`
+step; `node:24` per `.nvmrc`.)
+
 ## Client construction wrapper (`index.ts`)
 
 `ReefinSdk`/`ReefinApi`/`createReefinApi()` mirror `@jellyfin/sdk`'s `Jellyfin`/`Api`/`createApi`
