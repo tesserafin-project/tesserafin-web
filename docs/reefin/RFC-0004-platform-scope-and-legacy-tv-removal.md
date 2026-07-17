@@ -14,10 +14,14 @@
 - **Note de langue** : les autres RFC de ce dépôt sont rédigés en français (vérifié sur RFC-0001 à
   RFC-0003) ; ce document suit la même convention plutôt que la consigne initiale « en anglais »,
   pour rester cohérent avec le corpus existant. Signaler si l'anglais était réellement voulu.
-- **Exécution (W13.2, « Périmètre plateforme »)** : la **PR1** du plan §5 (retrait Orsay / Opera TV /
-  Edge UWP) est exécutée dans cette même tranche — voir §7 pour l'inventaire chiffré et les gates.
-  Les PR2 (webOS/Tizen) et PR3 (résidus) restent à faire ; le statut general du RFC reste **Draft**
-  tant qu'elles ne sont pas closes.
+- **Exécution (W13.2, « Périmètre plateforme »)** : la **PR1** (retrait Orsay / Opera TV / Edge UWP,
+  branche `w13.2-platform-scope`) et la **PR2** (retrait webOS / Tizen, branche
+  `w13.2-platform-scope-pr2`, empilée sur la précédente) du plan §5 sont toutes deux exécutées —
+  voir §7 pour l'inventaire chiffré et les gates des deux PR. Décision produit tranchée entre les deux
+  PR (voir §7.5) : aucune compatibilité firmware webOS/Tizen dans `reefin-web`, y compris pour
+  navigateurs TV historiques — seule l'UX TV générique (gamepad, focus, layouts 10-foot,
+  `layoutManager.tv`) est préservée. La **PR3** (résidus, §6) reste optionnelle et non exécutée ; le
+  statut général du RFC reste **Draft** tant qu'elle n'est pas explicitement close ou abandonnée.
 
 ---
 
@@ -200,10 +204,14 @@ non-standard (L.2049-2052, L.2135-2145, L.2159-2160, champ `this.isPip`).
 Total avant PR1 : **~25 sites `edgeUwp`, 12 `orsay`, 12 `operaTv`, 17 `window.Windows`/`Windows.*`**
 sur 12 fichiers.
 
-### 5.2 Inventaire PR2/3 — webOS / Tizen / webapis (catalogue, non traité dans cette tranche)
+### 5.2 Inventaire PR2 — webOS / Tizen / webapis (catalogue avant exécution — voir §7.5 pour le réel après)
 
 Répartition par fichier des 112 + 166 + 1 occurrences restantes après PR1 (comptage post-PR1,
-identique au comptage pré-PR1 — preuve que PR1 n'a touché aucune de ces occurrences, voir §7.2) :
+identique au comptage pré-PR1 — preuve que PR1 n'a touché aucune de ces occurrences, voir §7.2).
+**Ce tableau est le catalogue établi avant l'exécution de PR2 ; §7.5 documente le résultat réel,
+occurrence par occurrence, et signale les quelques écarts entre ce qui était prévu ici et ce qui a
+été réellement fait (notamment un site `browser.tizen || browser.web0s` dans
+`components/htmlMediaHelper.js` absent de ce tableau initial, trouvé seulement pendant l'exécution) :**
 
 | Fichier | Occurrences | Nature |
 | --- | --- | --- |
@@ -247,7 +255,7 @@ Périmètre : §5.1 en intégralité. Aucune touche à `tizen`/`web0s`/`webapis`
 - Smoke test : bundle servi localement, `index.html` et bundle principal répondent 200 ; limites
   documentées pour lecteur/PDF/EPUB en l'absence de serveur Reefin réel (§7.4).
 
-### PR2 — webOS / Tizen (la suivante, non exécutée dans cette tranche)
+### PR2 — webOS / Tizen (**exécutée**, branche `w13.2-platform-scope-pr2`, voir §7.5)
 
 Périmètre : §5.2 en intégralité — détection `browser.tizen`/`web0s`/`tizenVersion`/`web0sVersion`,
 globals `tizen.*`/`webOS.*`/`webapis.*`, déclarations `browser.d.ts` associées, shims clavier
@@ -259,19 +267,22 @@ profil de lecture donc le plus sensible en risque de régression codec/conteneur
 **Différence de risque avec PR1** : PR1 ne touchait que des plateformes déjà mortes (aucun
 utilisateur actuel). PR2 touche potentiellement des utilisateurs encore actifs sur de vrais
 téléviseurs webOS/Tizen accédant à `reefin-web` via un navigateur desktop/mobile classique (pas via
-le wrapper natif) — improbable mais pas prouvé nul. Recommandation : confirmer via les analytics
-serveur (si disponibles) ou une annonce préalable avant d'exécuter PR2, plutôt que de la traiter
-comme aussi sûre que PR1.
+le wrapper natif). **Ce risque a été explicitement tranché par le mainteneur avant l'exécution de
+cette PR** (décision produit relayée en tête de document et détaillée en §7.5) : aucune compatibilité
+firmware webOS/Tizen n'est un objectif de `reefin-web`, y compris pour d'éventuels navigateurs TV
+historiques encore en usage — seule l'UX TV générique est un engagement (§4). PR2 a donc été
+exécutée sans matrice de compatibilité de remplacement ni fenêtre d'annonce préalable.
 
-**Critères de vérification** :
-- Mêmes gates que PR1 (§6 PR1), plus une revue manuelle ligne-à-ligne de `browserDeviceProfile.js`
-  (92 occurrences, profils codec) avec un diff avant/après readable — pas un remplacement massif en
-  une passe automatique, vu le risque de casser un profil de lecture pour une plateforme encore
-  supportée (le fichier mélange constamment `tizen`/`web0s` avec des plateformes hors périmètre comme
-  `xboxOne`/`ps4`/`vidaa` dans les mêmes expressions).
-- Vérifier explicitement `src/utils/image.ts` et `webos.svg` restent intacts (hors périmètre, §2).
-- Mettre à jour `src/scripts/browser.d.ts` (retrait `tizen`, `web0s`, `tizenVersion`, `web0sVersion`)
-  et re-vérifier `npm run typecheck`.
+**Critères de vérification exécutés** (résultats en §7.5) :
+- Revue manuelle branche par branche de `browserDeviceProfile.js` (92 occurrences, profils codec),
+  pas un remplacement massif en une passe automatique — le fichier mélange constamment `tizen`/`web0s`
+  avec des plateformes hors périmètre comme `xboxOne`/`ps4`/`vidaa` dans les mêmes expressions.
+- Vérifié : `src/utils/image.ts` et `webos.svg` restent intacts (hors périmètre, §2) — aucune des deux
+  PR ne les touche (confirmé par `git diff --name-only`).
+- `src/scripts/browser.d.ts` mis à jour (retrait `tizen`, `web0s`, `tizenVersion`, `web0sVersion`),
+  `npm run typecheck` repassé propre.
+- `npm run validate`, `npm run build:production`, `npm run verify:bundle-budget`,
+  `npm run verify:reefin-sdk-fresh`, smoke test bundle servi.
 
 ### PR3 — Résidus et nettoyage (optionnelle, à évaluer après PR2)
 
@@ -284,7 +295,7 @@ garantie nécessaire : si PR2 ne laisse aucun résidu notable, elle peut être a
 
 ---
 
-## 7. Exécution PR1 (W13.2)
+## 7. Exécution PR1 et PR2 (W13.2)
 
 ### 7.1 Résumé
 
@@ -376,18 +387,177 @@ termes (principe énoncé en §4).
 
 ---
 
+### 7.5 Exécution PR2 (webOS / Tizen)
+
+Décision produit reçue entre PR1 et PR2 : **aucune compatibilité firmware webOS/Tizen dans
+`reefin-web`, y compris pour navigateurs TV historiques** ; seule l'UX TV générique (gamepad, focus,
+layouts 10-foot, `layoutManager.tv`) est un engagement. Branche `w13.2-platform-scope-pr2`, empilée
+sur `w13.2-platform-scope` (PR1). Exécutée en 5 commits, chacun un sujet logique borné :
+
+1. `refactor(platform)` — cœur détection (`browser.js`, `browser.d.ts`, `apphost.js`,
+   `keyboardNavigation.js`) : 4 fichiers, +12/-148.
+2. `refactor(playback)` — `browserDeviceProfile.js` seul, commit dédié vu sa sensibilité (92 des 166
+   occurrences webOS/tizen cataloguées en §5.2) : 1 fichier, +37/-331.
+3. `refactor(player)` — contournements lecteur (`htmlVideoPlayer/plugin.js`, `htmlMediaHelper.js`,
+   `subtitleStyles.ts`) : 3 fichiers, +0/-47.
+4. `refactor(ui)` — shims clavier/scroll/menu (`emby-checkbox.js`, `emby-radio.js`,
+   `emby-select.js`, `mouseManager.js`, `scroller/index.js`, `guide.scss`) : 6 fichiers, +3/-69.
+5. `refactor(settings)` — bascules UI settings (`displaySettings.js`, `playbackSettings.js`,
+   `appSettings.js`) : 3 fichiers, +1/-17.
+
+**Total : 17 fichiers, +53/-612 lignes (net -559).**
+
+#### 7.5.1 Méthode — branche par branche, pas de find-replace en bloc
+
+Principe appliqué systématiquement dans `browserDeviceProfile.js` (le fichier à risque) : pour chaque
+site `browser.tizen`/`browser.web0s`/`browser.tizenVersion`/`browser.web0sVersion`, vérifier d'abord
+si l'expression contient aussi un terme d'une plateforme **hors périmètre** (`xboxOne`, `ps4`,
+`vidaa`) avant de toucher quoi que ce soit — si oui, ne retirer que le terme tizen/webOS et laisser le
+reste intact (ex. `browser.tizenVersion >= 3 || browser.vidaa || isWebOsWithoutDolbyVision` →
+`browser.vidaa`, dans `supportsHdr10`/DOVI). Ensuite, distinguer deux familles :
+
+- **Raccourci devant un test générique déjà existant** (`videoTestElement.canPlayType(...)`) :
+  supprimer seulement le raccourci, garder le test. Cas concrets : `supportsVc1` (le terme
+  `browser.tizen || browser.web0s ||` disparaît, le `canPlayType('video/mp4; codecs="vc-1"')` reste
+  identique), les seuils H264 niveau 51/52 (`avc1.640833`/`avc1.640834`), et le fallback profil DOVI 8
+  webOS (`browser.web0sVersion >= 4` supprimé, le test `canPlayType('...dvh1.08.06...')` conservé).
+  Dans ces cas, un navigateur qui supporte réellement le codec/niveau continue de le voir détecté —
+  aucune capacité générique perdue, seule la platform-specific shortcut disparaît.
+- **Aucun équivalent générique** (conteneurs MPEG-TS/MPEG-2 bruts, codec PCM/aac_latm, réglage DOVI
+  webOS par version, limite FLAC 2 canaux webOS, `webapis.productinfo.isUdPanelSupported()`) :
+  suppression complète de la capacité, aucun navigateur evergreen ne peut de toute façon la tester ou
+  la fournir. `testCanPlayTs()`/`supportsMpeg2Video()` et les cas `asf`/`wmv`/`avi`/`mpg`/`mpeg`/`flv`/
+  `3gp`-famille/`m2ts`/`ts` de `getDirectPlayProfileForVideoContainer` retombent tous sur le `default`
+  du switch (`supported` reste `false`) ; `supportsMpeg2Video()` est gardé comme stub explicite
+  `return false` (2 appelants réels restants), `testCanPlayTs()` est supprimé (plus aucun appelant une
+  fois son unique site d'appel — le `case 'ts'` — retiré).
+
+`canPlaySecondaryAudio()` illustre un troisième cas : ses clauses `tizen`/`web0s` (bornes de version)
+évaluaient toujours `true` une fois les flags disparus (`!browser.tizen` = `!undefined` = `true`) —
+retirées plutôt que laissées mortes, pour ne pas garder une expression qui a l'air conditionnelle mais
+ne l'est plus.
+
+#### 7.5.2 Repointages / suppressions au-delà d'un simple retrait de terme
+
+- **`apphost.js` `askForExit()`** : gardé par `!!window.appMode && browser.tizen`, ce chemin devient
+  inatteignable une fois `browser.tizen` toujours faux. Fonction supprimée entièrement (seul appelant),
+  avec `exitPromise` et l'import `globalize` devenu orphelin.
+- **`emby-checkbox.js` `enableRefreshHack`/`forceRefresh()`** : `browser.tizen || browser.web0s`
+  devenant toujours faux, le hack de repaint CSS forcé (`webkitAnimationName`) et ses 4
+  `addEventListener`/`removeEventListener` associés sont retirés en bloc — imports `browser`/`dom`
+  devenus orphelins également supprimés.
+- **`emby-checkbox.js`/`emby-radio.js` `onKeyDown`** : `e.keyCode === 32 && browser.tizen` retiré ;
+  le comportement Espace natif des navigateurs (déjà actif pour toute plateforme non-Tizen) n'est pas
+  affecté.
+- **`keyboardNavigation.js` `KeyNames`** : les 9 entrées numériques `412/413/415/417/461/10009/10232/
+  10233/10252` (documentées Tizen/webOS dans le code lui-même) sont supprimées. Vérifié avant
+  suppression : `getKeyName()` retombe sur `event.code` quand `KeyNames[event.keyCode]` ne matche pas,
+  et `MediaPlay`/`MediaStop`/`MediaTrackNext`/`MediaTrackPrevious`/`MediaPlayPause` sont des valeurs
+  `KeyboardEvent.code` standard (spec UI Events) — donc un vrai clavier multimédia générique continue
+  de déclencher les mêmes commandes via ce fallback, sans code dédié. Aucune capacité perdue pour les
+  plateformes conservées.
+- **`components/htmlMediaHelper.js` `enableHlsJsPlayer()`** : un site `browser.tizen || browser.web0s`
+  **absent du catalogue §5.2** (raté par l'audit grep initial car il n'apparaissait dans aucune des
+  recherches ciblées de RFC-0002/§5.1 — trouvé seulement par re-grep pendant l'exécution de PR2, voir
+  §7.5.3) gardait le retour anticipé « ces plateformes ont un support natif du seek live HLS, pas
+  besoin de hls.js ». Supprimé ; retombe sur `canPlayNativeHls()`, chemin déjà emprunté par toutes les
+  autres plateformes.
+
+#### 7.5.3 Preuve de non-débordement et écart avec le catalogue §5.2
+
+| Motif | Avant PR2 (= après PR1) | Après PR2 | Delta |
+| --- | --- | --- | --- |
+| `tizen` (insensible casse) | 112 | **10** | -102 |
+| `web0s`/`webos` (insensible casse) | 166 | **66** | -100 |
+| `webapis` | 1 | **0** | -1 |
+| `browser.tizen`/`browser.web0s` (accès réel de propriété, regex stricte) | — | **0** | confirmé nul |
+| `orsay`/`operaTv`/`edgeUwp`/`window.Windows`\`Windows.*\` (témoin PR1, ne doit pas bouger) | 0 | **0** | inchangé |
+
+Les 10 + 66 occurrences restantes (moins les doublons comptés dans les deux motifs à la fois, ex.
+« Tizen/webOS » dans un même commentaire) sont **exclusivement** :
+- des commentaires explicatifs non actionnables, dans du code générique et inconditionnel — listés et
+  justifiés un par un en §7.5.4 ;
+- les 60 fichiers `src/strings/*.json` (`LimitSegmentLengthHelp`, texte produit, hors périmètre —
+  question ouverte §8.3) ;
+- `src/utils/image.ts:78-80` et `src/assets/img/devices/webos.svg` (icône de session client tiers,
+  explicitement hors périmètre §2) — vérifié intacts par `git diff --name-only` sur les deux PR.
+
+**Écart avec le catalogue §5.2** : le tableau initial listait 92 occurrences dans
+`browserDeviceProfile.js` avant exécution ; le fichier committé montre +37/-331 lignes, cohérent avec
+un remplacement branche par branche plutôt qu'une simple suppression 1:1 (les blocs multi-lignes —
+DOVI, FLAC webOS, container-profile switch — se compactent en bien moins de lignes que l'original).
+Le site `browser.tizen || browser.web0s` de `htmlMediaHelper.js` (§7.5.2) n'apparaissait dans aucune
+des recherches ciblées ayant servi à construire §5.2 (RFC-0002 §2 ne l'avait pas non plus catalogué) —
+trouvé et traité pendant l'exécution grâce au re-grep de contrôle en fin de PR, pas avant. Aucun autre
+écart constaté.
+
+#### 7.5.4 Résidus conservés — commentaires/code générique non actionnable
+
+Chaque fichier suivant contient encore une occurrence de `tizen`/`webOS` après PR2, examiné
+individuellement et gardé parce que le code environnant est **inconditionnel** (s'applique à toutes
+les plateformes, pas seulement Tizen/webOS) ou parce que retirer le commentaire n'a aucun effet sur le
+code :
+
+| Fichier | Ce qui reste | Pourquoi conservé |
+| --- | --- | --- |
+| `src/components/scrollManager.js` | JSDoc de `DocumentScroller` documentant 5 quirks webOS/Tizen historiques | L'implémentation (`window.pageXOffset`/`window.scroll`) est déjà générique et ne branche sur aucune plateforme — pur historique de conception |
+| `src/components/dialogHelper/dialogHelper.js:438` | Commentaire citant Tizen parmi 2 autres raisons de ne pas utiliser `<dialog>` natif | Le code (`document.createElement('div')`) est inconditionnel ; la raison principale citée (superposition de contenu positionné) reste valide indépendamment de Tizen |
+| `src/scripts/keyboardNavigation.js:46-50` | Commentaire expliquant pourquoi les 9 entrées `KeyNames` ont été retirées | Documentation du retrait lui-même, pas du code restant |
+| `src/scripts/browserDeviceProfile.js` (×2) | Commentaires sur les stubs `supportsMpeg2Video()`/le `switch` de conteneurs | Documentation du choix de garder des stubs plutôt que de les supprimer (§7.5.1) |
+| `src/elements/emby-slider/emby-slider.js`, `emby-input/emby-input.js`, `emby-textarea/emby-textarea.js` | Commentaire « descriptor returning null in webos » sur un garde `descriptor?.configurable` | Garde défensive générique, sûre pour toute plateforme quelle que soit la cause historique |
+| `src/plugins/htmlVideoPlayer/plugin.js:1472` | Commentaire sur l'appel `resolveUrl(options.workerUrl)` | Appel inconditionnel (tourne pour toutes les plateformes), le commentaire n'explique qu'une motivation historique parmi d'autres bénéfices |
+| `src/plugins/htmlVideoPlayer/style.scss:21` | Commentaire sur la règle `video[controls]::-webkit-media-controls { display: none }` | Règle WebKit générique toujours nécessaire pour Safari (plateforme conservée) |
+| `src/plugins/htmlAudioPlayer/plugin.js:48` | Commentaire sur `supportsFade()` | Le code (`!browser.tv`) est déjà générique — exclut toute plateforme TV, pas seulement Tizen |
+| `src/styles/fonts.scss:44`, `src/styles/site.scss:69` | Commentaires sur `.layout-tv { font-size: 125% }` et `font-feature-settings: "liga"` | **UX TV générique à préserver** (§4) pour `fonts.scss` — la règle 10-foot s'applique à `layoutManager.tv`, pas seulement Tizen/webOS ; règle CSS inconditionnelle et sans effet négatif connu pour `site.scss` |
+| `src/utils/dom.js:162` | Commentaire sur le fallback `!Number.isFinite(...)` dans `getWindowSize()` | Garde défensive générique, harmless pour toute plateforme |
+
+Aucun de ces dix résidus ne contient de branche conditionnelle `browser.tizen`/`browser.web0s` — tous
+confirmés par la regex stricte `browser\.tizen|browser\.web0s` (0 occurrence, §7.5.3).
+
+#### 7.5.5 Gates exécutées (100% local, quota GitHub Actions épuisé)
+
+| Gate | Résultat |
+| --- | --- |
+| `npm run typecheck` (`tsc --noEmit`) | **0 erreur** (y compris `subtitleStyles.ts`, seul fichier `.ts` touché par PR2) |
+| Biome (`./node_modules/.bin/biome check .`) | **0 erreur, 277 warnings** (contre 278 en clôture PR1/W13.1 — un warning de moins, disparu avec le code supprimé, aucun nouveau warning introduit) |
+| `npm run stylelint` | **0 erreur** |
+| `npm test` (Vitest) | **204/204 tests verts**, 19 fichiers — inchangé, aucun test ne référençait `tizen`/`web0s` au-delà de ce que PR1 avait déjà nettoyé dans `browser.test.ts` |
+| `npm run build:production` | **Succès**, `webpack 5.108.4 compiled successfully` |
+| `npm run verify:bundle-budget` | **PASS** — `main.jellyfin.bundle.js` : 384 761 octets (375,7 KiB), budget 460 800 octets (450 KiB) ; contre 390 460 octets (381,3 KiB) après PR1 → **-5 699 octets** supplémentaires |
+| `npm run verify:reefin-sdk-fresh` | **PASS** — `generated/` inchangé |
+| `npm run validate` (agrégat des 4 premiers) | **Succès** (exit 0) |
+
+**Smoke test manuel** — `npx http-server dist` puis `curl` : `index.html` → **HTTP 200** ;
+`main.jellyfin.bundle.js` → **HTTP 200**, taille 384 761 octets (cohérente avec le budget) ; présence
+confirmée de `pdf.worker.js` et `libarchive.wasm` dans `dist/libraries/`. **Même limite qu'en PR1** :
+aucun serveur Reefin réel disponible dans cet environnement pour exercer une vraie lecture vidéo/PDF/
+EPUB de bout en bout — le smoke test prouve que le bundle se sert et contient les artefacts attendus,
+pas que la lecture fonctionne en conditions réelles. Le fichier le plus sensible pour ce risque
+résiduel est `browserDeviceProfile.js` (profils codec) : les gates automatisés (typecheck, tests,
+build, budget) sont tous verts, mais aucun n'exerce réellement un flux de lecture HLS/codec — à
+vérifier manuellement contre un vrai serveur avant mise en production.
+
+---
+
 ## 8. Questions ouvertes
 
-1. **Timing de PR2** : faut-il un signal (analytics serveur, annonce publique) avant de retirer la
-   détection webOS/Tizen, étant donné que — contrairement à Orsay/Opera TV/Edge UWP — des
-   utilisateurs pourraient encore accéder à `reefin-web` depuis un navigateur embarqué sur ces
-   téléviseurs (pas nécessairement via le wrapper natif retiré par RFC-0002) ?
-2. **`src/components/guide/guide.scss:171`** mentionne « opera tv » dans un commentaire libre (pas de
-   code conditionnel) — non traité par PR1 (hors grep ciblé `operatv`, trouvé seulement via l'audit
-   large tizen/webos). À nettoyer en PR2/3 par cohérence documentaire, sans urgence.
+1. ~~**Timing de PR2**~~ — **Résolu (avant exécution de PR2, voir §7.5)** : décision produit tranchée
+   par le mainteneur — aucune compatibilité firmware webOS/Tizen dans `reefin-web`, y compris pour
+   navigateurs TV historiques ; PR2 exécutée sans matrice de compatibilité de remplacement ni fenêtre
+   d'annonce préalable.
+2. ~~**`src/components/guide/guide.scss:171`**~~ — **Résolu dans PR2** (§7.5, commit
+   `refactor(ui)`) : commentaire trimé pour ne plus citer « tizen »/« opera tv » aux côtés de `ps4`
+   (conservé).
 3. **Chaînes de traduction `LimitSegmentLengthHelp`** (~60 fichiers `src/strings/*.json`) mentionnant
-   « téléviseurs webOS » : si PR2 retire le contournement HLS sous-jacent
-   (`userSettings.limitSegmentLength()` / `playbackSettings.js:286-287`), faut-il aussi faire évoluer
-   ce texte, ou le garder tel quel si le réglage reste utile pour d'autres cas ? Non tranché ici.
-4. **Étendue exacte de PR3** : dépend entièrement de ce que PR2 laisse comme résidu — ce RFC ne
-   préjuge pas qu'elle sera nécessaire (§6).
+   « téléviseurs webOS » : **non résolu, volontairement laissé de côté par PR2** (§7.5.2) — le champ de
+   réglage UI qui révélait ce texte est désormais masqué par défaut pour tout le monde (plus jamais
+   affiché, PR2 §7.5.4/commit `refactor(settings)`), mais le réglage sous-jacent
+   (`userSettings.limitSegmentLength()`, consommé par `browserDeviceProfile.js`) et les chaînes de
+   traduction elles-mêmes restent intacts. Décision à prendre séparément : supprimer le réglage et ses
+   traductions dans une PR dédiée, ou les garder au cas où le réglage soit encore utile pour d'autres
+   plateformes/cas d'usage.
+4. **Étendue exacte de PR3** : les résidus identifiés en §7.5.4 sont tous des commentaires ou du code
+   générique inconditionnel jugés non actionnables — **aucun n'appelle de suite immédiate**. La seule
+   piste concrète qui reste ouverte est la question 3 ci-dessus (traductions `LimitSegmentLengthHelp`).
+   Ce RFC ne préjuge donc pas qu'une PR3 soit nécessaire : elle peut être abandonnée si la question 3
+   est tranchée « on garde tel quel ».
