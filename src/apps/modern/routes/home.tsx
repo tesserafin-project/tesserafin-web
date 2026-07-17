@@ -1,232 +1,94 @@
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import Box from '@mui/material/Box';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import React, { type SyntheticEvent, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import globalize from '../../../lib/globalize';
-import { clearBackdrop } from '../../../components/backdrop/backdrop';
-import layoutManager from '../../../components/layoutManager';
-import Page from '../../../components/Page';
-import { EventType } from 'constants/eventType';
-import Events from 'utils/events';
+import { clearBackdrop } from 'components/backdrop/backdrop';
+import Page from 'components/Page';
+import globalize from 'lib/globalize';
 
-import '../../../elements/emby-tabs/emby-tabs';
-import '../../../elements/emby-button/emby-button';
-import '../../../elements/emby-scroller/emby-scroller';
+import FavoritesTab from '../features/home/components/FavoritesTab';
+import HomeTab from '../features/home/components/HomeTab';
+import {
+    homeTabIndexToParam,
+    parseHomeTabIndex
+} from '../features/home/utils/tabParam';
 
-type OnResumeOptions = {
-    autoFocus?: boolean;
-    refresh?: boolean;
-};
-
-type ControllerProps = {
-    onResume: (options: OnResumeOptions) => void;
-    refreshed: boolean;
-    onPause: () => void;
-    destroy: () => void;
-};
+const tabId = (index: number) => `home-tab-${index}`;
+const tabPanelId = (index: number) => `home-tabpanel-${index}`;
 
 const Home = () => {
-    const [searchParams] = useSearchParams();
-    const initialTabIndex = parseInt(searchParams.get('tab') ?? '0', 10);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = parseHomeTabIndex(searchParams.get('tab'));
 
-    const libraryMenu = useMemo(
-        async () => (await import('../../../scripts/libraryMenu')).default,
-        []
-    );
-    const mainTabsManager = useMemo(
-        () => import('../../../components/maintabsmanager'),
-        []
-    );
-    const tabController = useRef<ControllerProps | null>();
-    const tabControllers = useMemo<ControllerProps[]>(() => [], []);
-
-    const documentRef = useRef<Document>(document);
-    const element = useRef<HTMLDivElement>(null);
-
-    const setTitle = async () => {
-        (await libraryMenu).setTitle(null);
-    };
-
-    const getTabs = () => {
-        return [
-            {
-                name: globalize.translate('Home')
-            },
-            {
-                name: globalize.translate('Favorites')
-            }
-        ];
-    };
-
-    const getTabContainers = () => {
-        return element.current?.querySelectorAll('.tabContent');
-    };
-
-    const getTabController = useCallback(
-        (index: number) => {
-            if (index == null) {
-                throw new Error('index cannot be null');
-            }
-
-            let depends = '';
-
-            switch (index) {
-                case 0:
-                    depends = 'hometab';
-                    break;
-
-                case 1:
-                    depends = 'favorites';
-            }
-
-            return import(
-                /* webpackChunkName: "[request]" */ `../../../apps/legacy/controllers/${depends}`
-            ).then(({ default: ControllerFactory }) => {
-                let controller = tabControllers[index];
-
-                if (!controller) {
-                    const tabContent = element.current?.querySelector(
-                        ".tabContent[data-index='" + index + "']"
-                    );
-                    controller = new ControllerFactory(tabContent, null);
-                    tabControllers[index] = controller;
-                }
-
-                return controller;
-            });
-        },
-        [tabControllers]
-    );
-
-    const loadTab = useCallback(
-        (index: number, previousIndex: number | null) => {
-            getTabController(index)
-                .then((controller) => {
-                    const refresh = !controller.refreshed;
-
-                    controller.onResume({
-                        autoFocus: previousIndex == null && layoutManager.tv,
-                        refresh: refresh
-                    });
-
-                    controller.refreshed = true;
-                    tabController.current = controller;
-                })
-                .catch((err) => {
-                    console.error('[Home] failed to get tab controller', err);
-                });
-        },
-        [getTabController]
-    );
-
-    const onTabChange = useCallback(
-        (e: {
-            detail: { selectedTabIndex: string; previousIndex: number | null };
-        }) => {
-            const newIndex = parseInt(e.detail.selectedTabIndex, 10);
-            const previousIndex = e.detail.previousIndex;
-
-            const previousTabController =
-                previousIndex == null ? null : tabControllers[previousIndex];
-            if (previousTabController?.onPause) {
-                previousTabController.onPause();
-            }
-
-            loadTab(newIndex, previousIndex);
-        },
-        [loadTab, tabControllers]
-    );
-
-    const onSetTabs = useCallback(async () => {
-        (await mainTabsManager).setTabs(
-            element.current,
-            initialTabIndex,
-            getTabs,
-            getTabContainers,
-            null,
-            onTabChange,
-            false
-        );
-    }, [initialTabIndex, mainTabsManager, onTabChange]);
-
-    const onResume = useCallback(async () => {
-        void setTitle();
+    // Mirrors the previous controller-based `home.tsx`'s `onResume`: reset the title and any
+    // leftover backdrop image once when the page mounts.
+    useEffect(() => {
+        void (async () => {
+            (await import('scripts/libraryMenu')).default.setTitle(null);
+        })();
         clearBackdrop();
-
-        const currentTabController = tabController.current;
-
-        if (!currentTabController) {
-            (await mainTabsManager).selectedTabIndex(initialTabIndex);
-        } else if (currentTabController?.onResume) {
-            currentTabController.onResume({});
-        }
-        (
-            documentRef.current.querySelector('.skinHeader') as HTMLDivElement
-        ).classList.add('noHomeButtonHeader');
-    }, [initialTabIndex, mainTabsManager]);
-
-    const onPause = useCallback(() => {
-        const currentTabController = tabController.current;
-        if (currentTabController?.onPause) {
-            currentTabController.onPause();
-        }
-        (
-            documentRef.current.querySelector('.skinHeader') as HTMLDivElement
-        ).classList.remove('noHomeButtonHeader');
     }, []);
 
-    const renderHome = useCallback(() => {
-        void onSetTabs();
-        void onResume();
-    }, [onResume, onSetTabs]);
-
+    // Same `.skinHeader.noHomeButtonHeader` toggling the previous `onResume`/`onPause` did, now
+    // scoped to mount/unmount since there's no per-tab controller lifecycle left to hook into.
     useEffect(() => {
-        if (documentRef.current?.querySelector('.headerTabs')) {
-            renderHome();
-        }
+        const header = document.querySelector('.skinHeader');
+        header?.classList.add('noHomeButtonHeader');
 
         return () => {
-            onPause();
+            header?.classList.remove('noHomeButtonHeader');
         };
-    }, [onPause, renderHome]);
+    }, []);
 
-    useEffect(() => {
-        const doc = documentRef.current;
-        if (doc) Events.on(doc, EventType.HEADER_RENDERED, renderHome);
-
-        return () => {
-            if (doc) Events.off(doc, EventType.HEADER_RENDERED, renderHome);
-        };
-    }, [renderHome]);
+    const onTabChange = (_event: SyntheticEvent, newValue: number) => {
+        searchParams.set('tab', homeTabIndexToParam(newValue));
+        setSearchParams(searchParams);
+    };
 
     return (
-        <div ref={element}>
-            <Page
-                id='indexPage'
-                className='mainAnimatedPage homePage libraryPage allLibraryPage pageWithAbsoluteTabs withTabs'
-                isBackButtonEnabled={false}
-                backDropType={[
-                    BaseItemKind.Movie,
-                    BaseItemKind.Series,
-                    BaseItemKind.Book
-                ]}
+        <Page
+            id='indexPage'
+            className='mainAnimatedPage homePage libraryPage allLibraryPage'
+            isBackButtonEnabled={false}
+            backDropType={[
+                BaseItemKind.Movie,
+                BaseItemKind.Series,
+                BaseItemKind.Book
+            ]}
+        >
+            <Tabs value={activeTab} onChange={onTabChange}>
+                <Tab
+                    label={globalize.translate('Home')}
+                    id={tabId(0)}
+                    aria-controls={tabPanelId(0)}
+                />
+                <Tab
+                    label={globalize.translate('Favorites')}
+                    id={tabId(1)}
+                    aria-controls={tabPanelId(1)}
+                />
+            </Tabs>
+
+            <Box
+                role='tabpanel'
+                id={tabPanelId(0)}
+                aria-labelledby={tabId(0)}
+                hidden={activeTab !== 0}
             >
-                <div
-                    className='tabContent pageTabContent'
-                    id='homeTab'
-                    data-index='0'
-                >
-                    <div className='sections'></div>
-                </div>
-                <div
-                    className='tabContent pageTabContent'
-                    id='favoritesTab'
-                    data-index='1'
-                >
-                    <div className='sections'></div>
-                </div>
-            </Page>
-        </div>
+                {activeTab === 0 && <HomeTab />}
+            </Box>
+            <Box
+                role='tabpanel'
+                id={tabPanelId(1)}
+                aria-labelledby={tabId(1)}
+                hidden={activeTab !== 1}
+            >
+                {activeTab === 1 && <FavoritesTab />}
+            </Box>
+        </Page>
     );
 };
 
