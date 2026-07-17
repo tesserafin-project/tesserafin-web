@@ -7,7 +7,7 @@ concurrency:
 on:
   push:
     branches:
-      - master
+      - main
       - release*
     paths-ignore:
       - '**/*.md'
