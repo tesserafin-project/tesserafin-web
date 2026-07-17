@@ -1,0 +1,11 @@
+{
+    "id": "official.classic",
+    "version": "0.1.0",
+    "name": "Reefin Classic",
+    "author": "Reefin Team",
+    "license": "GPL-2.0-or-later",
+    "compatibility": {
+        "web": ">=13.0"
+    },
+    "modes": ["dark", "light"]
+}

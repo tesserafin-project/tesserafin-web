@@ -136,6 +136,7 @@
         "typecheck": "tsc --noEmit",
         "typecheck:watch": "tsc --noEmit --watch",
         "generate:reefin-sdk": "node scripts/generate-reefin-sdk.mjs",
+        "generate:tokens": "node reefin-design/scripts/generate-web-tokens.mjs",
         "verify:reefin-sdk-fresh": "node scripts/verify-reefin-sdk-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "lint": "biome check .",

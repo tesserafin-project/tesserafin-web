@@ -1,0 +1,77 @@
+/**
+ * GENERATED — do not edit by hand.
+ * Source: reefin-design/themes/classic/{theme,tokens}.json
+ * Regenerate: npm run generate:tokens
+ *
+ * Scoping:
+ *   - [data-rf-theme="official.classic"] — base tier: mode-independent tokens plus the "dark"
+ *     mode color tokens (the app-wide default mode).
+ *   - [data-rf-theme="official.classic"][data-rf-mode="<mode>"] — color token overrides for every other
+ *     mode, layered on top of the base tier via CSS cascade order.
+ */
+
+[data-rf-theme="official.classic"] {
+    --rf-typography-font-family-base: "Noto Sans", sans-serif;
+    --rf-typography-font-family-mono: ui-monospace, monospace;
+    --rf-typography-font-size-xs: 0.75rem;
+    --rf-typography-font-size-sm: 0.875rem;
+    --rf-typography-font-size-md: 1rem;
+    --rf-typography-font-size-lg: 1.17rem;
+    --rf-typography-font-size-xl: 1.5rem;
+    --rf-typography-font-size-xxl: 1.8rem;
+    --rf-typography-font-weight-regular: 400;
+    --rf-typography-font-weight-medium: 500;
+    --rf-typography-font-weight-bold: 700;
+    --rf-shape-radius-sm: 0.15em;
+    --rf-shape-radius-md: 0.2em;
+    --rf-shape-radius-lg: 0.4em;
+    --rf-shape-radius-full: 999px;
+    --rf-spacing-xs: 4px;
+    --rf-spacing-sm: 8px;
+    --rf-spacing-md: 16px;
+    --rf-spacing-lg: 24px;
+    --rf-spacing-xl: 32px;
+    --rf-elevation-level0: none;
+    --rf-elevation-level1: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --rf-elevation-level2: 0 2px 8px rgba(0, 0, 0, 0.28);
+    --rf-elevation-level3: 0 8px 24px rgba(0, 0, 0, 0.32);
+    --rf-motion-duration-fast: 150ms;
+    --rf-motion-duration-normal: 300ms;
+    --rf-motion-duration-slow: 375ms;
+    --rf-motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --rf-motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --rf-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --rf-density: comfortable;
+    --rf-blur-sm: 0;
+    --rf-blur-md: 0;
+    --rf-blur-lg: 0;
+    --rf-color-background: #101010;
+    --rf-color-surface: #202020;
+    --rf-color-surface-variant: #2c2c2c;
+    --rf-color-text: #fff;
+    --rf-color-text-muted: rgba(255, 255, 255, 0.7);
+    --rf-color-primary: #00a4dc;
+    --rf-color-on-primary: #fff;
+    --rf-color-accent: #aa5cc3;
+    --rf-color-error: #c62828;
+    --rf-color-warning: #ffa726;
+    --rf-color-success: #66bb6a;
+    --rf-color-focus: rgba(255, 255, 255, 0.12);
+    --rf-color-divider: rgba(255, 255, 255, 0.12);
+}
+
+[data-rf-theme="official.classic"][data-rf-mode="light"] {
+    --rf-color-background: #f2f2f2;
+    --rf-color-surface: #e8e8e8;
+    --rf-color-surface-variant: #dcdcdc;
+    --rf-color-text: #000;
+    --rf-color-text-muted: rgba(0, 0, 0, 0.87);
+    --rf-color-primary: #00a4dc;
+    --rf-color-on-primary: #fff;
+    --rf-color-accent: #aa5cc3;
+    --rf-color-error: #c62828;
+    --rf-color-warning: #ed6c02;
+    --rf-color-success: #2e7d32;
+    --rf-color-focus: #bbb;
+    --rf-color-divider: rgba(0, 0, 0, 0.14);
+}
