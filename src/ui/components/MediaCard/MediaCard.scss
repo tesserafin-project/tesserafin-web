@@ -1,0 +1,125 @@
+/**
+ * MediaCard (RFC-0005 §6). Only `--rf-*` custom properties are read here, with static fallbacks —
+ * no historical class name (`.card*`) or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-media-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    text-align: left;
+    text-decoration: none;
+    color: var(--rf-color-text, #fff);
+    border: 0;
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    background: var(--rf-color-surface, #202020);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    cursor: default;
+    transition:
+        transform var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease);
+}
+
+a.rf-media-card,
+button.rf-media-card {
+    cursor: pointer;
+}
+
+a.rf-media-card:hover,
+button.rf-media-card:hover {
+    transform: scale(1.02);
+}
+
+.rf-media-card:focus-visible {
+    outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-media-card {
+        transition: none;
+    }
+
+    a.rf-media-card:hover,
+    button.rf-media-card:hover {
+        transform: none;
+    }
+}
+
+.rf-media-card__image-wrap {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    background: var(--rf-color-surface-variant, #2c2c2c);
+}
+
+.rf-media-card--poster .rf-media-card__image-wrap {
+    aspect-ratio: 2 / 3;
+}
+
+.rf-media-card--backdrop .rf-media-card__image-wrap {
+    aspect-ratio: 16 / 9;
+}
+
+.rf-media-card--square .rf-media-card__image-wrap {
+    aspect-ratio: 1 / 1;
+}
+
+.rf-media-card__image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rf-media-card__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: var(--rf-typography-font-size-xxl, 1.8rem);
+}
+
+.rf-media-card__progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.rf-media-card__progress-bar {
+    display: block;
+    height: 100%;
+    background: var(--rf-color-primary, #00a4dc);
+}
+
+.rf-media-card__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--rf-spacing-sm, 8px);
+}
+
+.rf-media-card__title {
+    overflow: hidden;
+    color: var(--rf-color-text, #fff);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-media-card__subtitle {
+    overflow: hidden;
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: var(--rf-typography-font-size-xs, 0.75rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

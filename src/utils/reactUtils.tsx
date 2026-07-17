@@ -12,7 +12,7 @@ import { ApiProvider } from 'hooks/useApi';
 import { UserSettingsProvider } from 'hooks/useUserSettings';
 import { useUserTheme } from 'hooks/useUserTheme';
 import { WebConfigProvider } from 'hooks/useWebConfig';
-import appTheme from 'themes';
+import { useAppTheme } from 'themes/useAppTheme';
 import { queryClient } from 'utils/query/queryClient';
 
 /**
@@ -54,6 +54,28 @@ const CustomThemeProvider: FC<PropsWithChildren> = ({ children }) => {
     );
 };
 
+/**
+ * Resolves the user's theme id and builds the (lazily loaded, RFC-0005 §9.1) MUI theme for it —
+ * split out from `RootContext` because `useUserTheme`/`useAppTheme` need the settings/config
+ * context `RootContext` provides, but must run above the `ThemeProvider` they configure.
+ */
+const ScopedThemeProvider: FC<PropsWithChildren> = ({ children }) => {
+    const { theme } = useUserTheme();
+    const { theme: appTheme } = useAppTheme(theme);
+
+    return (
+        <ThemeProvider
+            theme={appTheme}
+            // Disable color scheme management since we're handling it manually
+            colorSchemeNode={null}
+            storageManager={null}
+            disableStyleSheetGeneration
+        >
+            <CustomThemeProvider>{children}</CustomThemeProvider>
+        </ThemeProvider>
+    );
+};
+
 /** Component that provides a root context that matches the application root. */
 const RootContext: FC<PropsWithChildren> = ({ children }) => {
     return (
@@ -61,17 +83,7 @@ const RootContext: FC<PropsWithChildren> = ({ children }) => {
             <ApiProvider>
                 <UserSettingsProvider>
                     <WebConfigProvider>
-                        <ThemeProvider
-                            theme={appTheme}
-                            // Disable color scheme management since we're handling it manually
-                            colorSchemeNode={null}
-                            storageManager={null}
-                            disableStyleSheetGeneration
-                        >
-                            <CustomThemeProvider>
-                                {children}
-                            </CustomThemeProvider>
-                        </ThemeProvider>
+                        <ScopedThemeProvider>{children}</ScopedThemeProvider>
                     </WebConfigProvider>
                 </UserSettingsProvider>
             </ApiProvider>

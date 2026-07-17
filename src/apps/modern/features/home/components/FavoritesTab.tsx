@@ -1,39 +1,16 @@
-import Typography from '@mui/material/Typography';
 import React, { type FC } from 'react';
 
-import {
-    getBackdropShape,
-    getPortraitShape
-} from 'components/cardbuilder/utils/shape';
-import SectionContainer from 'components/common/SectionContainer';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
 import { BaseItemKind } from 'lib/reefin-sdk';
+import { EmptyState, MediaCard, MediaShelf } from 'ui';
 
 import { useFavoriteItems } from '../api/useFavoriteItems';
-import { toItemDtoArray } from '../utils/itemDtoAdapter';
+import { toMediaCardPropsArray } from '../utils/mediaCardProps';
 import HomeSection from './HomeSection';
 
-const PORTRAIT_FAVORITE_CARD_OPTIONS = {
-    shape: getPortraitShape(true),
-    showTitle: true,
-    showYear: true,
-    overlayPlayButton: true,
-    overlayText: false,
-    centerText: true,
-    cardLayout: false
-};
-
-const EPISODE_CARD_OPTIONS = {
-    shape: getBackdropShape(true),
-    preferThumb: true,
-    showTitle: true,
-    showParentTitle: true,
-    overlayPlayButton: true,
-    overlayText: false,
-    centerText: true,
-    cardLayout: false
-};
+const PORTRAIT_FAVORITE_OPTIONS = { imageAspect: 'poster' as const };
+const EPISODE_OPTIONS = { imageAspect: 'backdrop' as const, preferThumb: true };
 
 /**
  * Favorite sections: title translation keys mirror `apps/legacy/controllers/favorites.js`'s
@@ -44,7 +21,6 @@ const EPISODE_CARD_OPTIONS = {
  */
 const FavoritesTab: FC = () => {
     const { __legacyApiClient__ } = useApi();
-    const serverId = __legacyApiClient__?.serverId();
 
     const moviesQuery = useFavoriteItems([BaseItemKind.Movie]);
     const seriesQuery = useFavoriteItems([BaseItemKind.Series]);
@@ -65,83 +41,68 @@ const FavoritesTab: FC = () => {
         !episodesQuery.isError &&
         isEpisodesEmpty;
 
+    const moviesTitle = globalize.translate('Movies');
+    const showsTitle = globalize.translate('Shows');
+    const episodesTitle = globalize.translate('Episodes');
+
     return (
         <>
             <HomeSection
-                title={globalize.translate('Movies')}
+                title={moviesTitle}
                 isLoading={moviesQuery.isPending}
                 isError={moviesQuery.isError}
                 onRetry={() => void moviesQuery.refetch()}
                 isEmpty={isMoviesEmpty}
             >
-                <SectionContainer
-                    sectionHeaderProps={{
-                        title: globalize.translate('Movies')
-                    }}
-                    itemsContainerProps={{
-                        queryKey: ['Home', 'FavoriteItems', 'Movie']
-                    }}
-                    items={toItemDtoArray(moviesQuery.data?.Items)}
-                    cardOptions={{
-                        ...PORTRAIT_FAVORITE_CARD_OPTIONS,
-                        queryKey: ['Home', 'FavoriteItems', 'Movie'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={moviesTitle}>
+                    {toMediaCardPropsArray(
+                        moviesQuery.data?.Items,
+                        __legacyApiClient__,
+                        PORTRAIT_FAVORITE_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             <HomeSection
-                title={globalize.translate('Shows')}
+                title={showsTitle}
                 isLoading={seriesQuery.isPending}
                 isError={seriesQuery.isError}
                 onRetry={() => void seriesQuery.refetch()}
                 isEmpty={isSeriesEmpty}
             >
-                <SectionContainer
-                    sectionHeaderProps={{ title: globalize.translate('Shows') }}
-                    itemsContainerProps={{
-                        queryKey: ['Home', 'FavoriteItems', 'Series']
-                    }}
-                    items={toItemDtoArray(seriesQuery.data?.Items)}
-                    cardOptions={{
-                        ...PORTRAIT_FAVORITE_CARD_OPTIONS,
-                        queryKey: ['Home', 'FavoriteItems', 'Series'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={showsTitle}>
+                    {toMediaCardPropsArray(
+                        seriesQuery.data?.Items,
+                        __legacyApiClient__,
+                        PORTRAIT_FAVORITE_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             <HomeSection
-                title={globalize.translate('Episodes')}
+                title={episodesTitle}
                 isLoading={episodesQuery.isPending}
                 isError={episodesQuery.isError}
                 onRetry={() => void episodesQuery.refetch()}
                 isEmpty={isEpisodesEmpty}
             >
-                <SectionContainer
-                    sectionHeaderProps={{
-                        title: globalize.translate('Episodes')
-                    }}
-                    itemsContainerProps={{
-                        queryKey: ['Home', 'FavoriteItems', 'Episode']
-                    }}
-                    items={toItemDtoArray(episodesQuery.data?.Items)}
-                    cardOptions={{
-                        ...EPISODE_CARD_OPTIONS,
-                        queryKey: ['Home', 'FavoriteItems', 'Episode'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={episodesTitle}>
+                    {toMediaCardPropsArray(
+                        episodesQuery.data?.Items,
+                        __legacyApiClient__,
+                        EPISODE_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             {isAllEmpty && (
-                <Typography
-                    variant='body2'
-                    color='text.secondary'
-                    sx={{ px: 2 }}
-                >
-                    {globalize.translate('MessageNothingHere')}
-                </Typography>
+                <EmptyState title={globalize.translate('MessageNothingHere')} />
             )}
         </>
     );

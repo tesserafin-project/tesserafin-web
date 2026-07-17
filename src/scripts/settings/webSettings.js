@@ -1,4 +1,5 @@
 import DefaultConfig from '../../config.json';
+import { THEME_REGISTRY } from '../../themes/registry.ts';
 import fetchLocal from '../../utils/fetchLocal.ts';
 
 let data;
@@ -60,44 +61,24 @@ export function getServers() {
         });
 }
 
-const baseDefaultTheme = {
-    name: 'Dark',
-    id: 'dark',
-    default: true
-};
+// NOTE(RFC-0005 §7.4): the theme catalog used to come from `config.json`'s `themes` array (and
+// needed the `checkDefaultTheme`/async dance below since that file is fetched at runtime). It now
+// comes from `themes/registry.ts`, the single source of truth also used by `hooks/useThemes.ts` —
+// `config.json`'s own `themes` field is no longer read (kept on disk only for backward
+// compatibility, see the note on `WebConfig.themes` in `types/webConfig.ts`). Deriving from the
+// registry is synchronous, so both functions below no longer need to wait on `getConfig()`.
+const REGISTRY_THEMES = THEME_REGISTRY.map((entry) => ({
+    name: entry.name,
+    id: entry.id,
+    color: entry.color,
+    default: entry.default
+}));
 
-let internalDefaultTheme = baseDefaultTheme;
-
-const checkDefaultTheme = (themes) => {
-    if (themes) {
-        const defaultTheme = themes.find((theme) => theme.default);
-
-        if (defaultTheme) {
-            internalDefaultTheme = defaultTheme;
-            return;
-        }
-    }
-
-    internalDefaultTheme = baseDefaultTheme;
-};
+const internalDefaultTheme =
+    REGISTRY_THEMES.find((theme) => theme.default) || REGISTRY_THEMES[0];
 
 export function getThemes() {
-    return getConfig()
-        .then((config) => {
-            if (!Array.isArray(config.themes)) {
-                console.error('web config is invalid, missing themes:', config);
-            }
-            const themes = Array.isArray(config.themes)
-                ? config.themes
-                : DefaultConfig.themes;
-            checkDefaultTheme(themes);
-            return themes;
-        })
-        .catch((error) => {
-            console.log('cannot get web config:', error);
-            checkDefaultTheme();
-            return DefaultConfig.themes;
-        });
+    return Promise.resolve(REGISTRY_THEMES);
 }
 
 export const getDefaultTheme = () => internalDefaultTheme;

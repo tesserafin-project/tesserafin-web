@@ -1,0 +1,118 @@
+/**
+ * LoadingState / EmptyState / ErrorState (RFC-0005 §3.3/§6). Only `--rf-*` custom properties are
+ * read here, with static fallbacks — no historical class name or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-loading-state {
+    display: flex;
+    gap: var(--rf-spacing-md, 16px);
+    overflow: hidden;
+}
+
+.rf-loading-state__sr-label {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    white-space: nowrap;
+    border: 0;
+}
+
+.rf-loading-state__skeleton {
+    flex-shrink: 0;
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    background: var(--rf-color-surface-variant, #2c2c2c);
+    animation:
+        rf-loading-state-pulse var(--rf-motion-duration-slow, 375ms)
+        var(--rf-motion-easing-standard, ease) infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-loading-state__skeleton {
+        animation: none;
+    }
+}
+
+.rf-loading-state--shelf .rf-loading-state__skeleton {
+    width: 260px;
+    height: 146px;
+}
+
+.rf-loading-state--grid {
+    flex-wrap: wrap;
+}
+
+.rf-loading-state--grid .rf-loading-state__skeleton {
+    width: 160px;
+    height: 240px;
+}
+
+.rf-loading-state--block .rf-loading-state__skeleton {
+    width: 100%;
+    height: 240px;
+}
+
+@keyframes rf-loading-state-pulse {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0.5;
+    }
+}
+
+.rf-empty-state,
+.rf-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-spacing-sm, 8px);
+    padding: var(--rf-spacing-lg, 24px);
+    text-align: center;
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+}
+
+.rf-empty-state__icon {
+    font-size: var(--rf-typography-font-size-xxl, 1.8rem);
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+}
+
+.rf-empty-state__title,
+.rf-error-state__title {
+    margin: 0;
+    color: var(--rf-color-text, #fff);
+    font-size: var(--rf-typography-font-size-lg, 1.17rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+.rf-empty-state__description,
+.rf-error-state__message {
+    margin: 0;
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+}
+
+.rf-error-state__title {
+    color: var(--rf-color-error, #c62828);
+}
+
+.rf-empty-state__action,
+.rf-error-state__retry {
+    cursor: pointer;
+    padding: var(--rf-spacing-xs, 4px) var(--rf-spacing-md, 16px);
+    color: var(--rf-color-on-primary, #fff);
+    border: 0;
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    background: var(--rf-color-primary, #00a4dc);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+}
