@@ -1,0 +1,65 @@
+/**
+ * LibraryView (RFC-0005 §11 WP-C) - only `--rf-*` custom properties are read here, with static
+ * fallbacks - no historical class name (`padded-left`/`padded-right`, `sectionTitleContainer*`,
+ * `verticalSection`) or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-library-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-md, 16px);
+    padding: var(--rf-spacing-md, 16px);
+}
+
+.rf-library-view__title {
+    margin: 0;
+    color: var(--rf-color-text, #fff);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-xl, 1.6rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+.rf-library-view__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--rf-spacing-md, 16px);
+}
+
+.rf-library-view__density-toggle {
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 var(--rf-spacing-md, 16px);
+    color: var(--rf-color-text, #fff);
+    background: transparent;
+    border: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    border-radius: var(--rf-shape-radius-sm, 4px);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    cursor: pointer;
+    transition:
+        color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease),
+        border-color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease);
+
+    &:hover {
+        border-color: var(--rf-color-text, #fff);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &[aria-pressed='true'] {
+        color: var(--rf-color-on-primary, #fff);
+        background: var(--rf-color-primary, #00a4dc);
+        border-color: var(--rf-color-primary, #00a4dc);
+    }
+}
+
+.rf-library-view__pagination {
+    align-self: center;
+}

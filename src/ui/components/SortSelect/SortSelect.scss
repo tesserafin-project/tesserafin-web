@@ -1,0 +1,38 @@
+/**
+ * SortSelect (RFC-0005 §6). Only `--rf-*` custom properties are read here, with static fallbacks —
+ * no historical class name or id selector, native `<select>` rather than a MUI control, matching
+ * every other `src/ui` component, per RFC-0005 §6/§7.3.
+ */
+
+.rf-sort-select {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-spacing-xs, 4px);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+}
+
+.rf-sort-select__label {
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+}
+
+.rf-sort-select__control {
+    cursor: pointer;
+    padding: var(--rf-spacing-xs, 4px) var(--rf-spacing-sm, 8px);
+    color: var(--rf-color-text, #fff);
+    border: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    background: var(--rf-color-surface, #202020);
+    font-family: inherit;
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+}

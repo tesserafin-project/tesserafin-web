@@ -12,8 +12,9 @@ export default defineConfig({
         },
         environment: 'jsdom',
         // Playwright E2E specs live under tests/e2e and run via `npm run
-        // test:e2e`, not vitest.
-        exclude: [...configDefaults.exclude, 'tests/e2e/**'],
+        // test:e2e`, not vitest. Agent worktrees under .claude/ carry their
+        // own copies of the tree and must never be collected from here.
+        exclude: [...configDefaults.exclude, 'tests/e2e/**', '**/.claude/**'],
         restoreMocks: true
     }
 });
