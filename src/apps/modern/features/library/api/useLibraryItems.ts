@@ -58,11 +58,11 @@ export const fetchLibraryItems = async (
     return response.data as ItemDtoQueryResult;
 };
 
-/** Query key for one `parentId`/params combination; changes whenever any param does, so TanStack Query refetches on sort/filter/page changes and keeps each combination cached independently. */
+/** Query key for one `parentId`/params combination; changes whenever any param does, so TanStack Query refetches on sort/filter/page changes and keeps each combination cached independently. Must accept `undefined` params: the key is evaluated eagerly on every render, including the initial ones where the library's `CollectionType` (and therefore the params) is still loading and `enabled` is false. */
 export const getLibraryItemsQueryKey = (
     userId: string | undefined,
-    params: LibraryItemsParams
-) => ['User', userId, 'Items', params.parentId, 'LibraryItems', params];
+    params: LibraryItemsParams | undefined
+) => ['User', userId, 'Items', params?.parentId, 'LibraryItems', params];
 
 /**
  * Fetches one page of a movies/tvshows library's items (RFC-0005 §11 WP-C step 2).
@@ -73,7 +73,7 @@ export const useLibraryItems = (params: LibraryItemsParams | undefined) => {
     const { api, user } = useApi();
 
     return useQuery({
-        queryKey: getLibraryItemsQueryKey(user?.Id, params!),
+        queryKey: getLibraryItemsQueryKey(user?.Id, params),
         queryFn: ({ signal }) =>
             fetchLibraryItems(api!, user!.Id!, params!, { signal }),
         enabled: !!api && !!user?.Id && !!params,
