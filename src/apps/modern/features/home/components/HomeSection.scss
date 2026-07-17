@@ -1,0 +1,20 @@
+/**
+ * HomeSection (RFC-0005 §4.2/§6/§11 W13.6, WP4) - only the section title, shown above whichever
+ * `ui` state component (`LoadingState`/`ErrorState`/`EmptyState`) or child content is active. Only
+ * `--rf-*` custom properties are read here, with static fallbacks - no historical class name
+ * (`sectionTitleContainer*`, `verticalSection`) or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-home-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-sm, 8px);
+}
+
+.rf-home-section__title {
+    margin: 0;
+    color: var(--rf-color-text, #fff);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-lg, 1.17rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}

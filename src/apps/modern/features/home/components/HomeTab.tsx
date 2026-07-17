@@ -1,56 +1,30 @@
 import React, { type FC, useMemo } from 'react';
 
-import { getBackdropShape } from 'components/cardbuilder/utils/shape';
-import SectionContainer from 'components/common/SectionContainer';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
 import type { BaseItemDto } from 'lib/reefin-sdk';
+import { MediaCard, MediaShelf } from 'ui';
 
 import { useLatestMedia } from '../api/useLatestMedia';
 import { useNextUp } from '../api/useNextUp';
 import { useResumeItems } from '../api/useResumeItems';
 import { useUserViews } from '../api/useUserViews';
-import { getLatestMediaCardOptions } from '../utils/latestMediaCardOptions';
+import {
+    getLatestMediaCardOptions,
+    toMediaCardPropsArray
+} from '../utils/mediaCardProps';
 import { getLatestMediaViews } from '../utils/latestMediaViews';
-import { toItemDtoArray } from '../utils/itemDtoAdapter';
 import HomeSection from './HomeSection';
 
-const MY_MEDIA_CARD_OPTIONS = {
-    shape: getBackdropShape(true),
-    showTitle: true,
-    centerText: true,
-    overlayText: false,
-    scalable: true,
-    cardLayout: false
+const MY_MEDIA_OPTIONS = { imageAspect: 'backdrop' as const };
+const CONTINUE_WATCHING_OPTIONS = {
+    imageAspect: 'backdrop' as const,
+    preferThumb: true
 };
-
-const CONTINUE_WATCHING_CARD_OPTIONS = {
-    shape: getBackdropShape(true),
-    preferThumb: true,
-    showTitle: true,
-    showParentTitle: true,
-    showYear: true,
-    overlayPlayButton: true,
-    overlayText: false,
-    centerText: true,
-    cardLayout: false,
-    lines: 2
-};
-
-const NEXT_UP_CARD_OPTIONS = {
-    shape: getBackdropShape(true),
-    preferThumb: true,
-    showTitle: true,
-    showParentTitle: true,
-    overlayPlayButton: true,
-    overlayText: false,
-    centerText: true,
-    cardLayout: false
-};
+const NEXT_UP_OPTIONS = { imageAspect: 'backdrop' as const, preferThumb: true };
 
 interface LatestMediaSectionProps {
     view: BaseItemDto;
-    serverId?: string;
 }
 
 /**
@@ -59,17 +33,14 @@ interface LatestMediaSectionProps {
  * at runtime, so it can't be called in a loop inside `HomeTab` itself (biome
  * `correctness/useHookAtTopLevel`).
  */
-const LatestMediaSection: FC<LatestMediaSectionProps> = ({
-    view,
-    serverId
-}) => {
+const LatestMediaSection: FC<LatestMediaSectionProps> = ({ view }) => {
+    const { __legacyApiClient__ } = useApi();
     const query = useLatestMedia(view.Id ?? undefined);
     const cardOptions = useMemo(
         () => getLatestMediaCardOptions(view.CollectionType),
         [view.CollectionType]
     );
     const title = globalize.translate('LatestFromLibrary', view.Name ?? '');
-    const queryKey = ['Home', 'LatestMedia', view.Id];
 
     return (
         <HomeSection
@@ -79,19 +50,21 @@ const LatestMediaSection: FC<LatestMediaSectionProps> = ({
             onRetry={() => void query.refetch()}
             isEmpty={!query.data?.length}
         >
-            <SectionContainer
-                sectionHeaderProps={{ title }}
-                itemsContainerProps={{ queryKey }}
-                items={toItemDtoArray(query.data)}
-                cardOptions={{ ...cardOptions, queryKey, serverId }}
-            />
+            <MediaShelf title={title}>
+                {toMediaCardPropsArray(
+                    query.data,
+                    __legacyApiClient__,
+                    cardOptions
+                ).map((cardProps) => (
+                    <MediaCard key={cardProps.href} {...cardProps} />
+                ))}
+            </MediaShelf>
         </HomeSection>
     );
 };
 
 const HomeTab: FC = () => {
     const { __legacyApiClient__ } = useApi();
-    const serverId = __legacyApiClient__?.serverId();
 
     const userViewsQuery = useUserViews();
     const resumeQuery = useResumeItems();
@@ -103,78 +76,69 @@ const HomeTab: FC = () => {
         [userViews]
     );
 
+    const myMediaTitle = globalize.translate('HeaderMyMedia');
+    const continueWatchingTitle = globalize.translate('HeaderContinueWatching');
+    const nextUpTitle = globalize.translate('NextUp');
+
     return (
         <>
             <HomeSection
-                title={globalize.translate('HeaderMyMedia')}
+                title={myMediaTitle}
                 isLoading={userViewsQuery.isPending}
                 isError={userViewsQuery.isError}
                 onRetry={() => void userViewsQuery.refetch()}
                 isEmpty={!userViews?.length}
                 emptyLabel={globalize.translate('MessageNothingHere')}
             >
-                <SectionContainer
-                    sectionHeaderProps={{
-                        title: globalize.translate('HeaderMyMedia')
-                    }}
-                    itemsContainerProps={{ queryKey: ['Home', 'UserViews'] }}
-                    items={toItemDtoArray(userViews)}
-                    cardOptions={{
-                        ...MY_MEDIA_CARD_OPTIONS,
-                        queryKey: ['Home', 'UserViews'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={myMediaTitle}>
+                    {toMediaCardPropsArray(
+                        userViews,
+                        __legacyApiClient__,
+                        MY_MEDIA_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             <HomeSection
-                title={globalize.translate('HeaderContinueWatching')}
+                title={continueWatchingTitle}
                 isLoading={resumeQuery.isPending}
                 isError={resumeQuery.isError}
                 onRetry={() => void resumeQuery.refetch()}
                 isEmpty={!resumeQuery.data?.Items?.length}
             >
-                <SectionContainer
-                    sectionHeaderProps={{
-                        title: globalize.translate('HeaderContinueWatching')
-                    }}
-                    itemsContainerProps={{ queryKey: ['Home', 'ResumeItems'] }}
-                    items={toItemDtoArray(resumeQuery.data?.Items)}
-                    cardOptions={{
-                        ...CONTINUE_WATCHING_CARD_OPTIONS,
-                        queryKey: ['Home', 'ResumeItems'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={continueWatchingTitle}>
+                    {toMediaCardPropsArray(
+                        resumeQuery.data?.Items,
+                        __legacyApiClient__,
+                        CONTINUE_WATCHING_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             <HomeSection
-                title={globalize.translate('NextUp')}
+                title={nextUpTitle}
                 isLoading={nextUpQuery.isPending}
                 isError={nextUpQuery.isError}
                 onRetry={() => void nextUpQuery.refetch()}
                 isEmpty={!nextUpQuery.data?.Items?.length}
             >
-                <SectionContainer
-                    sectionHeaderProps={{
-                        title: globalize.translate('NextUp')
-                    }}
-                    itemsContainerProps={{ queryKey: ['Home', 'NextUp'] }}
-                    items={toItemDtoArray(nextUpQuery.data?.Items)}
-                    cardOptions={{
-                        ...NEXT_UP_CARD_OPTIONS,
-                        queryKey: ['Home', 'NextUp'],
-                        serverId
-                    }}
-                />
+                <MediaShelf title={nextUpTitle}>
+                    {toMediaCardPropsArray(
+                        nextUpQuery.data?.Items,
+                        __legacyApiClient__,
+                        NEXT_UP_OPTIONS
+                    ).map((cardProps) => (
+                        <MediaCard key={cardProps.href} {...cardProps} />
+                    ))}
+                </MediaShelf>
             </HomeSection>
 
             {latestMediaViews.map((view) => (
-                <LatestMediaSection
-                    key={view.Id}
-                    view={view}
-                    serverId={serverId}
-                />
+                <LatestMediaSection key={view.Id} view={view} />
             ))}
         </>
     );
