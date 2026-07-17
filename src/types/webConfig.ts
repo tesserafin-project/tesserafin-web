@@ -5,6 +5,13 @@ export interface Theme {
     color: string;
 }
 
+// NOTE(RFC-0005 §7.4): `WebConfig.themes` (backed by `config.json`'s `themes` array) is no longer
+// read by the app — `hooks/useThemes.ts` and `scripts/settings/webSettings.js#getThemes` both
+// derive the theme catalog from `themes/registry.ts` instead, so the three previously independent
+// sources of truth (config.json, `themes/index.ts`'s colorSchemes, the `themes/<id>/` folders)
+// converge on one. The field below is kept only so an existing `config.json` on disk (e.g. a
+// self-hosted deployment that customized it) does not fail to parse; its contents are ignored.
+
 export interface MenuLink {
     name: string;
     icon?: string;
