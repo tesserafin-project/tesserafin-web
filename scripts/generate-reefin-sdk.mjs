@@ -33,7 +33,8 @@ import {
     rmSync,
     writeFileSync
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { dirname, join, relative as relativePath, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -264,6 +265,41 @@ function computeVersionSkew(info) {
     return { webAppVersion, serverVersion, versionSkewNote };
 }
 
+// Suffix `resolveSpec()` appends to the pinned-spec fallback source (see its final branch) -
+// stripped off before normalizing the path and re-appended after, so it survives untouched.
+const PINNED_STALE_SUFFIX = ' (pinned, stale)';
+
+/**
+ * `source` (as returned by `resolveSpec()`) is either an http(s) URL (left verbatim) or an
+ * absolute local filesystem path (every local branch of `resolveSpec()` goes through `resolve()`).
+ * An absolute path is machine-specific (e.g. `/home/alex/Repos/reefin-web/...`) and pollutes the
+ * committed `version.json` with information about whoever last regenerated the SDK. Normalize it
+ * to a path relative to `REPO_ROOT` when possible; if it falls outside the repo (e.g. a sibling
+ * `../reefin` checkout), keep it path-shaped but replace a home-directory prefix with `~` so it's
+ * at least not tied to a specific username/absolute layout.
+ */
+function normalizeSourcePath(source) {
+    if (/^https?:\/\//.test(source)) {
+        return source;
+    }
+    const isStale = source.endsWith(PINNED_STALE_SUFFIX);
+    const path = isStale
+        ? source.slice(0, -PINNED_STALE_SUFFIX.length)
+        : source;
+
+    const rel = relativePath(REPO_ROOT, path);
+    let normalized;
+    if (!rel.startsWith('..')) {
+        normalized = rel;
+    } else {
+        const home = homedir();
+        normalized = path.startsWith(home)
+            ? `~${path.slice(home.length)}`
+            : path;
+    }
+    return isStale ? `${normalized}${PINNED_STALE_SUFFIX}` : normalized;
+}
+
 /** Writes the pinned spec copy and its version.json metadata; returns `spec.info` for logging. */
 function pinSpec(spec, source) {
     const info = spec.info || {};
@@ -290,11 +326,13 @@ function pinSpec(spec, source) {
                 pathCount: Object.keys(spec.paths || {}).length,
                 schemaCount: Object.keys((spec.components || {}).schemas || {})
                     .length,
-                source,
+                source: normalizeSourcePath(source),
                 generatedAt: new Date().toISOString()
             },
             null,
-            2
+            // biome formats committed JSON with 4-space indent; match it so a
+            // regeneration never trips the formatter check on version.json.
+            4
         ) + '\n',
         'utf-8'
     );

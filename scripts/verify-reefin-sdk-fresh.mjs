@@ -14,15 +14,20 @@
  * Fails (non-zero exit) if:
  *   - the SDK working tree has pending changes before the check even starts (ambiguous result -
  *     can't tell whether a subsequent diff comes from regeneration or from pre-existing edits);
- *   - regenerating from the pinned spec produces a diff on `generated/` or `spec/openapi.json`
- *     (source of truth drifted from what's committed - re-run `npm run generate:reefin-sdk` and
- *     commit the result);
+ *   - regeneration itself fails (e.g. openapi-generator-cli errors out);
+ *   - regenerating from the pinned spec produces any change under `generated/` or
+ *     `spec/openapi.json` - via `git status --porcelain` rather than `git diff --stat`, so both
+ *     modified *and* newly created (untracked) files count as a diff, not just changes to files
+ *     git already tracks (source of truth drifted from what's committed - re-run
+ *     `npm run generate:reefin-sdk` and commit the result);
  *   - `spec/version.json` does not have an explicit, non-null spec version recorded.
  *
  * `spec/version.json`'s `generatedAt` (always) and `source` (points at whatever resolved the
  * spec) fields are expected to change on every regeneration by construction - they are not part
- * of the freshness comparison, and this script resets the file to its committed content
- * afterwards either way so a clean run leaves a clean working tree.
+ * of the freshness comparison, and this script resets the file to its committed content in a
+ * `finally` block that runs right after the generation attempt regardless of whether it succeeded
+ * or threw, so a clean run (and even a run where the generator itself fails) never leaves the
+ * working tree dirty as a side effect of merely running it.
  *
  * Local Docker equivalent (see src/lib/reefin-sdk/README.md and
  * docs/reefin/design-reefin-api-layer.md - CI quota is currently exhausted, this is the offline
@@ -85,6 +90,7 @@ function main() {
         '[verify:reefin-sdk-fresh] Regenerating from the pinned spec ' +
             `(${PINNED_SPEC_RELATIVE}), ignoring any sibling reefin checkout or dev server...`
     );
+    let generationError;
     try {
         execFileSync('node', ['scripts/generate-reefin-sdk.mjs'], {
             cwd: REPO_ROOT,
@@ -95,28 +101,33 @@ function main() {
             }
         });
     } catch (err) {
-        fail(`regeneration itself failed: ${err.message}`);
+        generationError = err;
+    } finally {
+        // version.json's generatedAt/source churn is expected on every run (see header comment) -
+        // reset it now that the generation attempt is done, whether it succeeded or threw, so
+        // this script never leaves the working tree dirty as a side effect of merely running it.
+        git(['checkout', '--', VERSION_JSON_RELATIVE]);
+    }
+
+    if (generationError) {
+        fail(`regeneration itself failed: ${generationError.message}`);
         return;
     }
 
     const diff = git([
-        'diff',
-        '--stat',
+        'status',
+        '--porcelain',
         '--',
         GENERATED_RELATIVE,
         PINNED_SPEC_RELATIVE
     ]).trim();
 
-    // version.json's generatedAt/source churn is expected on every run (see header comment) -
-    // reset it now that regeneration is done, independent of whether the check above passes, so
-    // this script never leaves the working tree dirty as a side effect of merely running it.
-    git(['checkout', '--', VERSION_JSON_RELATIVE]);
-
     if (diff.length > 0) {
         fail(
             'regenerating the SDK from the pinned spec produced a diff - the committed ' +
-                'generated/ (or the pinned spec copy) is stale. Run `npm run generate:reefin-sdk` ' +
-                'and commit the result:\n' +
+                'generated/ (or the pinned spec copy) is stale, or regeneration created new ' +
+                'untracked files (also caught by `git status --porcelain`, unlike `git diff ' +
+                '--stat`). Run `npm run generate:reefin-sdk` and commit the result:\n' +
                 diff
         );
         return;

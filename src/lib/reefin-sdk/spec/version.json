@@ -8,6 +8,6 @@
     "openapi": "3.0.4",
     "pathCount": 299,
     "schemaCount": 395,
-    "source": "/home/alex/Repos/reefin-web/src/lib/reefin-sdk/spec/openapi.json",
-    "generatedAt": "2026-07-16T20:43:59.932Z"
+    "source": "src/lib/reefin-sdk/spec/openapi.json",
+    "generatedAt": "2026-07-17T09:36:03.774Z"
 }
