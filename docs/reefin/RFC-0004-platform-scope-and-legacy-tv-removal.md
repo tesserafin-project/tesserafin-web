@@ -1,6 +1,6 @@
 # RFC-0004 — Périmètre plateforme et retrait des cibles TV historiques
 
-- **Statut** : Draft
+- **Statut** : Accepted (2026-07-17)
 - **Date** : 2026-07-16
 - **Auteur** : Reefin Team
 - **Dépôt** : `reefin-web` (fork de `jellyfin-web`)
@@ -20,8 +20,10 @@
   voir §7 pour l'inventaire chiffré et les gates des deux PR. Décision produit tranchée entre les deux
   PR (voir §7.5) : aucune compatibilité firmware webOS/Tizen dans `reefin-web`, y compris pour
   navigateurs TV historiques — seule l'UX TV générique (gamepad, focus, layouts 10-foot,
-  `layoutManager.tv`) est préservée. La **PR3** (résidus, §6) reste optionnelle et non exécutée ; le
-  statut général du RFC reste **Draft** tant qu'elle n'est pas explicitement close ou abandonnée.
+  `layoutManager.tv`) est préservée. La **PR3** (résidus, §6) est **abandonnée** (2026-07-17) : les
+  résidus identifiés en §7.5.4 sont non actionnables, et les traductions `LimitSegmentLengthHelp`
+  (question 3, §8) sont conservées telles quelles jusqu'à la refonte du playback — le RFC passe donc
+  au statut **Accepted**.
 
 ---
 
@@ -548,16 +550,19 @@ vérifier manuellement contre un vrai serveur avant mise en production.
 2. ~~**`src/components/guide/guide.scss:171`**~~ — **Résolu dans PR2** (§7.5, commit
    `refactor(ui)`) : commentaire trimé pour ne plus citer « tizen »/« opera tv » aux côtés de `ps4`
    (conservé).
-3. **Chaînes de traduction `LimitSegmentLengthHelp`** (~60 fichiers `src/strings/*.json`) mentionnant
-   « téléviseurs webOS » : **non résolu, volontairement laissé de côté par PR2** (§7.5.2) — le champ de
+3. ~~**Chaînes de traduction `LimitSegmentLengthHelp`**~~ — **Résolu (2026-07-17)** : décision de
+   les **garder telles quelles** (dormantes) jusqu'à la refonte du playback ; suppression éventuelle
+   du réglage `limitSegmentLength` et de ses traductions à ce moment-là. Contexte d'origine :
+   (~60 fichiers `src/strings/*.json`) mentionnant
+   « téléviseurs webOS » : volontairement laissé de côté par PR2 (§7.5.2) — le champ de
    réglage UI qui révélait ce texte est désormais masqué par défaut pour tout le monde (plus jamais
    affiché, PR2 §7.5.4/commit `refactor(settings)`), mais le réglage sous-jacent
    (`userSettings.limitSegmentLength()`, consommé par `browserDeviceProfile.js`) et les chaînes de
    traduction elles-mêmes restent intacts. Décision à prendre séparément : supprimer le réglage et ses
    traductions dans une PR dédiée, ou les garder au cas où le réglage soit encore utile pour d'autres
    plateformes/cas d'usage.
-4. **Étendue exacte de PR3** : les résidus identifiés en §7.5.4 sont tous des commentaires ou du code
-   générique inconditionnel jugés non actionnables — **aucun n'appelle de suite immédiate**. La seule
-   piste concrète qui reste ouverte est la question 3 ci-dessus (traductions `LimitSegmentLengthHelp`).
-   Ce RFC ne préjuge donc pas qu'une PR3 soit nécessaire : elle peut être abandonnée si la question 3
-   est tranchée « on garde tel quel ».
+4. ~~**Étendue exacte de PR3**~~ — **Résolu (2026-07-17)** : **PR3 abandonnée.** Les résidus
+   identifiés en §7.5.4 sont tous des commentaires ou du code générique inconditionnel jugés non
+   actionnables, et la question 3 est tranchée « on garde tel quel » — il ne reste donc aucun
+   contenu pour une PR3. Aucune détection spécifique de firmware TV ne subsiste dans `reefin-web` ;
+   `layoutManager.tv`, le focus, le gamepad et les layouts 10-foot sont conservés.
