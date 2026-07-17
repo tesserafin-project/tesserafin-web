@@ -34,6 +34,8 @@ import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
+import { sendShadowPlaybackSession } from '../../scripts/playbackSessionShadow.ts';
+import { applyV2PlaybackUrlToStreamInfo } from '../../scripts/playbackSessionV2Url.ts';
 
 const UNLIMITED_ITEMS = -1;
 
@@ -635,6 +637,17 @@ async function getPlaybackInfo(
         itemId: itemId,
         playbackInfoDto: query
     });
+
+    // PR116b (docs/pr116-client-migration-design.md, `reefin` repo): best-effort shadow
+    // `POST Playback/Sessions`, behind a flag (default off). Deliberately not awaited - it never
+    // rejects (see its own doc comment) and must never delay or affect the real response above.
+    void sendShadowPlaybackSession({
+        api,
+        itemId,
+        userId: query.UserId,
+        mediaSourceId
+    });
+
     return res.data;
 }
 
@@ -3460,6 +3473,26 @@ export class PlaybackManager {
                         startPosition,
                         player
                     );
+
+                    // PR116d (docs/pr116-client-migration-design.md §3, docs/pr116d-url-contract-design.md,
+                    // `reefin` repo): behind a flag (default off), try the v2 `POST Playback/Sessions` +
+                    // `GET .../Stream` URL and use it instead of the legacy-constructed one above. ANY
+                    // failure (network, 4xx/5xx, missing fields, flag off) silently keeps the legacy
+                    // `streamInfo` already built - v2 can never break playback (see
+                    // playbackSessionV2Url.ts for the full fallback matrix).
+                    await applyV2PlaybackUrlToStreamInfo(
+                        streamInfo,
+                        {
+                            api: ServerConnections.getApi(apiClient.serverId()),
+                            itemId: item.Id,
+                            mediaType: item.MediaType,
+                            userId: apiClient.getCurrentUserId(),
+                            mediaSourceId: mediaSource.Id,
+                            startTimeTicks: startPosition
+                        },
+                        apiClient
+                    );
+
                     streamInfo.aspectRatio = playOptions.aspectRatio;
                     streamInfo.fullscreen = playOptions.fullscreen;
 
