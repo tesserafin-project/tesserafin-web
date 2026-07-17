@@ -55,6 +55,19 @@ export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
         loadColorScheme: () => Promise.resolve(officialClassicColorScheme)
     },
     {
+        id: 'official.glass',
+        name: 'Reefin Glass',
+        color: '#0b0e14',
+        defaultMode: 'dark',
+        builtin: true,
+        loadColorScheme: async () =>
+            (
+                await import(
+                    /* webpackChunkName: "theme-colorscheme-official-glass" */ './official.glass'
+                )
+            ).default
+    },
+    {
         id: 'dark',
         name: 'Dark',
         color: '#202020',

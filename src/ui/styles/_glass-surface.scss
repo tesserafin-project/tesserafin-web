@@ -1,0 +1,47 @@
+/**
+ * Frosted-glass surface treatment (RFC-0005 §8.2). Token-driven: renders flat under Reefin
+ * Classic (`--rf-blur-*: 0`, opaque `--rf-color-surface`) and frosted under Reefin Glass
+ * (`--rf-blur-md` > 0, translucent `--rf-color-surface`) — consumers never branch on the active
+ * theme. Shared between `GlassSurface` and `MediaCard` so both surfaces degrade identically.
+ */
+
+@mixin rf-glass-surface {
+    background: var(--rf-color-surface, #202020);
+    // `-webkit-backdrop-filter` is added at build time by autoprefixer (browserslist covers the
+    // last 2 Safari versions), so it must not be written by hand (stylelint property-no-vendor-prefix).
+    backdrop-filter: blur(var(--rf-blur-md, 0));
+
+    // Mandatory opaque fallback #1 (RFC-0005 §8.2: "fallback opaque obligatoire — Glass ne doit
+    // jamais dégrader silencieusement en surface transparente illisible"). Browsers without
+    // `backdrop-filter` support would otherwise render Glass's translucent `--rf-color-surface`
+    // with nothing behind it, i.e. an unreadable transparent surface. We composite the surface
+    // tint (a solid-color gradient layer, since `background-color` can't be layered) directly
+    // over `--rf-color-background`, which is opaque in every theme — provably opaque regardless
+    // of what sits behind this element in the DOM. Under Classic `--rf-color-surface` is itself
+    // fully opaque, so the tint layer fully occludes the base and this renders byte-identical to
+    // the plain `background: var(--rf-color-surface)` above — Classic is unaffected even when a
+    // Classic user lacks `backdrop-filter` support.
+    @supports not
+        ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+        background:
+            linear-gradient(
+                var(--rf-color-surface, #202020),
+                var(--rf-color-surface, #202020)
+            ),
+            var(--rf-color-background, #101010);
+    }
+
+    // Mandatory opaque fallback #2 (RFC-0005 §7.2 `reducedTransparency`): honor the OS-level
+    // request to remove transparency effects — same provably-opaque composite as fallback #1
+    // (so a Classic user with this OS setting on sees no change either), with the blur
+    // explicitly turned off rather than merely left as a no-op.
+    @media (prefers-reduced-transparency: reduce) {
+        background:
+            linear-gradient(
+                var(--rf-color-surface, #202020),
+                var(--rf-color-surface, #202020)
+            ),
+            var(--rf-color-background, #101010);
+        backdrop-filter: none;
+    }
+}

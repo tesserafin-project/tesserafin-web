@@ -8,6 +8,11 @@ export { EmptyState } from './components/states/EmptyState';
 export type { ErrorStateProps } from './components/states/ErrorState';
 export { ErrorState } from './components/states/ErrorState';
 export type {
+    GlassSurfaceProps,
+    GlassSurfaceVariant
+} from './components/GlassSurface/GlassSurface';
+export { GlassSurface } from './components/GlassSurface/GlassSurface';
+export type {
     LoadingStateProps,
     LoadingStateVariant
 } from './components/states/LoadingState';

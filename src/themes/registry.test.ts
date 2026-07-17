@@ -18,6 +18,15 @@ describe('THEME_REGISTRY', () => {
         expect(classic?.default).toBe(true);
     });
 
+    it('includes the official.glass entry as a non-default builtin theme', () => {
+        const glass = getThemeEntry('official.glass');
+        expect(glass).toBeDefined();
+        expect(glass?.builtin).toBe(true);
+        expect(glass?.defaultMode).toBe('dark');
+        expect(glass?.legacyPreset).toBeUndefined();
+        expect(glass?.default).toBeUndefined();
+    });
+
     it('includes the six legacy themes, marked as legacy presets', () => {
         const legacyIds = [
             'dark',
