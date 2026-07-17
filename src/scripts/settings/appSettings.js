@@ -258,6 +258,27 @@ class AppSettings {
     }
 
     /**
+     * Get or set 'Enable shadow Playback/Sessions calls' state (docs/pr116-client-migration-design.md
+     * PR116b, `reefin` repo) - when enabled, every real playback-info request additionally fires a
+     * best-effort, fire-and-forget `POST Playback/Sessions` shadow call (own distinct PlaySessionId,
+     * never the real one) purely for `DecisionVersion`/`Method` diagnostics. Default off: dormant
+     * until explicitly opted into.
+     * @param {boolean} [val] - Flag to enable the shadow call or undefined (marked optional, unlike
+     * this file's older `boolean|undefined` JSDoc style, so TS-side callers - e.g.
+     * `playbackSessionShadow.ts` - can read the flag with a zero-arg call without a strict-arity
+     * type error; the older methods above are only ever called this way from untyped `.js`, which
+     * doesn't hit the same check).
+     * @return {boolean} Shadow-call enabled state.
+     */
+    enablePlaybackSessionShadow(val) {
+        if (val !== undefined) {
+            return this.set('enablePlaybackSessionShadow', val.toString());
+        }
+
+        return toBoolean(this.get('enablePlaybackSessionShadow'), false);
+    }
+
+    /**
      * Get or set the preferred video aspect ratio.
      * @param {string|undefined} val - The aspect ratio or undefined.
      * @returns {string} The saved aspect ratio state.

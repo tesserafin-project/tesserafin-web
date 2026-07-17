@@ -34,6 +34,7 @@ import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
+import { sendShadowPlaybackSession } from '../../scripts/playbackSessionShadow.ts';
 
 const UNLIMITED_ITEMS = -1;
 
@@ -635,6 +636,17 @@ async function getPlaybackInfo(
         itemId: itemId,
         playbackInfoDto: query
     });
+
+    // PR116b (docs/pr116-client-migration-design.md, `reefin` repo): best-effort shadow
+    // `POST Playback/Sessions`, behind a flag (default off). Deliberately not awaited - it never
+    // rejects (see its own doc comment) and must never delay or affect the real response above.
+    void sendShadowPlaybackSession({
+        api,
+        itemId,
+        userId: query.UserId,
+        mediaSourceId
+    });
+
     return res.data;
 }
 
