@@ -1,0 +1,18 @@
+/**
+ * MediaGrid (RFC-0005 §6). Only `--rf-*` custom properties are read here, with static fallbacks —
+ * no historical class name (`.itemsContainer`…) or id selector, per RFC-0005 §6/§7.3.
+ */
+
+.rf-media-grid {
+    display: grid;
+    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(var(--rf-media-grid-min-item-width, 160px), 1fr));
+}
+
+.rf-media-grid--comfortable {
+    gap: var(--rf-spacing-md, 16px);
+}
+
+.rf-media-grid--compact {
+    gap: var(--rf-spacing-xs, 4px);
+}

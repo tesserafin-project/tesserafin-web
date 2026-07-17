@@ -17,7 +17,16 @@ export type {
     MediaCardProps
 } from './components/MediaCard/MediaCard';
 export { MediaCard } from './components/MediaCard/MediaCard';
+export type { MediaGridProps } from './components/MediaGrid/MediaGrid';
+export { MediaGrid } from './components/MediaGrid/MediaGrid';
 export type { MediaShelfProps } from './components/MediaShelf/MediaShelf';
 export { MediaShelf } from './components/MediaShelf/MediaShelf';
+export type { PaginationProps } from './components/Pagination/Pagination';
+export { Pagination } from './components/Pagination/Pagination';
+export type {
+    SortSelectOption,
+    SortSelectProps
+} from './components/SortSelect/SortSelect';
+export { SortSelect } from './components/SortSelect/SortSelect';
 export type { TabItem, TabsProps } from './components/Tabs/Tabs';
 export { Tabs } from './components/Tabs/Tabs';
