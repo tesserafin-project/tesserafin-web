@@ -168,7 +168,7 @@
 }
 
 /* Important - have to put the fixed width on channelsContainer, not the individual channelHeaderCell
-   This was causing channelsContainer to extend beyond the fixed width on ps4, tizen, lg and opera tv.
+   This was causing channelsContainer to extend beyond the fixed width on some TV platforms (e.g. ps4).
 */
 .channelsContainer,
 .guide-channelTimeslotHeader {

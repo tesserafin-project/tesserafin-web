@@ -133,11 +133,6 @@ const scrollerFactory = function (frame, options) {
         options.enableNativeScroll = true;
     }
 
-    // Need this for the magic wheel. With the animated scroll the magic wheel will run off of the screen
-    if (browser.web0s) {
-        options.enableNativeScroll = true;
-    }
-
     // Private variables
     const self = this;
     self.options = o;

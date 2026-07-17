@@ -54,11 +54,6 @@ export function enableHlsJsPlayer(runTimeTicks, mediaType) {
         return false;
     }
 
-    // The native players on these devices support seeking live streams, no need to use hls.js here
-    if (browser.tizen || browser.web0s) {
-        return false;
-    }
-
     if (canPlayNativeHls()) {
         // Android Webview's native HLS has performance and compatiblity issues
         if (

@@ -283,13 +283,6 @@ function loadForm(context, user, userSettings, systemInfo, apiClient) {
         context.querySelector('.fldEnableHi10p').classList.remove('hide');
     }
 
-    // Show hls segment length setting for webOS only, as the setting only aims to fix an issue on that platform.
-    if (browser.web0s) {
-        context
-            .querySelector('.fldLimitSegmentLength')
-            .classList.remove('hide');
-    }
-
     context.querySelector('#selectAllowedAudioChannels').value =
         userSettings.allowedAudioChannels();
 

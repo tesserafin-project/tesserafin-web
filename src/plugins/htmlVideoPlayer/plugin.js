@@ -95,10 +95,6 @@ function enableNativeTrackSupport(mediaSource, track) {
         return false;
     }
 
-    if (browser.web0s) {
-        return false;
-    }
-
     // Edge is randomly not rendering subtitles
     if (browser.edge) {
         return false;
@@ -1892,12 +1888,6 @@ export class HtmlVideoPlayer {
                         '<video class="' +
                         cssClass +
                         '" preload="metadata" autoplay="autoplay" controls="controls" webkit-playsinline playsinline>';
-                } else if (browser.web0s) {
-                    // in webOS, setting preload auto allows resuming videos
-                    html +=
-                        '<video class="' +
-                        cssClass +
-                        '" preload="auto" autoplay="autoplay" webkit-playsinline playsinline>';
                 } else {
                     // Chrome 35 won't play with preload none
                     html +=
@@ -1942,18 +1932,6 @@ export class HtmlVideoPlayer {
                     // At this point, we must hide the scrollbar placeholder, so it's not being displayed while the item is being loaded
                     document.body.classList.add('hide-scroll');
 
-                    // Enter fullscreen in the webOS browser to hide the top bar
-                    if (
-                        !window.NativeShell &&
-                        browser.web0s &&
-                        Screenfull.isEnabled
-                    ) {
-                        Screenfull.request().then(() => {
-                            this.forcedFullscreen = true;
-                        });
-                        return videoElement;
-                    }
-
                     // don't animate on smart tv's, too slow
                     if (!browser.slow && browser.supportsCssAnimation()) {
                         return zoomIn(playerDlg).then(function () {
@@ -1968,18 +1946,6 @@ export class HtmlVideoPlayer {
             if (options.fullscreen) {
                 // we need to hide scrollbar when starting playback from page with animated background
                 document.body.classList.add('hide-scroll');
-
-                // Enter fullscreen in the webOS browser to hide the top bar
-                if (
-                    !this.forcedFullscreen &&
-                    !window.NativeShell &&
-                    browser.web0s &&
-                    Screenfull.isEnabled
-                ) {
-                    Screenfull.request().then(() => {
-                        this.forcedFullscreen = true;
-                    });
-                }
             }
 
             const videoElement = dlg.querySelector('video');

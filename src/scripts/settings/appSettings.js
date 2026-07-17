@@ -1,4 +1,3 @@
-import browser from 'scripts/browser';
 import Events from '../../utils/events.ts';
 import { toBoolean } from '../../utils/string.ts';
 
@@ -42,7 +41,7 @@ class AppSettings {
             return this.set('enableSmoothScroll', val.toString());
         }
 
-        return toBoolean(this.get('enableSmoothScroll'), !!browser.tizen);
+        return toBoolean(this.get('enableSmoothScroll'), false);
     }
 
     enableSystemExternalPlayers(val) {

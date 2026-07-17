@@ -22,11 +22,7 @@ function isTv(userAgent) {
         return true;
     }
 
-    return isWeb0s(userAgent);
-}
-
-function isWeb0s(userAgent) {
-    return userAgent.includes('netcast') || userAgent.includes('web0s');
+    return false;
 }
 
 function isMobile(userAgent) {
@@ -88,59 +84,6 @@ function iOSversion() {
         }
     }
     return [];
-}
-
-function web0sVersion(browser) {
-    // Detect webOS version by web engine version
-
-    if (browser.chrome) {
-        const userAgent = navigator.userAgent.toLowerCase();
-
-        if (userAgent.includes('netcast')) {
-            // The built-in browser (NetCast) may have a version that doesn't correspond to the actual web engine
-            // Since there is no reliable way to detect webOS version, we return an undefined version
-
-            console.warn('Unable to detect webOS version - NetCast');
-
-            return undefined;
-        }
-
-        // The next is only valid for the app
-
-        if (browser.versionMajor >= 120) {
-            return 25;
-        } else if (browser.versionMajor >= 108) {
-            return 24;
-        } else if (browser.versionMajor >= 94) {
-            return 23;
-        } else if (browser.versionMajor >= 87) {
-            return 22;
-        } else if (browser.versionMajor >= 79) {
-            return 6;
-        } else if (browser.versionMajor >= 68) {
-            return 5;
-        } else if (browser.versionMajor >= 53) {
-            return 4;
-        } else if (browser.versionMajor >= 38) {
-            return 3;
-        } else if (browser.versionMajor >= 34) {
-            // webOS 2 browser
-            return 2;
-        } else if (browser.versionMajor >= 26) {
-            // webOS 1 browser
-            return 1;
-        }
-    } else if (browser.versionMajor >= 538) {
-        // webOS 2 app
-        return 2;
-    } else if (browser.versionMajor >= 537) {
-        // webOS 1 app
-        return 1;
-    }
-
-    console.error('Unable to detect webOS version');
-
-    return undefined;
 }
 
 let _supportsCssAnimation;
@@ -298,28 +241,13 @@ export const detectBrowser = (userAgent = navigator.userAgent) => {
         typeof document !== 'undefined' &&
         document.documentElement.animate != null;
     browser.hisense = normalizedUA.includes('hisense');
-    browser.tizen = normalizedUA.includes('tizen') || window.tizen != null;
     browser.vega = normalizedUA.includes('kepler');
     browser.vidaa = normalizedUA.includes('vidaa');
-    browser.web0s = isWeb0s(normalizedUA);
 
     browser.tv =
         browser.ps4 || browser.vega || browser.xboxOne || isTv(normalizedUA);
 
-    if (browser.web0s) {
-        browser.web0sVersion = web0sVersion(browser);
-
-        // UserAgent string contains 'Chrome' and 'Safari', but we only want 'web0s' to be true
-        delete browser.chrome;
-        delete browser.safari;
-    } else if (browser.tizen) {
-        const v = RegExp(/Tizen (\d+).(\d+)/).exec(userAgent);
-        browser.tizenVersion = parseInt(v[1], 10) + parseInt(v[2], 10) / 10;
-
-        // UserAgent string contains 'Chrome' and 'Safari', but we only want 'tizen' to be true
-        delete browser.chrome;
-        delete browser.safari;
-    } else if (browser.titanos) {
+    if (browser.titanos) {
         // UserAgent string contains 'Safari', but we only want 'titanos' to be true
         delete browser.safari;
     } else if (browser.vega) {

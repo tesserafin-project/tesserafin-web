@@ -12,11 +12,6 @@ function enableNativeMenu() {
         return false;
     }
 
-    // Doesn't seem to work at all
-    if (browser.tizen || browser.web0s) {
-        return false;
-    }
-
     // Take advantage of the native input methods
     if (browser.tv) {
         return true;
