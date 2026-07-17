@@ -1,6 +1,6 @@
 # RFC-0005 — Design system, thèmes et catalogue Reefin
 
-- **Statut** : Draft
+- **Statut** : Accepted (2026-07-17)
 - **Date** : 2026-07-17
 - **Amendé** : 2026-07-17 — contrat de thème et design system rendus cross-platform dès la
   conception (Android/iOS, cf. §3)
