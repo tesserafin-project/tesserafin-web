@@ -138,6 +138,7 @@
         "generate:reefin-sdk": "node scripts/generate-reefin-sdk.mjs",
         "generate:tokens": "node reefin-design/scripts/generate-web-tokens.mjs",
         "verify:reefin-sdk-fresh": "node scripts/verify-reefin-sdk-fresh.mjs",
+        "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
@@ -146,7 +147,7 @@
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test",
-        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:reefin-sdk-fresh"
+        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:reefin-sdk-fresh && npm run verify:tokens-fresh"
     },
     "engines": {
         "node": ">=24.0.0",
