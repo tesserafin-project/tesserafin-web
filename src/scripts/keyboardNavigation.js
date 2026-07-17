@@ -286,8 +286,10 @@ export function enable() {
 }
 
 export function canEnableGamepad() {
-    // Not needed for UWP
-    return !browser.edgeUwp;
+    // Not needed on Xbox: the native UWP/WebView2 host already emits the
+    // GamepadA/GamepadB/... key codes handled above, so attaching the generic
+    // Gamepad API adapter (gamepadtokey.js) here would double-handle input.
+    return !browser.xboxOne;
 }
 
 // Gamepad initialisation. No script is required if no gamepads are present at init time, saving a bit of resources.

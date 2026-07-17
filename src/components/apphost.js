@@ -15,7 +15,6 @@ const BrowserName = {
     web0s: 'LG Smart TV',
     titanos: 'Titan OS',
     vega: 'Vega OS',
-    operaTv: 'Opera TV',
     xboxOne: 'Xbox One',
     ps4: 'Sony PS4',
     chrome: 'Chrome',
@@ -212,15 +211,7 @@ function getDefaultLayout() {
 }
 
 function supportsHtmlMediaAutoplay() {
-    if (
-        browser.edgeUwp ||
-        browser.tizen ||
-        browser.web0s ||
-        browser.orsay ||
-        browser.operaTv ||
-        browser.ps4 ||
-        browser.xboxOne
-    ) {
+    if (browser.tizen || browser.web0s || browser.ps4 || browser.xboxOne) {
         return true;
     }
 
@@ -267,21 +258,15 @@ const supportedFeatures = (function () {
         features.push(AppFeature.Sharing);
     }
 
-    if (!browser.edgeUwp && !browser.tv && !browser.xboxOne && !browser.ps4) {
+    if (!browser.tv && !browser.xboxOne && !browser.ps4) {
         features.push(AppFeature.FileDownload);
     }
 
-    if (browser.operaTv || browser.tizen || browser.orsay || browser.web0s) {
+    if (browser.tizen || browser.web0s) {
         features.push(AppFeature.Exit);
     }
 
-    if (
-        !browser.operaTv &&
-        !browser.tizen &&
-        !browser.orsay &&
-        !browser.web0s &&
-        !browser.ps4
-    ) {
+    if (!browser.tizen && !browser.web0s && !browser.ps4) {
         features.push(AppFeature.ExternalLinks);
     }
 
@@ -308,13 +293,7 @@ const supportedFeatures = (function () {
         features.push(AppFeature.RemoteControl);
     }
 
-    if (
-        !browser.operaTv &&
-        !browser.tizen &&
-        !browser.orsay &&
-        !browser.web0s &&
-        !browser.edgeUwp
-    ) {
+    if (!browser.tizen && !browser.web0s) {
         features.push(AppFeature.RemoteVideo);
     }
 
@@ -327,16 +306,11 @@ const supportedFeatures = (function () {
         if (enabled) features.push(AppFeature.MultiServer);
     });
 
-    if (
-        !browser.orsay &&
-        (browser.firefox || browser.ps4 || browser.edge || supportsCue())
-    ) {
+    if (browser.firefox || browser.ps4 || browser.edge || supportsCue()) {
         features.push(AppFeature.SubtitleAppearance);
     }
 
-    if (!browser.orsay) {
-        features.push(AppFeature.SubtitleBurnIn);
-    }
+    features.push(AppFeature.SubtitleBurnIn);
 
     if (!browser.tv && !browser.ps4 && !browser.xboxOne) {
         features.push(AppFeature.FileInput);

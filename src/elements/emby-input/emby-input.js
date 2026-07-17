@@ -1,4 +1,3 @@
-import browser from '../../scripts/browser';
 import dom from '../../utils/dom';
 import './emby-input.scss';
 import 'webcomponents.js/webcomponents-lite';
@@ -62,11 +61,6 @@ EmbyInputPrototype.createdCallback = function () {
         function () {
             onChange.call(this);
 
-            // For Samsung orsay devices
-            if (document.attachIME) {
-                document.attachIME(this);
-            }
-
             label.classList.add('inputLabelFocused');
             label.classList.remove('inputLabelUnfocused');
         },
@@ -97,15 +91,6 @@ EmbyInputPrototype.createdCallback = function () {
     dom.addEventListener(this, 'valueset', onChange, {
         passive: true
     });
-
-    //Make sure the IME pops up if this is the first/default element on the page
-    if (
-        browser.orsay &&
-        this === document.activeElement &&
-        document.attachIME
-    ) {
-        document.attachIME(this);
-    }
 };
 
 function onChange() {
