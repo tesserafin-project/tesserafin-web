@@ -514,3 +514,83 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
         expect(streamInfo).toEqual(snapshot);
     });
 });
+
+/**
+ * `reefin` #43: the v2 `POST Playback/Sessions` must carry the SAME `PlaybackAttemptId` the
+ * attempt's `PlaybackInfo` call already sent, and must omit the field rather than send a blank one
+ * (the server accepts absent, rejects empty/whitespace with a 400). The id is read from the attempt
+ * that `playbackmanager.js#playInternal()` started - this module never mints one, which is what
+ * keeps both requests of one attempt on the same value.
+ */
+describe('resolveV2PlaybackUrl() PlaybackAttemptId (reefin #43)', () => {
+    const logger = { debug: vi.fn() };
+
+    const succeedingRequest = () =>
+        mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'DirectPlay' } },
+            { data: { Url: '/Videos/item-1/stream.mp4' } }
+        );
+
+    it('sends the current attempt id on the POST body', async () => {
+        const request = succeedingRequest();
+        const api = createMockApi(request);
+
+        await resolveV2PlaybackUrl(baseParams(api), {
+            ...baseDeps(),
+            getAttemptId: () => 'attempt-1',
+            logger
+        });
+
+        const [[postArgs]] = request.mock.calls;
+        expect(JSON.parse(postArgs.data).PlaybackAttemptId).toBe('attempt-1');
+    });
+
+    it('sends the same id on a second call of the same attempt - the retry case', async () => {
+        const sameAttempt = () => 'attempt-1';
+
+        const first = succeedingRequest();
+        await resolveV2PlaybackUrl(baseParams(createMockApi(first)), {
+            ...baseDeps(),
+            getAttemptId: sameAttempt,
+            logger
+        });
+
+        const second = succeedingRequest();
+        await resolveV2PlaybackUrl(baseParams(createMockApi(second)), {
+            ...baseDeps(),
+            getAttemptId: sameAttempt,
+            logger
+        });
+
+        expect(JSON.parse(first.mock.calls[0][0].data).PlaybackAttemptId).toBe(
+            JSON.parse(second.mock.calls[0][0].data).PlaybackAttemptId
+        );
+    });
+
+    it('omits the field entirely when there is no attempt id', async () => {
+        const request = succeedingRequest();
+        const api = createMockApi(request);
+
+        await resolveV2PlaybackUrl(baseParams(api), {
+            ...baseDeps(),
+            getAttemptId: () => undefined,
+            logger
+        });
+
+        const body = JSON.parse(request.mock.calls[0][0].data);
+        expect('PlaybackAttemptId' in body).toBe(false);
+    });
+
+    it('still succeeds without an attempt id - absent must never break playback', async () => {
+        const request = succeedingRequest();
+        const api = createMockApi(request);
+
+        const result = await resolveV2PlaybackUrl(baseParams(api), {
+            ...baseDeps(),
+            getAttemptId: () => undefined,
+            logger
+        });
+
+        expect(result?.url).toBe('/Videos/item-1/stream.mp4');
+    });
+});

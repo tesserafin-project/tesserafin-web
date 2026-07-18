@@ -34,6 +34,13 @@ import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
+// Static import is safe for the bundle budget: `playbackAttemptId.ts` has zero imports of its own
+// (see its file-level comment), so it pulls no `lib/reefin-sdk` scope into the main chunk and the
+// v2 path stays behind its lazy trigger.
+import {
+    applyPlaybackAttemptId,
+    beginPlaybackAttempt
+} from '../../scripts/playbackAttemptId.ts';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
 import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
 
@@ -632,6 +639,14 @@ async function getPlaybackInfo(
         appSettings.alwaysBurnInSubtitleWhenTranscoding();
 
     query.DeviceProfile = deviceProfile;
+
+    // reefin #43: stamps the current attempt's `PlaybackAttemptId` onto the `PlaybackInfoDto`.
+    // Diagnostics only - the server treats it as opaque and nothing here reads it back. Set only
+    // when there is a usable id (the helper omits the key otherwise: absent is valid, blank is a
+    // 400). Because `changeStream()`'s transcoding retry re-enters this function without re-minting,
+    // a retry sends the SAME id as the initial call - which is exactly what makes the retry chain
+    // stitchable server-side.
+    applyPlaybackAttemptId(query);
 
     const res = await getMediaInfoApi(api).getPostedPlaybackInfo({
         itemId: itemId,
@@ -2935,6 +2950,14 @@ export class PlaybackManager {
 
             // Normalize defaults to simplfy checks throughout the process
             normalizePlayOptions(playOptions);
+
+            // reefin #43: the one mint site. `playInternal()` is entered exactly once per
+            // user-initiated playback start, and the transcoding retry path (`changeStream()`)
+            // deliberately never re-enters it - so every request of this attempt, retries included,
+            // reuses the id minted here, while the next item or the next play press gets a fresh
+            // one. Placed after the `IsPlaceHolder` bail-out above so a rejected start never burns
+            // an id.
+            beginPlaybackAttempt();
 
             playOptions.isFirstItem = playOptions.isFirstItem || !prevSource;
 
