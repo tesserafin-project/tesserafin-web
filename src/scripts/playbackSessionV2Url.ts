@@ -46,6 +46,11 @@ import type { Api } from '@jellyfin/sdk';
 
 import appSettings from './settings/appSettings';
 import {
+    buildRetryMetadata,
+    type PlaybackExecutionDecision,
+    type PlaybackRequestOptions
+} from './playbackExecutionDecision';
+import {
     buildClientCapabilities,
     buildPlaybackConstraints
 } from './reefinPlaybackCapabilities';
@@ -155,6 +160,11 @@ export interface V2PlaybackUrlResult {
     protocol?: (typeof PlaybackDecisionStreamingProtocol)[keyof typeof PlaybackDecisionStreamingProtocol];
     playMethod: string;
     playSessionId: string;
+    /** The server-created `Playback/Sessions` resource id the `GET .../Stream` was issued against.
+     * Distinct from `playSessionId` (which this client generates and sends in the `POST`): this one
+     * is assigned by the server. Returned so the caller can carry the *complete* v2 execution state
+     * rather than silently dropping a field - see `playbackExecutionDecision.ts`. */
+    playbackSessionId: string;
     /** Relative, same convention as `url` - present only when the GET's `SelectedStreams.Subtitle`
      * is externally delivered (`docs/pr116d-url-contract-design.md` §2.2). */
     subtitleUrl?: string;
@@ -314,6 +324,7 @@ export async function resolveV2PlaybackUrl(
             protocol: descriptor.Protocol,
             playMethod: PLAY_METHOD_MAP[session.Method ?? ''] ?? 'Transcode',
             playSessionId,
+            playbackSessionId: session.Id,
             subtitleUrl: descriptor.SubtitleUrl ?? undefined,
             servedBy: descriptor.ServedBy,
             fallbackReason: descriptor.FallbackReason ?? null
@@ -345,8 +356,77 @@ export interface V2PatchableStreamInfo {
     mimeType?: string;
     playMethod?: string;
     playSessionId?: string;
+    transcodingOffsetTicks?: number;
+    executionDecision?: PlaybackExecutionDecision;
     textTracks?: Array<{ url?: string; isDefault?: boolean }>;
     tracks?: Array<{ url?: string; isDefault?: boolean }>;
+}
+
+/** Context the caller (`playbackmanager.js`) must supply so a v2 success can produce a *complete*
+ * execution state. Everything here is information the v2 responses do not carry. */
+export interface V2ExecutionContext {
+    /** Mime type to use when the v2 decision is a `DirectPlay` over a non-HLS protocol: the served
+     * bytes are then the source file itself, so the caller derives this from the media source's own
+     * container (`getMimeType(type, mediaSource.Container)`). `undefined` when the caller cannot
+     * determine it, which forces a whole-decision fallback to legacy rather than a guess. */
+    directPlayMimeType?: string;
+    /** The `PlaybackInfo` request options this stream was requested with - the honest source for the
+     * stream-copy retry flags (see `playbackExecutionDecision.ts`). */
+    requestOptions?: PlaybackRequestOptions | null;
+}
+
+/**
+ * Builds the complete v2 execution state, or `null` when the v2 responses cannot supply every field.
+ *
+ * The mime-type/offset matrix (the part the v2 contract does not cover) - `PlaybackSessionStream
+ * Descriptor` carries `Url`/`Protocol`/`ServedBy`/`FallbackReason`/`SubtitleUrl` and no container:
+ *
+ * - **HLS, any play method** - mime is the HLS playlist type; the offset is 0 because an HLS
+ *   playlist is always addressed from its own start.
+ * - **DirectPlay over a non-HLS protocol** - the served bytes are the source file, so the caller's
+ *   `directPlayMimeType` (derived from `mediaSource.Container`) is exactly right; offset 0 because
+ *   nothing is being re-timestamped.
+ * - **Remux/Transcode over a non-HLS protocol** - the output container is chosen by the server and
+ *   is not reported anywhere in the v2 responses. Deriving it from the *legacy* plan's
+ *   `TranscodingContainer` would pair a v2 URL with legacy-derived state, which is the precise
+ *   defect this lane removes, so this case returns `null` and the caller keeps the legacy decision
+ *   whole.
+ *
+ * Note the resulting invariant: `transcodingOffsetTicks` is always 0 on the v2 path. That is not a
+ * simplification - the only case legacy ever sets it non-zero (transcode, non-HLS subprotocol,
+ * no `copytimestamps`) is exactly the case that falls back above. It is also the direct fix for the
+ * second half of issue #41, where a non-zero legacy offset could survive onto a v2 direct-play URL
+ * and shift every reported position.
+ */
+function buildV2ExecutionDecision(
+    result: V2PlaybackUrlResult,
+    absoluteUrl: string,
+    context: V2ExecutionContext
+): PlaybackExecutionDecision | null {
+    const isHls = result.protocol === PlaybackDecisionStreamingProtocol.Hls;
+    const mimeType = isHls
+        ? 'application/x-mpegURL'
+        : result.playMethod === 'DirectPlay'
+          ? context.directPlayMimeType
+          : undefined;
+
+    if (!mimeType) {
+        return null;
+    }
+
+    return {
+        source: 'v2',
+        url: absoluteUrl,
+        playMethod: result.playMethod,
+        mimeType,
+        transcodingOffsetTicks: 0,
+        playSessionId: result.playSessionId,
+        playbackSessionId: result.playbackSessionId,
+        protocol: result.protocol,
+        // Derived from the v2 play method, not the legacy one: a v2 DirectPlay result must not
+        // inherit the legacy plan's "already transcoding" state.
+        retry: buildRetryMetadata(result.playMethod, context.requestOptions)
+    };
 }
 
 function overrideDefaultSubtitleTrackUrl(
@@ -362,17 +442,24 @@ function overrideDefaultSubtitleTrackUrl(
 }
 
 /**
- * The single decision point (task requirement: "one decision point ... that produces the playback
- * URL"): resolves the v2 URL and, only on success, overwrites `streamInfo`'s `url`/`playMethod`/
- * `playSessionId`/`mimeType`(HLS only)/default-subtitle-track `url` in place. On any failure
- * (including flag-off), `streamInfo` - already fully built by the caller's synchronous legacy
- * `createStreamInfo()` call before this runs - is left completely untouched. Returns whether v2 was
- * applied, for logging/tests; the caller does not need to branch on it.
+ * The single decision point that produces the playback URL: resolves the v2 URL and, only when it
+ * can supply a *complete* execution state, replaces every execution-derived field on `streamInfo` in
+ * one uninterrupted block - `url`, `playMethod`, `playSessionId`, `mimeType`,
+ * `transcodingOffsetTicks` and the typed `executionDecision` (which carries the protocol, the server
+ * session id and the retry metadata).
+ *
+ * All-or-nothing, in both directions (issue #41, requirement 4). Nothing is written until every
+ * value is computed and validated, so there is no state in which a v2 URL coexists with a legacy
+ * mime type or a legacy transcoding offset. Any failure - flag off, network error, 4xx/5xx, a
+ * missing `Url`, a `getUrl()` throw, or a decision whose mime type the v2 responses cannot supply -
+ * leaves `streamInfo` completely untouched, keeping the legacy decision the caller already built
+ * synchronously as a whole. Returns whether v2 was applied, for logging/tests.
  */
 export async function applyV2PlaybackUrlToStreamInfo(
     streamInfo: V2PatchableStreamInfo,
     params: ResolveV2PlaybackUrlParams,
     apiClient: PlaybackUrlResolvingApiClient,
+    context: V2ExecutionContext = {},
     deps: ResolveV2PlaybackUrlDeps = {}
 ): Promise<boolean> {
     const result = await resolveV2PlaybackUrl(params, deps);
@@ -380,6 +467,8 @@ export async function applyV2PlaybackUrlToStreamInfo(
     if (!result) {
         return false;
     }
+
+    const logger = deps.logger ?? console;
 
     // Resolve every absolute URL BEFORE the first mutation: getUrl() throwing halfway through
     // would otherwise leave streamInfo half-patched, violating this function's all-or-nothing
@@ -392,20 +481,31 @@ export async function applyV2PlaybackUrlToStreamInfo(
             ? apiClient.getUrl(result.subtitleUrl)
             : undefined;
     } catch (err) {
-        console.debug(
-            '[playbackSessionV2Url] URL resolution failed, keeping legacy streamInfo',
+        logger.debug(
+            `${LOG_PREFIX} URL resolution failed - keeping the legacy decision whole`,
             err
         );
         return false;
     }
 
-    streamInfo.url = absoluteUrl;
-    streamInfo.playMethod = result.playMethod;
-    streamInfo.playSessionId = result.playSessionId;
+    const decision = buildV2ExecutionDecision(result, absoluteUrl, context);
 
-    if (result.protocol === PlaybackDecisionStreamingProtocol.Hls) {
-        streamInfo.mimeType = 'application/x-mpegURL';
+    if (!decision) {
+        logger.debug(
+            `${LOG_PREFIX} v2 responses cannot supply a complete execution state (playMethod=${result.playMethod}, protocol=${result.protocol}) - keeping the legacy decision whole`
+        );
+        return false;
     }
+
+    // Single atomic write of every execution-derived field. Read this block as one unit: adding a
+    // field to PlaybackExecutionDecision without assigning it here reintroduces exactly the
+    // partial-assignment defect issue #41 describes.
+    streamInfo.url = decision.url;
+    streamInfo.playMethod = decision.playMethod;
+    streamInfo.playSessionId = decision.playSessionId;
+    streamInfo.mimeType = decision.mimeType;
+    streamInfo.transcodingOffsetTicks = decision.transcodingOffsetTicks;
+    streamInfo.executionDecision = decision;
 
     if (absoluteSubtitleUrl) {
         overrideDefaultSubtitleTrackUrl(streamInfo, absoluteSubtitleUrl);

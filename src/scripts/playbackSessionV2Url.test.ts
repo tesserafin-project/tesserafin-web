@@ -133,6 +133,8 @@ describe('resolveV2PlaybackUrl()', () => {
             protocol: 'Http',
             playMethod: 'DirectPlay',
             playSessionId: 'v2-session-id',
+            // Server-assigned, distinct from the client-generated playSessionId above.
+            playbackSessionId: 'server-session-1',
             subtitleUrl: undefined,
             servedBy: 2,
             fallbackReason: null
@@ -368,6 +370,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
             streamInfo,
             baseParams(api),
             apiClient,
+            {},
             { ...baseDeps(), isEnabled: () => false, logger }
         );
 
@@ -406,6 +409,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
             streamInfo,
             baseParams(api),
             apiClient,
+            {},
             { ...baseDeps(), logger }
         );
 
@@ -413,7 +417,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
         expect(streamInfo).toEqual(snapshot);
     });
 
-    it('overwrites url/playMethod/playSessionId on the v2 happy path', async () => {
+    it('replaces every execution-derived field on the v2 happy path', async () => {
         const request = mockPostThenGet(
             { data: { Id: 'server-session-1', Method: 'DirectPlay' } },
             { data: { Url: '/v2/stream', Protocol: 'Http', ServedBy: 2 } }
@@ -421,15 +425,19 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
         const api = createMockApi(request);
         const streamInfo: V2PatchableStreamInfo = {
             url: 'https://example.com/legacy',
-            mimeType: 'video/mp4',
+            mimeType: 'video/x-matroska',
             playMethod: 'Transcode',
-            playSessionId: 'legacy-id'
+            playSessionId: 'legacy-id',
+            // The legacy transcode plan had a non-zero offset. Issue #41: it used to survive onto a
+            // v2 direct-play URL and shift every reported position.
+            transcodingOffsetTicks: 30000000
         };
 
         const applied = await applyV2PlaybackUrlToStreamInfo(
             streamInfo,
             baseParams(api),
             apiClient,
+            { directPlayMimeType: 'video/mp4' },
             { ...baseDeps(), logger }
         );
 
@@ -437,8 +445,111 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
         expect(streamInfo.url).toBe('https://example.com/v2/stream');
         expect(streamInfo.playMethod).toBe('DirectPlay');
         expect(streamInfo.playSessionId).toBe('v2-session-id');
-        // Http protocol - legacy mimeType is left alone, not overwritten.
+        // Direct play over a non-HLS protocol serves the source file, so the mime type comes from
+        // the source container - it is NOT left at its legacy value.
         expect(streamInfo.mimeType).toBe('video/mp4');
+        // The legacy offset is gone, not carried over.
+        expect(streamInfo.transcodingOffsetTicks).toBe(0);
+    });
+
+    it('carries the full typed decision, including the server session id', async () => {
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            { data: { Url: '/v2/master.m3u8', Protocol: 'Hls', ServedBy: 2 } }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            playMethod: 'DirectPlay'
+        };
+
+        await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            { requestOptions: { allowVideoStreamCopy: false } },
+            baseDeps()
+        );
+
+        expect(streamInfo.executionDecision).toEqual({
+            source: 'v2',
+            url: 'https://example.com/v2/master.m3u8',
+            playMethod: 'Transcode',
+            mimeType: 'application/x-mpegURL',
+            transcodingOffsetTicks: 0,
+            playSessionId: 'v2-session-id',
+            // Distinct from playSessionId: the server-created Playback/Sessions resource id.
+            playbackSessionId: 'server-session-1',
+            protocol: 'Hls',
+            retry: {
+                // Derived from the v2 play method, not the legacy DirectPlay one.
+                isAlreadyFallbacking: true,
+                preventsVideoStreamCopy: true,
+                preventsAudioStreamCopy: false
+            }
+        });
+    });
+
+    it('keeps the legacy decision whole when v2 cannot supply a mime type', async () => {
+        // Remux over a non-HLS protocol: the server picks the output container and reports it
+        // nowhere, so there is no correct mime type to write. Rather than mixing a v2 URL with a
+        // legacy mime type, the whole decision falls back.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Remux' } },
+            { data: { Url: '/v2/stream', Protocol: 'Http' } }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            mimeType: 'video/x-matroska',
+            playMethod: 'Transcode',
+            playSessionId: 'legacy-id',
+            transcodingOffsetTicks: 30000000
+        };
+        const snapshot = { ...streamInfo };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            // No directPlayMimeType, and Remux/Http cannot derive one.
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        // Not one field moved - in particular the URL did not.
+        expect(streamInfo).toEqual(snapshot);
+        expect(logger.debug).toHaveBeenCalledWith(
+            expect.stringContaining('cannot supply a complete execution state')
+        );
+    });
+
+    it('keeps the legacy decision whole when a direct-play mime type is unavailable', async () => {
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'DirectPlay' } },
+            { data: { Url: '/v2/stream', Protocol: 'Http' } }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            mimeType: 'video/mp4',
+            playMethod: 'DirectPlay',
+            transcodingOffsetTicks: 0
+        };
+        const snapshot = { ...streamInfo };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            // Caller could not determine the source container's mime type.
+            { directPlayMimeType: undefined },
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(streamInfo).toEqual(snapshot);
     });
 
     it('sets the HLS mimeType when the descriptor protocol is Hls', async () => {
@@ -453,6 +564,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
             streamInfo,
             baseParams(api),
             apiClient,
+            {},
             baseDeps()
         );
 
@@ -482,6 +594,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
             streamInfo,
             baseParams(api),
             apiClient,
+            { directPlayMimeType: 'video/mp4' },
             baseDeps()
         );
 
@@ -507,6 +620,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
             streamInfo,
             baseParams(api),
             apiClient,
+            { directPlayMimeType: 'video/mp4' },
             { ...baseDeps(), logger }
         );
 
