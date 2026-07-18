@@ -1,23 +1,27 @@
-import type { Api } from '@jellyfin/sdk/lib/api';
-import type { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
-import { ImageType } from '@jellyfin/sdk/lib/generated-client/models/image-type';
-import { ItemFields } from '@jellyfin/sdk/lib/generated-client/models/item-fields';
-import type { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
-import type { SortOrder } from '@jellyfin/sdk/lib/generated-client/models/sort-order';
-import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
+import { getLibraryApi, ImageType, ItemFields } from 'lib/reefin-sdk';
+import type {
+    BaseItemKind,
+    ItemSortBy,
+    ReefinApi,
+    SortOrder
+} from 'lib/reefin-sdk';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 
 /**
  * `getItems` params for the `/library/:libraryId` grid (RFC-0005 §11 WP-C step 2). Mirrors
- * `hooks/useFetchItems.ts`'s `fetchGetItemsViewByType` default branch (same `@jellyfin/sdk` endpoint,
- * mission: "Migration reefin-sdk NON requise"), trimmed to the v1 controls this route exposes: one
- * sort field/order, one genre, one production year - no alphabet picker, no `Filters`-object grab
- * bag (`types/library.ts`'s `LibraryViewSettings`), since that type is the existing `ItemsView`
- * slice's local state shape, not a wire format worth reusing here.
+ * `hooks/useFetchItems.ts`'s `fetchGetItemsViewByType` default branch (same endpoint), trimmed to
+ * the v1 controls this route exposes: one sort field/order, one genre, one production year - no
+ * `Filters`-object grab bag (`types/library.ts`'s `LibraryViewSettings`), since that type is the
+ * existing `ItemsView` slice's local state shape, not a wire format worth reusing here.
+ *
+ * Issued through `lib/reefin-sdk`'s generated `LibraryApi` (issue #15): the generated client covers
+ * this endpoint, so no hand-written wrapper is warranted. The request shape is identical to
+ * `@jellyfin/sdk`'s - both are `openapi-generator` `typescript-axios` output over the same contract
+ * - so this is an import and client swap, not a call-site rewrite.
  */
 export interface LibraryItemsParams {
     parentId: string;
@@ -31,7 +35,7 @@ export interface LibraryItemsParams {
 }
 
 export const fetchLibraryItems = async (
-    api: Api,
+    api: ReefinApi,
     userId: string,
     params: LibraryItemsParams,
     options?: AxiosRequestConfig
@@ -70,13 +74,13 @@ export const getLibraryItemsQueryKey = (
  * loads, instead of flashing `LoadingState` on every pagination click (mission step 2).
  */
 export const useLibraryItems = (params: LibraryItemsParams | undefined) => {
-    const { api, user } = useApi();
+    const { reefinApi, user } = useApi();
 
     return useQuery({
         queryKey: getLibraryItemsQueryKey(user?.Id, params),
         queryFn: ({ signal }) =>
-            fetchLibraryItems(api!, user!.Id!, params!, { signal }),
-        enabled: !!api && !!user?.Id && !!params,
+            fetchLibraryItems(reefinApi!, user!.Id!, params!, { signal }),
+        enabled: !!reefinApi && !!user?.Id && !!params,
         placeholderData: keepPreviousData
     });
 };

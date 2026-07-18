@@ -1,5 +1,4 @@
-import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
-import { SortOrder } from '@jellyfin/sdk/lib/generated-client/models/sort-order';
+import { ItemSortBy, SortOrder } from 'lib/reefin-sdk';
 import { describe, expect, it } from 'vitest';
 
 import {

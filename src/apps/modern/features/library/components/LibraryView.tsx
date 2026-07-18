@@ -1,7 +1,9 @@
-import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
-import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
-import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
-import { SortOrder } from '@jellyfin/sdk/lib/generated-client/models/sort-order';
+import {
+    BaseItemKind,
+    CollectionType,
+    ItemSortBy,
+    SortOrder
+} from 'lib/reefin-sdk';
 import type { UseQueryResult } from '@tanstack/react-query';
 import React, { type FC, useCallback, useMemo } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
@@ -192,8 +194,7 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
  * route. Existing per-type pages (`#/movies?topParentId=...`, `#/tv?topParentId=...`, etc., built by
  * `components/router/appRouter.js`'s `getRouteUrl()`) are untouched: this route lives alongside them
  * and isn't linked to from anywhere yet (`appRouter.getRouteUrl()` is not modified by this work) -
- * see the mission's TODO below for the follow-up that makes it the default once it reaches parity
- * with the existing Suggestions/Genres tabs.
+ * see the parity note below for why activation stays deferred.
  *
  * v1 scope (mission): grid + sort (name/date added/community rating/release year/random, asc/desc)
  * + single genre/year filter + pagination + comfortable/compact density, movies and tvshows only.
@@ -201,11 +202,38 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
  * redirects to or is deferred to the existing per-type page - see `utils/libraryRedirect.ts` and the
  * per-file JSDoc under `utils/` for the specifics of what's covered vs documented debt.
  *
- * TODO(RFC-0005 §11 WP-C follow-up): once this route has parity with the legacy per-type pages
- * (Suggestions/Genres tabs, AlphaPicker, list view, multi-select filters), point
- * `appRouter.getRouteUrl()`'s `CollectionType.Movies`/`CollectionType.Tvshows` branches here instead
- * of `#/movies`/`#/tv`, and retire this comment along with the `LIBRARY_ROUTE_BY_COLLECTION_TYPE`
- * duplication it currently requires this route (and `/home`'s card adapter) to route around.
+ * ## AlphaPicker / list view / tabs: porting deferred, because activation is deferred (issue #15)
+ *
+ * Measured against the pages this route would replace, rather than assumed:
+ *
+ * - `constants/views/movies.ts`'s tab 0 (`moviesTabContent`) and `constants/views/tvshows.ts`'s
+ *   tab 0 (`seriesTabContent`) override neither `isAlphabetPickerEnabled` nor
+ *   `isBtnGridListEnabled`, so `utils/viewContent.ts`'s `{...defaultViewContent, ...viewContent}`
+ *   merge resolves both to `constants/views/defaults.ts`'s `true`. **AlphaPicker and list view are
+ *   live on exactly the two tabs this route would take over.**
+ * - Those pages carry 7 (movies) and 8 (tvshows) tabs; this route is a single grid.
+ *
+ * `appRouter.getRouteUrl()` is the one URL builder behind home cards, `MainDrawerContent`, and
+ * `UserViewNav`/`UserViewsMenu` alike, so repointing its `CollectionType.Movies`/`Tvshows` branches
+ * (currently `#/movies?topParentId=...`/`#/tv?topParentId=...`) would move every entry point onto a
+ * route that lacks AlphaPicker, list view, and 6-7 tabs. Adding the old-URL redirects on top would
+ * make the tabbed pages unreachable outright. Either step is a functional regression on the default
+ * path, so **activation is not performed** and porting is deferred with it - there is no user-facing
+ * gap to close while nothing routes here by default. The route stays additive and reachable by
+ * direct URL; nothing is removed from the current default path, which is what keeps this deferral
+ * (unlike activation) regression-free.
+ *
+ * Porting parity is also not fundable right now: the `main.jellyfin.bundle.js` budget
+ * (`webpack.performance-budget.json`, 460800 bytes) has ~15 KiB of headroom, against 7-8 tabs of
+ * sections/genre/studio/collection/playlist views.
+ *
+ * TODO(RFC-0005 §11 WP-C follow-up): this route needs parity with the legacy per-type pages
+ * (Suggestions/Genres/Studios/Collections/Playlists tabs, AlphaPicker, list view, multi-select
+ * filters) *before* `appRouter.getRouteUrl()` may point here and before the old library URLs may
+ * redirect here. Until then, prefer an opt-in affordance over a `getRouteUrl` repoint - the repoint
+ * has no non-regressive form while the tab gap stands. Retiring this comment also retires the
+ * `LIBRARY_ROUTE_BY_COLLECTION_TYPE` duplication this route (and `/home`'s card adapter) routes
+ * around.
  */
 const LibraryView: FC = () => {
     const { libraryId = '' } = useParams<{ libraryId: string }>();

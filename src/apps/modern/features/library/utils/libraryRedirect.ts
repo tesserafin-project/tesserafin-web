@@ -1,4 +1,4 @@
-import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
+import { CollectionType } from 'lib/reefin-sdk';
 
 /**
  * v1-supported collection types for `/library/:libraryId` (RFC-0005 §11 WP-C mission scope:

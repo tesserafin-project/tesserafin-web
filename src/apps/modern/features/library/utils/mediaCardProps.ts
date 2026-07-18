@@ -1,16 +1,16 @@
-import { ImageType } from '@jellyfin/sdk/lib/generated-client/models/image-type';
+import { ImageType } from 'lib/reefin-sdk';
 
 import type { ImageApiClient } from 'apps/modern/features/home/utils/mediaCardProps';
 import type { ItemDto } from 'types/base/models/item-dto';
 import type { MediaCardProps } from 'ui';
 
 /**
- * `ItemDto` (`@jellyfin/sdk`-typed, `types/base/models/item-dto.ts`) to `ui`'s `MediaCardProps`
- * adapter for `/library/:libraryId` (RFC-0005 §11 WP-C step 4). `/home`'s own adapter
+ * `ItemDto` (`types/base/models/item-dto.ts`) to `ui`'s `MediaCardProps` adapter for
+ * `/library/:libraryId` (RFC-0005 §11 WP-C step 4). `/home`'s own adapter
  * (`apps/modern/features/home/utils/mediaCardProps.ts`) does the same job but is typed against
- * `lib/reefin-sdk`'s `BaseItemDto` by design (that slice's reefin-sdk migration mandate,
- * RFC-0005 §4.2) - a different, non-assignable nominal type from this route's `@jellyfin/sdk`-based
- * `useGetItems`/`useItem` data (mission: "Migration reefin-sdk NON requise"). Rather than force a
+ * `lib/reefin-sdk`'s `BaseItemDto` (RFC-0005 §4.2) - a different, non-assignable nominal type from
+ * the `ItemDto` this route still receives from the shared `useItem`/`useGetQueryFiltersLegacy`
+ * hooks. Rather than force a
  * generic cross-realm shared module (more coupling than the ~20 lines below are worth), this
  * re-implements only what a movies/tvshows grid card needs: `ImageApiClient` is re-imported
  * (type-only, no behavior duplicated) since `useApi().__legacyApiClient__` has the same shape either
