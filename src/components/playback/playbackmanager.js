@@ -35,7 +35,7 @@ import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
-import { applyV2PlaybackUrlToStreamInfo } from '../../scripts/playbackSessionV2Url.ts';
+import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
 
 const UNLIMITED_ITEMS = -1;
 
@@ -3482,7 +3482,7 @@ export class PlaybackManager {
                     // failure (network, 4xx/5xx, missing fields, flag off) silently keeps the legacy
                     // `streamInfo` already built - v2 can never break playback (see
                     // playbackSessionV2Url.ts for the full fallback matrix).
-                    await applyV2PlaybackUrlToStreamInfo(
+                    await applyV2PlaybackUrlIfEnabled(
                         streamInfo,
                         {
                             api: ServerConnections.getApi(apiClient.serverId()),
