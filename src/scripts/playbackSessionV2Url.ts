@@ -404,11 +404,13 @@ function buildV2ExecutionDecision(
     context: V2ExecutionContext
 ): PlaybackExecutionDecision | null {
     const isHls = result.protocol === PlaybackDecisionStreamingProtocol.Hls;
-    const mimeType = isHls
-        ? 'application/x-mpegURL'
-        : result.playMethod === 'DirectPlay'
-          ? context.directPlayMimeType
-          : undefined;
+
+    let mimeType: string | undefined;
+    if (isHls) {
+        mimeType = 'application/x-mpegURL';
+    } else if (result.playMethod === 'DirectPlay') {
+        mimeType = context.directPlayMimeType;
+    }
 
     if (!mimeType) {
         return null;
