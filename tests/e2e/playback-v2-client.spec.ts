@@ -108,6 +108,35 @@ async function signInAndPlay(
     await play.click();
 }
 
+/** The v2 EXECUTION engine is kill-switched off by default (`PlaybackLiveStreamResolver` falls back
+ * to legacy with `FallbackReason: "KillSwitch"` unless `PlaybackShadow.GetEffectiveMode()` is
+ * Canary/V2). Flipped here through the real admin API — server runtime configuration, not a source
+ * default, and unrelated to the client's own `enableV2PlaybackPath` flag. */
+async function enableV2Engine() {
+    const api = await request.newContext({ baseURL: BASE_URL });
+    const auth = await (
+        await api.post('/Users/AuthenticateByName', {
+            headers: { Authorization: E2E_AUTH_HEADER },
+            data: { Username: USER, Pw: PASSWORD }
+        })
+    ).json();
+    const token = `${E2E_AUTH_HEADER}, Token="${auth.AccessToken}"`;
+    const cfg = await (
+        await api.get('/System/Configuration', {
+            headers: { Authorization: token }
+        })
+    ).json();
+    cfg.PlaybackShadow = { ...(cfg.PlaybackShadow ?? {}), Mode: 'V2' };
+    const posted = await api.post('/System/Configuration', {
+        headers: { Authorization: token },
+        data: cfg
+    });
+    if (!posted.ok()) {
+        throw new Error(`could not enable the v2 engine: ${posted.status()}`);
+    }
+    await api.dispose();
+}
+
 test.describe('playback v2 — flag ON', () => {
     let itemId = '';
     test.beforeAll(async () => {
@@ -166,19 +195,92 @@ test.describe('playback v2 — flag ON', () => {
         expect(JSON.parse(post.postData!).PlaySessionId).toBeTruthy();
     });
 
-    test('v2 session creation succeeds and the descriptor is fetched', async ({
+    test('v2 session creation is rejected 400 by the server capability contract', async ({
         page
     }) => {
         test.setTimeout(120_000);
-        // EXPECTED TO FAIL against reefin master 522416764b + reefin-web 188faad689.
-        // Cause (NOT #26): reefinPlaybackCapabilities.ts omits Profiles/VideoRangeTypes on each
-        // Capabilities.Decode.VideoCodecs[] entry; VideoCodecCapability requires both. The server
-        // answers 400 and the v2 chain falls back to legacy, so GET .../Stream is never reached.
-        // Flip this to a normal test once the capability builder is aligned.
-        test.fail();
+        const wire = instrument(page);
+        const bodies: string[] = [];
+        page.on('response', async (r) => {
+            if (V2_SESSIONS.test(r.url())) {
+                try {
+                    bodies.push(await r.text());
+                } catch {
+                    /* body already consumed */
+                }
+            }
+        });
+        await signInAndPlay(page, itemId);
+
+        // The decisive line, pinned here rather than only in a report: the UNMODIFIED client cannot
+        // create a v2 session at all, because `reefinPlaybackCapabilities.ts` emits
+        // `VideoCodecs: [{Codec}]` while the server's `VideoCodecCapability` positional record has
+        // non-nullable `Profiles`/`VideoRangeTypes`. That file is untouched by PR #26.
+        await expect
+            .poll(
+                () =>
+                    wire.responses.filter(
+                        (r) => V2_SESSIONS.test(r.url) && r.status === 400
+                    ).length,
+                { timeout: 30_000 }
+            )
+            .toBeGreaterThan(0);
+
+        expect(bodies.join('\n')).toContain('The Profiles field is required.');
+
+        // …and so the v2-only descriptor endpoint is never reached by the unmodified client.
+        expect(wire.requests.filter((r) => V2_STREAM.test(r.url))).toHaveLength(
+            0
+        );
+    });
+
+    test('PATCHED payload: the descriptor is fetched and its Url is what actually gets played', async ({
+        page
+    }) => {
+        test.setTimeout(120_000);
+
+        // ── PATCH CAVEAT, read before trusting this result ────────────────────────────────────
+        // This test rewrites the outgoing POST body to add `Profiles`/`VideoRangeTypes` — the two
+        // fields `reefinPlaybackCapabilities.ts` omits and the server requires (a separate,
+        // pre-existing bug, NOT part of PR #26). Nothing else in the body is changed.
+        // It therefore exercises PR #26's descriptor-consumption code, which is otherwise
+        // unreachable. It does NOT imply the unmodified client works — it demonstrably does not
+        // (see the 400 test above).
+        // ─────────────────────────────────────────────────────────────────────────────────────
+        await enableV2Engine();
+
+        await page.route('**/Playback/Sessions', async (route) => {
+            if (route.request().method() !== 'POST') return route.continue();
+            const body = JSON.parse(route.request().postData() || '{}');
+            for (const vc of body?.Capabilities?.Decode?.VideoCodecs ?? []) {
+                vc.Profiles ??= [];
+                vc.VideoRangeTypes ??= [];
+            }
+            await route.continue({ postData: JSON.stringify(body) });
+        });
 
         const wire = instrument(page);
+        let descriptor: Record<string, unknown> | null = null;
+        page.on('response', async (r) => {
+            if (V2_STREAM.test(r.url()) && r.status() === 200) {
+                try {
+                    descriptor = await r.json();
+                } catch {
+                    /* not json */
+                }
+            }
+        });
+
         await signInAndPlay(page, itemId);
+
+        // Requirement 1, second half — now reachable THROUGH THE CLIENT. This endpoint exists only
+        // on the v2 path, so a request to it is itself the proof that v2 was used.
+        await expect
+            .poll(
+                () => wire.requests.filter((r) => V2_STREAM.test(r.url)).length,
+                { timeout: 30_000 }
+            )
+            .toBeGreaterThan(0);
 
         await expect
             .poll(
@@ -190,13 +292,67 @@ test.describe('playback v2 — flag ON', () => {
             )
             .toBeGreaterThan(0);
 
-        // Requirement 1 (second half): the descriptor endpoint is actually called.
+        await expect.poll(() => descriptor, { timeout: 30_000 }).toBeTruthy();
+        const d = descriptor as unknown as Record<string, string>;
+
+        // The descriptor must be a complete execution state, else #26 deliberately keeps legacy.
+        expect(d.Url, 'descriptor carried no Url').toBeTruthy();
+        expect(d.MimeType, 'descriptor carried no MimeType').toBeTruthy();
+        expect(
+            d.FallbackReason,
+            `v2 did not serve this (${d.FallbackReason})`
+        ).toBeFalsy();
+
+        // Requirement 2 through the client: the media the player actually requested is the URL the
+        // descriptor handed out, and the bytes served carry the MimeType the descriptor promised.
+        const descriptorPath = String(d.Url).split('?')[0];
         await expect
             .poll(
-                () => wire.requests.filter((r) => V2_STREAM.test(r.url)).length,
+                () =>
+                    wire.responses.filter(
+                        (r) =>
+                            r.url.includes(descriptorPath) &&
+                            (r.status === 200 || r.status === 206)
+                    ).length,
                 { timeout: 30_000 }
             )
             .toBeGreaterThan(0);
+
+        const played = wire.responses.find(
+            (r) =>
+                r.url.includes(descriptorPath) &&
+                (r.status === 200 || r.status === 206)
+        )!;
+        expect(played.contentType.split(';')[0].trim().toLowerCase()).toBe(
+            String(d.MimeType).toLowerCase()
+        );
+
+        // Requirement 3: no legacy playback parameters are parsed out of the URL by the client —
+        // the v2 URL carries none of the params the pre-#26 retry heuristics string-matched.
+        expect(played.url.toLowerCase()).not.toContain('transcodereasons');
+        expect(played.url.toLowerCase()).not.toContain('allowvideostreamcopy');
+        expect(played.url.toLowerCase()).not.toContain('allowaudiostreamcopy');
+
+        // Requirement 4: no mixed state. NOTE the v2 descriptor Url has the SAME path shape as the
+        // legacy delivery URL (`/videos/{id}/stream.mp4?...`), so "a LEGACY_STREAM-shaped URL was
+        // fetched" proves nothing on its own. The real invariant is that EVERY media delivery the
+        // player performed was the descriptor's own Url - i.e. no second, legacy-built URL was
+        // fetched alongside the v2 one.
+        const mediaFetches = wire.responses.filter(
+            (r) =>
+                LEGACY_STREAM.test(r.url) &&
+                (r.status === 200 || r.status === 206)
+        );
+        expect(mediaFetches.length).toBeGreaterThan(0);
+        for (const m of mediaFetches) {
+            expect(
+                m.url,
+                'a media URL other than the v2 descriptor Url was played - v2/legacy mixed state'
+            ).toContain(descriptorPath);
+        }
+
+        // The v2 URL is also the one carrying the descriptor's own PlaySessionId, not a legacy one.
+        expect(played.url).toContain('PlaySessionId=');
     });
 
     test('when v2 session creation is rejected, playback falls back to a PURELY legacy stream (no mixed state)', async ({
