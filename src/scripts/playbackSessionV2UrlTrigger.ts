@@ -27,6 +27,7 @@ import type {
     PlaybackUrlResolvingApiClient,
     ResolveV2PlaybackUrlDeps,
     ResolveV2PlaybackUrlParams,
+    V2ExecutionContext,
     V2PatchableStreamInfo
 } from './playbackSessionV2Url';
 import appSettings from './settings/appSettings';
@@ -61,6 +62,7 @@ export async function applyV2PlaybackUrlIfEnabled(
     streamInfo: V2PatchableStreamInfo,
     params: ResolveV2PlaybackUrlParams,
     apiClient: PlaybackUrlResolvingApiClient,
+    context: V2ExecutionContext = {},
     deps: V2PlaybackUrlTriggerDeps = {}
 ): Promise<boolean> {
     const isEnabled =
@@ -81,10 +83,18 @@ export async function applyV2PlaybackUrlIfEnabled(
     try {
         const mod = await loadV2UrlModule();
 
+        // `context` MUST land on arg 4 and the resolve deps on arg 5. Passing the deps as arg 4
+        // (the pre-#24 arity) silently drops the whole execution context - `directPlayMimeType`,
+        // `requestOptions` and the server-reported container/mime - which reads as "v2 cannot
+        // supply a complete execution state" and collapses v2 to HLS-only, with the retry
+        // stream-copy flags always false. Every unit test would still pass, because they call the
+        // wrapped module directly. `applies the execution context through to the wrapped module`
+        // in the test file is the regression guard for exactly this.
         return await mod.applyV2PlaybackUrlToStreamInfo(
             streamInfo,
             params,
             apiClient,
+            context,
             { isEnabled, ...deps.v2Deps }
         );
     } catch (err) {

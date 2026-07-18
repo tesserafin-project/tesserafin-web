@@ -491,9 +491,11 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
     });
 
     it('keeps the legacy decision whole when v2 cannot supply a mime type', async () => {
-        // Remux over a non-HLS protocol: the server picks the output container and reports it
-        // nowhere, so there is no correct mime type to write. Rather than mixing a v2 URL with a
-        // legacy mime type, the whole decision falls back.
+        // Remux over a non-HLS protocol against a PRE-#46 server: the descriptor carries neither
+        // `Container` nor `MimeType`, so the server picked the output container and reported it
+        // nowhere. There is no correct mime type to write. Rather than mixing a v2 URL with a
+        // legacy mime type, the whole decision falls back. Against a #46 server this same case is
+        // applied rather than declined - see the 'reefin #46 descriptor' suite below.
         const request = mockPostThenGet(
             { data: { Id: 'server-session-1', Method: 'Remux' } },
             { data: { Url: '/v2/stream', Protocol: 'Http' } }
@@ -753,5 +755,370 @@ describe('resolveV2PlaybackUrl() PlaybackAttemptId (reefin #43)', () => {
         });
 
         expect(result?.url).toBe('/Videos/item-1/stream.mp4');
+    });
+});
+
+/**
+ * `reefin` PR #46 adds `Container` and `MimeType` to `PlaybackSessionStreamDescriptor`. These cover
+ * the perimeter that restores: #24 had to fold remux and transcode over non-HLS onto legacy because
+ * the effective output container was reported nowhere, cutting the v2 path down to DirectPlay + HLS
+ * and biasing the canary's play-method metrics by construction (issue #44 §8-A).
+ *
+ * The invariant under all of them: the decision is read off the descriptor's reported fields, never
+ * off the URL. Each descriptor URL below is deliberately opaque about its own format, so a test can
+ * only pass by consuming `MimeType`.
+ */
+describe('applyV2PlaybackUrlToStreamInfo() - reefin #46 descriptor', () => {
+    let logger: { debug: ReturnType<typeof vi.fn> };
+    let apiClient: PlaybackUrlResolvingApiClient;
+
+    beforeEach(() => {
+        logger = { debug: vi.fn() };
+        apiClient = {
+            getUrl: vi.fn((url: string) => `https://example.com${url}`)
+        };
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('applies a Remux over http using the reported MimeType', async () => {
+        // The case #24 had to decline outright. `/v2/opaque` names no container, so the reported
+        // MimeType is the only possible source for `video/x-matroska`.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Remux' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'mkv',
+                    MimeType: 'video/x-matroska'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            mimeType: 'video/mp4',
+            playMethod: 'Transcode',
+            playSessionId: 'legacy-id',
+            transcodingOffsetTicks: 30000000
+        };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            // No directPlayMimeType: the server's report is what carries this case, not the caller.
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+        expect(streamInfo.url).toBe('https://example.com/v2/opaque');
+        expect(streamInfo.playMethod).toBe('DirectStream');
+        expect(streamInfo.mimeType).toBe('video/x-matroska');
+        // The legacy transcode offset does not survive onto the v2 URL.
+        expect(streamInfo.transcodingOffsetTicks).toBe(0);
+        expect(streamInfo.executionDecision?.container).toBe('mkv');
+        expect(streamInfo.executionDecision?.source).toBe('v2');
+    });
+
+    it('applies a Transcode over http using the reported MimeType', async () => {
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'mp4',
+                    MimeType: 'video/mp4'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            mimeType: 'video/x-matroska',
+            playMethod: 'DirectPlay',
+            transcodingOffsetTicks: 0
+        };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            { requestOptions: { allowAudioStreamCopy: false } },
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+        expect(streamInfo.playMethod).toBe('Transcode');
+        expect(streamInfo.mimeType).toBe('video/mp4');
+        expect(streamInfo.executionDecision).toEqual({
+            source: 'v2',
+            url: 'https://example.com/v2/opaque',
+            playMethod: 'Transcode',
+            mimeType: 'video/mp4',
+            transcodingOffsetTicks: 0,
+            playSessionId: 'v2-session-id',
+            playbackSessionId: 'server-session-1',
+            protocol: 'Http',
+            container: 'mp4',
+            retry: {
+                isAlreadyFallbacking: true,
+                preventsVideoStreamCopy: false,
+                preventsAudioStreamCopy: true
+            }
+        });
+    });
+
+    it('prefers the reported MimeType over the caller directPlayMimeType on DirectPlay', async () => {
+        // The server is the authority on what the delivery endpoint will send. The caller's value,
+        // derived from the *source* container, must not win over it.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'DirectPlay' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'webm',
+                    MimeType: 'video/webm'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {};
+
+        await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            { directPlayMimeType: 'video/x-matroska' },
+            { ...baseDeps(), logger }
+        );
+
+        expect(streamInfo.mimeType).toBe('video/webm');
+        expect(streamInfo.executionDecision?.container).toBe('webm');
+    });
+
+    it('uses the reported playlist MimeType on HLS and never depends on Container', async () => {
+        // PR #46 notes a v2 HLS response may carry `Container: null` with a correct `MimeType`. The
+        // HLS path must key off `Protocol` alone; a decision that consulted `Container` here would
+        // decline this response.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Hls',
+                    Container: null,
+                    MimeType: 'application/vnd.apple.mpegurl'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = { mimeType: 'video/mp4' };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+        expect(streamInfo.mimeType).toBe('application/vnd.apple.mpegurl');
+        // Reported as absent rather than coerced to a placeholder.
+        expect(streamInfo.executionDecision?.container).toBeUndefined();
+        expect(streamInfo.executionDecision?.protocol).toBe('Hls');
+    });
+
+    it('reports the HLS segment container without letting it reach mimeType', async () => {
+        // On HLS the container describes the *segments*; `url` addresses the playlist. Both are
+        // carried, and they must not be conflated.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Hls',
+                    Container: 'ts',
+                    MimeType: 'application/vnd.apple.mpegurl'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {};
+
+        await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(streamInfo.executionDecision?.container).toBe('ts');
+        expect(streamInfo.mimeType).toBe('application/vnd.apple.mpegurl');
+    });
+
+    it('treats a null MimeType as absence, not as a value (transcode over http declines)', async () => {
+        // The server sends `null` rather than `application/octet-stream` when it has no mapping for
+        // the container, precisely so a client can tell "unknown" from "opaque bytes". Writing the
+        // null through - or substituting a placeholder - would be the failure this asserts against.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'weird',
+                    MimeType: null
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {
+            url: 'https://example.com/legacy',
+            mimeType: 'video/mp4',
+            playMethod: 'Transcode',
+            transcodingOffsetTicks: 30000000
+        };
+        const snapshot = { ...streamInfo };
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        // Not one field moved - the URL included. A reported Container is NOT a licence to derive
+        // a mime type client-side and overrule the server's own "I don't know".
+        expect(streamInfo).toEqual(snapshot);
+        expect(logger.debug).toHaveBeenCalledWith(
+            expect.stringContaining('cannot supply a complete execution state')
+        );
+    });
+
+    it('falls back to the caller directPlayMimeType when a null MimeType lands on DirectPlay', async () => {
+        // DirectPlay serves the source file itself, so the caller's value describes the *source*
+        // and is not a guess at a server-side choice. This keeps a pre-#46 server on exactly the
+        // #24 behavior instead of regressing it.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'DirectPlay' } },
+            { data: { Url: '/v2/opaque', Protocol: 'Http', MimeType: null } }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {};
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            { directPlayMimeType: 'video/mp4' },
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+        expect(streamInfo.mimeType).toBe('video/mp4');
+    });
+
+    it('falls back to the HLS playlist type when a pre-#46 server reports no MimeType', async () => {
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            { data: { Url: '/v2/opaque', Protocol: 'Hls' } }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {};
+
+        const applied = await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+        expect(streamInfo.mimeType).toBe('application/x-mpegURL');
+        expect(streamInfo.executionDecision?.container).toBeUndefined();
+    });
+
+    it('carries retry metadata with no URL heuristic left to find, on a v2 retry', async () => {
+        // Issue #44 requirement 4. `onPlaybackError`'s ladder used to recover its inputs with
+        // `url.includes('transcodereasons')` and `url.indexOf('allowvideostreamcopy=false')`. A v2
+        // URL carries neither, so under the old heuristics every flag read false and the ladder
+        // degraded silently. Here the client has already retried with stream copy disabled: the
+        // metadata must reflect that from the request options, while the URL stays free of both
+        // substrings.
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-2', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'mp4',
+                    MimeType: 'video/mp4'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo: V2PatchableStreamInfo = {};
+
+        await applyV2PlaybackUrlToStreamInfo(
+            streamInfo,
+            baseParams(api),
+            apiClient,
+            {
+                requestOptions: {
+                    allowVideoStreamCopy: false,
+                    allowAudioStreamCopy: false
+                }
+            },
+            { ...baseDeps(), logger }
+        );
+
+        const url = streamInfo.url?.toLowerCase() ?? '';
+        expect(url).not.toContain('transcodereasons');
+        expect(url).not.toContain('allowvideostreamcopy');
+        expect(url).not.toContain('allowaudiostreamcopy');
+
+        // The state the URL cannot carry is carried explicitly instead.
+        expect(streamInfo.executionDecision?.retry).toEqual({
+            isAlreadyFallbacking: true,
+            preventsVideoStreamCopy: true,
+            preventsAudioStreamCopy: true
+        });
+    });
+
+    it('exposes Container and MimeType on the resolved result verbatim', async () => {
+        const request = mockPostThenGet(
+            { data: { Id: 'server-session-1', Method: 'Remux' } },
+            {
+                data: {
+                    Url: '/v2/opaque',
+                    Protocol: 'Http',
+                    Container: 'mkv',
+                    MimeType: 'video/x-matroska'
+                }
+            }
+        );
+        const api = createMockApi(request);
+
+        const result = await resolveV2PlaybackUrl(baseParams(api), {
+            ...baseDeps(),
+            logger
+        });
+
+        // PascalCase on the wire, camelCase on the result - asserted so a rename on either side
+        // cannot pass silently.
+        expect(result?.container).toBe('mkv');
+        expect(result?.mimeType).toBe('video/x-matroska');
     });
 });

@@ -57,6 +57,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 { isEnabled: () => false, loadV2UrlModule, logger }
             );
 
@@ -75,6 +76,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 legacyStreamInfo(),
                 baseParams,
                 apiClient,
+                {},
                 { loadV2UrlModule, logger }
             );
 
@@ -97,6 +99,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 { isEnabled: () => true, loadV2UrlModule, logger }
             );
 
@@ -106,6 +109,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 expect.objectContaining({ isEnabled: expect.any(Function) })
             );
         });
@@ -120,6 +124,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 legacyStreamInfo(),
                 baseParams,
                 apiClient,
+                {},
                 {
                     isEnabled: () => true,
                     loadV2UrlModule: vi
@@ -134,7 +139,49 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 legacyStreamInfo(),
                 baseParams,
                 apiClient,
+                {},
                 expect.objectContaining({ generatePlaySessionId })
+            );
+        });
+
+        it('applies the execution context through to the wrapped module', async () => {
+            // Regression guard for an arity mismatch that no other test in either suite can see.
+            // `applyV2PlaybackUrlToStreamInfo` takes `(streamInfo, params, apiClient, context,
+            // deps)`. If this trigger forwards its resolve deps as arg 4 - the pre-#24 shape - they
+            // land in `context` and the caller's real context is dropped on the floor, silently:
+            // `directPlayMimeType` and `requestOptions` arrive `undefined`, which reads as "v2
+            // cannot supply a complete execution state" and collapses the v2 path to HLS-only,
+            // with the stream-copy retry flags stuck at false. Every test that calls the wrapped
+            // module directly still passes, because they build `context` themselves. Only a test
+            // driving the trigger can catch it.
+            const applyV2PlaybackUrlToStreamInfo = vi
+                .fn()
+                .mockResolvedValue(true);
+            const context = {
+                directPlayMimeType: 'video/mp4',
+                requestOptions: { allowVideoStreamCopy: false }
+            };
+
+            await applyV2PlaybackUrlIfEnabled(
+                legacyStreamInfo(),
+                baseParams,
+                apiClient,
+                context,
+                {
+                    isEnabled: () => true,
+                    loadV2UrlModule: vi
+                        .fn()
+                        .mockResolvedValue({ applyV2PlaybackUrlToStreamInfo }),
+                    logger
+                }
+            );
+
+            const args = applyV2PlaybackUrlToStreamInfo.mock.calls[0];
+            expect(args[3]).toEqual(context);
+            // ...and the deps must NOT have been merged into the context slot.
+            expect(args[3]).not.toHaveProperty('isEnabled');
+            expect(args[4]).toEqual(
+                expect.objectContaining({ isEnabled: expect.any(Function) })
             );
         });
 
@@ -158,6 +205,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 { isEnabled: () => true, loadV2UrlModule, logger }
             );
 
@@ -172,6 +220,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 {
                     isEnabled: () => true,
                     loadV2UrlModule: vi.fn().mockResolvedValue({
@@ -194,6 +243,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 {
                     isEnabled: () => true,
                     loadV2UrlModule: vi
@@ -220,6 +270,7 @@ describe('applyV2PlaybackUrlIfEnabled()', () => {
                 streamInfo,
                 baseParams,
                 apiClient,
+                {},
                 {
                     isEnabled: () => true,
                     loadV2UrlModule: vi.fn().mockResolvedValue({

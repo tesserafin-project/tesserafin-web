@@ -103,6 +103,21 @@ export interface PlaybackSessionStreamDescriptor {
     ServedBy?: number;
     FallbackReason?: PlaybackSessionFallbackReason | null;
     SubtitleUrl?: string | null;
+    /** `reefin` PR #46: the *effective* output container the server chose, read off the same
+     * `StreamInfo` that produced `Url` - so it is literally what the URL carries (`/stream.{container}`
+     * over `Http`, `&SegmentContainer={container}` over `Hls`, where it is the **segment** container,
+     * not `m3u8`). This is the field whose absence forced #24 to fold remux/transcode back onto
+     * legacy. Nullable: a pre-#46 server omits it, and PR #46 notes a v2 HLS response may carry
+     * `Container: null` alongside a correct `MimeType` - which is why nothing on the HLS path below
+     * is allowed to depend on it. */
+    Container?: string | null;
+    /** `reefin` PR #46: the content type the delivery endpoint will actually respond with -
+     * `application/vnd.apple.mpegurl` over HLS (the **playlist's** type, not the segments'),
+     * otherwise the server's own `GetMimeType("." + Container)`. `null` when the container has no
+     * known mapping: the server distinguishes "I don't know" from "opaque bytes" and deliberately
+     * does not send `application/octet-stream`, so a `null` here must be handled as absence rather
+     * than consumed as a value. */
+    MimeType?: string | null;
 }
 
 /** Calls `GET Playback/Sessions/{id}/Stream` directly through the session's `axiosInstance` - see
@@ -193,6 +208,13 @@ export interface V2PlaybackUrlResult {
      * `POST`'s `DecisionVersion`, which this module never reads. */
     servedBy?: number;
     fallbackReason?: PlaybackSessionFallbackReason | null;
+    /** The server-reported effective output container (`reefin` #46). `undefined` against a pre-#46
+     * server, and legitimately `undefined` on HLS even against a #46 server. */
+    container?: string;
+    /** The server-reported content type of what `url` delivers (`reefin` #46). `undefined` when the
+     * server reported `null`, i.e. it has no mapping for the container - never coerced to a
+     * placeholder type. */
+    mimeType?: string;
 }
 
 const LOG_PREFIX = '[playbackSessionV2Url]';
@@ -360,7 +382,13 @@ export async function resolveV2PlaybackUrl(
             playbackSessionId: session.Id,
             subtitleUrl: descriptor.SubtitleUrl ?? undefined,
             servedBy: descriptor.ServedBy,
-            fallbackReason: descriptor.FallbackReason ?? null
+            fallbackReason: descriptor.FallbackReason ?? null,
+            // `?? undefined` collapses the server's explicit `null` ("no mapping exists") into
+            // plain absence, so exactly one shape reaches the decision builder. The distinction the
+            // server draws is between "known" and "unknown", and both `null` and a missing field
+            // mean unknown here.
+            container: descriptor.Container ?? undefined,
+            mimeType: descriptor.MimeType ?? undefined
         };
     } catch (err) {
         // Robust fallback (module-level doc comment): network failures, 4xx/5xx responses (incl.
@@ -398,38 +426,64 @@ export interface V2PatchableStreamInfo {
 /** Context the caller (`playbackmanager.js`) must supply so a v2 success can produce a *complete*
  * execution state. Everything here is information the v2 responses do not carry. */
 export interface V2ExecutionContext {
-    /** Mime type to use when the v2 decision is a `DirectPlay` over a non-HLS protocol: the served
-     * bytes are then the source file itself, so the caller derives this from the media source's own
-     * container (`getMimeType(type, mediaSource.Container)`). `undefined` when the caller cannot
-     * determine it, which forces a whole-decision fallback to legacy rather than a guess. */
+    /** Fallback mime type for a `DirectPlay` over a non-HLS protocol **when the server reported
+     * none** (a pre-#46 server): the served bytes are then the source file itself, so the caller
+     * derives this from the media source's own container (`getMimeType(type, mediaSource.Container)`)
+     * - a statement about the source, not a guess at a server-side choice. Since `reefin` #46 this
+     * is no longer the primary path: `PlaybackSessionStreamDescriptor.MimeType` outranks it for every
+     * play method. `undefined` when the caller cannot determine it, which forces a whole-decision
+     * fallback to legacy rather than a guess. */
     directPlayMimeType?: string;
     /** The `PlaybackInfo` request options this stream was requested with - the honest source for the
      * stream-copy retry flags (see `playbackExecutionDecision.ts`). */
     requestOptions?: PlaybackRequestOptions | null;
 }
 
+/** Used only when an HLS response carries no `MimeType` - i.e. a pre-#46 server, which reports
+ * neither field. The playlist type is fixed by the protocol itself, so it is knowable without the
+ * server saying so; the output *container* never is, which is the whole asymmetry #46 resolves. */
+const HLS_PLAYLIST_MIME_TYPE = 'application/x-mpegURL';
+
 /**
- * Builds the complete v2 execution state, or `null` when the v2 responses cannot supply every field.
+ * Builds the complete v2 execution state, or `null` when neither the server nor the caller can name
+ * the type of what will be delivered.
  *
- * The mime-type/offset matrix (the part the v2 contract does not cover) - `PlaybackSessionStream
- * Descriptor` carries `Url`/`Protocol`/`ServedBy`/`FallbackReason`/`SubtitleUrl` and no container:
+ * **The mime type comes from the server, never from the URL.** `reefin` #46 added `MimeType` (and
+ * `Container`) to `PlaybackSessionStreamDescriptor` precisely so this function no longer has to
+ * infer the output format. #24 had to fold **all** remux and transcode over non-HLS back onto the
+ * legacy decision, because the chosen output container was reported nowhere and borrowing the legacy
+ * plan's `TranscodingContainer` would have re-created the v2-URL/legacy-state mix this lane exists to
+ * remove. That restriction cut the v2 path down to DirectPlay + HLS and would have biased the
+ * canary's play-method metrics by construction (issue #44 §8-A). With `MimeType` reported, the
+ * server's own answer is authoritative for every play method, so the full perimeter is restored.
  *
- * - **HLS, any play method** - mime is the HLS playlist type; the offset is 0 because an HLS
- *   playlist is always addressed from its own start.
- * - **DirectPlay over a non-HLS protocol** - the served bytes are the source file, so the caller's
- *   `directPlayMimeType` (derived from `mediaSource.Container`) is exactly right; offset 0 because
- *   nothing is being re-timestamped.
- * - **Remux/Transcode over a non-HLS protocol** - the output container is chosen by the server and
- *   is not reported anywhere in the v2 responses. Deriving it from the *legacy* plan's
- *   `TranscodingContainer` would pair a v2 URL with legacy-derived state, which is the precise
- *   defect this lane removes, so this case returns `null` and the caller keeps the legacy decision
- *   whole.
+ * Resolution order, most authoritative first:
  *
- * Note the resulting invariant: `transcodingOffsetTicks` is always 0 on the v2 path. That is not a
- * simplification - the only case legacy ever sets it non-zero (transcode, non-HLS subprotocol,
- * no `copytimestamps`) is exactly the case that falls back above. It is also the direct fix for the
- * second half of issue #41, where a non-zero legacy offset could survive onto a v2 direct-play URL
- * and shift every reported position.
+ * 1. **`result.mimeType`** - what the delivery endpoint will actually respond with, for any protocol
+ *    and any play method. This single source is what re-enables Remux and Transcode over non-HLS.
+ * 2. **HLS with no reported mime** - the playlist type is implied by the protocol (see
+ *    `HLS_PLAYLIST_MIME_TYPE`). Deliberately keyed off `protocol` alone and never off `container`:
+ *    #46 notes an HLS response may carry `Container: null` with a correct `MimeType`, and on HLS the
+ *    container describes the *segments* rather than the playlist that `url` addresses.
+ * 3. **DirectPlay over non-HLS with no reported mime** - the served bytes are the source file
+ *    itself, so the caller's `directPlayMimeType` (from `mediaSource.Container`) is not a guess about
+ *    a server-side choice; it describes the source, which the client legitimately knows. Retained so
+ *    a pre-#46 server keeps exactly the #24 behavior rather than regressing.
+ * 4. **Otherwise** (remux/transcode over non-HLS against a pre-#46 server, or a container the server
+ *    has no mime mapping for) - nothing can name the output type without inventing it, so this
+ *    returns `null` and the caller keeps the legacy decision whole. Note the server sends `null`
+ *    rather than `application/octet-stream` exactly so this case stays distinguishable.
+ *
+ * `Container` is carried onto the decision but is never used to *derive* the mime type: the server
+ * already applied its own container-to-mime mapping in step 1, and re-deriving client-side would
+ * substitute our table for its authority and could disagree with the header actually sent.
+ *
+ * Note the resulting invariant: `transcodingOffsetTicks` is still always 0 on the v2 path, and it is
+ * now a stronger statement than in #24, where transcode-over-non-HLS could not reach here at all.
+ * It holds because the v2 `url` is always addressed from its own start - the offset exists in legacy
+ * only to compensate for a transcode URL whose timestamps were rebased, which is a property of how
+ * legacy builds its URL, not of transcoding. This is the direct fix for the second half of issue
+ * #41, where a non-zero legacy offset could survive onto a v2 URL and shift every reported position.
  */
 function buildV2ExecutionDecision(
     result: V2PlaybackUrlResult,
@@ -438,10 +492,10 @@ function buildV2ExecutionDecision(
 ): PlaybackExecutionDecision | null {
     const isHls = result.protocol === PlaybackDecisionStreamingProtocol.Hls;
 
-    let mimeType: string | undefined;
-    if (isHls) {
-        mimeType = 'application/x-mpegURL';
-    } else if (result.playMethod === 'DirectPlay') {
+    let mimeType = result.mimeType;
+    if (!mimeType && isHls) {
+        mimeType = HLS_PLAYLIST_MIME_TYPE;
+    } else if (!mimeType && result.playMethod === 'DirectPlay') {
         mimeType = context.directPlayMimeType;
     }
 
@@ -458,6 +512,7 @@ function buildV2ExecutionDecision(
         playSessionId: result.playSessionId,
         playbackSessionId: result.playbackSessionId,
         protocol: result.protocol,
+        container: result.container,
         // Derived from the v2 play method, not the legacy one: a v2 DirectPlay result must not
         // inherit the legacy plan's "already transcoding" state.
         retry: buildRetryMetadata(result.playMethod, context.requestOptions)

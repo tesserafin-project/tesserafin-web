@@ -3549,10 +3549,13 @@ export class PlaybackManager {
                         },
                         apiClient,
                         {
-                            // The v2 responses carry no container, so a v2 DirectPlay result needs
-                            // the source container's mime type from here. When v2 lands on a
-                            // remux/transcode over a non-HLS protocol, no correct value exists and
-                            // the whole legacy decision is kept instead (see V2ExecutionContext).
+                            // Fallback only. Since `reefin` #46 the v2 `GET .../Stream` response
+                            // reports the effective output `Container` and `MimeType`, and the
+                            // server's `MimeType` outranks this for every play method - which is
+                            // what re-enables remux and transcode on the v2 path (issue #44 §8-A).
+                            // This still covers a pre-#46 server, where a v2 DirectPlay needs the
+                            // source container's mime type from here; a remux/transcode against
+                            // such a server keeps the whole legacy decision (see V2ExecutionContext).
                             directPlayMimeType: getMimeType(
                                 (item.MediaType || '').toLowerCase(),
                                 (mediaSource.Container || '').toLowerCase()

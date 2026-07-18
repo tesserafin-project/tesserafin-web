@@ -71,6 +71,14 @@ export interface PlaybackExecutionDecision {
     playbackSessionId?: string;
     /** v2 only: the streaming protocol the server reported (e.g. `Hls`). */
     protocol?: string;
+    /** v2 only: the effective output container the server reported (`reefin` #46 -
+     * `PlaybackSessionStreamDescriptor.Container`); the segment container when `protocol` is `Hls`.
+     * Carried rather than consumed: `mimeType` above is the server's own mapping of this container
+     * and is what playback actually uses, while this is what lets a canary attribute a play method
+     * to a concrete output format without re-parsing the URL. `undefined` against a pre-#46 server,
+     * and legitimately `undefined` on HLS even against a #46 server, so nothing may branch on its
+     * presence. */
+    container?: string;
     retry: PlaybackRetryMetadata;
 }
 
