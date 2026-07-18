@@ -38,8 +38,34 @@
  *     the setting nor an explicit option is set - i.e. that's the default-path behavior already.
  *   - Per-codec HDR/Dolby Vision profile/level/bit-depth detail (`browserDeviceProfile.js`'s
  *     `CodecProfiles` `Conditions` machinery, ~600 lines) is not ported; codec entries below leave
- *     `MaxLevel`/`MaxBitDepth`/`VideoRangeTypes`/`MaxResolution`/`MaxBitrate` unset, which the
- *     generated model docs each define as "unbounded/unknown" - a safe omission, never a false claim.
+ *     `MaxLevel`/`MaxBitDepth`/`MaxResolution`/`MaxBitrate` unset, which the generated model docs
+ *     each define as "unbounded/unknown" - a safe omission, never a false claim.
+ *
+ * REQUIRED ON THE WIRE vs UNEXPRESSED RESTRICTION - two different claims, deliberately not blurred.
+ * `Profiles` and `VideoRangeTypes` were previously listed alongside the nullable fields above as
+ * safely "unset". That was wrong, and it is the reason every real `POST /Playback/Sessions` was
+ * rejected `400` ("The Profiles field is required.", "The VideoRangeTypes field is required."):
+ *   (a) STRUCTURAL REQUIREMENT - the server's `VideoCodecCapability` (`Reefin.Playback.Decision`) is
+ *       a positional record whose `Profiles`/`VideoRangeTypes` are NON-NULLABLE
+ *       `IReadOnlyList<string>`, unlike `MaxLevel`/`MaxBitDepth`/`MaxResolution`/`MaxBitrate` which
+ *       are nullable and genuinely omittable. ASP.NET model binding therefore requires both members
+ *       to be PRESENT on every serialized entry. This is a fact about the wire format alone; it says
+ *       nothing about what the values mean. The generated TS model marks both `?`-optional, so
+ *       omitting them type-checks cleanly - the compiler cannot catch this, only the server can.
+ *   (b) VALUE SEMANTICS - being obliged to send a field is not the same as knowing a restriction.
+ *       Since this module ports none of the `Conditions` machinery, it has detected no restriction
+ *       to express, and each value below says exactly that and no more:
+ *         - `Profiles: []` - an EMPTY collection meaning "no profile restriction is expressed", the
+ *           reading the server's own member doc assigns to it. Not a guess at "high"/"main"/
+ *           "baseline"; naming a profile would claim detection that never happened.
+ *         - `VideoRangeTypes: ['SDR']` - the conservative floor, and precisely the server's own
+ *           legacy-adapter fallback when a client expresses nothing
+ *           (`Reefin.Playback.Dlna/ClientCapabilitiesMapper.cs`: `videoRangeTypes = ["SDR"]`;
+ *           `PlaybackEngine.cs` treats anything without `"HDR10"` as SDR). Claiming HDR10/HLG/Dolby
+ *           Vision here without real detection would be a false capability, not a safe default.
+ *       An empty collection is a value the server can read; an absent member is a request it
+ *       rejects. Emitting `[]` is not "leaving it unknown" - it is stating the unexpressed
+ *       restriction in the one form the contract accepts.
  *   - Container aliasing/remux quirks (`ts` for mp3, `webm`/`m4a`/`m4b` duplicate entries) and the
  *     `Static` (offline sync) transcoding context are not ported; only the `Streaming`-context
  *     equivalents relevant to live playback are represented.
@@ -288,8 +314,11 @@ function canPlayMkv(
 // DecodeCapabilities
 // ---------------------------------------------------------------------------------------------
 
+/** `Profiles`/`VideoRangeTypes` are emitted on EVERY entry because the server record requires them
+ * structurally (see the file-level doc comment's "REQUIRED ON THE WIRE vs UNEXPRESSED RESTRICTION"
+ * section for why that is a separate claim from what the values mean). */
 function videoCodecCapability(codec: string): VideoCodecCapability {
-    return { Codec: codec };
+    return { Codec: codec, Profiles: [], VideoRangeTypes: ['SDR'] };
 }
 
 function audioCodecCapability(codec: string): AudioCodecCapability {

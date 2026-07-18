@@ -258,6 +258,82 @@ describe('buildDecodeCapabilities()', () => {
         );
     });
 
+    /** The server's `VideoCodecCapability` (`Reefin.Playback.Decision`) is a positional record whose
+     * `Profiles`/`VideoRangeTypes` are non-nullable `IReadOnlyList<string>`, so both members must be
+     * PRESENT on every serialized entry or ASP.NET model binding rejects the whole request `400`
+     * ("The Profiles field is required."). The generated TS model marks both `?`-optional, so
+     * omitting them type-checks - nothing but a test like this can catch a regression. */
+    describe('VideoCodecs wire contract', () => {
+        /** Every device shape that emits at least one video codec. `bareDevice()` is deliberately
+         * excluded: it emits `VideoCodecs: []`, which would satisfy any per-entry loop vacuously. */
+        const populatedDevices: [string, PlaybackCapabilityInputs][] = [
+            ['chrome desktop', chromeDesktop().inputs],
+            ['safari mac', safariMac().inputs]
+        ];
+
+        it.each(populatedDevices)(
+            'emits Profiles and VideoRangeTypes on EVERY video codec entry (%s)',
+            (_name, inputs) => {
+                const decode = buildDecodeCapabilities(inputs);
+                const codecs = decode.VideoCodecs ?? [];
+
+                // Anti-vacuity: an empty list would make every per-entry check below pass for free.
+                expect(codecs.length).toBeGreaterThan(0);
+
+                // Structural assertion over the WHOLE list, not a hand-picked entry: reduce to the
+                // set of property keys present per entry so a single missing field fails loudly and
+                // names the offending codec.
+                expect(
+                    codecs.map((c) => ({
+                        Codec: c.Codec,
+                        hasProfiles: Object.hasOwn(c, 'Profiles'),
+                        hasVideoRangeTypes: Object.hasOwn(c, 'VideoRangeTypes')
+                    }))
+                ).toEqual(
+                    codecs.map((c) => ({
+                        Codec: c.Codec,
+                        hasProfiles: true,
+                        hasVideoRangeTypes: true
+                    }))
+                );
+            }
+        );
+
+        it('emits exactly Profiles: [] and VideoRangeTypes: ["SDR"] for the current builder', () => {
+            const decode = buildDecodeCapabilities(chromeDesktop().inputs);
+            const codecs = decode.VideoCodecs ?? [];
+            expect(codecs.length).toBeGreaterThan(0);
+
+            for (const codec of codecs) {
+                // `[]` = "no profile restriction is expressed" (the server member doc's own reading),
+                // NOT a guess at high/main/baseline. `['SDR']` mirrors the server's legacy-adapter
+                // fallback (ClientCapabilitiesMapper: `videoRangeTypes = ["SDR"]`) - never an
+                // undetected HDR10/HLG/Dolby Vision claim.
+                expect(codec.Profiles, `codec ${codec.Codec}`).toEqual([]);
+                expect(codec.VideoRangeTypes, `codec ${codec.Codec}`).toEqual([
+                    'SDR'
+                ]);
+            }
+        });
+
+        it('both fields survive JSON serialization on the full ClientCapabilities payload', () => {
+            // The whole fix hinges on an EMPTY array reaching the wire. A builder-level assertion
+            // would still pass if serialization dropped empty collections, and the server would go
+            // back to 400 - so round-trip the real payload the client POSTs.
+            const caps = buildClientCapabilities(chromeDesktop().inputs);
+            const wire = JSON.parse(JSON.stringify(caps));
+            const codecs = wire?.Decode?.VideoCodecs ?? [];
+
+            expect(codecs.length).toBeGreaterThan(0);
+            for (const codec of codecs) {
+                expect(codec.Profiles, `codec ${codec.Codec}`).toEqual([]);
+                expect(codec.VideoRangeTypes, `codec ${codec.Codec}`).toEqual([
+                    'SDR'
+                ]);
+            }
+        });
+    });
+
     describe('subtitle delivery', () => {
         it('declares vtt only when supportsTextTracks is true', () => {
             const withTracks = buildDecodeCapabilities({
