@@ -25,7 +25,9 @@ import '../../elements/emby-button/emby-button';
 import '../../elements/emby-textarea/emby-textarea';
 
 function fillThemes(select, selectedTheme) {
-    skinManager.getThemes().then((themes) => {
+    // Picker-safe subset (excludes `experimental` themes, e.g. Reefin Glass pending issue #18) —
+    // not `skinManager.getThemes()`, which still resolves those by id for `setTheme()`.
+    skinManager.getSelectableThemes().then((themes) => {
         select.innerHTML = themes
             .map((t) => {
                 return `<option value="${t.id}">${escapeHtml(t.name)}</option>`;

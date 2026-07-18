@@ -3,13 +3,22 @@ import { EventType } from 'constants/eventType';
 
 import {
     getDefaultTheme,
-    getThemes as getConfiguredThemes
+    getThemes as getConfiguredThemes,
+    getSelectableThemes as getConfiguredSelectableThemes
 } from './settings/webSettings';
 
 let currentThemeId;
 
 function getThemes() {
     return getConfiguredThemes();
+}
+
+// Picker-safe subset of `getThemes()` — excludes `experimental` registry entries (Reefin Glass,
+// pending issue #18). `getThemes()`/`getThemeStylesheetInfo` above still resolve those by id, so a
+// theme already applied (or set programmatically) keeps working; only selector UIs should call
+// this instead of `getThemes()`. See `components/displaySettings/displaySettings.js#fillThemes`.
+function getSelectableThemes() {
+    return getConfiguredSelectableThemes();
 }
 
 function getThemeStylesheetInfo(id) {
@@ -58,5 +67,6 @@ function setTheme(id) {
 
 export default {
     getThemes,
+    getSelectableThemes,
     setTheme
 };

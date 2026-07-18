@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     THEME_REGISTRY,
     getDefaultThemeEntry,
+    getSelectableThemeEntries,
     getThemeEntry
 } from './registry';
 
@@ -25,6 +26,17 @@ describe('THEME_REGISTRY', () => {
         expect(glass?.defaultMode).toBe('dark');
         expect(glass?.legacyPreset).toBeUndefined();
         expect(glass?.default).toBeUndefined();
+    });
+
+    it('marks official.glass as experimental (hidden from selectors until issue #18)', () => {
+        expect(getThemeEntry('official.glass')?.experimental).toBe(true);
+    });
+
+    it('does not mark any other entry as experimental', () => {
+        for (const theme of THEME_REGISTRY) {
+            if (theme.id === 'official.glass') continue;
+            expect(theme.experimental).toBeUndefined();
+        }
     });
 
     it('includes the six legacy themes, marked as legacy presets', () => {
@@ -104,5 +116,29 @@ describe('getThemeEntry()', () => {
 describe('getDefaultThemeEntry()', () => {
     it('returns the official.classic entry', () => {
         expect(getDefaultThemeEntry().id).toBe('official.classic');
+    });
+});
+
+describe('getSelectableThemeEntries()', () => {
+    it('excludes experimental entries (official.glass)', () => {
+        const selectable = getSelectableThemeEntries();
+        expect(selectable.some((theme) => theme.id === 'official.glass')).toBe(
+            false
+        );
+    });
+
+    it('still includes every non-experimental builtin theme', () => {
+        const selectable = getSelectableThemeEntries();
+        const nonExperimentalIds = THEME_REGISTRY.filter(
+            (theme) => !theme.experimental
+        ).map((theme) => theme.id);
+
+        expect(selectable.map((theme) => theme.id)).toEqual(nonExperimentalIds);
+    });
+
+    it('is a strict subset of THEME_REGISTRY, one entry short (official.glass)', () => {
+        expect(getSelectableThemeEntries()).toHaveLength(
+            THEME_REGISTRY.length - 1
+        );
     });
 });

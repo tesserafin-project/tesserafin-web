@@ -1,5 +1,8 @@
 import DefaultConfig from '../../config.json';
-import { THEME_REGISTRY } from '../../themes/registry.ts';
+import {
+    THEME_REGISTRY,
+    getSelectableThemeEntries
+} from '../../themes/registry.ts';
 import fetchLocal from '../../utils/fetchLocal.ts';
 
 let data;
@@ -67,18 +70,33 @@ export function getServers() {
 // `config.json`'s own `themes` field is no longer read (kept on disk only for backward
 // compatibility, see the note on `WebConfig.themes` in `types/webConfig.ts`). Deriving from the
 // registry is synchronous, so both functions below no longer need to wait on `getConfig()`.
-const REGISTRY_THEMES = THEME_REGISTRY.map((entry) => ({
+const toLegacyTheme = (entry) => ({
     name: entry.name,
     id: entry.id,
     color: entry.color,
     default: entry.default
-}));
+});
+
+// Every registry entry, `experimental` ones (Reefin Glass, pending issue #18) included — needed so
+// `themeManager.js#getThemeStylesheetInfo` can still resolve/apply an experimental theme by id.
+// Selector UIs must use `getSelectableThemes()` below instead.
+const REGISTRY_THEMES = THEME_REGISTRY.map(toLegacyTheme);
+
+// Picker-safe subset — excludes `experimental` entries. This is what the legacy display-settings
+// `<select>` (`components/displaySettings/displaySettings.js#fillThemes`, via
+// `scripts/themeManager.js#getSelectableThemes`) must read.
+const SELECTABLE_REGISTRY_THEMES =
+    getSelectableThemeEntries().map(toLegacyTheme);
 
 const internalDefaultTheme =
     REGISTRY_THEMES.find((theme) => theme.default) || REGISTRY_THEMES[0];
 
 export function getThemes() {
     return Promise.resolve(REGISTRY_THEMES);
+}
+
+export function getSelectableThemes() {
+    return Promise.resolve(SELECTABLE_REGISTRY_THEMES);
 }
 
 export const getDefaultTheme = () => internalDefaultTheme;
