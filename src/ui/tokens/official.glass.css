@@ -43,8 +43,11 @@
     --rf-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
     --rf-density: comfortable;
     --rf-blur-sm: 8px;
+    --rf-backdrop-filter-sm: blur(8px);
     --rf-blur-md: 16px;
+    --rf-backdrop-filter-md: blur(16px);
     --rf-blur-lg: 28px;
+    --rf-backdrop-filter-lg: blur(28px);
     --rf-color-background: #0b0e14;
     --rf-color-surface: rgba(22, 27, 38, 0.55);
     --rf-color-surface-variant: rgba(30, 37, 52, 0.6);
