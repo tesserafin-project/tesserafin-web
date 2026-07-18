@@ -9,8 +9,8 @@ import type { MediaCardProps } from 'ui';
  * `/library/:libraryId` (RFC-0005 §11 WP-C step 4). `/home`'s own adapter
  * (`apps/modern/features/home/utils/mediaCardProps.ts`) does the same job but is typed against
  * `lib/reefin-sdk`'s `BaseItemDto` (RFC-0005 §4.2) - a different, non-assignable nominal type from
- * the `ItemDto` this route still receives from the shared `useItem`/`useGetQueryFiltersLegacy`
- * hooks. Rather than force a
+ * the `ItemDto` this route's grid works in, which `useLibraryItems` produces by casting its
+ * `getItems` response to `ItemDtoQueryResult`. Rather than force a
  * generic cross-realm shared module (more coupling than the ~20 lines below are worth), this
  * re-implements only what a movies/tvshows grid card needs: `ImageApiClient` is re-imported
  * (type-only, no behavior duplicated) since `useApi().__legacyApiClient__` has the same shape either
