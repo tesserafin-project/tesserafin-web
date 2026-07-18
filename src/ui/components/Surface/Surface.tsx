@@ -1,32 +1,34 @@
 import React, { type FC, type HTMLAttributes, type ReactNode } from 'react';
 
-import './GlassSurface.scss';
+import './Surface.scss';
 
-export type GlassSurfaceVariant = 'glass' | 'opaque';
+export type SurfaceVariant = 'glass' | 'opaque';
 
-export interface GlassSurfaceProps extends HTMLAttributes<HTMLDivElement> {
+export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
     /** `'glass'` renders the frosted treatment (RFC-0005 §8.2); `'opaque'` is the plain, non-frosted surface. */
-    surface?: GlassSurfaceVariant;
+    variant?: SurfaceVariant;
     children?: ReactNode;
     className?: string;
 }
 
 /**
- * Frosted-glass surface primitive (RFC-0005 §8.2 `GlassSurface`), deliberately token-driven: the
- * same CSS renders flat under Reefin Classic (`--rf-blur-*: 0`, opaque `--rf-color-surface`) and
- * frosted under Reefin Glass (`--rf-blur-md` > 0, translucent `--rf-color-surface`) — this
- * component never branches on the active theme. Public slot: `data-rf-slot="surface"`.
+ * Surface primitive (RFC-0005 §6 `Surface`), deliberately token-driven: the same CSS renders flat
+ * under Reefin Classic (`--rf-backdrop-filter-md: none`, opaque `--rf-color-surface`) and frosted
+ * under Reefin Glass (`--rf-backdrop-filter-md: blur(16px)`, translucent `--rf-color-surface`) —
+ * this component never branches on the active theme. `variant="glass"` (the default) is the
+ * frosted-glass treatment (RFC-0005 §8.2); `variant="opaque"` is the plain surface. Public slot:
+ * `data-rf-slot="surface"`.
  */
-export const GlassSurface: FC<GlassSurfaceProps> = ({
-    surface = 'glass',
+export const Surface: FC<SurfaceProps> = ({
+    variant = 'glass',
     className,
     children,
     ...rest
 }) => {
     const classes = [
         'rf-surface',
-        surface === 'glass' && 'rf-surface--glass',
-        surface === 'opaque' && 'rf-surface--opaque',
+        variant === 'glass' && 'rf-surface--glass',
+        variant === 'opaque' && 'rf-surface--opaque',
         className
     ]
         .filter(Boolean)
@@ -39,4 +41,4 @@ export const GlassSurface: FC<GlassSurfaceProps> = ({
     );
 };
 
-export default GlassSurface;
+export default Surface;

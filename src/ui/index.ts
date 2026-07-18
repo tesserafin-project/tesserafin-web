@@ -8,11 +8,6 @@ export { EmptyState } from './components/states/EmptyState';
 export type { ErrorStateProps } from './components/states/ErrorState';
 export { ErrorState } from './components/states/ErrorState';
 export type {
-    GlassSurfaceProps,
-    GlassSurfaceVariant
-} from './components/GlassSurface/GlassSurface';
-export { GlassSurface } from './components/GlassSurface/GlassSurface';
-export type {
     LoadingStateProps,
     LoadingStateVariant
 } from './components/states/LoadingState';
@@ -33,5 +28,10 @@ export type {
     SortSelectProps
 } from './components/SortSelect/SortSelect';
 export { SortSelect } from './components/SortSelect/SortSelect';
+export type {
+    SurfaceProps,
+    SurfaceVariant
+} from './components/Surface/Surface';
+export { Surface } from './components/Surface/Surface';
 export type { TabItem, TabsProps } from './components/Tabs/Tabs';
 export { Tabs } from './components/Tabs/Tabs';

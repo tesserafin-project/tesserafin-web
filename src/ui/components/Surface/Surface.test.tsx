@@ -3,7 +3,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { GlassSurface } from './GlassSurface';
+import { Surface } from './Surface';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -23,10 +23,10 @@ afterEach(() => {
     container.remove();
 });
 
-describe('GlassSurface', () => {
+describe('Surface', () => {
     it('renders its children and the slot attribute', () => {
         act(() => {
-            root.render(<GlassSurface>Frosted content</GlassSurface>);
+            root.render(<Surface>Frosted content</Surface>);
         });
 
         const surface = container.querySelector('[data-rf-slot="surface"]');
@@ -36,7 +36,7 @@ describe('GlassSurface', () => {
 
     it('applies the glass modifier by default', () => {
         act(() => {
-            root.render(<GlassSurface>content</GlassSurface>);
+            root.render(<Surface>content</Surface>);
         });
 
         const surface = container.querySelector('[data-rf-slot="surface"]');
@@ -44,9 +44,9 @@ describe('GlassSurface', () => {
         expect(surface?.className).not.toContain('rf-surface--opaque');
     });
 
-    it('applies the opaque modifier when surface="opaque"', () => {
+    it('applies the opaque modifier when variant="opaque"', () => {
         act(() => {
-            root.render(<GlassSurface surface='opaque'>content</GlassSurface>);
+            root.render(<Surface variant='opaque'>content</Surface>);
         });
 
         const surface = container.querySelector('[data-rf-slot="surface"]');
@@ -57,9 +57,9 @@ describe('GlassSurface', () => {
     it('forwards className and standard div props', () => {
         act(() => {
             root.render(
-                <GlassSurface className='custom' id='panel'>
+                <Surface className='custom' id='panel'>
                     content
-                </GlassSurface>
+                </Surface>
             );
         });
 
