@@ -1,7 +1,11 @@
 import { Api, Jellyfin } from '@jellyfin/sdk';
 import { ApiClient } from 'jellyfin-apiclient';
 
-import { REEFIN_CLIENT_IDENTITY, ReefinApi, ReefinSdk } from 'lib/reefin-sdk';
+import {
+    REEFIN_CLIENT_IDENTITY,
+    ReefinApi,
+    ReefinSdk
+} from 'lib/reefin-sdk/client';
 import { safeDecodeURIComponent } from 'utils/url';
 
 /**
