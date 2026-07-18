@@ -286,8 +286,8 @@ describe('buildDecodeCapabilities()', () => {
                 expect(
                     codecs.map((c) => ({
                         Codec: c.Codec,
-                        hasProfiles: Object.hasOwn(c, 'Profiles'),
-                        hasVideoRangeTypes: Object.hasOwn(c, 'VideoRangeTypes')
+                        hasProfiles: 'Profiles' in c,
+                        hasVideoRangeTypes: 'VideoRangeTypes' in c
                     }))
                 ).toEqual(
                     codecs.map((c) => ({

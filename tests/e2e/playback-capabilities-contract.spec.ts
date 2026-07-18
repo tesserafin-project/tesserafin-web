@@ -242,7 +242,10 @@ test.describe('POST /Playback/Sessions capability contract', () => {
         const post = wire.requests.find(
             (r) => r.method === 'POST' && V2_SESSIONS.test(r.url)
         )!;
-        expect(post.postData, 'POST Playback/Sessions had no body').toBeTruthy();
+        expect(
+            post.postData,
+            'POST Playback/Sessions had no body'
+        ).toBeTruthy();
 
         // Assert on the bytes that left the browser, NOT on the builder's return value: the fix
         // depends on an empty array surviving JSON serialization all the way onto the wire.
