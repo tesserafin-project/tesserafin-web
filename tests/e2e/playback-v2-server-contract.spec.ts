@@ -323,7 +323,11 @@ test('a capability set WITHOUT mkv yields a genuine Remux decision for the Matro
                         }
                     ],
                     VideoCodecs: [
-                        { Codec: 'h264', Profiles: [], VideoRangeTypes: ['SDR'] }
+                        {
+                            Codec: 'h264',
+                            Profiles: [],
+                            VideoRangeTypes: ['SDR']
+                        }
                     ],
                     AudioCodecs: [{ Codec: 'aac' }],
                     SubtitleDelivery: [],

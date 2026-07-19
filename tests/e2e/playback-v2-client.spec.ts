@@ -483,9 +483,12 @@ test.describe('playback v2 — flag ON', () => {
         // endpoints were called — it is about which media URL was ultimately PLAYED.
         // ---------------------------------------------------------------------------------------
         await expect
-            .poll(() => wire.requests.filter((r) => V2_STREAM.test(r.url)).length, {
-                timeout: 30_000
-            })
+            .poll(
+                () => wire.requests.filter((r) => V2_STREAM.test(r.url)).length,
+                {
+                    timeout: 30_000
+                }
+            )
             .toBeGreaterThan(0);
 
         await expect.poll(() => descriptor, { timeout: 30_000 }).toBeTruthy();
@@ -602,9 +605,12 @@ test.describe('playback v2 — the real MKV', () => {
         await signInAndPlay(page, remuxId);
 
         await expect
-            .poll(() => wire.requests.filter((r) => V2_STREAM.test(r.url)).length, {
-                timeout: 30_000
-            })
+            .poll(
+                () => wire.requests.filter((r) => V2_STREAM.test(r.url)).length,
+                {
+                    timeout: 30_000
+                }
+            )
             .toBeGreaterThan(0);
         await expect.poll(() => descriptor, { timeout: 30_000 }).toBeTruthy();
 
@@ -812,7 +818,9 @@ test.describe('playback v2 — external subtitle sidecar', () => {
                 body: (await res.text()).slice(0, 120)
             };
         }, itemId);
-        console.log(`[subtitle] sidecar fetch=${JSON.stringify(subtitleProbe)}`);
+        console.log(
+            `[subtitle] sidecar fetch=${JSON.stringify(subtitleProbe)}`
+        );
 
         expect(subtitleProbe.status).toBe(200);
         expect(subtitleProbe.contentType).toMatch(/text\/vtt/);

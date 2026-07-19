@@ -483,14 +483,19 @@ test.describe('PlaybackAttemptId wire contract', () => {
 
         // Fail the FIRST media delivery exactly once, then let everything through untouched.
         let abortedUrl = '';
-        await page.route(/\/videos\/[^/]+\/(stream|master|main)\./i, (route) => {
-            if (!abortedUrl) {
-                abortedUrl = route.request().url();
-                console.log(`[retry] aborting first media request: ${abortedUrl}`);
-                return route.abort('failed');
+        await page.route(
+            /\/videos\/[^/]+\/(stream|master|main)\./i,
+            (route) => {
+                if (!abortedUrl) {
+                    abortedUrl = route.request().url();
+                    console.log(
+                        `[retry] aborting first media request: ${abortedUrl}`
+                    );
+                    return route.abort('failed');
+                }
+                return route.continue();
             }
-            return route.continue();
-        });
+        );
 
         await signIn(page);
         await pressPlay(page, movieIds[0]);
@@ -499,14 +504,14 @@ test.describe('PlaybackAttemptId wire contract', () => {
 
         // The abort must actually have happened, or there is no retry to observe and every
         // assertion below would pass vacuously against an ordinary first-try playback.
-        await expect
-            .poll(() => abortedUrl, { timeout: 45_000 })
-            .not.toBe('');
+        await expect.poll(() => abortedUrl, { timeout: 45_000 }).not.toBe('');
 
         // The recovery is a SECOND PlaybackInfo POST: `changeStream()` re-enters
         // `getPlaybackInfo()`. That is the observable signature of the traversal.
         await expect
-            .poll(() => postsTo(wire, PLAYBACK_INFO).length, { timeout: 60_000 })
+            .poll(() => postsTo(wire, PLAYBACK_INFO).length, {
+                timeout: 60_000
+            })
             .toBeGreaterThanOrEqual(2);
 
         const infoPosts = postsTo(wire, PLAYBACK_INFO);
@@ -517,7 +522,10 @@ test.describe('PlaybackAttemptId wire contract', () => {
 
         // Non-empty first — two absent ids would satisfy "all equal" for free.
         for (const id of infoIds) {
-            expect(id, 'a PlaybackInfo POST carried no PlaybackAttemptId').not.toBe('');
+            expect(
+                id,
+                'a PlaybackInfo POST carried no PlaybackAttemptId'
+            ).not.toBe('');
         }
 
         // THE LOAD-BEARING ASSERTION: one user action, one attempt id, across the retry.
@@ -532,7 +540,9 @@ test.describe('PlaybackAttemptId wire contract', () => {
             .filter((r) => PLAYBACK_INFO.test(r.url))
             .map((r) => r.headers[REQUEST_ID_HEADER])
             .filter(Boolean);
-        console.log(`[retry] PlaybackInfo X-Request-Ids=${JSON.stringify(infoRids)}`);
+        console.log(
+            `[retry] PlaybackInfo X-Request-Ids=${JSON.stringify(infoRids)}`
+        );
         expect(infoRids.length).toBeGreaterThanOrEqual(2);
         expect(
             [...new Set(infoRids)].length,
@@ -593,7 +603,9 @@ test.describe('PlaybackAttemptId wire contract', () => {
         console.log(
             `[retry] all PlaybackInfo attempt ids incl. the new attempt=${JSON.stringify(allInfoIds)}`
         );
-        expect([...new Set(allInfoIds.filter((i) => i !== ''))].length).toBeGreaterThanOrEqual(2);
+        expect(
+            [...new Set(allInfoIds.filter((i) => i !== ''))].length
+        ).toBeGreaterThanOrEqual(2);
     });
 
     test('RequestId is per-REQUEST: X-Request-Id differs between two requests of the SAME attempt', async ({
