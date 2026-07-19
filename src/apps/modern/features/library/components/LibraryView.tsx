@@ -198,43 +198,52 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
  *
  * v1 scope (mission): grid + sort (name/date added/community rating/release year/random, asc/desc)
  * + single genre/year filter + pagination + comfortable/compact density, movies and tvshows only.
- * Everything else (AlphaPicker, list view, Suggestions/Genres/other tabs, multi-select filters)
- * redirects to or is deferred to the existing per-type page - see `utils/libraryRedirect.ts` and the
- * per-file JSDoc under `utils/` for the specifics of what's covered vs documented debt.
+ * Everything else redirects to or is deferred to the existing per-type page - see
+ * `utils/libraryRedirect.ts` and the per-file JSDoc under `utils/` for what's covered vs debt.
  *
- * ## AlphaPicker / list view / tabs: porting deferred, because activation is deferred (issue #15)
+ * ## The target model is four destinations, not seven tabs (issue #15)
  *
- * Measured against the pages this route would replace, rather than assumed:
+ * `docs/reefin/design-library-navigation.md` §3.2 assigns a fate to each of the 15 legacy tab
+ * entries, and it is **not** a one-for-one port. In particular:
  *
- * - `constants/views/movies.ts`'s tab 0 (`moviesTabContent`) and `constants/views/tvshows.ts`'s
- *   tab 0 (`seriesTabContent`) override neither `isAlphabetPickerEnabled` nor
- *   `isBtnGridListEnabled`, so `utils/viewContent.ts`'s `{...defaultViewContent, ...viewContent}`
- *   merge resolves both to `constants/views/defaults.ts`'s `true`. **AlphaPicker and list view are
- *   live on exactly the two tabs this route would take over.**
- * - Those pages carry 7 (movies) and 8 (tvshows) tabs; this route is a single grid.
+ * - **Studios is a filter on Browse**, not a destination: `studioIds` is a parameter of the
+ *   `getItems` call this view already makes. The legacy Studios tab itself disables grid/list and
+ *   sort, so it was never a real list.
+ * - **Favorites is a filter on Browse** (`isFavorite: true`) - a pure predicate.
+ * - **Episodes is a granularity toggle** on the same query (`[Episode]` instead of `[Series]`).
+ * - **Upcoming is a shelf inside Suggestions**, which is where its editorialised sections belong.
+ * - **Playlists is out of library scope entirely**: a playlist crosses libraries, so listing it
+ *   under "Movies" is a legacy modelling error, not a gap this route has to close.
  *
- * `appRouter.getRouteUrl()` is the one URL builder behind home cards, `MainDrawerContent`, and
- * `UserViewNav`/`UserViewsMenu` alike, so repointing its `CollectionType.Movies`/`Tvshows` branches
- * (currently `#/movies?topParentId=...`/`#/tv?topParentId=...`) would move every entry point onto a
- * route that lacks AlphaPicker, list view, and 6-7 tabs. Adding the old-URL redirects on top would
- * make the tabbed pages unreachable outright. Either step is a functional regression on the default
- * path, so **activation is not performed** and porting is deferred with it - there is no user-facing
- * gap to close while nothing routes here by default. The route stays additive and reachable by
- * direct URL; nothing is removed from the current default path, which is what keeps this deferral
- * (unlike activation) regression-free.
+ * That leaves four first-level destinations - Browse, Genres, Collections, Suggestions. Anything
+ * describing this route as owing seven or eight tabs is measuring against the wrong target.
  *
- * The `main.jellyfin.bundle.js` budget (`webpack.performance-budget.json`, 460800 bytes) is *not*
- * what defers this: measured on this branch, it currently has ample headroom. The blocker is the
- * tab/AlphaPicker/list-view gap above, which is a functional-regression argument and stands on
- * its own.
+ * ## Parity status: structure delivered (L15a), routing not (L15b)
  *
- * TODO(RFC-0005 §11 WP-C follow-up): this route needs parity with the legacy per-type pages
- * (Suggestions/Genres/Studios/Collections/Playlists tabs, AlphaPicker, list view, multi-select
- * filters) *before* `appRouter.getRouteUrl()` may point here and before the old library URLs may
- * redirect here. Until then, prefer an opt-in affordance over a `getRouteUrl` repoint - the repoint
- * has no non-regressive form while the tab gap stands. Retiring this comment also retires the
- * `LIBRARY_ROUTE_BY_COLLECTION_TYPE` duplication this route (and `/home`'s card adapter) routes
- * around.
+ * AlphaPicker and grid/list are non-negotiable in the target, and that is measured rather than
+ * assumed: `constants/views/movies.ts`'s tab 0 (`moviesTabContent`) and `constants/views/tvshows.ts`'s
+ * tab 0 (`seriesTabContent`) override neither `isAlphabetPickerEnabled` nor `isBtnGridListEnabled`,
+ * so `utils/viewContent.ts`'s `{...defaultViewContent, ...viewContent}` merge resolves both to
+ * `constants/views/defaults.ts`'s `true` - they are live on exactly the two tabs this route takes
+ * over.
+ *
+ * L15a delivers that structure as tested query/vocabulary modules - `constants/librarySections.ts`
+ * (destinations, AlphaPicker, view mode, granularity, shelves) and `api/libraryDestinationQueries.ts`
+ * (Genres, Collections, Studios options, Upcoming), plus the `studioIds`/`isFavorite`/`letter` params
+ * on `api/useLibraryItems.ts`. Each emits the real Reefin SDK request its design entry claims, proven
+ * by test. **None of it is mounted or routed**, and this component's render is unchanged.
+ *
+ * Both activation gates are now *available* - reefin#39 is merged so the cross e2e rig exists, and
+ * the bundle margin is acquired (design §7) - but availability is not activation.
+ *
+ * TODO(issue #15, L15b): mount the four destinations under `/library/:libraryId/:destination`, wire
+ * the L15a controls into the Browse control bar, then repoint `appRouter.getRouteUrl()`'s
+ * `CollectionType.Movies`/`Tvshows` branches and add the legacy-URL redirects. `getRouteUrl()` is the
+ * one URL builder behind home cards, `MainDrawerContent`, and `UserViewNav`/`UserViewsMenu` alike, so
+ * repointing it before the destinations are mounted would move every entry point onto a route that
+ * cannot yet render them - which is why the two steps are ordered, not merged. Retiring this comment
+ * also retires the `LIBRARY_ROUTE_BY_COLLECTION_TYPE` duplication this route (and `/home`'s card
+ * adapter) routes around.
  */
 const LibraryView: FC = () => {
     const { libraryId = '' } = useParams<{ libraryId: string }>();

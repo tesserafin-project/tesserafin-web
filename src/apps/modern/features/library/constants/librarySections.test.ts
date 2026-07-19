@@ -30,12 +30,12 @@ import {
 } from './librarySections';
 
 /**
- * Behavioural spec for the dormant Library navigation model
+ * Behavioural spec for the Library navigation model (structure delivered, not routed)
  * (`docs/reefin/design-library-navigation.md`). Nothing here activates a route; these assertions
  * pin the arbitration so a later activation slice cannot silently drop a legacy tab or ship a
  * misleading AlphaPicker.
  */
-describe('library navigation model (dormant)', () => {
+describe('library navigation model (not routed)', () => {
     describe('the legacy tab inventory this arbitration must cover', () => {
         it('matches the real movies view constants', () => {
             const actual = Object.values(moviesViews).map((v) => v.viewType);

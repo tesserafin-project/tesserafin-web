@@ -151,7 +151,10 @@ describe('fetchLibraryItems()', () => {
         const request = vi.fn().mockResolvedValue({ data: { Items: [] } });
         const api = createMockApi(request);
 
-        await fetchLibraryItems(api, 'user-1', { ...baseParams, studioIds: [] });
+        await fetchLibraryItems(api, 'user-1', {
+            ...baseParams,
+            studioIds: []
+        });
 
         expect(request.mock.calls[0][0].url as string).not.toContain(
             'studioIds='

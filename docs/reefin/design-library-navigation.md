@@ -1,9 +1,11 @@
 # Design — Navigation de la Library Reefin (issue #15, arbitrage §8-C de reefin#44)
 
-> **Statut : DESIGN DORMANT.** Ce document ne branche aucune route. `appRouter.getRouteUrl()`
-> n'est pas modifié, aucune redirection n'est ajoutée, aucun composant n'est monté. L'activation
-> est conditionnée à **LANE B** (marge bundle portée à 30 KiB, §4 de reefin#44) **et** à
-> **LANE E2E** (gate croisé, lui-même bloqué sur la fusion de reefin#39). Voir §7.
+> **Statut : STRUCTURE LIVRÉE (L15a), ROUTAGE NON FAIT (L15b).** Ce document ne branche toujours
+> aucune route : `appRouter.getRouteUrl()` n'est pas modifié, aucune redirection n'est ajoutée,
+> aucune destination n'est montée. Ce qui a changé depuis la rédaction initiale, c'est que le
+> vocabulaire et les requêtes des destinations/filtres existent et sont testés (§6), et que les
+> **deux gates d'activation sont désormais disponibles** (§7) — disponibilité qui ne vaut pas
+> activation.
 
 ## 1. Le problème posé
 
@@ -12,10 +14,12 @@ tant que l'activation est différée, porter n'est pas finançable (15 452 o de 
 contre 7–8 onglets à répliquer), et rien n'est retiré du chemin par défaut puisque rien ne route
 vers `/library/:libraryId`.
 
-> **Note de mesure (post-#26).** Le volet *budget* de cet argument a expiré : la marge est passée
-> de 15 452 o à 86 737 o (§7). Le volet *régression* — repointer `getRouteUrl()` vers une route
-> sans AlphaPicker ni mode liste ni onglets — tient toujours, et c'est lui qui porte le report.
-> L'argument de #22 reste donc valide, mais pour une seule de ses deux raisons.
+> **Note de mesure (post-#26, mise à jour L15a).** Le volet *budget* de cet argument a expiré : la
+> marge est passée de 15 452 o à ~86 KiB (§7). Le volet *régression* — repointer `getRouteUrl()`
+> vers une route sans AlphaPicker ni mode liste ni destinations — a lui aussi cessé d'être un
+> argument de *report du portage* : L15a a porté cette structure (§6). Ce qu'il reste est un
+> argument d'**ordonnancement**, pas de report : les destinations doivent être montées avant que
+> `getRouteUrl()` ne pointe vers elles. C'est ce que L15b exécute.
 
 Ce document ne contredit pas cette PR : il traite l'**étape d'avant l'activation** que #22 a
 explicitement laissée non financée — « la vraie alternative est l'affordance opt-in décrite
@@ -129,33 +133,55 @@ Les deux sont **portés**, pas abandonnés : §2 démontre qu'ils sont actifs su
 - Les filtres (Studios, Favorites) et la granularité (Séries/Épisodes) vivent dans la barre de
   contrôles de Browse, à côté du tri et des filtres genre/année déjà présents dans `LibraryView`.
 
-## 6. Ce que ce document ne fait pas
+## 6. Ce que L15a livre, et ce qu'il ne fait pas
 
-- Il ne modifie pas `appRouter.getRouteUrl()`.
-- Il n'ajoute aucune redirection depuis les URL legacy.
-- Il ne monte aucun composant, n'ajoute aucune route, ne touche pas `LibraryView.tsx`.
-- Il ne retire rien du chemin par défaut : les pages legacy restent exactement où elles sont.
+**Livré (L15a) — structure, testée, non routée :**
 
-Le seul code livré est **dormant** : `src/apps/modern/features/library/constants/librarySections.ts`
-n'est importé que par son test. Il n'est atteignable depuis aucun point d'entrée webpack, donc il
-ne pèse **0 octet** sur le bundle principal (mesure en §7 de la PR).
+- `constants/librarySections.ts` : les quatre destinations, le sort des 15 onglets legacy,
+  l'AlphaPicker (`#` → `nameLessThan: 'A'`, actif sous `SortName` hors Episodes, remise à la page 1
+  à chaque changement de lettre), le mode grille/liste par library, la granularité Séries/Épisodes,
+  les paramètres des filtres Studios/Favorites, et les étagères de Suggestions (Upcoming inclus).
+- `api/libraryDestinationQueries.ts` : Genres, Collections, la liste d'options du filtre Studios, et
+  l'étagère Upcoming — chacun émettant sa vraie requête Reefin SDK.
+- `api/useLibraryItems.ts` : `studioIds`, `isFavorite` et `letter` sur la requête Browse.
 
-## 7. Conditions d'activation
+Chaque destination et chaque filtre est **prouvé par test sur l'URL réellement émise**, pas par
+lecture du source. Aucun import `@jellyfin/sdk` n'apparaît dans cette tranche.
 
-L'activation — repointage de `getRouteUrl`, redirections, montage des quatre destinations —
-exige **les deux** conditions, pas l'une ou l'autre :
+**Non fait (L15b) :**
 
-1. **LANE B** — la marge bundle doit atteindre 30 KiB. Elle est de **84,7 KiB** aujourd'hui
-   (86 737 o : 374 063 o sur `main`, plafond 460 800 o) — mesure relevée après la fusion de la
-   Playback v2 (#26), qui a fait passer `main` de 443 189 o à 374 063 o, soit 69 126 o libérés.
-   Le seuil numérique de 30 KiB est donc **atteint** ; les leviers conjonctifs décrits en
-   reefin#44 §4 (deux ancres eager, 1 780 o / 9 082 o séparément, 70 707 o ensemble) n'ont plus
-   à être traités par une tranche d'activation. **Constater que ce seuil est franchi ne vaut pas
-   ouverture du gate** : LANE B et LANE E2E sont conjonctifs, et LANE E2E reste fermé (point 2).
-2. **LANE E2E** — le gate croisé n'existe pas. `playwright.config.ts` n'a délibérément pas de
-   `webServer` et exige un serveur réel ; reefin#39 (harnais serveur TCP) doit être fusionnée
-   d'abord. Aucune route nouvelle ne doit être rendue atteignable par défaut sans spec e2e
-   couvrant la navigation réelle depuis `/home` et les redirections.
+- `appRouter.getRouteUrl()` n'est pas modifié.
+- Aucune redirection depuis les URL legacy.
+- Aucune destination montée, aucune route `/library/:libraryId/:destination` ajoutée ; le rendu de
+  `LibraryView.tsx` est inchangé (seul son commentaire d'en-tête a été corrigé).
+- Rien n'est retiré du chemin par défaut : les pages legacy restent exactement où elles sont.
 
-Tant que ces deux conditions ne sont pas remplies simultanément, le chemin par défaut reste
-intégralement le legacy.
+**Coût bundle.** La formulation initiale — « `librarySections.ts` n'est importé que par son test,
+donc 0 octet » — n'est plus exacte : `useLibraryItems.ts` l'importe désormais. Le coût sur le bundle
+principal reste néanmoins **nul**, pour une raison différente et plus solide : la route
+`library/:libraryId` est déclarée dans `asyncRoutes/user.ts` et chargée par `AsyncRoute.tsx` en
+`lazy: () => import(...)`. Toute cette tranche vit donc dans un chunk asynchrone, hors de
+`main.jellyfin.bundle.js`. La mesure figure au rapport de la PR.
+
+## 7. Conditions d'activation — les deux gates sont désormais disponibles
+
+L'activation — repointage de `getRouteUrl`, redirections, montage des quatre destinations — exige
+**les deux** conditions, pas l'une ou l'autre. Toutes deux étaient fermées à la rédaction initiale ;
+elles ne le sont plus :
+
+1. **LANE B — marge bundle : acquise.** Le seuil de 30 KiB est franchi avec une large réserve
+   (marge mesurée sur `main` : 85 860 o, soit 83,85 KiB, pour un bundle principal de 374 940 o et un
+   plafond de 460 800 o). Les leviers conjonctifs de reefin#44 §4 (deux ancres eager) n'ont plus à
+   être traités par une tranche d'activation.
+2. **LANE E2E — rig croisé : existant.** reefin#39 (harnais serveur TCP) **est fusionnée**, donc le
+   gate croisé existe. La contrainte de fond subsiste et n'est pas levée par la fusion :
+   `playwright.config.ts` n'a délibérément pas de `webServer` et exige un serveur réel, et aucune
+   route nouvelle ne doit devenir atteignable par défaut sans spec e2e couvrant la navigation réelle
+   depuis `/home` et les redirections. Ce que #39 change, c'est qu'écrire cette spec est maintenant
+   possible ; l'écrire reste à faire, dans L15b.
+
+**Disponible ≠ activé.** Les deux gates étant ouverts, l'activation devient finançable — sous
+réserve que les tests de la tranche d'activation passent — mais elle n'est pas effectuée ici. L15a
+livre la structure (§6) ; le chemin par défaut reste intégralement le legacy jusqu'à L15b, qui monte
+les destinations *avant* de repointer `getRouteUrl` (l'ordre inverse exposerait tous les points
+d'entrée à une route incapable de rendre ce qu'ils demandent).

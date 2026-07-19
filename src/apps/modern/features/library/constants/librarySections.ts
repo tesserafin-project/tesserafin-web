@@ -3,12 +3,16 @@
  * tabs, specified in `docs/reefin/design-library-navigation.md` (issue #15, arbitrage §8-C of
  * reefin#44).
  *
- * **DORMANT — imported by its test only.** Nothing in the app imports this module, so webpack never
- * reaches it from an entry point and it contributes 0 bytes to the main bundle. Activation (routing
- * the destinations, repointing `appRouter.getRouteUrl()`, adding legacy redirects) is gated on
- * **LANE B** (bundle margin, target 30 KiB — now measured at 84.7 KiB / 86 737 B, so the numeric
- * threshold is met) **and** **LANE E2E** (cross gate, itself blocked on reefin#39, still closed).
- * Both are required, so activation remains blocked. See §7 of the design doc.
+ * **NOT ROUTED.** `api/useLibraryItems.ts` now imports this module, so it is no longer test-only —
+ * but it still costs 0 bytes on the main bundle, for a sturdier reason: `library/:libraryId` is
+ * declared in `apps/modern/routes/asyncRoutes/user.ts` and loaded by `AsyncRoute.tsx` via
+ * `lazy: () => import(...)`, so this whole slice lives in an async chunk outside
+ * `main.jellyfin.bundle.js`.
+ *
+ * Both activation gates are now **available**: LANE B (bundle margin) is acquired with wide room,
+ * and LANE E2E's cross rig exists since reefin#39 merged. Availability is not activation — mounting
+ * the destinations, repointing `appRouter.getRouteUrl()` and adding legacy redirects is L15b, and it
+ * still owes the e2e spec that #39 made writable. See §7 of the design doc.
  *
  * Deliberately free of `@jellyfin/sdk` / `reefin-sdk` imports: this is the navigation vocabulary,
  * not a query builder, and it must not pre-empt the SDK migration that PR #22 carries.
@@ -45,8 +49,8 @@ export type LegacyTabFate =
 
 /**
  * Legacy `LibraryTab` value → its fate. Keys are the `types/libraryTab.ts` string values, so this
- * map can be checked against the real enum without importing it (and thus without coupling a
- * dormant module to a live one).
+ * map can be checked against the real enum without importing it (and thus without coupling this
+ * vocabulary module to the legacy slice).
  */
 export const LEGACY_TAB_FATE: Record<string, LegacyTabFate> = {
     movies: { kind: 'destination', destination: 'browse' },
@@ -220,8 +224,7 @@ export const GRANULARITY_QUERY_PARAM = 'granularity';
 
 export const isLibraryGranularity = (
     value: string | null | undefined
-): value is LibraryGranularity =>
-    value === 'primary' || value === 'episodes';
+): value is LibraryGranularity => value === 'primary' || value === 'episodes';
 
 /**
  * Granularity only exists for tvshows: a movies library has no depth below `Movie`, so the control

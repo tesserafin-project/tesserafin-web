@@ -78,9 +78,7 @@ export const fetchLibraryItems = async (
             limit: params.limit,
             genres: params.genre ? [params.genre] : undefined,
             years: params.year ? [params.year] : undefined,
-            studioIds: params.studioIds?.length
-                ? params.studioIds
-                : undefined,
+            studioIds: params.studioIds?.length ? params.studioIds : undefined,
             isFavorite: params.isFavorite ? true : undefined,
             nameStartsWith:
                 params.letter && params.letter !== NON_ALPHA_LETTER
