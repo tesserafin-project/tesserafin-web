@@ -1,0 +1,55 @@
+/*
+ * Reefin Glass — light frosted mode (RFC-0005 §8.2, issue #18 / W13.8b) legacy CSS payload.
+ *
+ * Every registry id needs a folder here, because `components/ThemeCss.tsx` links
+ * `themes/<id>/theme.css` by id. Without this file `official.glass.light` requested a stylesheet
+ * that did not exist: the link 404'd, the legacy layer loaded *nothing at all*, and the top bar
+ * rendered its unstyled dark background under light-mode text — dark on dark, and unreadable. That
+ * is what the desktop capture of Glass Light showed before this file existed.
+ *
+ * Note this is deliberately NOT resolved through `registry.ts#tokenThemeId`. That field points at
+ * the `--rf-*` *token* stylesheet, which both Glass modes legitimately share because it carries a
+ * per-mode tier. This legacy payload has no such tier — it is a flat Sass palette — so routing
+ * Glass Light here to `official.glass`'s payload would hand a light mode the dark legacy palette
+ * and reproduce the same illegibility from the other direction.
+ *
+ * As with `official.glass/theme.scss`, Glass's real visual identity lives in the generated
+ * `--rf-*` tokens consumed by `src/ui/` components; this file only keeps legacy (non-`src/ui/`)
+ * views coherent and legible.
+ */
+
+@use '../_base/palette' as palette;
+@use '../_base/theme' with (
+    // Theme options
+    $dark: false,
+
+    // Color palette — the light group of `reefin-design/themes/glass/tokens.json`, which is
+    // authored for WCAG AA over Glass Light's composited frosted surface.
+    $background-default: #eef2f8,
+    $background-paper: #fff,
+    $primary-main: #0a6689,
+    $primary-contrastText: #fff,
+    $text-primary: #0b1220,
+    $text-secondary: rgba(11, 18, 32, 0.68),
+    $action-focus: #d6dfe8,
+    $action-hover: #dde5ef,
+    $divider: rgba(11, 18, 32, 0.14),
+
+    // Components
+    $appBar-defaultBg: #fff,
+    $appBar-transparentBg: rgba(255, 255, 255, 0.86),
+    $alert-infoFilledBg: #0a6689,
+    $alert-infoFilledColor: #fff,
+    $button-inheritContainedBg: #d6dfe8,
+    $button-inheritContainedHoverBg: #c4d1e0
+);
+
+// Override the alpha picker selected colors, matching the other light-mode themes.
+.alphaPickerButton-selected {
+    background-color: var(--jf-palette-primary-main, palette.$primary-main);
+    color:
+        var(
+            --jf-palette-primary-contrastText,
+            palette.$primary-contrastText
+        );
+}
