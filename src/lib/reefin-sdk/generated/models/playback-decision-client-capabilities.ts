@@ -30,12 +30,12 @@ export interface PlaybackDecisionClientCapabilities {
      * @type {PlaybackDecisionDecodeCapabilities}
      * @memberof PlaybackDecisionClientCapabilities
      */
-    'Decode'?: PlaybackDecisionDecodeCapabilities;
+    'Decode': PlaybackDecisionDecodeCapabilities;
     /**
      * What the server should produce when it must transcode, in the client\'s preference order (index 0 = most preferred). Empty when the client declares no transcoding targets at all, in which case the engine falls back to a named legacy default (see `PlaybackEngine`).
      * @type {Array<PlaybackDecisionPlaybackOutputProfile>}
      * @memberof PlaybackDecisionClientCapabilities
      */
-    'OutputProfiles'?: Array<PlaybackDecisionPlaybackOutputProfile>;
+    'OutputProfiles': Array<PlaybackDecisionPlaybackOutputProfile>;
 }
 

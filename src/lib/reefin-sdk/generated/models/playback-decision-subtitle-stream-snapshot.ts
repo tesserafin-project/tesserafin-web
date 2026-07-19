@@ -24,7 +24,7 @@ export interface PlaybackDecisionSubtitleStreamSnapshot {
      * @type {string}
      * @memberof PlaybackDecisionSubtitleStreamSnapshot
      */
-    'Format'?: string;
+    'Format': string;
     /**
      * The stream index within the source.
      * @type {number}

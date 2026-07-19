@@ -33,7 +33,7 @@ export interface PlaybackDecisionReasonNode {
      * @type {Array<PlaybackDecisionReasonNode>}
      * @memberof PlaybackDecisionReasonNode
      */
-    'Children'?: Array<PlaybackDecisionReasonNode>;
+    'Children': Array<PlaybackDecisionReasonNode>;
     /**
      * The stable, serializable reason code for this node.
      * @type {PlaybackDecisionReasonCode}
@@ -57,7 +57,7 @@ export interface PlaybackDecisionReasonNode {
      * @type {PlaybackDecisionReasonSubject}
      * @memberof PlaybackDecisionReasonNode
      */
-    'Subject'?: PlaybackDecisionReasonSubject;
+    'Subject': PlaybackDecisionReasonSubject;
 }
 
 

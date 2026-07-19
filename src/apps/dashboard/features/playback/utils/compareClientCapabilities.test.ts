@@ -1,7 +1,47 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PlaybackDecisionClientCapabilities } from 'lib/reefin-sdk';
+import type {
+    PlaybackDecisionClientCapabilities,
+    PlaybackDecisionDecodeProfile,
+    PlaybackDecisionPlaybackOutputProfile,
+    PlaybackDecisionVideoCodecCapability
+} from 'lib/reefin-sdk';
 import { compareClientCapabilities } from './compareClientCapabilities';
+
+/**
+ * Fixture builders for the three shapes whose members reefin#51 made required on the wire.
+ *
+ * `compareClientCapabilities` reads none of the newly-required members - it only ever looks at
+ * `Codec`, `Format`, `Containers`, `Container` and the two `Supports*` flags - so these builders
+ * declare them empty purely to satisfy the contract. No assertion in this file depends on their
+ * values, and filling them in changed no expectation.
+ */
+const videoCodec = (Codec: string): PlaybackDecisionVideoCodecCapability => ({
+    Codec,
+    Profiles: [],
+    VideoRangeTypes: []
+});
+
+const decodeProfile = (
+    Containers: string[]
+): PlaybackDecisionDecodeProfile => ({
+    Type: 'Video',
+    Containers,
+    VideoCodecs: [],
+    AudioCodecs: []
+});
+
+const outputProfile = (
+    Type: 'Video' | 'Audio',
+    Protocol: 'Hls' | 'Http',
+    Container: string
+): PlaybackDecisionPlaybackOutputProfile => ({
+    Type,
+    Protocol,
+    Container,
+    VideoCodecs: [],
+    AudioCodecs: []
+});
 
 const capabilities = (
     overrides: Partial<PlaybackDecisionClientCapabilities> = {}
@@ -66,7 +106,7 @@ describe('compareClientCapabilities()', () => {
         const native = capabilities({
             Decode: {
                 DirectPlayProfiles: [],
-                VideoCodecs: [{ Codec: 'h264' }, { Codec: 'av1' }],
+                VideoCodecs: [videoCodec('h264'), videoCodec('av1')],
                 AudioCodecs: [{ Codec: 'aac' }],
                 SubtitleDelivery: [],
                 SupportsHls: false,
@@ -76,7 +116,7 @@ describe('compareClientCapabilities()', () => {
         const reconstructed = capabilities({
             Decode: {
                 DirectPlayProfiles: [],
-                VideoCodecs: [{ Codec: 'h264' }, { Codec: 'hevc' }],
+                VideoCodecs: [videoCodec('h264'), videoCodec('hevc')],
                 AudioCodecs: [{ Codec: 'aac' }, { Codec: 'ac3' }],
                 SubtitleDelivery: [],
                 SupportsHls: false,
@@ -123,8 +163,8 @@ describe('compareClientCapabilities()', () => {
         const native = capabilities({
             Decode: {
                 DirectPlayProfiles: [
-                    { Type: 'Video', Containers: ['mp4', 'm4v'] },
-                    { Type: 'Video', Containers: ['mkv'] }
+                    decodeProfile(['mp4', 'm4v']),
+                    decodeProfile(['mkv'])
                 ],
                 VideoCodecs: [],
                 AudioCodecs: [],
@@ -146,8 +186,8 @@ describe('compareClientCapabilities()', () => {
     it('reads output container names from OutputProfiles', () => {
         const reconstructed = capabilities({
             OutputProfiles: [
-                { Type: 'Video', Protocol: 'Hls', Container: 'ts' },
-                { Type: 'Audio', Protocol: 'Http', Container: 'mp3' }
+                outputProfile('Video', 'Hls', 'ts'),
+                outputProfile('Audio', 'Http', 'mp3')
             ]
         });
 
@@ -196,7 +236,15 @@ describe('compareClientCapabilities()', () => {
     });
 
     it('treats missing/undefined nested fields as empty rather than throwing', () => {
-        const result = compareClientCapabilities({}, {});
+        // Deliberately contract-violating input, kept after reefin#51 made `Decode` and
+        // `OutputProfiles` required. `required` constrains what a *conforming server* sends; it is
+        // not something TypeScript can enforce on bytes arriving over the wire at runtime. An older
+        // server, a truncated payload or an intermediary can still produce this, and
+        // compareClientCapabilities' `?.`/`?? []` handling exists precisely for that case - so this
+        // test keeps exercising it, and the cast documents that the violation is the point.
+        const malformed = {} as PlaybackDecisionClientCapabilities;
+
+        const result = compareClientCapabilities(malformed, malformed);
 
         expect(result.videoCodecs).toEqual({
             onlyInNative: [],
@@ -214,13 +262,20 @@ describe('compareClientCapabilities()', () => {
         const native = capabilities({
             Decode: {
                 DirectPlayProfiles: [],
-                VideoCodecs: [{ Codec: '' }, { Codec: undefined }],
+                // Same rationale as the test above: `Codec` is required on the wire since
+                // reefin#51, but the filtering being tested here is the runtime guard against a
+                // server that sends an empty or absent one anyway. Cast so the deliberately
+                // malformed entries survive the stricter type.
+                VideoCodecs: [
+                    { Codec: '' },
+                    { Codec: undefined }
+                ] as unknown as PlaybackDecisionVideoCodecCapability[],
                 AudioCodecs: [],
                 SubtitleDelivery: [],
                 SupportsHls: false,
                 SupportsDash: false
             },
-            OutputProfiles: [{ Type: 'Video', Protocol: 'Hls', Container: '' }]
+            OutputProfiles: [outputProfile('Video', 'Hls', '')]
         });
 
         const result = compareClientCapabilities(native, capabilities());

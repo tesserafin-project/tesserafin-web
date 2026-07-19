@@ -112,10 +112,18 @@ const outputContainerNames = (
  * of which specific session/browser either side came from - the caller decides that; this function
  * only diffs the two shapes it's given.
  *
- * Both parameters use the generated (all-fields-optional) type rather than the feature's local
- * `DeepRequired` alias: `buildClientCapabilities()` returns the generated shape directly, and
+ * Both parameters use the generated type rather than the feature's local `DeepRequired` alias:
+ * `buildClientCapabilities()` returns the generated shape directly, and
  * `PlaybackDiagnosticDetail.Capabilities` is nullable independent of the rest of that DTO - the
  * caller is expected to null-guard the reconstructed side before calling this, not this function.
+ *
+ * Since reefin#51 the generated type declares `Decode`, `OutputProfiles` and the members below
+ * them as required, so the `?.`/`?? []` guards here are no longer needed to satisfy the *compiler*.
+ * They are kept deliberately: `required` describes what a conforming server sends, and this
+ * function consumes data that arrived over the wire - an older server, a truncated payload or an
+ * intermediary can still deliver a partial shape, and a diagnostics view is the last place that
+ * should throw when it does. See the two "deliberately contract-violating input" cases in the
+ * accompanying test file.
  */
 export function compareClientCapabilities(
     native: PlaybackDecisionClientCapabilities,

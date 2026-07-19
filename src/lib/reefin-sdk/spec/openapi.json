@@ -7882,6 +7882,9 @@
             "type": "integer"
           }
         },
+        "required": [
+          "Codec"
+        ],
         "type": "object"
       },
       "PlaybackDecisionAudioStreamSnapshot": {
@@ -7931,6 +7934,9 @@
             "type": "integer"
           }
         },
+        "required": [
+          "Codec"
+        ],
         "type": "object"
       },
       "PlaybackDecisionClientCapabilities": {
@@ -7953,6 +7959,10 @@
             "type": "array"
           }
         },
+        "required": [
+          "Decode",
+          "OutputProfiles"
+        ],
         "type": "object"
       },
       "PlaybackDecisionDecodeCapabilities": {
@@ -7996,6 +8006,12 @@
             "type": "array"
           }
         },
+        "required": [
+          "AudioCodecs",
+          "DirectPlayProfiles",
+          "SubtitleDelivery",
+          "VideoCodecs"
+        ],
         "type": "object"
       },
       "PlaybackDecisionDecodeProfile": {
@@ -8032,6 +8048,11 @@
             "type": "array"
           }
         },
+        "required": [
+          "AudioCodecs",
+          "Containers",
+          "VideoCodecs"
+        ],
         "type": "object"
       },
       "PlaybackDecisionMediaKind": {
@@ -8104,6 +8125,14 @@
             "type": "array"
           }
         },
+        "required": [
+          "AudioStreams",
+          "Container",
+          "MediaSourceId",
+          "Protocol",
+          "SubtitleStreams",
+          "VideoStreams"
+        ],
         "type": "object"
       },
       "PlaybackDecisionOutputSpec": {
@@ -8252,6 +8281,9 @@
             "description": "How to auto-select a subtitle stream (PR103) when PreferredSubtitleStreamIndex\nis null - mirrors the legacy user-level `SubtitlePlaybackMode` preference\nconsumed by `MediaStreamSelector.GetDefaultSubtitleStreamIndex`."
           }
         },
+        "required": [
+          "PreferredSubtitleLanguages"
+        ],
         "type": "object"
       },
       "PlaybackDecisionPlaybackMethod": {
@@ -8320,6 +8352,11 @@
             "type": "array"
           }
         },
+        "required": [
+          "AudioCodecs",
+          "Container",
+          "VideoCodecs"
+        ],
         "type": "object"
       },
       "PlaybackDecisionPlaybackRequestContext": {
@@ -8452,6 +8489,10 @@
             "description": "What this node is reasoning about."
           }
         },
+        "required": [
+          "Children",
+          "Subject"
+        ],
         "type": "object"
       },
       "PlaybackDecisionReasonOutcome": {
@@ -8591,6 +8632,9 @@
             "description": "The delivery method the client supports for this format."
           }
         },
+        "required": [
+          "Format"
+        ],
         "type": "object"
       },
       "PlaybackDecisionSubtitleDeliveryMethod": {
@@ -8645,6 +8689,9 @@
             "type": "string"
           }
         },
+        "required": [
+          "Format"
+        ],
         "type": "object"
       },
       "PlaybackDecisionTransformKind": {
@@ -8713,6 +8760,11 @@
             "type": "array"
           }
         },
+        "required": [
+          "Codec",
+          "Profiles",
+          "VideoRangeTypes"
+        ],
         "type": "object"
       },
       "PlaybackDecisionVideoStreamSnapshot": {
@@ -8783,6 +8835,9 @@
             "type": "integer"
           }
         },
+        "required": [
+          "Codec"
+        ],
         "type": "object"
       },
       "PlaybackDiagnosticDetail": {

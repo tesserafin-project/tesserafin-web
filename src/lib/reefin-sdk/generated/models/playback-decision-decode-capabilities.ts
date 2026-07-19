@@ -36,19 +36,19 @@ export interface PlaybackDecisionDecodeCapabilities {
      * @type {Array<PlaybackDecisionAudioCodecCapability>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
-    'AudioCodecs'?: Array<PlaybackDecisionAudioCodecCapability>;
+    'AudioCodecs': Array<PlaybackDecisionAudioCodecCapability>;
     /**
      * The direct-play combinations the client declares, in declared order. Distinct from Reefin.Playback.Decision.DecodeCapabilities.VideoCodecs/Reefin.Playback.Decision.DecodeCapabilities.AudioCodecs: those describe per-codec decode limits (used regardless of container), while this describes which container+codec(s) combinations are actually playable together without transcoding (RFC PR102b problem #1).
      * @type {Array<PlaybackDecisionDecodeProfile>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
-    'DirectPlayProfiles'?: Array<PlaybackDecisionDecodeProfile>;
+    'DirectPlayProfiles': Array<PlaybackDecisionDecodeProfile>;
     /**
      * The subtitle formats the client can render, and how it wants them delivered.
      * @type {Array<PlaybackDecisionSubtitleCapability>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
-    'SubtitleDelivery'?: Array<PlaybackDecisionSubtitleCapability>;
+    'SubtitleDelivery': Array<PlaybackDecisionSubtitleCapability>;
     /**
      * Whether the client can play DASH renditions.
      * @type {boolean}
@@ -66,6 +66,6 @@ export interface PlaybackDecisionDecodeCapabilities {
      * @type {Array<PlaybackDecisionVideoCodecCapability>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
-    'VideoCodecs'?: Array<PlaybackDecisionVideoCodecCapability>;
+    'VideoCodecs': Array<PlaybackDecisionVideoCodecCapability>;
 }
 

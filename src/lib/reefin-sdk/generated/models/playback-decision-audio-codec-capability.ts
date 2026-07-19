@@ -24,7 +24,7 @@ export interface PlaybackDecisionAudioCodecCapability {
      * @type {string}
      * @memberof PlaybackDecisionAudioCodecCapability
      */
-    'Codec'?: string;
+    'Codec': string;
     /**
      * The highest bit depth the client supports, or null if unbounded/unknown.
      * @type {number}
