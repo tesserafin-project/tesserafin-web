@@ -116,7 +116,10 @@ export function useAppTheme(explicitThemeId?: string): AppTheme {
     useEffect(() => {
         const entry = getThemeEntry(activeThemeId);
         const root = document.documentElement;
-        root.setAttribute('data-rf-theme', activeThemeId);
+        // `data-rf-theme` selects the generated token stylesheet, which is not always named after
+        // the entry: `official.glass.light` renders `official.glass`'s tokens in its light tier.
+        // See `registry.ts#tokenThemeId`.
+        root.setAttribute('data-rf-theme', entry?.tokenThemeId ?? activeThemeId);
         root.setAttribute('data-rf-mode', entry?.defaultMode ?? 'dark');
     }, [activeThemeId]);
 

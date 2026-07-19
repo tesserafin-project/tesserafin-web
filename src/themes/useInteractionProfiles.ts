@@ -52,12 +52,20 @@ import { getThemeEntry } from './registry';
  */
 export function useInteractionProfiles(activeThemeId: string): void {
     useEffect(() => {
-        if (activeThemeId !== PROFILE_THEME_ID) {
+        const entry = getThemeEntry(activeThemeId);
+
+        // Keyed on the *token* theme id, so both Glass entries (dark and light) engage and every
+        // other theme provably does not — see `applyProfiles.ts#PROFILE_THEME_ID`.
+        if ((entry?.tokenThemeId ?? activeThemeId) !== PROFILE_THEME_ID) {
             return undefined;
         }
 
         const root = document.documentElement;
-        const mode = getThemeEntry(activeThemeId)?.defaultMode ?? 'dark';
+        // Selects which `color.<mode>` group of the override is projected. Glass Light resolves
+        // 'light' here, which is why `REDUCED_TRANSPARENCY_OVERRIDE` carries a concrete
+        // `color.light` partial — without it, light mode would zero the blur and keep a
+        // translucent surface.
+        const mode = entry?.defaultMode ?? 'dark';
 
         // Holds the undo for whatever is currently projected. Each signal change fully reverts the
         // previous projection before applying the next, so custom properties never accumulate:

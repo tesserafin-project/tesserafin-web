@@ -28,18 +28,45 @@ describe('THEME_REGISTRY', () => {
         expect(glass?.default).toBeUndefined();
     });
 
-    it('marks official.glass as experimental (badged in pickers, issue #18 G18b-1)', () => {
-        expect(getThemeEntry('official.glass')?.experimental).toBe(true);
+    it('includes official.glass.light as the light frosted Glass entry', () => {
+        const glassLight = getThemeEntry('official.glass.light');
+        expect(glassLight).toBeDefined();
+        expect(glassLight?.builtin).toBe(true);
+        expect(glassLight?.defaultMode).toBe('light');
+        expect(glassLight?.legacyPreset).toBeUndefined();
+        expect(glassLight?.default).toBeUndefined();
     });
 
-    it('does not make official.glass the default (Glass is opt-in, never auto-activated)', () => {
+    it('points official.glass.light at official.glass’s token stylesheet', () => {
+        // Mode is a per-entry property and nothing toggles it independently of theme identity, so
+        // Glass's two modes are two entries — which only renders correctly because the light entry
+        // selects the dark entry's generated stylesheet and differs by `[data-rf-mode]` alone.
+        expect(getThemeEntry('official.glass.light')?.tokenThemeId).toBe(
+            'official.glass'
+        );
+        // The dark entry needs no indirection: its id already names its stylesheet.
+        expect(getThemeEntry('official.glass')?.tokenThemeId).toBeUndefined();
+    });
+
+    it('marks both Glass entries as experimental (badged in pickers, issue #18 G18b-1)', () => {
+        expect(getThemeEntry('official.glass')?.experimental).toBe(true);
+        expect(getThemeEntry('official.glass.light')?.experimental).toBe(true);
+    });
+
+    it('does not make either Glass entry the default (Glass is opt-in, never auto-activated)', () => {
         expect(getThemeEntry('official.glass')?.default).toBeUndefined();
+        expect(getThemeEntry('official.glass.light')?.default).toBeUndefined();
         expect(getDefaultThemeEntry().id).toBe('official.classic');
     });
 
-    it('does not mark any other entry as experimental', () => {
+    it('does not mark any non-Glass entry as experimental', () => {
         for (const theme of THEME_REGISTRY) {
-            if (theme.id === 'official.glass') continue;
+            if (
+                theme.id === 'official.glass' ||
+                theme.id === 'official.glass.light'
+            ) {
+                continue;
+            }
             expect(theme.experimental).toBeUndefined();
         }
     });
@@ -133,6 +160,9 @@ describe('getSelectableThemeEntries()', () => {
         expect(selectable.some((theme) => theme.id === 'official.glass')).toBe(
             true
         );
+        expect(
+            selectable.some((theme) => theme.id === 'official.glass.light')
+        ).toBe(true);
     });
 
     it('offers every registry entry', () => {

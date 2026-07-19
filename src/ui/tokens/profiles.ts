@@ -32,8 +32,16 @@
 
 import type { ReefinTokens } from './types';
 
+/**
+ * `NonNullable` before the `object` test, because an *optional* token group would otherwise not
+ * recurse: `ReefinColorTokens['light']` is `ReefinColorGroup | undefined`, and a union with
+ * `undefined` does not extend `object`, so the naive form fell through to the non-partial branch
+ * and demanded all 13 color keys from a partial that legitimately declares four.
+ */
 type DeepPartial<T> = {
-    [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+    [K in keyof T]?: NonNullable<T[K]> extends object
+        ? DeepPartial<NonNullable<T[K]>>
+        : T[K];
 };
 
 /** A profile override: a deep-partial of the token set, never a new namespace. */
@@ -82,6 +90,16 @@ export const LOW_POWER_OVERRIDE: ReefinTokensOverride = {
  * Declared accessibility need — highest priority, never negotiable. Blur zero *and* opaque
  * surfaces: zero blur over a translucent surface shows the content underneath sharply, which is
  * worse than the blur. Alpha-free hex, so opacity is verifiable by inspection.
+ *
+ * **Both modes carry concrete values.** `projectTokens.ts#toCustomProperties` projects only the
+ * *active* mode's `color` group, so a `dark`-only override would zero the blur under Glass Light
+ * while leaving its surface translucent — precisely the "worse than the blur" state this override
+ * exists to prevent, and an override true in this object and false in the computed styles. The
+ * light values are not a `mode === 'light'` branch (that would be the per-theme resolution table
+ * `docs/reefin/design-glass-interaction-profiles.md` §1 rejects): they are the same concrete
+ * partial shape as `dark`, authored by compositing Glass Light's own translucent tokens over its
+ * `background` so the opaque surface renders the color the frosted one already resolved to, at
+ * identical contrast (6.38:1 for `textMuted`, either way).
  */
 export const REDUCED_TRANSPARENCY_OVERRIDE: ReefinTokensOverride = {
     blur: { sm: '0', md: '0', lg: '0' },
@@ -91,6 +109,12 @@ export const REDUCED_TRANSPARENCY_OVERRIDE: ReefinTokensOverride = {
             surfaceVariant: '#1b232d',
             textMuted: '#b6c2cf',
             divider: '#2a343f'
+        },
+        light: {
+            surface: '#f7f9fc',
+            surfaceVariant: '#e0e7f3',
+            textMuted: '#575c66',
+            divider: '#d6d9dd'
         }
     }
 };

@@ -102,10 +102,30 @@ describe('toCustomProperties', () => {
         expect(projected).not.toHaveProperty('--rf-color-dark-surface');
     });
 
-    it('projects nothing from color.<mode> when that mode is not active', () => {
-        // Glass is dark-only; asking for light must not write dark's values under light's name.
+    it('projects the requested mode only, never the other mode under its name', () => {
+        // `reducedTransparency` now carries both modes (Glass gained a light frosted mode in
+        // W13.8b). The guarantee under test is unchanged and now checkable in both directions:
+        // asking for light must yield light's opaque values, and must not leak dark's.
         const projected = toCustomProperties(
             CASCADE_OVERRIDES.reducedTransparency,
+            'light'
+        );
+
+        expect(projected['--rf-color-surface']).toBe('#f7f9fc');
+        expect(projected['--rf-color-surface-variant']).toBe('#e0e7f3');
+        expect(projected['--rf-color-text-muted']).toBe('#575c66');
+        // Dark's values must appear nowhere in a light projection.
+        expect(Object.values(projected)).not.toContain('#141a22');
+        expect(Object.values(projected)).not.toContain('#b6c2cf');
+        expect(projected['--rf-backdrop-filter-md']).toBe('none');
+    });
+
+    it('projects no color at all when the override does not declare the active mode', () => {
+        // The absence half of the same rule, on an override that genuinely declares one mode:
+        // a mode the partial says nothing about must contribute no color property, rather than
+        // falling back to whichever group happens to exist.
+        const projected = toCustomProperties(
+            { blur: { md: '0' }, color: { dark: { surface: '#141a22' } } },
             'light'
         );
 

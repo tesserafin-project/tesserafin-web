@@ -28,6 +28,24 @@ export interface ThemeRegistryEntry {
     color: string;
     /** The palette mode ('dark' | 'light') this entry renders in. */
     defaultMode: 'dark' | 'light';
+    /**
+     * The `--rf-*` design-token stylesheet this entry renders with, i.e. the value written to
+     * `data-rf-theme` — defaulting to {@link id} when omitted.
+     *
+     * It exists because a theme's *modes* and its *registry entries* are not one-to-one here. Mode
+     * is a per-entry property (`defaultMode`), and nothing in the app toggles light/dark
+     * independently of theme identity — `dark` and `light` are themselves two separate entries. So
+     * a theme offering both modes offers them as two entries, and the second one needs to select
+     * the same generated stylesheet as the first: `official.glass.light` renders
+     * `[data-rf-theme="official.glass"][data-rf-mode="light"]`, a tier
+     * `reefin-design/scripts/generate-web-tokens.mjs` already emits for every mode in
+     * `theme.json#modes`.
+     *
+     * Declared explicitly rather than derived by stripping a `.light` suffix: a naming convention
+     * that load-bearing would be an unpublished resolution rule, and this field is readable at the
+     * one place it is decided. `themes/useAppTheme.ts` is the only consumer.
+     */
+    tokenThemeId?: string;
     /** True for themes shipped and maintained by the Reefin team. */
     builtin: boolean;
     /**
@@ -86,6 +104,25 @@ export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
                     /* webpackChunkName: "theme-colorscheme-official-glass" */ './official.glass'
                 )
             ).default
+    },
+    {
+        id: 'official.glass.light',
+        name: 'Reefin Glass Light',
+        color: '#eef2f8',
+        defaultMode: 'light',
+        // Renders the same generated token stylesheet as the dark entry above; only the
+        // `[data-rf-mode="light"]` color tier differs. See `tokenThemeId`'s field doc.
+        tokenThemeId: 'official.glass',
+        builtin: true,
+        experimental: true,
+        // The *same* dynamic import as the dark entry, so both modes share one webpack chunk and
+        // neither palette reaches the main bundle (RFC-0005 §9.1).
+        loadColorScheme: async () =>
+            (
+                await import(
+                    /* webpackChunkName: "theme-colorscheme-official-glass" */ './official.glass'
+                )
+            ).light
     },
     {
         id: 'dark',
