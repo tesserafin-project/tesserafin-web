@@ -294,7 +294,24 @@ test.describe('library activation', () => {
             timeout: 15_000
         });
 
-        await page.locator(`a[href="#/library/${libraryId}"]`).first().click();
+        /*
+         * Scoped to the `src/ui` card slot, NOT to `a[href=...]` alone. Three anchors on /home
+         * carry this href: the legacy nav drawer's `a.lnkMediaFolder.navMenuOption` (rendered by
+         * `scripts/libraryMenu.js` into the closed `.mainDrawer`, so never visible), an AppBar
+         * link, and the actual home card. A bare `.first()` picks whichever the legacy drawer's
+         * asynchronous render happens to have inserted first — it passed on one run and timed out
+         * on another against the same build. Targeting the card slot is what makes this test
+         * deterministic, and it is a stricter assertion than the one it replaces, not a looser one:
+         * it now requires the click to land on the home card specifically.
+         *
+         * The href itself was never in question — all three anchors already carried the canonical
+         * `#/library/:id`, which is the repoint working.
+         */
+        await page
+            .locator(
+                `[data-rf-slot="media-card"][href="#/library/${libraryId}"]`
+            )
+            .click();
 
         await expect(page).toHaveURL(new RegExp(`#/library/${libraryId}`));
         await expect(
@@ -440,15 +457,25 @@ test.describe('library activation', () => {
     });
 
     /**
-     * A stale bookmark to a deleted library. Reefin's `GET /Items/{itemId}` filters by user and
-     * answers 404 for both "gone" and "not visible to you" (see `utils/libraryAccess.ts`), so this
-     * is the state a user reaches in either case — and it offers no retry, because retrying a
-     * deleted library cannot succeed.
+     * A stale bookmark to a library that no longer exists.
+     *
+     * The id matters, and picking it carelessly is how this test was wrong before. An earlier
+     * version used the all-zeros GUID, which is **not** a missing id at all:
+     * `UserLibraryController.GetItem` branches on `itemId.IsEmpty()` and answers `Guid.Empty` with
+     * the user's *root folder*, HTTP 200. Measured against this rig:
+     * `GET /Items/00000000000000000000000000000000` → 200 "Media Folders", while
+     * `GET /Items/ffffffffffffffffffffffffffffffff` → 404. So the old test was asserting the
+     * not-found state on a request that had succeeded, and the product was right to not show it.
+     * The empty-GUID case is now exercised for what it really is, in the test below.
+     *
+     * Reefin's `GET /Items/{itemId}` filters by user and answers 404 for both "gone" and "not
+     * visible to you" (see `utils/libraryAccess.ts`), so this is the state a user reaches in either
+     * case — and it offers no retry, because retrying a deleted library cannot succeed.
      */
     test('a library id that does not exist shows the not-found state, not a retry loop', async ({
         page
     }) => {
-        await page.goto('/#/library/00000000000000000000000000000000');
+        await page.goto('/#/library/ffffffffffffffffffffffffffffffff');
         await page.waitForLoadState('networkidle');
 
         await expect(page.locator('[data-rf-slot="state-empty"]')).toBeVisible({
@@ -460,37 +487,52 @@ test.describe('library activation', () => {
             page.getByRole('button', { name: /retry|réessayer/i })
         ).toHaveCount(0);
         expect(page.url()).toContain(
-            '#/library/00000000000000000000000000000000'
+            '#/library/ffffffffffffffffffffffffffffffff'
         );
     });
 
     /**
-     * A second unresolvable id, asserting that the terminal state is stable rather than specific to
-     * one id shape.
+     * The **outbound** half of the no-loop proof, against a real server response.
      *
-     * **This does not exercise access-denied, and must not be read as doing so.** Reaching the
-     * access-denied branch needs a library that exists but is invisible to the e2e user, and this
-     * rig has no such fixture — a made-up id simply 404s, landing on the same not-found state as
-     * the test above. Access-denied is proven only at unit level (`utils/libraryAccess.test.ts`,
-     * against synthetic 401/403) plus the grid's classification of `GET /Items`' real 401. Naming
-     * that gap here rather than letting a passing test imply coverage it does not have.
+     * The all-zeros GUID resolves — server-side — to the user's root folder, an item with no
+     * `CollectionType`. That is exactly the case `getLibraryRedirectPath` exists for: a real item
+     * this route does not render, which must leave for the mixed-content page and stay left. It is
+     * a better fixture than a synthetic one because the server produced it, and it is the outbound
+     * direction I previously had no way to exercise end to end.
+     *
+     * The settle check is the assertion that matters: if the inbound and outbound redirects
+     * overlapped, the URL would keep changing and the second read would differ from the first.
+     *
+     * **This is not an access-denied test, and nothing here should be read as one.** Reaching that
+     * branch needs a library that exists but is invisible to the e2e user, and this rig has no such
+     * fixture. Access-denied remains proven at unit level (`utils/libraryAccess.test.ts`, against
+     * synthetic 401/403) plus the grid's classification of `GET /Items`' real 401.
      */
-    test('a second unresolvable library id lands on the same terminal state', async ({
+    test('a library this route cannot render leaves for its own page and stays left', async ({
         page
     }) => {
-        await page.goto('/#/library/ffffffffffffffffffffffffffffffff');
-        await page.waitForLoadState('networkidle');
-
-        await expect(page.locator('[data-rf-slot="state-empty"]')).toBeVisible({
+        await page.goto('/#/library/00000000000000000000000000000000');
+        await page.waitForURL((url) => !url.hash.startsWith('#/library/'), {
             timeout: 15_000
         });
-        await expect(
-            page.getByRole('button', { name: /retry|réessayer/i })
-        ).toHaveCount(0);
+
+        expect(page.url()).toContain('#/mixed');
+
+        const settled = page.url();
+        await page.waitForTimeout(1500);
+        expect(page.url()).toBe(settled);
+        expect(page.url()).not.toContain('#/library/');
     });
 });
 
 const { defaultBrowserType: _phoneBrowser, ...PHONE } = devices['Pixel 5'];
+
+/*
+ * The app bar exposes *two* buttons whose accessible name contains "menu" — "Open Menu" (the
+ * hamburger) and "User Menu" — so a `/menu/i` name match resolves to two elements and `.first()`
+ * only happens to pick the right one. Anchored to the hamburger explicitly.
+ */
+const OPEN_MENU = /^(open menu|ouvrir le menu)$/i;
 
 /**
  * The same route on a phone viewport. Two things are only true on mobile: the drawer is the way out
@@ -556,9 +598,7 @@ test.describe('library activation (mobile)', () => {
         await page.goto(`/#/library/${libraryId}/genres`);
         await page.waitForLoadState('networkidle');
 
-        const menuButton = page
-            .getByRole('button', { name: /menu|main menu/i })
-            .first();
+        const menuButton = page.getByRole('button', { name: OPEN_MENU });
         await expect(menuButton).toBeVisible({ timeout: 15_000 });
         await menuButton.click();
 
@@ -579,13 +619,20 @@ test.describe('library activation (mobile)', () => {
         await page.goto(`/#/library/${libraryId}`);
         await page.waitForLoadState('networkidle');
 
-        await page
-            .getByRole('button', { name: /menu|main menu/i })
-            .first()
-            .click();
+        await page.getByRole('button', { name: OPEN_MENU }).click();
 
+        /*
+         * Scoped to `MainDrawerContent`'s own `ListItemLink` (`MuiListItemButton`), for the same
+         * reason as the home-card click above: the closed legacy `.mainDrawer` also holds an
+         * `a.lnkMediaFolder` with this href, and it is never visible, so an unscoped `.first()`
+         * asserts visibility on the wrong element. The URL was already correct on both.
+         */
+        // The drawer's `ListItemLink` renders the anchor *as* the MuiListItemButton, so the class
+        // and the href are on the same element.
         await expect(
-            page.locator(`a[href*="library/${libraryId}"]`).first()
+            page.locator(
+                `a.MuiListItemButton-root[href*="library/${libraryId}"]`
+            )
         ).toBeVisible({ timeout: 15_000 });
     });
 
