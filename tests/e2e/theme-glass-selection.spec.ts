@@ -122,6 +122,31 @@ test.describe('theme: selecting Reefin Glass', () => {
     };
 
     /**
+     * Establishes the precondition the "Classic is the default" claim is actually about: this user
+     * has **no saved theme preference**. The test then asserts a state it set up itself, instead of
+     * inheriting one from a fresh browser context or a freshly provisioned server — so it holds on
+     * a rig already dirtied by its own previous runs, in any order.
+     *
+     * Clearing one key is the entire reset, and that is a property of the product, not a shortcut:
+     * `userSettings.theme()` persists via `set('appTheme', value, false)`, and that third argument
+     * suppresses the server write, so the main theme lives solely under the user-scoped
+     * `<userId>-appTheme` key `appSettings` owns. There is no server-side main-theme state to
+     * clear. (`dashboardTheme` *is* server-persisted, but it is per-user and only drives dashboard
+     * routes, so it cannot move anything these assertions read.)
+     *
+     * The reload is what makes this effective rather than decorative: the theme is resolved from
+     * storage at boot, so the assertion must run against a boot that saw no saved preference.
+     */
+    const establishUnsetThemePreference = async (page: Page) => {
+        await page.evaluate(
+            ([key]) => window.localStorage.removeItem(key),
+            [`${userId}-appTheme`]
+        );
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+    };
+
+    /**
      * Selects a theme the way a user does: open the picker, click the option, submit the form.
      * Deliberately no `localStorage` writes — that the *product's* selection path reaches the
      * theme runtime is the claim under test.
@@ -143,10 +168,12 @@ test.describe('theme: selecting Reefin Glass', () => {
         page
     }) => {
         await signIn(page);
+        await establishUnsetThemePreference(page);
         await gotoPreferences(page);
 
-        // Nothing was selected yet, so what the picker shows is what an unset preference resolves
-        // to — Classic. This is the "no auto-activation" guarantee, observed rather than assumed.
+        // Given a boot with no saved preference — which this test just established — the resolved
+        // theme is Classic. That is the "no auto-activation" guarantee, observed rather than
+        // assumed, and it does not depend on how any earlier run left the rig.
         await expectBlur(page, '0', 'none');
 
         await page.locator(THEME_SELECT).click();
@@ -182,6 +209,9 @@ test.describe('theme: selecting Reefin Glass', () => {
         page
     }) => {
         await signIn(page);
+        // Start from a preference state this test set up, so the transition below is a real
+        // Classic → Glass change and not a no-op inherited from an earlier run.
+        await establishUnsetThemePreference(page);
         await gotoPreferences(page);
         await expectBlur(page, '0', 'none');
 
@@ -466,7 +496,11 @@ test.describe('theme: selecting Reefin Glass', () => {
     });
 
     test.afterEach(async ({ page }) => {
-        // Leave the shared server's user on Classic, so a later spec does not inherit Glass.
+        // Courtesy cleanup for anything sharing this browser profile — NOT what makes these tests
+        // order-independent. Correctness comes from the setup side: the tests that assert a
+        // default explicitly establish "no saved preference" first, and every other test selects
+        // the theme it asserts. A cleanup that fails (closed page, crashed test) therefore cannot
+        // make a later run flake, which is exactly why it is not relied on.
         await page
             .evaluate(
                 ([key]) => window.localStorage.removeItem(key),
