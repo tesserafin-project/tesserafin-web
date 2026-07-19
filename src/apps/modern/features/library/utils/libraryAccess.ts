@@ -17,9 +17,25 @@
  * The classification reads the HTTP status off the thrown Axios error rather than matching message
  * text: status codes are contract, message strings are not.
  *
- * Note on 404: a server may answer "you cannot see this" with 404 rather than 403, to avoid
- * confirming that an id exists. That is a legitimate server choice and this module cannot see
- * through it — a 404 is reported as *not found*, which is what the client was told.
+ * ## What Reefin actually answers — measured, not assumed
+ *
+ * The two endpoints this route uses disagree, and it matters:
+ *
+ * - **`GET /Items/{itemId}`** (`Reefin.Api/Controllers/UserLibraryController.cs`'s `GetItem`, which
+ *   backs `useLibraryInfo`) resolves through `_libraryManager.GetItemById<BaseItem>(itemId, user)`
+ *   — the *user-filtered* overload — and returns `NotFound()` when it yields null. A library the
+ *   user may not see is therefore **indistinguishable from one that does not exist** at this
+ *   endpoint: both are 404. That is a deliberate server-side choice (not confirming that an id
+ *   exists is the safer answer), and no amount of client code can see through it. In practice a
+ *   forbidden library renders the *not found* state, and this module does not pretend otherwise.
+ * - **`GET /Items`** (`Reefin.Api/Controllers/ItemsController.cs`, which backs the Browse grid)
+ *   does distinguish: `!item.IsVisible(user)` returns **401** with an explicit
+ *   "is not permitted to access Library X" message. This is the path on which `access-denied` is
+ *   really reachable, which is why the grid classifies its error too rather than only the shell.
+ *
+ * So the classification below is correct per status code, and the *coverage* of `access-denied`
+ * depends on which request failed. Stated here rather than in a report, because a future reader
+ * looking at the access-denied branch deserves to know when it can actually fire.
  */
 
 export type LibraryFailureKind = 'not-found' | 'access-denied' | 'error';

@@ -2,13 +2,7 @@ import React, { type FC, useCallback, useMemo } from 'react';
 
 import globalize from 'lib/globalize';
 import type { BaseItemKind } from 'lib/reefin-sdk';
-import {
-    EmptyState,
-    ErrorState,
-    LoadingState,
-    MediaCard,
-    MediaGrid
-} from 'ui';
+import { EmptyState, ErrorState, LoadingState, MediaCard, MediaGrid } from 'ui';
 
 import { useLibraryGenres } from '../api/useLibraryDestinations';
 import type { LibraryDensity } from '../utils/density';

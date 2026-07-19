@@ -124,7 +124,9 @@ export const parseLibraryQueryState = (
         genre: parseGenre(searchParams.get(QUERY_PARAM.genre)),
         year: parseYear(searchParams.get(QUERY_PARAM.year)),
         letter: parseLetter(searchParams.get(QUERY_PARAM.letter)),
-        granularity: parseGranularity(searchParams.get(QUERY_PARAM.granularity)),
+        granularity: parseGranularity(
+            searchParams.get(QUERY_PARAM.granularity)
+        ),
         favorite: parseFavorite(searchParams.get(QUERY_PARAM.favorite)),
         studioIds: parseStudioIds(searchParams.get(QUERY_PARAM.studio))
     };

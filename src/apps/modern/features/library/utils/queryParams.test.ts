@@ -140,10 +140,18 @@ describe('withLibraryQueryState()', () => {
  */
 describe('parseLibraryQueryState() — Browse controls', () => {
     it('reads the letter, normalising case and rejecting non-letters', () => {
-        expect(parseLibraryQueryState(new URLSearchParams('letter=b')).letter).toBe('B');
-        expect(parseLibraryQueryState(new URLSearchParams('letter=%23')).letter).toBe('#');
-        expect(parseLibraryQueryState(new URLSearchParams('letter=AB')).letter).toBeUndefined();
-        expect(parseLibraryQueryState(new URLSearchParams('letter=7')).letter).toBeUndefined();
+        expect(
+            parseLibraryQueryState(new URLSearchParams('letter=b')).letter
+        ).toBe('B');
+        expect(
+            parseLibraryQueryState(new URLSearchParams('letter=%23')).letter
+        ).toBe('#');
+        expect(
+            parseLibraryQueryState(new URLSearchParams('letter=AB')).letter
+        ).toBeUndefined();
+        expect(
+            parseLibraryQueryState(new URLSearchParams('letter=7')).letter
+        ).toBeUndefined();
     });
 
     it('reads the granularity, ignoring anything that is not a known depth', () => {
@@ -159,15 +167,25 @@ describe('parseLibraryQueryState() — Browse controls', () => {
 
     /** `?favorite=1` is a single truthy sentinel: absent means "no filter", never "show non-favorites". */
     it('reads favorite only from the "1" sentinel', () => {
-        expect(parseLibraryQueryState(new URLSearchParams('favorite=1')).favorite).toBe(true);
-        expect(parseLibraryQueryState(new URLSearchParams('favorite=0')).favorite).toBeUndefined();
-        expect(parseLibraryQueryState(new URLSearchParams('favorite=true')).favorite).toBeUndefined();
-        expect(parseLibraryQueryState(new URLSearchParams('')).favorite).toBeUndefined();
+        expect(
+            parseLibraryQueryState(new URLSearchParams('favorite=1')).favorite
+        ).toBe(true);
+        expect(
+            parseLibraryQueryState(new URLSearchParams('favorite=0')).favorite
+        ).toBeUndefined();
+        expect(
+            parseLibraryQueryState(new URLSearchParams('favorite=true'))
+                .favorite
+        ).toBeUndefined();
+        expect(
+            parseLibraryQueryState(new URLSearchParams('')).favorite
+        ).toBeUndefined();
     });
 
     it('reads comma-separated studio ids, dropping blanks', () => {
         expect(
-            parseLibraryQueryState(new URLSearchParams('studio=s1,s2')).studioIds
+            parseLibraryQueryState(new URLSearchParams('studio=s1,s2'))
+                .studioIds
         ).toEqual(['s1', 's2']);
         expect(
             parseLibraryQueryState(new URLSearchParams('studio=,, ,')).studioIds
@@ -183,25 +201,39 @@ describe('withLibraryQueryState() — Browse controls', () => {
 
     it('writes each control and clears it again when unset', () => {
         expect(serialize('', { letter: 'C' })).toContain('letter=C');
-        expect(serialize('letter=C', { letter: undefined })).not.toContain('letter');
+        expect(serialize('letter=C', { letter: undefined })).not.toContain(
+            'letter'
+        );
 
         expect(serialize('', { favorite: true })).toContain('favorite=1');
-        expect(serialize('favorite=1', { favorite: undefined })).not.toContain('favorite');
+        expect(serialize('favorite=1', { favorite: undefined })).not.toContain(
+            'favorite'
+        );
 
-        expect(serialize('', { studioIds: ['s1', 's2'] })).toContain('studio=s1%2Cs2');
-        expect(serialize('studio=s1', { studioIds: [] })).not.toContain('studio');
+        expect(serialize('', { studioIds: ['s1', 's2'] })).toContain(
+            'studio=s1%2Cs2'
+        );
+        expect(serialize('studio=s1', { studioIds: [] })).not.toContain(
+            'studio'
+        );
     });
 
     /** `primary` is the default depth, so it is written as absence — the same clean-URL rule sort/order/page follow. */
     it('writes granularity only when it is not the default depth', () => {
-        expect(serialize('', { granularity: 'episodes' })).toContain('granularity=episodes');
-        expect(serialize('granularity=episodes', { granularity: 'primary' })).not.toContain(
-            'granularity'
+        expect(serialize('', { granularity: 'episodes' })).toContain(
+            'granularity=episodes'
         );
+        expect(
+            serialize('granularity=episodes', { granularity: 'primary' })
+        ).not.toContain('granularity');
     });
 
     it('leaves an untouched control alone', () => {
-        expect(serialize('letter=C&studio=s1', { page: 3 })).toContain('letter=C');
-        expect(serialize('letter=C&studio=s1', { page: 3 })).toContain('studio=s1');
+        expect(serialize('letter=C&studio=s1', { page: 3 })).toContain(
+            'letter=C'
+        );
+        expect(serialize('letter=C&studio=s1', { page: 3 })).toContain(
+            'studio=s1'
+        );
     });
 });

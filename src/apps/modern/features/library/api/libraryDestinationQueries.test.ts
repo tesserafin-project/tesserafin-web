@@ -163,7 +163,9 @@ describe('Suggestions shelves', () => {
     it('fetchLibraryLatestItems() hits /Items/Latest and normalises its bare array to an { Items } shape', async () => {
         // `getLatestMedia` answers with `BaseItemDto[]`, not a QueryResult — the one shelf endpoint
         // whose response shape differs, normalised so all shelves render through one path.
-        const request = vi.fn().mockResolvedValue({ data: [{ Id: 'movie-1' }] });
+        const request = vi
+            .fn()
+            .mockResolvedValue({ data: [{ Id: 'movie-1' }] });
         const api = createMockApi(request);
 
         const result = await fetchLibraryLatestItems(api, 'user-1', {

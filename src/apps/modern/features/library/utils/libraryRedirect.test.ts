@@ -118,9 +118,9 @@ describe('no redirect loop between /library and the legacy pages', () => {
             const target = getLibraryRedirectPath('lib-1', collectionType);
 
             for (const page of LEGACY_LIBRARY_PAGES) {
-                expect(
-                    target === page || target.startsWith(`${page}?`)
-                ).toBe(false);
+                expect(target === page || target.startsWith(`${page}?`)).toBe(
+                    false
+                );
             }
         }
     });
@@ -130,9 +130,9 @@ describe('no redirect loop between /library and the legacy pages', () => {
             const target = getLibraryRedirectPath('lib-1', value);
 
             for (const page of LEGACY_LIBRARY_PAGES) {
-                expect(
-                    target === page || target.startsWith(`${page}?`)
-                ).toBe(false);
+                expect(target === page || target.startsWith(`${page}?`)).toBe(
+                    false
+                );
             }
         }
     });

@@ -1,11 +1,11 @@
 # Design — Navigation de la Library Reefin (issue #15, arbitrage §8-C de reefin#44)
 
-> **Statut : STRUCTURE LIVRÉE (L15a), ROUTAGE NON FAIT (L15b).** Ce document ne branche toujours
-> aucune route : `appRouter.getRouteUrl()` n'est pas modifié, aucune redirection n'est ajoutée,
-> aucune destination n'est montée. Ce qui a changé depuis la rédaction initiale, c'est que le
-> vocabulaire et les requêtes des destinations/filtres existent et sont testés (§6), et que les
-> **deux gates d'activation sont désormais disponibles** (§7) — disponibilité qui ne vaut pas
-> activation.
+> **Statut : ACTIVÉ (L15b).** La structure livrée par L15a (§6) est désormais montée et routée :
+> les quatre destinations existent sous `/library/:libraryId[/:destination]`, les contrôles de
+> Browse sont câblés, `appRouter.getRouteUrl()` pointe les libraries Movies/Tvshows sur cette route,
+> et les anciennes URLs `#/movies` / `#/tv` redirigent (§8). Deux cellules du tableau §3.2 ne sont
+> **délibérément pas redirigées** et gardent leur page legacy — c'est documenté en §8.2, pas
+> improvisé.
 
 ## 1. Le problème posé
 
@@ -148,13 +148,7 @@ Les deux sont **portés**, pas abandonnés : §2 démontre qu'ils sont actifs su
 Chaque destination et chaque filtre est **prouvé par test sur l'URL réellement émise**, pas par
 lecture du source. Aucun import `@jellyfin/sdk` n'apparaît dans cette tranche.
 
-**Non fait (L15b) :**
-
-- `appRouter.getRouteUrl()` n'est pas modifié.
-- Aucune redirection depuis les URL legacy.
-- Aucune destination montée, aucune route `/library/:libraryId/:destination` ajoutée ; le rendu de
-  `LibraryView.tsx` est inchangé (seul son commentaire d'en-tête a été corrigé).
-- Rien n'est retiré du chemin par défaut : les pages legacy restent exactement où elles sont.
+**Fait par L15b (§8) :** tout ce que cette liste annonçait comme non fait.
 
 **Coût bundle.** La formulation initiale — « `librarySections.ts` n'est importé que par son test,
 donc 0 octet » — n'est plus exacte : `useLibraryItems.ts` l'importe désormais. Le coût sur le bundle
@@ -180,8 +174,95 @@ elles ne le sont plus :
    depuis `/home` et les redirections. Ce que #39 change, c'est qu'écrire cette spec est maintenant
    possible ; l'écrire reste à faire, dans L15b.
 
-**Disponible ≠ activé.** Les deux gates étant ouverts, l'activation devient finançable — sous
-réserve que les tests de la tranche d'activation passent — mais elle n'est pas effectuée ici. L15a
-livre la structure (§6) ; le chemin par défaut reste intégralement le legacy jusqu'à L15b, qui monte
-les destinations *avant* de repointer `getRouteUrl` (l'ordre inverse exposerait tous les points
-d'entrée à une route incapable de rendre ce qu'ils demandent).
+**Disponible ≠ activé.** Les deux gates étant ouverts, l'activation est devenue finançable, et L15b
+l'a exécutée dans l'ordre que cette section imposait : monter les destinations *avant* de repointer
+`getRouteUrl` (l'ordre inverse exposerait tous les points d'entrée à une route incapable de rendre
+ce qu'ils demandent).
+
+## 8. Ce que L15b active
+
+### 8.1 Le repointage et la forme des URLs
+
+`appRouter.getRouteUrl()` et l'adaptateur de cartes de `/home` lisent tous deux la même règle,
+extraite dans `src/constants/libraryRoute.ts` — ce qui retire la duplication
+`LIBRARY_ROUTE_BY_COLLECTION_TYPE` que le TODO de `LibraryView.tsx` signalait. Les deux modules ne
+peuvent pas s'importer l'un l'autre (risque d'import circulaire vers `routes/home.tsx`), mais ils
+peuvent dépendre d'une feuille commune : `/home` et le drawer ne peuvent donc plus diverger.
+
+- `#/library/:libraryId` = Browse, l'URL courte est canonique. `/browse` et tout segment inconnu y
+  reviennent en `replace`, query string conservée.
+- `#/library/:libraryId/{genres,collections,suggestions}` = segments partageables.
+- `section: 'latest'` (les étagères « Récemment ajouté » de `/home`) nomme désormais `suggestions`,
+  là où ces étagères vivent — le sens du lien est reporté, pas perdu.
+
+### 8.2 Table des anciennes URLs
+
+Toutes les entrées ci-dessous étaient réellement émises par `getRouteUrl()`. Les index d'onglet
+viennent de `constants/views/movies.ts` et `constants/views/tvshows.ts`.
+
+| Ancienne URL | Destination | Params conservés |
+|---|---|---|
+| `#/movies?topParentId=X` (ou `&tab=0`) | `/library/X` | tous les params compatibles |
+| `#/movies?topParentId=X&tab=1` | `/library/X/suggestions` | idem |
+| `#/movies?topParentId=X&tab=2` (Favorites) | `/library/X?favorite=1` | idem |
+| `#/movies?topParentId=X&tab=3` | `/library/X/collections` | idem |
+| `#/movies?topParentId=X&tab=4` | `/library/X/genres` | idem |
+| `#/movies?topParentId=X&tab=5` (Studios) | **aucune** — page legacy conservée | — |
+| `#/movies?topParentId=X&tab=6` (Playlists) | **aucune** — page legacy conservée | — |
+| `#/tv?topParentId=X` (ou `&tab=0`) | `/library/X` | tous les params compatibles |
+| `#/tv?topParentId=X&tab=1` | `/library/X/suggestions` | idem |
+| `#/tv?topParentId=X&tab=2` (Upcoming) | `/library/X/suggestions` | idem |
+| `#/tv?topParentId=X&tab=3` | `/library/X/genres` | idem |
+| `#/tv?topParentId=X&tab=4` (Studios) | **aucune** — page legacy conservée | — |
+| `#/tv?topParentId=X&tab=5` (Episodes) | `/library/X?granularity=episodes` | idem |
+| `#/tv?topParentId=X&tab=6` | `/library/X/collections` | idem |
+| `#/tv?topParentId=X&tab=7` (Playlists) | **aucune** — page legacy conservée | — |
+
+« Params compatibles » = `sort`, `order`, `page`, `genre`, `year`, `density`, `view`, `letter`,
+`granularity`, `favorite`, `studio`. `topParentId`, `collectionType` et `tab` sont *consommés* par
+la redirection (l'un devient le segment de chemin, l'autre la destination) et ne sont donc pas
+reportés.
+
+**Les deux cellules sans redirection — arrêt documenté, pas improvisation.**
+
+- **Studios.** L'onglet legacy est une *grille de studios parcourable* ; le §3.2 fait de Studios un
+  filtre `studioIds` sur Browse. Une URL Studios nue ne nomme aucun studio : il n'existe pas d'id à
+  mettre dans `?studio=`. La rediriger vers Browse répondrait silencieusement « voici tous vos
+  films » à la question « montre-moi les studios » — l'URL résoudrait, son *sens* aurait disparu.
+- **Playlists.** Le §3.2 dit « hors library … reste sur sa page existante, **inchangée** ». La page
+  existante de l'onglet Playlists d'une library *est* cette URL legacy.
+
+Dans les deux cas l'URL continue de rendre sa page legacy. Le filtre Studios, lui, est bien présent
+dans la barre de Browse : c'est la *destination* du §3.2 qui est livrée, ce qui manque est
+seulement la traduction d'une URL sans id.
+
+### 8.3 Absence de boucle — argument structurel
+
+Deux directions coexistent désormais :
+
+```
+ENTRÉE  #/movies, #/tv           → /library/:libraryId   (legacyLibraryRedirect.ts)
+SORTIE  /library/:libraryId      → page par type          (libraryRedirect.ts)
+```
+
+Une boucle exigerait qu'un même `CollectionType` soit dans les deux ensembles. C'est impossible par
+construction : l'entrée n'est prise que pour les deux types que `isSupportedLibraryCollectionType`
+accepte — exactement ceux que `LibraryView` *rend*, donc pour lesquels la sortie n'est jamais
+atteinte — et la sortie ne vise que des pages que l'entrée ne surveille pas. Les deux moitiés sont
+assertées sur *tous* les `CollectionType` de l'enum (`libraryRedirect.test.ts`,
+`legacyLibraryRedirect.test.ts`, `constants/libraryRoute.test.ts`), pas laissées à l'inspection.
+
+### 8.4 Library inexistante et accès refusé
+
+Les deux endpoints utilisés ne répondent pas pareil, et c'est mesuré côté serveur :
+
+- `GET /Items/{itemId}` (`UserLibraryController.GetItem`) résout via
+  `GetItemById<BaseItem>(itemId, user)` — la surcharge filtrée par utilisateur — et renvoie `404`
+  quand elle est nulle. Une library non visible est donc **indiscernable** d'une library inexistante
+  à cet endpoint : les deux sont 404. C'est un choix serveur délibéré et aucun code client ne peut
+  le contourner.
+- `GET /Items` (`ItemsController`) distingue : `!item.IsVisible(user)` renvoie `401` avec un message
+  explicite. C'est le chemin sur lequel l'état « accès refusé » est réellement atteignable.
+
+Les deux états sont terminaux et n'offrent aucun bouton « réessayer » — proposer de réessayer une
+library supprimée ou une permission absente promettrait ce que le bouton ne peut pas tenir.

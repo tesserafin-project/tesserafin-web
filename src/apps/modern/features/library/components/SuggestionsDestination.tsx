@@ -168,7 +168,9 @@ export const SuggestionsDestination: FC<SuggestionsDestinationProps> = ({
 
     if (isEverythingEmpty) {
         return (
-            <EmptyState title={globalize.translate('MessageNoItemsAvailable')} />
+            <EmptyState
+                title={globalize.translate('MessageNoItemsAvailable')}
+            />
         );
     }
 

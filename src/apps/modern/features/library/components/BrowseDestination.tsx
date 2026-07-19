@@ -111,10 +111,11 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         isTvshows
     );
 
-    const [storedViewMode, setStoredViewMode] = useLocalStorage<LibraryViewMode>(
-        getViewModeStorageKey(libraryId || 'unknown'),
-        'grid'
-    );
+    const [storedViewMode, setStoredViewMode] =
+        useLocalStorage<LibraryViewMode>(
+            getViewModeStorageKey(libraryId || 'unknown'),
+            'grid'
+        );
     const viewMode = resolveViewMode(
         searchParams.get(VIEW_MODE_QUERY_PARAM),
         storedViewMode

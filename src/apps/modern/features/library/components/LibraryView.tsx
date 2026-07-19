@@ -11,13 +11,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import Page from 'components/Page';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import {
-    EmptyState,
-    ErrorState,
-    LoadingState,
-    Tabs,
-    type TabItem
-} from 'ui';
+import { EmptyState, ErrorState, LoadingState, Tabs, type TabItem } from 'ui';
 
 import { useLibraryInfo } from '../api/useLibraryInfo';
 import {
@@ -217,9 +211,7 @@ const LibraryView: FC = () => {
                 <div className='rf-library-view'>
                     {failure === 'not-found' && (
                         <EmptyState
-                            title={globalize.translate(
-                                'HeaderLibraryNotFound'
-                            )}
+                            title={globalize.translate('HeaderLibraryNotFound')}
                             description={globalize.translate(
                                 'MessageLibraryNotFound'
                             )}

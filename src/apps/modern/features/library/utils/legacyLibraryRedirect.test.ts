@@ -126,13 +126,18 @@ describe('getLegacyLibraryRedirect', () => {
 
     describe('no redirect', () => {
         it('leaves a URL with no topParentId alone', () => {
-            expect(redirect(CollectionType.Movies, 'collectionType=movies')).toBeUndefined();
+            expect(
+                redirect(CollectionType.Movies, 'collectionType=movies')
+            ).toBeUndefined();
         });
 
         it('leaves an unparseable tab on the default rather than guessing', () => {
-            expect(redirect(CollectionType.Movies, 'topParentId=lib-1&tab=notanumber')).toBe(
-                '/library/lib-1'
-            );
+            expect(
+                redirect(
+                    CollectionType.Movies,
+                    'topParentId=lib-1&tab=notanumber'
+                )
+            ).toBe('/library/lib-1');
         });
 
         it('leaves a tab index the legacy table never had alone', () => {

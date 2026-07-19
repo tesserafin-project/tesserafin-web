@@ -14,6 +14,7 @@ import {
 
 import type { LibraryViewMode } from '../constants/librarySections';
 import type { LibraryDensity } from '../utils/density';
+import { classifyLibraryFailure } from '../utils/libraryAccess';
 import {
     type ImageApiClient,
     toMediaCardPropsArray
@@ -72,6 +73,22 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     }
 
     if (itemsQuery.isError) {
+        // `GET /Items` is the request that actually distinguishes a forbidden library: Reefin's
+        // `ItemsController` answers 401 for `!item.IsVisible(user)`, while the item lookup behind
+        // the page shell answers 404 for both "gone" and "forbidden" (see `utils/libraryAccess.ts`).
+        // Classifying here is therefore what makes the access-denied state reachable at all — and it
+        // suppresses a retry button that could not have helped.
+        if (classifyLibraryFailure(itemsQuery.error) === 'access-denied') {
+            return (
+                <EmptyState
+                    title={globalize.translate('HeaderLibraryAccessDenied')}
+                    description={globalize.translate(
+                        'MessageLibraryAccessDenied'
+                    )}
+                />
+            );
+        }
+
         return (
             <ErrorState
                 message={globalize.translate('ErrorDefault')}
@@ -112,7 +129,9 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
                 density={density}
                 aria-label={label}
                 className={
-                    viewMode === 'list' ? 'rf-library-view__grid--list' : undefined
+                    viewMode === 'list'
+                        ? 'rf-library-view__grid--list'
+                        : undefined
                 }
                 // In list mode one item per row is the point, so the grid's auto-fill minimum is
                 // widened past any realistic container width rather than the layout being swapped

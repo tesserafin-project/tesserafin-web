@@ -94,10 +94,8 @@
     font-size: var(--rf-typography-font-size-sm, 0.875rem);
     cursor: pointer;
 
-    &:hover:not(:disabled) {
-        border-color: var(--rf-color-text, #fff);
-    }
-
+    /* Ordered least-specific first: `no-descending-specificity` wants `:focus-visible` and
+       `:disabled` declared before the more specific `:hover:not(:disabled)`. */
     &:focus-visible {
         outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
         outline-offset: 2px;
@@ -105,6 +103,10 @@
 
     &:disabled {
         cursor: default;
+    }
+
+    &:hover:not(:disabled) {
+        border-color: var(--rf-color-text, #fff);
     }
 
     &[aria-pressed='true'] {

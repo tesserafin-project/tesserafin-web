@@ -24,7 +24,10 @@ export const getRecommendationTitle = (
                 baseline
             );
         case RecommendationType.SimilarToLikedItem:
-            return globalize.translate('RecommendationBecauseYouLike', baseline);
+            return globalize.translate(
+                'RecommendationBecauseYouLike',
+                baseline
+            );
         case RecommendationType.HasDirectorFromRecentlyPlayed:
         case RecommendationType.HasLikedDirector:
             return globalize.translate('RecommendationDirectedBy', baseline);
