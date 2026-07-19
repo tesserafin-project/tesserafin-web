@@ -29,7 +29,7 @@ export const officialGlassTokens: ReefinTokens = {
             text: '#0b1220',
             textMuted: 'rgba(11, 18, 32, 0.68)',
             primary: '#0a6689',
-            onPrimary: '#ffffff',
+            onPrimary: '#fff',
             accent: '#4b3fd0',
             error: '#b3261e',
             warning: '#8a5a00',

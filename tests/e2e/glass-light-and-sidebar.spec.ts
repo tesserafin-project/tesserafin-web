@@ -100,11 +100,12 @@ test.describe('Glass light frosted mode: computed styles', () => {
         expect(baseline.backgroundColor).toBe('rgba(255, 255, 255, 0.55)');
     });
 
-    test('resolves the light color tier, not the dark one', async ({ page }) => {
+    test('resolves the light color tier, not the dark one', async ({
+        page
+    }) => {
         const custom = await page.evaluate(() => {
             const style = getComputedStyle(document.documentElement);
-            const read = (name: string) =>
-                style.getPropertyValue(name).trim();
+            const read = (name: string) => style.getPropertyValue(name).trim();
             return {
                 background: read('--rf-color-background'),
                 text: read('--rf-color-text'),

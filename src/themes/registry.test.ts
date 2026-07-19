@@ -67,7 +67,10 @@ describe('THEME_REGISTRY', () => {
             ) {
                 continue;
             }
-            expect(theme.experimental).toBeUndefined();
+            expect(
+                theme.experimental,
+                `"${theme.id}" should not be experimental`
+            ).toBeUndefined();
         }
     });
 
@@ -153,9 +156,9 @@ describe('getDefaultThemeEntry()', () => {
 
 describe('getSelectableThemeEntries()', () => {
     // Inverts the pre-G18b-1 invariant: Glass used to be filtered out of every picker. Issue #18's
-    // G18b-1 slice makes it selectable (opt-in, badged) — so the assertion that it is *reachable*
-    // is now the one worth pinning, since regressing it would silently hide the theme again.
-    it('offers experimental entries (official.glass) rather than hiding them', () => {
+    // G18b-1 slice makes it selectable (opt-in, badged) — so the assertion that BOTH modes are
+    // *reachable* is now the one worth pinning, since regressing it would silently hide the theme.
+    it('offers both Glass modes (experimental entries) rather than hiding them', () => {
         const selectable = getSelectableThemeEntries();
         expect(selectable.some((theme) => theme.id === 'official.glass')).toBe(
             true

@@ -84,10 +84,10 @@ export const light = buildCustomColorScheme({
         },
         background: {
             default: '#eef2f8',
-            paper: '#ffffff'
+            paper: '#fff'
         },
         AppBar: {
-            defaultBg: '#ffffff'
+            defaultBg: '#fff'
         }
     }
 });

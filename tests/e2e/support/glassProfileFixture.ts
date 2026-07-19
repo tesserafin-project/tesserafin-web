@@ -131,9 +131,7 @@ export const buildFixtureHtml = async (
     const [surfaceCss, sidebarCss, projectorJs] = await Promise.all([
         Promise.resolve(compileCss('src/ui/components/Surface/Surface.scss')),
         Promise.resolve(
-            compileCss(
-                'src/ui/components/FloatingSidebar/FloatingSidebar.scss'
-            )
+            compileCss('src/ui/components/FloatingSidebar/FloatingSidebar.scss')
         ),
         bundleProjector()
     ]);

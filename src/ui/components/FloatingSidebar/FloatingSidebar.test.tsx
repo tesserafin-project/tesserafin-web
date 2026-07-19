@@ -75,7 +75,9 @@ describe('FloatingSidebar', () => {
     it('renders a labelled navigation landmark with one entry per item', () => {
         render();
 
-        const nav = container.querySelector('nav[data-rf-slot="floating-sidebar"]');
+        const nav = container.querySelector(
+            'nav[data-rf-slot="floating-sidebar"]'
+        );
         expect(nav).not.toBeNull();
         expect(nav?.getAttribute('aria-label')).toBe('Primary');
         expect(buttons()).toHaveLength(ITEMS.length);
@@ -94,9 +96,7 @@ describe('FloatingSidebar', () => {
     it('keeps exactly one entry in the tab order (roving tabindex)', () => {
         render({ value: 2 });
 
-        const focusable = buttons().filter(
-            (button) => button.tabIndex === 0
-        );
+        const focusable = buttons().filter((button) => button.tabIndex === 0);
         expect(focusable).toHaveLength(1);
         expect(focusable[0].id).toBe('nav-settings');
     });
@@ -173,11 +173,7 @@ describe('FloatingSidebar', () => {
     it('skips disabled entries when moving focus, and never activates them', () => {
         const onChange = vi.fn();
         render({
-            items: [
-                ITEMS[0],
-                { ...ITEMS[1], disabled: true },
-                ITEMS[2]
-            ],
+            items: [ITEMS[0], { ...ITEMS[1], disabled: true }, ITEMS[2]],
             onChange
         });
 
@@ -191,7 +187,9 @@ describe('FloatingSidebar', () => {
     it('keeps the label in the accessibility tree when collapsed', () => {
         render({ collapsed: true });
 
-        const nav = container.querySelector('[data-rf-slot="floating-sidebar"]');
+        const nav = container.querySelector(
+            '[data-rf-slot="floating-sidebar"]'
+        );
         expect(nav?.className).toContain('rf-floating-sidebar--collapsed');
         // Visually hidden by CSS, but still present as text — `display: none` would strip the
         // button's accessible name along with the visual label.
