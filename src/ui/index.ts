@@ -13,6 +13,11 @@ export type {
 } from './components/states/LoadingState';
 export { LoadingState } from './components/states/LoadingState';
 export type {
+    FloatingSidebarItem,
+    FloatingSidebarProps
+} from './components/FloatingSidebar/FloatingSidebar';
+export { FloatingSidebar } from './components/FloatingSidebar/FloatingSidebar';
+export type {
     MediaCardImageAspect,
     MediaCardProps
 } from './components/MediaCard/MediaCard';
