@@ -257,7 +257,7 @@ test.describe('Reefin Classic is untouched by Glass profiles', () => {
         await page.setContent(await buildFixtureHtml('official.classic'));
     });
 
-    test('Classic paints flat, and stays flat when the projector is not engaged', async ({
+    test('Classic paints flat — the baseline any profile regression would move', async ({
         page
     }) => {
         const baseline = await measure(page);
@@ -268,12 +268,12 @@ test.describe('Reefin Classic is untouched by Glass profiles', () => {
         expect(baseline.backgroundColor).toBe('rgb(32, 32, 32)');
         expect(baseline.profileAttribute).toBeNull();
 
-        // `useInteractionProfiles` subscribes to no signal and projects nothing unless the active
-        // theme is `official.glass`, so under Classic every signal firing at once is a no-op. The
-        // profile partials are NOT no-ops against Classic — `reducedTransparency` would repaint
-        // its `#202020` surface to `#141a22` and `remote` would give it a blur it does not want —
-        // so this is a real guarantee about the theme guard, not a tautology. The next test proves
-        // the same partials do move Classic if that guard is bypassed.
+        // Scope note, so this is not read as more than it is: this page does not run
+        // `useInteractionProfiles`, so it does not exercise the theme guard. What it pins is that
+        // Classic's *own* rendering — the flat, opaque baseline above — is stable, i.e. the values
+        // any regression would have to move away from. The guard itself (Classic + an active
+        // signal ⇒ nothing projected, Glass + the same signal ⇒ projected) is asserted in
+        // `src/themes/useInteractionProfiles.test.tsx`, which renders the real hook.
         expect(await measure(page)).toEqual(baseline);
     });
 
