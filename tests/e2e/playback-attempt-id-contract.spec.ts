@@ -158,7 +158,8 @@ async function resolveMovieIds(): Promise<string[]> {
     ).json();
     const ids = (items.Items ?? []).map((i: { Id: string }) => String(i.Id));
     await api.dispose();
-    if (ids.length === 0) throw new Error('no movie fixture found on the server');
+    if (ids.length === 0)
+        throw new Error('no movie fixture found on the server');
     return ids;
 }
 
@@ -288,8 +289,14 @@ test.describe('PlaybackAttemptId wire contract', () => {
         ).toBeGreaterThan(0);
 
         // One attempt => exactly one distinct id on each surface.
-        expect(infoIds, 'PlaybackInfo posts disagreed on the attempt id').toHaveLength(1);
-        expect(sessionIds, 'Playback/Sessions posts disagreed on the attempt id').toHaveLength(1);
+        expect(
+            infoIds,
+            'PlaybackInfo posts disagreed on the attempt id'
+        ).toHaveLength(1);
+        expect(
+            sessionIds,
+            'Playback/Sessions posts disagreed on the attempt id'
+        ).toHaveLength(1);
 
         // NON-EMPTY is half the assertion: two absent values would satisfy equality for free.
         expect(
@@ -307,7 +314,9 @@ test.describe('PlaybackAttemptId wire contract', () => {
             V2_SESSIONS.test(r.url)
         );
         const statuses = sessionResponses.map((r) => r.status);
-        console.log(`[wire] Playback/Sessions statuses=${JSON.stringify(statuses)}`);
+        console.log(
+            `[wire] Playback/Sessions statuses=${JSON.stringify(statuses)}`
+        );
         expect(
             statuses.length,
             'no Playback/Sessions response was observed'
@@ -366,8 +375,12 @@ test.describe('PlaybackAttemptId wire contract', () => {
         ).toBeGreaterThanOrEqual(2);
 
         // And the PlaybackInfo surface must agree: two attempts, two ids there too.
-        const infoIds = attemptIdsOn(wire, PLAYBACK_INFO).filter((i) => i !== '');
-        console.log(`[wire] PlaybackInfo attempt ids=${JSON.stringify(infoIds)}`);
+        const infoIds = attemptIdsOn(wire, PLAYBACK_INFO).filter(
+            (i) => i !== ''
+        );
+        console.log(
+            `[wire] PlaybackInfo attempt ids=${JSON.stringify(infoIds)}`
+        );
         expect(infoIds.length).toBeGreaterThanOrEqual(2);
     });
 
