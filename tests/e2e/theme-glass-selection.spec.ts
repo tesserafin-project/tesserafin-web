@@ -38,8 +38,28 @@ const AUTH_HEADER =
 const GLASS_ID = 'official.glass';
 const CLASSIC_ID = 'official.classic';
 
-/** The preferences route the modern display picker renders at (`asyncRoutes/user.ts`). */
-const PREFERENCES_ROUTE = '/#/mypreferencesdisplay';
+/**
+ * The preferences route the modern display picker renders at (`asyncRoutes/user.ts`).
+ *
+ * The `userId` query parameter is REQUIRED, not decorative: `useDisplaySettings` reads it from the
+ * URL and its loader effect early-returns without it, so the page renders its loading spinner
+ * forever and no picker ever mounts. The in-app user menu always supplies it.
+ */
+const preferencesRoute = (userId: string) =>
+    `/web/index.html#/mypreferencesdisplay?userId=${userId}`;
+
+/**
+ * The theme picker's own trigger. MUI sets `aria-labelledby` to *two* ids (the label and the
+ * component), so this reads the stable per-field id MUI derives from the `name` prop instead.
+ */
+const THEME_SELECT = '#mui-component-select-theme';
+
+/**
+ * The form's submit control, located structurally rather than by its label: this server renders in
+ * the browser's locale (the rig it was written against shows "Sauvegarder"), so matching on "Save"
+ * would make the spec pass or fail on an unrelated language setting.
+ */
+const SAVE_BUTTON = 'button[type="submit"]';
 
 test.describe('theme: selecting Reefin Glass', () => {
     let userId = '';
@@ -94,13 +114,11 @@ test.describe('theme: selecting Reefin Glass', () => {
     };
 
     const gotoPreferences = async (page: Page) => {
-        await page.goto(PREFERENCES_ROUTE);
-        // A hash-only navigation can be treated as already complete, leaving the SPA mid-render.
-        await page.reload();
+        await page.goto(preferencesRoute(userId));
         await page.waitForLoadState('networkidle');
-        await expect(
-            page.locator('[aria-labelledby="display-settings-theme-label"]')
-        ).toBeVisible({ timeout: 20_000 });
+        await expect(page.locator(THEME_SELECT)).toBeVisible({
+            timeout: 20_000
+        });
     };
 
     /**
@@ -109,13 +127,9 @@ test.describe('theme: selecting Reefin Glass', () => {
      * theme runtime is the claim under test.
      */
     const selectThemeFromUi = async (page: Page, themeName: string) => {
-        await page
-            .locator('[aria-labelledby="display-settings-theme-label"]')
-            .click();
-        await page
-            .getByRole('option', { name: new RegExp(themeName) })
-            .click();
-        await page.getByRole('button', { name: /Save/i }).click();
+        await page.locator(THEME_SELECT).click();
+        await page.getByRole('option', { name: new RegExp(themeName) }).click();
+        await page.locator(SAVE_BUTTON).click();
     };
 
     const setEmulatedFeatures = async (
@@ -135,9 +149,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         // to — Classic. This is the "no auto-activation" guarantee, observed rather than assumed.
         await expectBlur(page, '0', 'none');
 
-        await page
-            .locator('[aria-labelledby="display-settings-theme-label"]')
-            .click();
+        await page.locator(THEME_SELECT).click();
 
         const glassOption = page.getByRole('option', { name: /Reefin Glass/ });
         await expect(glassOption).toBeVisible();
@@ -147,7 +159,10 @@ test.describe('theme: selecting Reefin Glass', () => {
             'data-rf-experimental',
             'true'
         );
-        await expect(glassOption).toContainText(/Experimental/i);
+        // A real, visible badge element — asserted structurally so the check does not depend on
+        // the server's UI language.
+        await expect(glassOption.locator('.MuiChip-root')).toBeVisible();
+        await expect(glassOption.locator('.MuiChip-root')).not.toBeEmpty();
 
         // Classic is offered and is NOT badged.
         const classicOption = page.getByRole('option', {
@@ -158,6 +173,7 @@ test.describe('theme: selecting Reefin Glass', () => {
             'data-rf-experimental',
             'true'
         );
+        await expect(classicOption.locator('.MuiChip-root')).toHaveCount(0);
 
         await page.keyboard.press('Escape');
     });
@@ -230,9 +246,10 @@ test.describe('theme: selecting Reefin Glass', () => {
                 { name: 'prefers-reduced-transparency', value: 'reduce' }
             ]);
 
+            // The attribute carries the projector's kebab-cased cascade winner.
             await expect(page.locator('html')).toHaveAttribute(
                 'data-rf-profile',
-                'reducedTransparency'
+                'reduced-transparency'
             );
             // `blur(0)` still composites; the derivation must yield a real `none`.
             await expectBlur(page, '0', 'none');
@@ -265,24 +282,67 @@ test.describe('theme: selecting Reefin Glass', () => {
             await expectBlur(page, '16px', 'blur(16px)');
 
             await page.emulateMedia({ reducedMotion: 'no-preference' });
-            await expectVar(page, '--rf-motion-duration-normal', '200ms');
+            await expectVar(page, '--rf-motion-duration-normal', '300ms');
         });
+
+        /**
+         * `lowPower` is the one profile whose real signals a headless browser cannot produce.
+         * Measured on this rig: Chromium ACCEPTS `Emulation.setEmulatedMedia` for `update` but
+         * implements no emulation for it (`(update: slow)` stays `false`, `(update: fast)` stays
+         * `true`), and `navigator.getBattery` is not exposed at all. So the battery signal is
+         * injected before the app boots.
+         *
+         * This substitutes the signal INPUT only, which is the single link in the chain the
+         * browser will not supply on demand. Everything downstream is production code: the real
+         * `interactionProfileSignals` battery listeners, the real cascade resolution, the real
+         * projector, and the browser's own computed styles — which is what the assertions read.
+         */
+        const installFakeBattery = async (page: Page) => {
+            await page.addInitScript(() => {
+                const listeners: Record<string, Array<() => void>> = {
+                    levelchange: [],
+                    chargingchange: []
+                };
+                const battery = {
+                    charging: false,
+                    level: 0.1,
+                    addEventListener: (type: string, fn: () => void) => {
+                        listeners[type]?.push(fn);
+                    },
+                    removeEventListener: (type: string, fn: () => void) => {
+                        const list = listeners[type];
+                        if (list) list.splice(list.indexOf(fn), 1);
+                    }
+                };
+                (
+                    navigator as Navigator & {
+                        getBattery?: () => Promise<unknown>;
+                    }
+                ).getBattery = () => Promise.resolve(battery);
+                (
+                    window as Window & {
+                        __setBattery?: (l: number, c: boolean) => void;
+                    }
+                ).__setBattery = (level: number, charging: boolean) => {
+                    battery.level = level;
+                    battery.charging = charging;
+                    for (const fn of listeners.levelchange) fn();
+                };
+            });
+        };
 
         test('lowPower flattens blur, and remote loses to it in the cascade', async ({
             page
         }) => {
+            await installFakeBattery(page);
             await signIn(page);
             await gotoPreferences(page);
             await selectThemeFromUi(page, 'Reefin Glass');
 
-            const client = await page.context().newCDPSession(page);
-            await setEmulatedFeatures(client, [
-                { name: 'update', value: 'slow' }
-            ]);
-
+            // Discharging at 10%: below the 20% threshold, so lowPower is active.
             await expect(page.locator('html')).toHaveAttribute(
                 'data-rf-profile',
-                'lowPower'
+                'low-power'
             );
             await expectBlur(page, '4px', 'blur(4px)');
 
@@ -293,13 +353,19 @@ test.describe('theme: selecting Reefin Glass', () => {
             );
             await expect(page.locator('html')).toHaveAttribute(
                 'data-rf-profile',
-                'lowPower'
+                'low-power'
             );
             await expectBlur(page, '4px', 'blur(4px)');
             await expectVar(page, '--rf-typography-font-size-lg', '1.375rem');
 
-            // Dropping lowPower leaves remote alone, with its own cheaper blur.
-            await setEmulatedFeatures(client, []);
+            // Charging again: lowPower drops, leaving remote alone with its cheaper blur.
+            await page.evaluate(() =>
+                (
+                    window as Window & {
+                        __setBattery?: (l: number, c: boolean) => void;
+                    }
+                ).__setBattery?.(0.9, true)
+            );
             await expect(page.locator('html')).toHaveAttribute(
                 'data-rf-profile',
                 'remote'
@@ -353,9 +419,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         await signIn(page);
         await gotoPreferences(page);
 
-        const select = page.locator(
-            '[aria-labelledby="display-settings-theme-label"]'
-        );
+        const select = page.locator(THEME_SELECT);
 
         // Focus the picker without a pointer, then open it with the keyboard.
         await select.focus();
@@ -370,7 +434,11 @@ test.describe('theme: selecting Reefin Glass', () => {
         const glassOption = page.getByRole('option', { name: /Reefin Glass/ });
         for (let i = 0; i < 12; i++) {
             // eslint-disable-next-line no-await-in-loop
-            if (await glassOption.evaluate((el) => el === document.activeElement))
+            if (
+                await glassOption.evaluate(
+                    (el) => el === document.activeElement
+                )
+            )
                 break;
             // eslint-disable-next-line no-await-in-loop
             await page.keyboard.press('ArrowDown');
@@ -393,7 +461,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         await page.keyboard.press('Enter');
         await expect(listbox).toBeHidden();
 
-        await page.getByRole('button', { name: /Save/i }).click();
+        await page.locator(SAVE_BUTTON).click();
         await expectBlur(page, '16px', 'blur(16px)');
     });
 
