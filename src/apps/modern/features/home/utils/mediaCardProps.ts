@@ -1,6 +1,10 @@
 import type { BaseItemDto } from 'lib/reefin-sdk';
 import { CollectionType, ImageType } from 'lib/reefin-sdk';
 import type { MediaCardImageAspect, MediaCardProps } from 'ui';
+import {
+    getCanonicalLibraryUrl,
+    isCanonicalLibraryCollectionType
+} from 'constants/libraryRoute';
 
 /**
  * The slice of `jellyfin-apiclient`'s `ApiClient` this adapter needs (RFC-0005 §11 W13.6, WP4) -
@@ -142,8 +146,8 @@ const getItemImageUrl = (
 const LIBRARY_ROUTE_BY_COLLECTION_TYPE: Partial<
     Record<CollectionType, string>
 > = {
-    [CollectionType.Movies]: 'movies',
-    [CollectionType.Tvshows]: 'tv',
+    // Movies and Tvshows are absent on purpose: they now go to `/library/:libraryId` (issue #15,
+    // L15b), handled ahead of this table in `getItemHref`.
     [CollectionType.Music]: 'music',
     [CollectionType.Books]: 'books',
     [CollectionType.Musicvideos]: 'musicvideos',
@@ -171,6 +175,18 @@ const getItemHref = (item: BaseItemDto, fallbackServerId?: string): string => {
 
     if (item.CollectionType === CollectionType.Homevideos) {
         return `#/homevideos?topParentId=${id}`;
+    }
+
+    /*
+     * Movies/Tvshows library tiles open the canonical `/library/:libraryId` route (issue #15, L15b).
+     * The rule is imported from `constants/libraryRoute.ts` rather than re-typed here, which is what
+     * retires the `LIBRARY_ROUTE_BY_COLLECTION_TYPE` duplication `LibraryView.tsx`'s TODO flagged:
+     * this adapter and `appRouter.getRouteUrl()` cannot import each other, but they can share a
+     * leaf constant — so `/home`'s cards and the drawer can no longer disagree about where a
+     * library lives.
+     */
+    if (isCanonicalLibraryCollectionType(item.CollectionType)) {
+        return getCanonicalLibraryUrl(id);
     }
 
     const libraryRoute = item.CollectionType

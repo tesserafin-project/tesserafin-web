@@ -1,37 +1,26 @@
-import {
-    BaseItemKind,
-    CollectionType,
-    ItemSortBy,
-    SortOrder
-} from 'lib/reefin-sdk';
-import type { UseQueryResult } from '@tanstack/react-query';
+import { BaseItemKind, CollectionType } from 'lib/reefin-sdk';
 import React, { type FC, useCallback, useMemo } from 'react';
-import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+    Navigate,
+    useNavigate,
+    useParams,
+    useSearchParams
+} from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
 
 import Page from 'components/Page';
 import { useApi } from 'hooks/useApi';
-import { useUserSettings } from 'hooks/useUserSettings';
 import globalize from 'lib/globalize';
-import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
-import {
-    EmptyState,
-    ErrorState,
-    LoadingState,
-    MediaCard,
-    MediaGrid,
-    Pagination,
-    SortSelect,
-    type SortSelectOption
-} from 'ui';
+import { EmptyState, ErrorState, LoadingState, Tabs, type TabItem } from 'ui';
 
-import { useLibraryFilters } from '../api/useLibraryFilters';
 import { useLibraryInfo } from '../api/useLibraryInfo';
 import {
-    type LibraryItemsParams,
-    useLibraryItems
-} from '../api/useLibraryItems';
-import { useCanonicalPage } from '../hooks/useCanonicalPage';
+    DEFAULT_DESTINATION,
+    isLibraryDestination,
+    LIBRARY_DESTINATIONS,
+    type LibraryDestination,
+    resolveDestination
+} from '../constants/librarySections';
 import {
     DEFAULT_DENSITY,
     DENSITY_QUERY_PARAM,
@@ -41,229 +30,87 @@ import {
     type LibraryDensity
 } from '../utils/density';
 import {
+    classifyLibraryFailure,
+    isRetryableLibraryFailure
+} from '../utils/libraryAccess';
+import {
     getLibraryRedirectPath,
     isSupportedLibraryCollectionType
 } from '../utils/libraryRedirect';
-import {
-    type ImageApiClient,
-    toMediaCardPropsArray
-} from '../utils/mediaCardProps';
-import {
-    clampPage,
-    FIRST_PAGE,
-    getTotalPages,
-    pageToStartIndex
-} from '../utils/pagination';
-import {
-    FILTER_ALL_VALUE,
-    type LibraryQueryState,
-    parseLibraryQueryState,
-    withLibraryQueryState
-} from '../utils/queryParams';
+
+import BrowseDestination from './BrowseDestination';
+import CollectionsDestination from './CollectionsDestination';
+import GenresDestination from './GenresDestination';
+import SuggestionsDestination from './SuggestionsDestination';
 
 import './LibraryView.scss';
 
-const SORT_OPTIONS: SortSelectOption[] = [
-    { value: ItemSortBy.SortName, label: globalize.translate('Name') },
-    {
-        value: ItemSortBy.DateCreated,
-        label: globalize.translate('OptionDateAdded')
-    },
-    {
-        value: ItemSortBy.CommunityRating,
-        label: globalize.translate('OptionCommunityRating')
-    },
-    {
-        value: ItemSortBy.ProductionYear,
-        label: globalize.translate('OptionReleaseDate')
-    },
-    { value: ItemSortBy.Random, label: globalize.translate('OptionRandom') }
-];
-
-const ORDER_OPTIONS: SortSelectOption[] = [
-    { value: SortOrder.Ascending, label: globalize.translate('Ascending') },
-    { value: SortOrder.Descending, label: globalize.translate('Descending') }
-];
-
-/** `Movie`/`Series` per v1's two supported collection types (mission scope). */
-const getIncludeItemTypes = (
+/** `Movie`/`Series` per v1's two supported collection types. */
+const getPrimaryItemType = (
     collectionType: CollectionType | string | null | undefined
-): BaseItemKind[] =>
+): BaseItemKind =>
     collectionType === CollectionType.Tvshows
-        ? [BaseItemKind.Series]
-        : [BaseItemKind.Movie];
+        ? BaseItemKind.Series
+        : BaseItemKind.Movie;
 
-interface LibraryItemsGridProps {
-    itemsQuery: UseQueryResult<ItemDtoQueryResult | undefined, Error>;
-    density: LibraryDensity;
-    apiClient: ImageApiClient | undefined;
-    libraryName: string;
-    page: number;
-    totalPages: number;
-    onPreviousPage: () => void;
-    onNextPage: () => void;
-}
-
-/**
- * The grid's own loading/error/empty/success states, split out of `LibraryView` so each is an early
- * return instead of a nested ternary (RFC-0005 §3.3 - every section decides these four states
- * explicitly, same contract `apps/modern/features/home/components/HomeSection.tsx` follows).
- */
-const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
-    itemsQuery,
-    density,
-    apiClient,
-    libraryName,
-    page,
-    totalPages,
-    onPreviousPage,
-    onNextPage
-}) => {
-    const onRetry = useCallback(() => void itemsQuery.refetch(), [itemsQuery]);
-    const pageLabel = useCallback(
-        (currentPage: number, pageCount: number) =>
-            globalize.translate('PaginationPageLabel', currentPage, pageCount),
-        []
-    );
-
-    if (itemsQuery.isPending) {
-        return <LoadingState variant='grid' />;
-    }
-
-    if (itemsQuery.isError) {
-        return (
-            <ErrorState
-                message={globalize.translate('ErrorDefault')}
-                retryLabel={globalize.translate('Retry')}
-                onRetry={onRetry}
-            />
-        );
-    }
-
-    // Bridges the two windows an out-of-range `page` (e.g. `?page=999`) opens up around the
-    // `useCanonicalPage` correction (in `LibraryView`): (1) `page > totalPages` right after
-    // `TotalRecordCount` lands but before the `replace` navigation to the clamped page has fired, and
-    // (2) once that navigation lands, `page` is back in range but `keepPreviousData` is still showing
-    // the previous, empty, out-of-range response (`isPlaceholderData` with 0 items) while the
-    // corrected page's fetch is in flight. Without both, this window renders a misleading "no items"
-    // for a library that isn't actually empty.
-    const isCorrectingOutOfRangePage =
-        page > totalPages ||
-        (itemsQuery.isPlaceholderData && !itemsQuery.data?.Items?.length);
-    if (isCorrectingOutOfRangePage) {
-        return <LoadingState variant='grid' />;
-    }
-
-    if (!itemsQuery.data?.Items?.length) {
-        return (
-            <EmptyState
-                title={globalize.translate('MessageNoItemsAvailable')}
-            />
-        );
-    }
-
-    return (
-        <>
-            <MediaGrid density={density} aria-label={libraryName}>
-                {toMediaCardPropsArray(itemsQuery.data.Items, apiClient).map(
-                    (cardProps) => (
-                        <MediaCard key={cardProps.href} {...cardProps} />
-                    )
-                )}
-            </MediaGrid>
-
-            {totalPages > 1 && (
-                <Pagination
-                    className='rf-library-view__pagination'
-                    page={page}
-                    totalPages={totalPages}
-                    previousLabel={globalize.translate('Previous')}
-                    nextLabel={globalize.translate('Next')}
-                    pageLabel={pageLabel}
-                    aria-label={globalize.translate('Pagination')}
-                    onPreviousPage={onPreviousPage}
-                    onNextPage={onNextPage}
-                />
-            )}
-        </>
-    );
+const DESTINATION_LABEL_KEY: Record<LibraryDestination, string> = {
+    browse: 'Browse',
+    genres: 'Genres',
+    collections: 'Collections',
+    suggestions: 'Suggestions'
 };
 
 /**
- * `/library/:libraryId` (RFC-0005 §11 WP-C) - the additive, `src/ui`-only movies/tvshows library
- * route. Existing per-type pages (`#/movies?topParentId=...`, `#/tv?topParentId=...`, etc., built by
- * `components/router/appRouter.js`'s `getRouteUrl()`) are untouched: this route lives alongside them
- * and isn't linked to from anywhere yet (`appRouter.getRouteUrl()` is not modified by this work) -
- * see the parity note below for why activation stays deferred.
+ * `/library/:libraryId` and `/library/:libraryId/:destination` — the four-destination library route
+ * (issue #15; `docs/reefin/design-library-navigation.md`), **activated** by L15b.
  *
- * v1 scope (mission): grid + sort (name/date added/community rating/release year/random, asc/desc)
- * + single genre/year filter + pagination + comfortable/compact density, movies and tvshows only.
- * Everything else redirects to or is deferred to the existing per-type page - see
- * `utils/libraryRedirect.ts` and the per-file JSDoc under `utils/` for what's covered vs debt.
+ * ## What activation means here
  *
- * ## The target model is four destinations, not seven tabs (issue #15)
+ * L15a delivered the model as tested vocabulary and queries and routed none of it. L15b mounts the
+ * four destinations, wires the Browse controls, and repoints `appRouter.getRouteUrl()`'s
+ * `CollectionType.Movies`/`Tvshows` branches at this route — **in that order**. The order is the
+ * whole point: `getRouteUrl()` is the single URL builder behind home cards, `MainDrawerContent` and
+ * `UserViewNav` alike, so repointing it before the destinations existed would have moved every
+ * entry point onto a route that could not render what they asked for.
  *
- * `docs/reefin/design-library-navigation.md` §3.2 assigns a fate to each of the 15 legacy tab
- * entries, and it is **not** a one-for-one port. In particular:
+ * ## Four destinations, not seven or eight tabs
  *
- * - **Studios is a filter on Browse**, not a destination: `studioIds` is a parameter of the
- *   `getItems` call this view already makes. The legacy Studios tab itself disables grid/list and
- *   sort, so it was never a real list.
- * - **Favorites is a filter on Browse** (`isFavorite: true`) - a pure predicate.
- * - **Episodes is a granularity toggle** on the same query (`[Episode]` instead of `[Series]`).
- * - **Upcoming is a shelf inside Suggestions**, which is where its editorialised sections belong.
- * - **Playlists is out of library scope entirely**: a playlist crosses libraries, so listing it
- *   under "Movies" is a legacy modelling error, not a gap this route has to close.
+ * Design §3.2 gives each of the 15 legacy tab entries a fate, and it is deliberately not a
+ * one-for-one port. Studios and Favorites are **filters** on Browse (`studioIds`, `isFavorite` —
+ * parameters of the query this route already issues), Episodes is a **granularity** on the same
+ * query, Upcoming is a **shelf** of Suggestions, and Playlists is **out of library scope** (a
+ * playlist crosses libraries). That leaves Browse, Genres, Collections, Suggestions.
  *
- * That leaves four first-level destinations - Browse, Genres, Collections, Suggestions. Anything
- * describing this route as owing seven or eight tabs is measuring against the wrong target.
+ * ## URL shape
  *
- * ## Parity status: structure delivered (L15a), routing not (L15b)
+ * Browse is the default destination and renders at the short `/library/:libraryId` — the short URL
+ * is canonical (design §5), so `/library/:libraryId/browse` and any unknown segment redirect to it
+ * (query string preserved) rather than rendering a second URL for one page. Every other destination
+ * is a real route segment, so it is shareable, reloadable, and the browser's back button behaves.
  *
- * AlphaPicker and grid/list are non-negotiable in the target, and that is measured rather than
- * assumed: `constants/views/movies.ts`'s tab 0 (`moviesTabContent`) and `constants/views/tvshows.ts`'s
- * tab 0 (`seriesTabContent`) override neither `isAlphabetPickerEnabled` nor `isBtnGridListEnabled`,
- * so `utils/viewContent.ts`'s `{...defaultViewContent, ...viewContent}` merge resolves both to
- * `constants/views/defaults.ts`'s `true` - they are live on exactly the two tabs this route takes
- * over.
+ * ## Redirects out, and why there is no loop
  *
- * L15a delivers that structure as tested query/vocabulary modules - `constants/librarySections.ts`
- * (destinations, AlphaPicker, view mode, granularity, shelves) and `api/libraryDestinationQueries.ts`
- * (Genres, Collections, Studios options, Upcoming), plus the `studioIds`/`isFavorite`/`letter` params
- * on `api/useLibraryItems.ts`. Each emits the real Reefin SDK request its design entry claims, proven
- * by test. **None of it is mounted or routed**, and this component's render is unchanged.
- *
- * Both activation gates are now *available* - reefin#39 is merged so the cross e2e rig exists, and
- * the bundle margin is acquired (design §7) - but availability is not activation.
- *
- * TODO(issue #15, L15b): mount the four destinations under `/library/:libraryId/:destination`, wire
- * the L15a controls into the Browse control bar, then repoint `appRouter.getRouteUrl()`'s
- * `CollectionType.Movies`/`Tvshows` branches and add the legacy-URL redirects. `getRouteUrl()` is the
- * one URL builder behind home cards, `MainDrawerContent`, and `UserViewNav`/`UserViewsMenu` alike, so
- * repointing it before the destinations are mounted would move every entry point onto a route that
- * cannot yet render them - which is why the two steps are ordered, not merged. Retiring this comment
- * also retires the `LIBRARY_ROUTE_BY_COLLECTION_TYPE` duplication this route (and `/home`'s card
- * adapter) routes around.
+ * A library this route does not render (music, books, …) leaves via `getLibraryRedirectPath`. That
+ * cannot bounce: the set it redirects *out* and the set `getRouteUrl` redirects *in* are disjoint
+ * by construction — `getRouteUrl` only points Movies/Tvshows here, and those are exactly the two
+ * types `isSupportedLibraryCollectionType` accepts. `libraryRedirect.test.ts` asserts that
+ * disjointness over every `CollectionType` rather than leaving it to inspection.
  */
 const LibraryView: FC = () => {
-    const { libraryId = '' } = useParams<{ libraryId: string }>();
+    const { libraryId = '', destination: destinationParam } = useParams<{
+        libraryId: string;
+        destination?: string;
+    }>();
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
     const { __legacyApiClient__ } = useApi();
-    const { libraryPageSize: pageSize } = useUserSettings();
 
     const infoQuery = useLibraryInfo(libraryId);
     const collectionType = infoQuery.data?.CollectionType;
     const libraryName = infoQuery.data?.Name ?? '';
 
-    const includeItemTypes = useMemo(
-        () => getIncludeItemTypes(collectionType),
-        [collectionType]
-    );
-
-    const queryState = useMemo(
-        () => parseLibraryQueryState(searchParams),
-        [searchParams]
-    );
+    const destination = resolveDestination(destinationParam);
+    const primaryItemType = getPrimaryItemType(collectionType);
 
     const [storedDensity, setStoredDensity] = useLocalStorage<LibraryDensity>(
         getDensityStorageKey(libraryId || 'unknown'),
@@ -276,98 +123,6 @@ const LibraryView: FC = () => {
 
     const isSupported = isSupportedLibraryCollectionType(collectionType);
 
-    const itemsParams: LibraryItemsParams | undefined = useMemo(() => {
-        if (!libraryId || !isSupported) return undefined;
-
-        return {
-            parentId: libraryId,
-            includeItemTypes,
-            sortBy: queryState.sortBy,
-            sortOrder: queryState.sortOrder,
-            startIndex: pageToStartIndex(queryState.page, pageSize),
-            limit: pageSize,
-            genre: queryState.genre,
-            year: queryState.year
-        };
-    }, [libraryId, isSupported, includeItemTypes, queryState, pageSize]);
-
-    const itemsQuery = useLibraryItems(itemsParams);
-    const filtersQuery = useLibraryFilters(
-        isSupported ? libraryId : undefined,
-        includeItemTypes
-    );
-
-    const updateQueryState = useCallback(
-        (partial: Partial<LibraryQueryState>) => {
-            setSearchParams(withLibraryQueryState(searchParams, partial), {
-                replace: true
-            });
-        },
-        [searchParams, setSearchParams]
-    );
-
-    const onSortByChange = useCallback(
-        (value: string) =>
-            updateQueryState({ sortBy: value as ItemSortBy, page: FIRST_PAGE }),
-        [updateQueryState]
-    );
-    const onSortOrderChange = useCallback(
-        (value: string) =>
-            updateQueryState({
-                sortOrder: value as SortOrder,
-                page: FIRST_PAGE
-            }),
-        [updateQueryState]
-    );
-    const onGenreChange = useCallback(
-        (value: string) =>
-            updateQueryState({
-                genre: value === FILTER_ALL_VALUE ? undefined : value,
-                page: FIRST_PAGE
-            }),
-        [updateQueryState]
-    );
-    const onYearChange = useCallback(
-        (value: string) =>
-            updateQueryState({
-                year: value === FILTER_ALL_VALUE ? undefined : Number(value),
-                page: FIRST_PAGE
-            }),
-        [updateQueryState]
-    );
-    const onPageChange = useCallback(
-        (page: number) => updateQueryState({ page }),
-        [updateQueryState]
-    );
-    const totalPages = getTotalPages(
-        itemsQuery.data?.TotalRecordCount ?? 0,
-        pageSize
-    );
-    const onPreviousPage = useCallback(
-        () => onPageChange(clampPage(queryState.page - 1, totalPages)),
-        [onPageChange, queryState.page, totalPages]
-    );
-    const onNextPage = useCallback(
-        () => onPageChange(clampPage(queryState.page + 1, totalPages)),
-        [onPageChange, queryState.page, totalPages]
-    );
-
-    // Corrects an out-of-range `page` (e.g. a shared `?page=999` link, or a page that outlived a
-    // filter/deletion shrinking the result set) once `TotalRecordCount` is known: clamps down to
-    // `totalPages` and canonicalizes the URL via the same `replace` navigation `updateQueryState`
-    // already uses elsewhere, so the correction doesn't add a history entry.
-    useCanonicalPage(
-        queryState.page,
-        totalPages,
-        itemsQuery.isSuccess,
-        onPageChange
-    );
-
-    const onInfoRetry = useCallback(
-        () => void infoQuery.refetch(),
-        [infoQuery]
-    );
-
     const onToggleDensity = useCallback(() => {
         const next = toggleLibraryDensity(density);
         setStoredDensity(next);
@@ -376,31 +131,65 @@ const LibraryView: FC = () => {
         setSearchParams(nextParams, { replace: true });
     }, [density, searchParams, setStoredDensity, setSearchParams]);
 
-    const genreOptions: SortSelectOption[] = useMemo(
-        () => [
-            { value: FILTER_ALL_VALUE, label: globalize.translate('All') },
-            ...(filtersQuery.data?.Genres ?? []).map((genre) => ({
-                value: genre,
-                label: genre
-            }))
-        ],
-        [filtersQuery.data?.Genres]
+    const onInfoRetry = useCallback(
+        () => void infoQuery.refetch(),
+        [infoQuery]
     );
 
-    const yearOptions: SortSelectOption[] = useMemo(
-        () => [
-            { value: FILTER_ALL_VALUE, label: globalize.translate('All') },
-            ...[...(filtersQuery.data?.Years ?? [])]
-                .sort((a, b) => b - a)
-                .map((year) => ({ value: String(year), label: String(year) }))
-        ],
-        [filtersQuery.data?.Years]
+    const tabs: TabItem[] = useMemo(
+        () =>
+            LIBRARY_DESTINATIONS.map((value) => ({
+                id: `library-destination-${value}`,
+                label: globalize.translate(DESTINATION_LABEL_KEY[value])
+            })),
+        []
     );
 
-    // Gate the "unsupported type -> redirect" branch on `infoQuery` having actually resolved:
-    // `collectionType` is `undefined` while it's pending, and `undefined` is not a v1-supported
-    // type, so deciding this before `infoQuery` settles would redirect every library away during
-    // its first render.
+    const activeTabIndex = LIBRARY_DESTINATIONS.indexOf(destination);
+
+    /**
+     * Switching destination is a real navigation (a history entry), not a `replace`: the back
+     * button returning you to the previous destination is exactly what design §5 asks for by making
+     * the destination a route segment. The query string is intentionally *dropped* — a `letter` or
+     * `studio` from Browse means nothing on Genres, and carrying it would leave the URL claiming
+     * filters the page does not apply.
+     */
+    const onTabChange = useCallback(
+        (index: number) => {
+            const next = LIBRARY_DESTINATIONS[index];
+            if (!next || next === destination) return;
+
+            navigate(
+                next === DEFAULT_DESTINATION
+                    ? `/library/${libraryId}`
+                    : `/library/${libraryId}/${next}`
+            );
+        },
+        [navigate, libraryId, destination]
+    );
+
+    // Canonicalize the URL before anything else: `/library/:id/browse` and `/library/:id/<unknown>`
+    // both name the default destination, whose canonical URL is the short one. One-way by
+    // construction — the short URL has no `:destination` param, so it can never re-enter here.
+    if (destinationParam && !isLibraryDestination(destinationParam)) {
+        const search = searchParams.toString();
+        return (
+            <Navigate
+                replace
+                to={`/library/${libraryId}${search ? `?${search}` : ''}`}
+            />
+        );
+    }
+    if (destinationParam === DEFAULT_DESTINATION) {
+        const search = searchParams.toString();
+        return (
+            <Navigate
+                replace
+                to={`/library/${libraryId}${search ? `?${search}` : ''}`}
+            />
+        );
+    }
+
     if (infoQuery.isPending) {
         return (
             <Page id='libraryPage' className='mainAnimatedPage libraryPage'>
@@ -411,15 +200,40 @@ const LibraryView: FC = () => {
         );
     }
 
+    // A stale bookmark (library deleted) and a shared link to a library the user cannot see are
+    // different failures with different honest answers, and neither is retryable. Activation is
+    // what makes this matter: before it, nothing linked here.
     if (infoQuery.isError) {
+        const failure = classifyLibraryFailure(infoQuery.error);
+
         return (
             <Page id='libraryPage' className='mainAnimatedPage libraryPage'>
                 <div className='rf-library-view'>
-                    <ErrorState
-                        message={globalize.translate('ErrorDefault')}
-                        retryLabel={globalize.translate('Retry')}
-                        onRetry={onInfoRetry}
-                    />
+                    {failure === 'not-found' && (
+                        <EmptyState
+                            title={globalize.translate('HeaderLibraryNotFound')}
+                            description={globalize.translate(
+                                'MessageLibraryNotFound'
+                            )}
+                        />
+                    )}
+                    {failure === 'access-denied' && (
+                        <EmptyState
+                            title={globalize.translate(
+                                'HeaderLibraryAccessDenied'
+                            )}
+                            description={globalize.translate(
+                                'MessageLibraryAccessDenied'
+                            )}
+                        />
+                    )}
+                    {isRetryableLibraryFailure(failure) && (
+                        <ErrorState
+                            message={globalize.translate('ErrorDefault')}
+                            retryLabel={globalize.translate('Retry')}
+                            onRetry={onInfoRetry}
+                        />
+                    )}
                 </div>
             </Page>
         );
@@ -439,66 +253,63 @@ const LibraryView: FC = () => {
             id='libraryPage'
             className='mainAnimatedPage libraryPage'
             title={libraryName}
-            backDropType={includeItemTypes}
+            backDropType={[primaryItemType]}
         >
             <div className='rf-library-view'>
                 <h1 className='rf-library-view__title'>{libraryName}</h1>
 
-                <div className='rf-library-view__controls'>
-                    <SortSelect
-                        label={globalize.translate('Sort')}
-                        options={SORT_OPTIONS}
-                        value={queryState.sortBy}
-                        onChange={onSortByChange}
-                    />
-                    <SortSelect
-                        label={globalize.translate('LabelSortOrder')}
-                        options={ORDER_OPTIONS}
-                        value={queryState.sortOrder}
-                        onChange={onSortOrderChange}
-                        disabled={queryState.sortBy === ItemSortBy.Random}
-                    />
-                    <SortSelect
-                        label={globalize.translate('Genre')}
-                        options={genreOptions}
-                        value={queryState.genre ?? FILTER_ALL_VALUE}
-                        onChange={onGenreChange}
-                        disabled={filtersQuery.isPending}
-                    />
-                    <SortSelect
-                        label={globalize.translate('LabelYear')}
-                        options={yearOptions}
-                        value={
-                            queryState.year
-                                ? String(queryState.year)
-                                : FILTER_ALL_VALUE
-                        }
-                        onChange={onYearChange}
-                        disabled={filtersQuery.isPending}
-                    />
-                    <button
-                        type='button'
-                        className='rf-library-view__density-toggle'
-                        aria-pressed={density === 'compact'}
-                        aria-label={globalize.translate('Density')}
-                        onClick={onToggleDensity}
-                    >
-                        {density === 'compact'
-                            ? globalize.translate('Compact')
-                            : globalize.translate('Comfortable')}
-                    </button>
-                </div>
-
-                <LibraryItemsGrid
-                    itemsQuery={itemsQuery}
-                    density={density}
-                    apiClient={__legacyApiClient__}
-                    libraryName={libraryName}
-                    page={queryState.page}
-                    totalPages={totalPages}
-                    onPreviousPage={onPreviousPage}
-                    onNextPage={onNextPage}
+                <Tabs
+                    className='rf-library-view__destinations'
+                    items={tabs}
+                    value={activeTabIndex}
+                    onChange={onTabChange}
+                    aria-label={globalize.translate('HeaderLibraries')}
                 />
+
+                <button
+                    type='button'
+                    className='rf-library-view__density-toggle'
+                    aria-pressed={density === 'compact'}
+                    aria-label={globalize.translate('Density')}
+                    onClick={onToggleDensity}
+                >
+                    {density === 'compact'
+                        ? globalize.translate('Compact')
+                        : globalize.translate('Comfortable')}
+                </button>
+
+                {destination === 'browse' && (
+                    <BrowseDestination
+                        libraryId={libraryId}
+                        libraryName={libraryName}
+                        collectionType={collectionType}
+                        primaryItemType={primaryItemType}
+                        density={density}
+                        apiClient={__legacyApiClient__}
+                    />
+                )}
+                {destination === 'genres' && (
+                    <GenresDestination
+                        libraryId={libraryId}
+                        primaryItemType={primaryItemType}
+                        density={density}
+                    />
+                )}
+                {destination === 'collections' && (
+                    <CollectionsDestination
+                        libraryId={libraryId}
+                        density={density}
+                        apiClient={__legacyApiClient__}
+                    />
+                )}
+                {destination === 'suggestions' && (
+                    <SuggestionsDestination
+                        libraryId={libraryId}
+                        collectionType={collectionType}
+                        density={density}
+                        apiClient={__legacyApiClient__}
+                    />
+                )}
             </div>
         </Page>
     );

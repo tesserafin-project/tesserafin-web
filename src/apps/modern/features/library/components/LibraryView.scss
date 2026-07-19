@@ -63,3 +63,67 @@
 .rf-library-view__pagination {
     align-self: center;
 }
+
+.rf-library-view__destinations {
+    /* Four destinations fit a 360px viewport without overflow — the counted reason the design
+       (§5) stops at four. The wrap is a safety net for very long translations, not the layout. */
+    flex-wrap: wrap;
+}
+
+.rf-library-view__alpha-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-spacing-xs, 4px);
+
+    &[aria-disabled='true'] {
+        /* Disabled, not hidden (design §4.1): hiding the picker on every non-`SortName` sort would
+           reflow the whole control bar. */
+        opacity: 0.4;
+    }
+}
+
+.rf-library-view__alpha-picker-letter {
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 var(--rf-spacing-xs, 4px);
+    color: var(--rf-color-text, #fff);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--rf-shape-radius-sm, 4px);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    cursor: pointer;
+
+    /* Ordered least-specific first: `no-descending-specificity` wants `:focus-visible` and
+       `:disabled` declared before the more specific `:hover:not(:disabled)`. */
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: default;
+    }
+
+    &:hover:not(:disabled) {
+        border-color: var(--rf-color-text, #fff);
+    }
+
+    &[aria-pressed='true'] {
+        color: var(--rf-color-on-primary, #fff);
+        background: var(--rf-color-primary, #00a4dc);
+    }
+}
+
+.rf-library-view__grid--list {
+    /* List mode keeps the same cards and the same DOM — one column instead of a poster grid. The
+       column count comes from `minItemWidth: 100%`; this only relaxes the row height so a card can
+       lay itself out horizontally. */
+    grid-auto-rows: auto;
+}
+
+.rf-library-view__shelves {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-lg, 24px);
+}

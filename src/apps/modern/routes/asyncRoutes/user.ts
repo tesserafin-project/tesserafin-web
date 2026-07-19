@@ -5,6 +5,17 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
     { path: 'home', type: AppType.Modern },
     { path: 'homevideos', type: AppType.Modern },
     { path: 'library/:libraryId', page: 'library', type: AppType.Modern },
+    /*
+     * The three non-default destinations (design §5: Browse is the default and renders at the short
+     * URL above, so there is no `/browse` segment to declare). One entry, not three, because the
+     * segment is a param the page resolves — `LibraryView` redirects an unknown segment back to the
+     * short URL rather than falling through to the 404 route.
+     */
+    {
+        path: 'library/:libraryId/:destination',
+        page: 'library',
+        type: AppType.Modern
+    },
     { path: 'livetv', type: AppType.Modern },
     { path: 'movies', type: AppType.Modern },
     { path: 'music', type: AppType.Modern },

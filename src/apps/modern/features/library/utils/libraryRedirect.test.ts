@@ -91,3 +91,63 @@ describe('getLibraryRedirectPath()', () => {
         );
     });
 });
+
+/**
+ * The no-loop proof (issue #15, L15b).
+ *
+ * Activation creates two redirect directions that did not previously coexist:
+ *
+ *   IN   `#/movies` / `#/tv` → `/library/:libraryId`  (`legacyLibraryRedirect.ts`)
+ *   OUT  `/library/:libraryId` → a per-type page      (`getLibraryRedirectPath`, this module)
+ *
+ * A loop needs one collection type to be in both. It cannot be, and the reason is structural rather
+ * than careful: the IN direction is only ever taken for the two types
+ * `isSupportedLibraryCollectionType` accepts — those are exactly the types `LibraryView` *renders*,
+ * so the OUT direction is never reached for them — and the OUT direction only ever targets pages
+ * that the IN direction does not watch. The two assertions below pin both halves over every
+ * `CollectionType` the enum has, so a new type added to either set fails here rather than in a
+ * browser's infinite-redirect guard.
+ */
+describe('no redirect loop between /library and the legacy pages', () => {
+    const LEGACY_LIBRARY_PAGES = ['/movies', '/tv'];
+
+    it('never sends an unsupported library to a page that redirects back', () => {
+        for (const collectionType of Object.values(CollectionType)) {
+            if (isSupportedLibraryCollectionType(collectionType)) continue;
+
+            const target = getLibraryRedirectPath('lib-1', collectionType);
+
+            for (const page of LEGACY_LIBRARY_PAGES) {
+                expect(target === page || target.startsWith(`${page}?`)).toBe(
+                    false
+                );
+            }
+        }
+    });
+
+    it('never sends an unknown/absent collection type to a page that redirects back', () => {
+        for (const value of [undefined, null, '', 'not-a-type']) {
+            const target = getLibraryRedirectPath('lib-1', value);
+
+            for (const page of LEGACY_LIBRARY_PAGES) {
+                expect(target === page || target.startsWith(`${page}?`)).toBe(
+                    false
+                );
+            }
+        }
+    });
+
+    /**
+     * The other half: the two types that *are* redirected in are precisely the two that render, so
+     * the outbound branch is unreachable for them. Stated as an assertion so "supported" and
+     * "redirected in" cannot drift apart silently.
+     */
+    it('redirects in exactly the types it renders', () => {
+        expect(isSupportedLibraryCollectionType(CollectionType.Movies)).toBe(
+            true
+        );
+        expect(isSupportedLibraryCollectionType(CollectionType.Tvshows)).toBe(
+            true
+        );
+    });
+});

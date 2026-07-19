@@ -7,6 +7,10 @@ import loading from '../loading/loading';
 import alert from '../alert';
 
 import layoutManager from 'components/layoutManager';
+import {
+    getCanonicalLibraryUrl,
+    isCanonicalLibraryCollectionType
+} from 'constants/libraryRoute';
 import { getItemQuery } from 'hooks/useItem';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { queryClient } from 'utils/query/queryClient';
@@ -436,24 +440,23 @@ class AppRouter {
                 return url;
             }
 
-            if (item.CollectionType == CollectionType.Movies) {
-                url = `#/movies?topParentId=${item.Id}&collectionType=${item.CollectionType}`;
-
-                if (options && options.section === 'latest') {
-                    url += '&tab=1';
-                }
-
-                return url;
-            }
-
-            if (item.CollectionType == CollectionType.Tvshows) {
-                url = `#/tv?topParentId=${item.Id}&collectionType=${item.CollectionType}`;
-
-                if (options && options.section === 'latest') {
-                    url += '&tab=1';
-                }
-
-                return url;
+            /*
+             * Movies and Tvshows point at the canonical four-destination library route
+             * (issue #15, L15b — `docs/reefin/design-library-navigation.md`). This is the
+             * activation: `getRouteUrl()` is the one URL builder behind home cards,
+             * `MainDrawerContent` and `UserViewNav`/`UserViewsMenu` alike, so changing it here
+             * moves every entry point at once — which is why L15a mounted the destinations first.
+             *
+             * `section === 'latest'` used to append `tab=1`, i.e. the Suggestions tab, because that
+             * is where the "Recently Added" shelves lived. It now names the Suggestions destination,
+             * which contains the same shelves: the meaning is carried over, not dropped.
+             *
+             * Only these two branches move. Every other `CollectionType` keeps its existing page,
+             * which is also what makes a redirect loop impossible: `/library/:libraryId` bounces
+             * exactly the types that are *not* sent here.
+             */
+            if (isCanonicalLibraryCollectionType(item.CollectionType)) {
+                return getCanonicalLibraryUrl(item.Id, options?.section);
             }
 
             if (item.CollectionType == CollectionType.Music) {

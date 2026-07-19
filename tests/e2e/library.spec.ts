@@ -1,4 +1,4 @@
-import { expect, request, test } from '@playwright/test';
+import { devices, expect, request, test } from '@playwright/test';
 
 /**
  * `/library/<libraryId>` E2E journey (RFC-0005 §11 WP-D, movies/tvshows v1 - see
@@ -216,5 +216,441 @@ test.describe('library', () => {
         await expect(page.locator('[data-rf-slot="media-grid"]')).toHaveClass(
             /rf-media-grid--compact/
         );
+    });
+});
+
+/**
+ * `/library/:libraryId` **activation** journey (issue #15, L15b).
+ *
+ * Everything below drives the real app against a real Reefin server: no route is stubbed, no
+ * response is mocked, and no `page.route` interception is used anywhere in this file. That is a
+ * requirement of this lane rather than a stylistic preference — the thing under test *is* the
+ * routing, so a mocked router would assert the test's own fixture instead of the product.
+ *
+ * The library id is discovered at run time by the `test.beforeAll` above.
+ */
+test.describe('library activation', () => {
+    let libraryId = '';
+
+    test.beforeAll(async () => {
+        const api = await request.newContext({ baseURL: BASE_URL });
+
+        const authResponse = await api.post('/Users/AuthenticateByName', {
+            headers: { Authorization: E2E_AUTH_HEADER },
+            data: { Username: USER, Pw: PASSWORD }
+        });
+        expect(authResponse.ok()).toBeTruthy();
+        const auth = await authResponse.json();
+
+        const viewsResponse = await api.get('/UserViews', {
+            params: { userId: auth.User.Id },
+            headers: {
+                Authorization: `${E2E_AUTH_HEADER}, Token="${auth.AccessToken}"`
+            }
+        });
+        expect(viewsResponse.ok()).toBeTruthy();
+        const views = await viewsResponse.json();
+
+        const moviesView = (
+            views.Items as Array<Record<string, unknown>>
+        )?.find((item) => item.CollectionType === 'movies');
+        if (!moviesView?.Id) {
+            throw new Error(
+                'No movies-type library found via /UserViews for the e2e user - cannot resolve libraryId'
+            );
+        }
+        libraryId = String(moviesView.Id);
+
+        await api.dispose();
+    });
+
+    const signIn = async (page: import('@playwright/test').Page) => {
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        if (page.url().includes('/login')) {
+            await page.locator('#txtManualName:visible').fill(USER);
+            await page.locator('#txtManualPassword:visible').fill(PASSWORD);
+            await page.locator('button[type="submit"]:visible').first().click();
+            await page.waitForURL('**/#/home**', { timeout: 20_000 });
+        }
+        await page.waitForLoadState('networkidle');
+    };
+
+    test.beforeEach(async ({ page }) => {
+        await signIn(page);
+    });
+
+    /**
+     * The activation itself, exercised the way a user meets it: a real click on a real library card
+     * on `/home`. This is the assertion that `getRouteUrl()`'s repoint actually reached the UI —
+     * asserting the builder in a unit test proves the string, this proves the journey.
+     */
+    test('home → library by a real click on a library card', async ({
+        page
+    }) => {
+        const myMedia = page.getByRole('tabpanel');
+        await expect(myMedia.getByText(/mes médias|my media/i)).toBeVisible({
+            timeout: 15_000
+        });
+
+        /*
+         * Scoped to the `src/ui` card slot, NOT to `a[href=...]` alone. Three anchors on /home
+         * carry this href: the legacy nav drawer's `a.lnkMediaFolder.navMenuOption` (rendered by
+         * `scripts/libraryMenu.js` into the closed `.mainDrawer`, so never visible), an AppBar
+         * link, and the actual home card. A bare `.first()` picks whichever the legacy drawer's
+         * asynchronous render happens to have inserted first — it passed on one run and timed out
+         * on another against the same build. Targeting the card slot is what makes this test
+         * deterministic, and it is a stricter assertion than the one it replaces, not a looser one:
+         * it now requires the click to land on the home card specifically.
+         *
+         * The href itself was never in question — all three anchors already carried the canonical
+         * `#/library/:id`, which is the repoint working.
+         */
+        await page
+            .locator(
+                `[data-rf-slot="media-card"][href="#/library/${libraryId}"]`
+            )
+            .click();
+
+        await expect(page).toHaveURL(new RegExp(`#/library/${libraryId}`));
+        await expect(
+            page.locator('.rf-library-view').getByRole('heading', { level: 1 })
+        ).toBeVisible();
+        await expect(page.locator('[data-rf-slot="media-grid"]')).toBeVisible();
+    });
+
+    /** A shared link lands directly on the destination, with its content, not on Browse. */
+    test('deep link straight to a destination renders that destination', async ({
+        page
+    }) => {
+        await page.goto(`/#/library/${libraryId}/genres`);
+        await page.waitForLoadState('networkidle');
+
+        await expect(page).toHaveURL(/\/genres$/);
+        await expect(
+            page.getByRole('tab', { name: /genres/i })
+        ).toHaveAttribute('aria-selected', 'true');
+    });
+
+    /** Reload must reproduce the destination, which is the point of it being a route segment. */
+    test('reload keeps the destination', async ({ page }) => {
+        await page.goto(`/#/library/${libraryId}/collections`);
+        await page.waitForLoadState('networkidle');
+
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+
+        await expect(page).toHaveURL(/\/collections$/);
+        await expect(
+            page.getByRole('tab', { name: /collections/i })
+        ).toHaveAttribute('aria-selected', 'true');
+    });
+
+    /**
+     * Back/forward across destinations. This is what the design bought by making the destination a
+     * route segment rather than local state, and it is only true because switching destination
+     * *pushes* a history entry while the URL canonicalizations *replace* — get either wrong and the
+     * back button skips a destination or lands on a URL that immediately redirects again.
+     */
+    test('back and forward walk the destinations in order', async ({
+        page
+    }) => {
+        await page.goto(`/#/library/${libraryId}`);
+        await page.waitForLoadState('networkidle');
+
+        await page.getByRole('tab', { name: /genres/i }).click();
+        await expect(page).toHaveURL(/\/genres$/);
+
+        await page.getByRole('tab', { name: /collections/i }).click();
+        await expect(page).toHaveURL(/\/collections$/);
+
+        await page.goBack();
+        await expect(page).toHaveURL(/\/genres$/);
+
+        await page.goBack();
+        await expect(page).toHaveURL(new RegExp(`#/library/${libraryId}$`));
+
+        await page.goForward();
+        await expect(page).toHaveURL(/\/genres$/);
+    });
+
+    /**
+     * The legacy URL keeps working — and lands *once*. `waitForURL` then a settle check is what
+     * distinguishes "redirected" from "redirecting forever": if the two directions overlapped, the
+     * URL would keep changing and the second read would differ from the first.
+     */
+    test('a legacy #/movies URL redirects to the canonical route without bouncing', async ({
+        page
+    }) => {
+        await page.goto(
+            `/#/movies?topParentId=${libraryId}&collectionType=movies`
+        );
+        await page.waitForURL(new RegExp(`#/library/${libraryId}`), {
+            timeout: 15_000
+        });
+
+        const settled = page.url();
+        await page.waitForTimeout(1500);
+        expect(page.url()).toBe(settled);
+        expect(page.url()).not.toContain('#/movies');
+
+        await expect(page.locator('[data-rf-slot="media-grid"]')).toBeVisible();
+    });
+
+    /** A legacy tab whose fate is a destination lands on that destination, not on Browse. */
+    test('a legacy tab URL lands on the destination its content moved to', async ({
+        page
+    }) => {
+        await page.goto(`/#/movies?topParentId=${libraryId}&tab=4`);
+        await page.waitForURL(/\/genres/, { timeout: 15_000 });
+
+        await expect(
+            page.getByRole('tab', { name: /genres/i })
+        ).toHaveAttribute('aria-selected', 'true');
+    });
+
+    /** A legacy Favorites tab URL becomes Browse carrying the filter — the param must survive. */
+    test('a legacy favorites URL arrives with its filter applied', async ({
+        page
+    }) => {
+        await page.goto(`/#/movies?topParentId=${libraryId}&tab=2`);
+        await page.waitForURL(/favorite=1/, { timeout: 15_000 });
+
+        expect(page.url()).toContain(`#/library/${libraryId}`);
+    });
+
+    /**
+     * `/browse` and unknown segments both canonicalize to the short URL, and must do so once. The
+     * settle check is the no-loop assertion for the *inbound* direction, the mirror of the legacy
+     * test above.
+     */
+    test('the /browse segment and unknown segments canonicalize once', async ({
+        page
+    }) => {
+        for (const segment of ['browse', 'not-a-destination']) {
+            await page.goto(`/#/library/${libraryId}/${segment}`);
+            await page.waitForURL(new RegExp(`#/library/${libraryId}(\\?|$)`), {
+                timeout: 15_000
+            });
+
+            const settled = page.url();
+            await page.waitForTimeout(1000);
+            expect(page.url()).toBe(settled);
+        }
+    });
+
+    /** Canonicalizing must not silently discard the query the shared link carried. */
+    test('canonicalizing /browse preserves the query string', async ({
+        page
+    }) => {
+        await page.goto(
+            `/#/library/${libraryId}/browse?sort=DateCreated&order=Descending`
+        );
+        await page.waitForURL(new RegExp(`#/library/${libraryId}\\?`), {
+            timeout: 15_000
+        });
+
+        expect(page.url()).toContain('sort=DateCreated');
+        expect(page.url()).toContain('order=Descending');
+        expect(page.url()).not.toContain('/browse');
+    });
+
+    /**
+     * A stale bookmark to a library that no longer exists.
+     *
+     * The id matters, and picking it carelessly is how this test was wrong before. An earlier
+     * version used the all-zeros GUID, which is **not** a missing id at all:
+     * `UserLibraryController.GetItem` branches on `itemId.IsEmpty()` and answers `Guid.Empty` with
+     * the user's *root folder*, HTTP 200. Measured against this rig:
+     * `GET /Items/00000000000000000000000000000000` → 200 "Media Folders", while
+     * `GET /Items/ffffffffffffffffffffffffffffffff` → 404. So the old test was asserting the
+     * not-found state on a request that had succeeded, and the product was right to not show it.
+     * The empty-GUID case is now exercised for what it really is, in the test below.
+     *
+     * Reefin's `GET /Items/{itemId}` filters by user and answers 404 for both "gone" and "not
+     * visible to you" (see `utils/libraryAccess.ts`), so this is the state a user reaches in either
+     * case — and it offers no retry, because retrying a deleted library cannot succeed.
+     */
+    test('a library id that does not exist shows the not-found state, not a retry loop', async ({
+        page
+    }) => {
+        await page.goto('/#/library/ffffffffffffffffffffffffffffffff');
+        await page.waitForLoadState('networkidle');
+
+        await expect(page.locator('[data-rf-slot="state-empty"]')).toBeVisible({
+            timeout: 15_000
+        });
+
+        // No retry affordance, and no bounce away from the URL that was asked for.
+        await expect(
+            page.getByRole('button', { name: /retry|réessayer/i })
+        ).toHaveCount(0);
+        expect(page.url()).toContain(
+            '#/library/ffffffffffffffffffffffffffffffff'
+        );
+    });
+
+    /**
+     * The **outbound** half of the no-loop proof, against a real server response.
+     *
+     * The all-zeros GUID resolves — server-side — to the user's root folder, an item with no
+     * `CollectionType`. That is exactly the case `getLibraryRedirectPath` exists for: a real item
+     * this route does not render, which must leave for the mixed-content page and stay left. It is
+     * a better fixture than a synthetic one because the server produced it, and it is the outbound
+     * direction I previously had no way to exercise end to end.
+     *
+     * The settle check is the assertion that matters: if the inbound and outbound redirects
+     * overlapped, the URL would keep changing and the second read would differ from the first.
+     *
+     * **This is not an access-denied test, and nothing here should be read as one.** Reaching that
+     * branch needs a library that exists but is invisible to the e2e user, and this rig has no such
+     * fixture. Access-denied remains proven at unit level (`utils/libraryAccess.test.ts`, against
+     * synthetic 401/403) plus the grid's classification of `GET /Items`' real 401.
+     */
+    test('a library this route cannot render leaves for its own page and stays left', async ({
+        page
+    }) => {
+        await page.goto('/#/library/00000000000000000000000000000000');
+        await page.waitForURL((url) => !url.hash.startsWith('#/library/'), {
+            timeout: 15_000
+        });
+
+        expect(page.url()).toContain('#/mixed');
+
+        const settled = page.url();
+        await page.waitForTimeout(1500);
+        expect(page.url()).toBe(settled);
+        expect(page.url()).not.toContain('#/library/');
+    });
+});
+
+const { defaultBrowserType: _phoneBrowser, ...PHONE } = devices['Pixel 5'];
+
+/*
+ * The app bar exposes *two* buttons whose accessible name contains "menu" — "Open Menu" (the
+ * hamburger) and "User Menu" — so a `/menu/i` name match resolves to two elements and `.first()`
+ * only happens to pick the right one. Anchored to the hamburger explicitly.
+ */
+const OPEN_MENU = /^(open menu|ouvrir le menu)$/i;
+
+/**
+ * The same route on a phone viewport. Two things are only true on mobile: the drawer is the way out
+ * of a library, and four destinations have to fit 360px without becoming a horizontal carousel —
+ * the counted reason design §5 stops at four rather than porting seven tabs.
+ */
+test.describe('library activation (mobile)', () => {
+    /*
+     * `devices['Pixel 5']` also carries `defaultBrowserType`, which Playwright refuses inside a
+     * `describe` because switching browser forces a new worker — and this config runs a single
+     * worker on purpose (see `playwright.config.ts`). Only the viewport/user-agent/touch half is
+     * applied; the browser stays the config's chromium, which is what Pixel 5 would have selected
+     * anyway.
+     */
+    test.use(PHONE);
+
+    let libraryId = '';
+
+    test.beforeAll(async () => {
+        const api = await request.newContext({ baseURL: BASE_URL });
+        const authResponse = await api.post('/Users/AuthenticateByName', {
+            headers: { Authorization: E2E_AUTH_HEADER },
+            data: { Username: USER, Pw: PASSWORD }
+        });
+        const auth = await authResponse.json();
+        const viewsResponse = await api.get('/UserViews', {
+            params: { userId: auth.User.Id },
+            headers: {
+                Authorization: `${E2E_AUTH_HEADER}, Token="${auth.AccessToken}"`
+            }
+        });
+        const views = await viewsResponse.json();
+        libraryId = String(
+            (views.Items as Array<Record<string, unknown>>)?.find(
+                (item) => item.CollectionType === 'movies'
+            )?.Id ?? ''
+        );
+        await api.dispose();
+        expect(libraryId).not.toBe('');
+    });
+
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+
+        if (page.url().includes('/login')) {
+            await page.locator('#txtManualName:visible').fill(USER);
+            await page.locator('#txtManualPassword:visible').fill(PASSWORD);
+            await page.locator('button[type="submit"]:visible').first().click();
+            await page.waitForURL('**/#/home**', { timeout: 20_000 });
+        }
+        await page.waitForLoadState('networkidle');
+    });
+
+    /**
+     * Issue #17 one level deeper: `AppLayout` gates the hamburger on `isDrawerAvailable`, so a
+     * destination route the drawer does not recognise would strand a phone user with no way to
+     * another library. Asserted on a destination segment, not just on Browse.
+     */
+    test('the drawer opens from a destination and navigates away', async ({
+        page
+    }) => {
+        await page.goto(`/#/library/${libraryId}/genres`);
+        await page.waitForLoadState('networkidle');
+
+        const menuButton = page.getByRole('button', { name: OPEN_MENU });
+        await expect(menuButton).toBeVisible({ timeout: 15_000 });
+        await menuButton.click();
+
+        const drawer = page.getByRole('presentation').last();
+        await expect(drawer.getByText(/home|accueil/i).first()).toBeVisible();
+
+        await drawer
+            .getByText(/home|accueil/i)
+            .first()
+            .click();
+        await expect(page).toHaveURL(/#\/home/);
+    });
+
+    /** The drawer's own library link must use the repointed URL, like every other entry point. */
+    test('the drawer links a movies library to the canonical route', async ({
+        page
+    }) => {
+        await page.goto(`/#/library/${libraryId}`);
+        await page.waitForLoadState('networkidle');
+
+        await page.getByRole('button', { name: OPEN_MENU }).click();
+
+        /*
+         * Scoped to `MainDrawerContent`'s own `ListItemLink` (`MuiListItemButton`), for the same
+         * reason as the home-card click above: the closed legacy `.mainDrawer` also holds an
+         * `a.lnkMediaFolder` with this href, and it is never visible, so an unscoped `.first()`
+         * asserts visibility on the wrong element. The URL was already correct on both.
+         */
+        // The drawer's `ListItemLink` renders the anchor *as* the MuiListItemButton, so the class
+        // and the href are on the same element.
+        await expect(
+            page.locator(
+                `a.MuiListItemButton-root[href*="library/${libraryId}"]`
+            )
+        ).toBeVisible({ timeout: 15_000 });
+    });
+
+    /** Four destinations, one row, no horizontal page scroll at 360px. */
+    test('the four destinations fit the phone viewport', async ({ page }) => {
+        await page.goto(`/#/library/${libraryId}`);
+        await page.waitForLoadState('networkidle');
+
+        await expect(page.locator('[data-rf-slot="tabs"]')).toBeVisible({
+            timeout: 15_000
+        });
+        await expect(page.locator('[data-rf-slot="tab"]')).toHaveCount(4);
+
+        const overflows = await page.evaluate(
+            () =>
+                document.documentElement.scrollWidth >
+                document.documentElement.clientWidth
+        );
+        expect(overflows).toBe(false);
     });
 });

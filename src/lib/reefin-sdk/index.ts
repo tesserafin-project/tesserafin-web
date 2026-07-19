@@ -12,6 +12,7 @@ export * from './client';
 import type { ReefinApi } from './client';
 import { GenreApi } from './generated/api/genre-api';
 import { LibraryApi } from './generated/api/library-api';
+import { MovieApi } from './generated/api/movie-api';
 import { ShowApi } from './generated/api/show-api';
 import { StudioApi } from './generated/api/studio-api';
 import { SystemApi } from './generated/api/system-api';
@@ -39,9 +40,11 @@ export const getShowApi = (api: ReefinApi): ShowApi =>
     new ShowApi(api.configuration, undefined, api.axiosInstance);
 
 /**
- * Added for the `/library/:libraryId` Genres destination (issue #15, L15a). Consumed only by
- * `apps/modern/features/library/api/libraryDestinationQueries.ts`, which is itself dormant
- * (test-only import), so `GenreApi` stays out of the main bundle until activation.
+ * Added for the `/library/:libraryId` Genres destination (issue #15, L15a; mounted by L15b).
+ * Consumed only by `apps/modern/features/library/api/libraryDestinationQueries.ts`. That module is
+ * no longer dormant, but it is reached exclusively through the `library/:libraryId` async chunk
+ * (`asyncRoutes/user.ts` + `AsyncRoute.tsx`'s `lazy: () => import(...)`), so `GenreApi` still stays
+ * out of `main.jellyfin.bundle.js`.
  */
 export const getGenreApi = (api: ReefinApi): GenreApi =>
     new GenreApi(api.configuration, undefined, api.axiosInstance);
@@ -49,7 +52,16 @@ export const getGenreApi = (api: ReefinApi): GenreApi =>
 /**
  * Added for the Studios *filter* on Browse (issue #15, L15a) - Studios is a `studioIds` predicate on
  * the Browse query, not a destination (design §3.2), so this factory only feeds the filter's option
- * list. Same dormancy as `getGenreApi`.
+ * list. Same async-chunk-only reachability as `getGenreApi`.
  */
 export const getStudioApi = (api: ReefinApi): StudioApi =>
     new StudioApi(api.configuration, undefined, api.axiosInstance);
+
+/**
+ * Added for the `MovieRecommendations` shelf of the Suggestions destination (issue #15, L15b). Like
+ * `getGenreApi`/`getStudioApi` it is consumed only by
+ * `apps/modern/features/library/api/libraryDestinationQueries.ts`, which lives entirely inside the
+ * `library/:libraryId` async chunk — so `MovieApi` stays out of `main.jellyfin.bundle.js`.
+ */
+export const getMovieApi = (api: ReefinApi): MovieApi =>
+    new MovieApi(api.configuration, undefined, api.axiosInstance);
