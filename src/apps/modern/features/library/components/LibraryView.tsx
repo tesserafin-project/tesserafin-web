@@ -223,9 +223,10 @@ const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
  * direct URL; nothing is removed from the current default path, which is what keeps this deferral
  * (unlike activation) regression-free.
  *
- * Porting parity is also not fundable right now: the `main.jellyfin.bundle.js` budget
- * (`webpack.performance-budget.json`, 460800 bytes) has ~15 KiB of headroom, against 7-8 tabs of
- * sections/genre/studio/collection/playlist views.
+ * The `main.jellyfin.bundle.js` budget (`webpack.performance-budget.json`, 460800 bytes) is *not*
+ * what defers this: measured on this branch, it currently has ample headroom. The blocker is the
+ * tab/AlphaPicker/list-view gap above, which is a functional-regression argument and stands on
+ * its own.
  *
  * TODO(RFC-0005 §11 WP-C follow-up): this route needs parity with the legacy per-type pages
  * (Suggestions/Genres/Studios/Collections/Playlists tabs, AlphaPicker, list view, multi-select
