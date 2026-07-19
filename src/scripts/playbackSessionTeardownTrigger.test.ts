@@ -154,6 +154,42 @@ describe('v2 session ownership', () => {
     });
 });
 
+describe('transcoding retry (changeStream) keeps the initial session releasable', () => {
+    /**
+     * Pins the SHIPPED wiring, which is narrower than "a retry establishes a new v2 session".
+     * `applyV2PlaybackUrlIfEnabled` is reached only from `playAfterBitrateDetect()` (i.e. only
+     * from `playInternal()`); the retry path `changeStream() -> changeStreamToUrl() ->
+     * setSrcIntoPlayer()` assigns a LEGACY `streamInfo` to `playerData.streamInfo` directly and
+     * never re-adopts.
+     *
+     * The tracker lives on `playerData`, not on `streamInfo`, so it survives that replacement
+     * still holding the session the initial attempt established - and the final stop must
+     * still release it. If the tracker were parked on `streamInfo`, this is exactly where the
+     * session would leak until the server's 6h TTL swept it.
+     */
+    it('releases the initial v2 session even though the retry left a legacy streamInfo', () => {
+        const target = fakeTarget();
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-initial')
+        };
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+        const tracker = playerData.playbackSessionTracker;
+        expect(tracker?.ownedSessionId).toBe('sess-initial');
+
+        // changeStream()'s retry: setSrcIntoPlayer replaces streamInfo with a legacy one.
+        playerData.streamInfo = legacyStreamInfo();
+
+        releasePlaybackSessionOnStop(playerData, 'stopped');
+
+        // expectSessionId is undefined (legacy streamInfo), so the name guard is skipped and
+        // the held session is released rather than leaked.
+        expect(tracker?.hasPendingRelease).toBe(false);
+        expect(tracker?.ownedSessionId).toBe('sess-initial');
+    });
+});
+
 describe('late stop cannot tear down the session that replaced it', () => {
     it('is a no-op when streamInfo already names a different session', () => {
         const target = fakeTarget();
