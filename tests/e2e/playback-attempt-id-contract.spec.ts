@@ -536,14 +536,25 @@ test.describe('PlaybackAttemptId wire contract', () => {
         const attemptDuringRetry = infoIds[0];
 
         // Per-request correlation still varies across those same requests.
-        const infoRids = wire.responses
-            .filter((r) => PLAYBACK_INFO.test(r.url))
-            .map((r) => r.headers[REQUEST_ID_HEADER])
-            .filter(Boolean);
+        //
+        // POLLED, not read synchronously. The poll above waits on `wire.requests`; the RESPONSES to
+        // those same requests are recorded by a separate listener that fires later, so reading
+        // `wire.responses` immediately races the second PlaybackInfo response. Measured on this rig:
+        // two requests observed with one response recorded, failing `>= 2` while the behaviour under
+        // test was entirely correct. Same precondition, polled on the collection actually read.
+        const playbackInfoRids = () =>
+            wire.responses
+                .filter((r) => PLAYBACK_INFO.test(r.url))
+                .map((r) => r.headers[REQUEST_ID_HEADER])
+                .filter(Boolean);
+        await expect
+            .poll(() => playbackInfoRids().length, { timeout: 60_000 })
+            .toBeGreaterThanOrEqual(2);
+
+        const infoRids = playbackInfoRids();
         console.log(
             `[retry] PlaybackInfo X-Request-Ids=${JSON.stringify(infoRids)}`
         );
-        expect(infoRids.length).toBeGreaterThanOrEqual(2);
         expect(
             [...new Set(infoRids)].length,
             'two requests of the same attempt shared one RequestId'
@@ -571,13 +582,29 @@ test.describe('PlaybackAttemptId wire contract', () => {
         expect(abortedUrl.toLowerCase()).not.toContain('transcodereasons');
         expect(abortedUrl.toLowerCase()).not.toContain('allowvideostreamcopy');
 
-        const mediaUrls = wire.requests
-            .map((r) => r.url)
-            .filter((u) => /\/videos\/[^/]+\/(stream|master|main)\./i.test(u));
+        // POLLED for the same reason as the X-Request-Id list above: the retry leg is issued
+        // ASYNCHRONOUSLY after `changeStream()` re-enters `getPlaybackInfo()`, and that leg is a
+        // legacy TRANSCODE (`master.m3u8`), so the server has to spin ffmpeg up before the player
+        // requests it. Reading `wire.requests` synchronously here observed only the aborted leg on
+        // this rig even though the ladder had demonstrably run (two PlaybackInfo POSTs sharing one
+        // attempt id). The assertion below is unchanged — only its precondition is now awaited.
+        const mediaLegs = () =>
+            wire.requests
+                .map((r) => r.url)
+                .filter((u) =>
+                    /\/videos\/[^/]+\/(stream|master|main)\./i.test(u)
+                );
+        // The escalation really happened: a leg beyond the aborted one was fetched.
+        await expect
+            .poll(() => mediaLegs().filter((u) => u !== abortedUrl).length, {
+                timeout: 60_000
+            })
+            .toBeGreaterThan(0);
+
+        const mediaUrls = mediaLegs();
         console.log(
             `[retry] media legs=${JSON.stringify(mediaUrls.map((u) => u.split('?')[0]))}`
         );
-        // The escalation really happened: a leg beyond the aborted one was fetched.
         expect(
             mediaUrls.filter((u) => u !== abortedUrl).length,
             'no media leg after the aborted one — the retry ladder did not run'

@@ -518,3 +518,197 @@ test('no orphaned session after teardown: DELETE makes it unresolvable', async (
     // …and is gone afterwards, on the same endpoint that just served it.
     expect((await getDescriptor(session.Id)).status()).toBe(404);
 });
+
+/**
+ * ISSUE #57/#58 SIDE EFFECT — the external-subtitle offset of a SEEKING remux.
+ *
+ * The #58 fix normalizes `PlayMethod` from `DirectStream` to `Transcode` for URL serialization
+ * (gated on `ServedByV2`) immediately BEFORE `PlaybackSessionStreamDescriptorMapper.Map` runs
+ * (`PlaybackSessionsController.GetPlaybackSessionStream`). That mapper resolves the external
+ * subtitle URL through `StreamInfo.GetSubtitleProfiles`, whose offset is:
+ *
+ *     startPositionTicks = SubProtocol == hls ? 0
+ *                        : (PlayMethod == Transcode && !CopyTimestamps ? StartPositionTicks : 0)
+ *
+ * so flipping the method also flips that offset — from `0` to the seek position — and it is emitted
+ * as a PATH SEGMENT of the subtitle URL:
+ *
+ *     /Videos/{ItemId}/{MediaSourceId}/Subtitles/{index}/{startPositionTicks}/Stream.{format}
+ *
+ * That combination (Remux + external subtitle + non-zero seek) is covered by nothing, on either
+ * side. It is measured here rather than in the client spec because it is NOT reachable through the
+ * real browser: see `playback-v2-client.spec.ts` — Playwright's Chromium satisfies `canPlayMkv`, so
+ * the only Matroska fixture direct-plays, and the only fixture carrying an external subtitle
+ * sidecar is the h264/aac MP4 that direct-plays too. Varying ONE declared capability (dropping
+ * `mp4` from the containers, leaving the streams copyable) is the same hand-crafted-payload
+ * technique the Matroska remux case above uses, and the same one the server's own merged regression
+ * test uses (`EndToEndCapabilityPresets.RemuxMatroskaToMp4`). No request body is rewritten.
+ */
+test.describe('the external subtitle offset of a seeking Remux (issue #57/#58 side effect)', () => {
+    /** 30s in ticks (100ns units) — inside the 2s fixture's timeline is irrelevant here: the value
+     * is a URL segment the mapper serializes, not a decode position that has to resolve. */
+    const SEEK_TICKS = 300_000_000;
+
+    async function getDescriptorAt(sessionId: string, startTimeTicks: number) {
+        return ctx.api.get(`/Playback/Sessions/${sessionId}/Stream`, {
+            params: { startTimeTicks },
+            headers: { Authorization: ctx.token }
+        });
+    }
+
+    /** The offset segment of `/Subtitles/{index}/{startPositionTicks}/Stream.{fmt}`. */
+    function subtitleOffsetOf(subtitleUrl: string): string {
+        const m = /\/Subtitles\/(\d+)\/(\d+)\/Stream\./i.exec(subtitleUrl);
+        if (!m) {
+            throw new Error(
+                `subtitle URL did not match the expected shape: ${subtitleUrl}`
+            );
+        }
+        return m[2];
+    }
+
+    /** Capabilities whose ONLY incompatibility with the h264/aac MP4 fixture is its container. */
+    function capabilities(containers: string[]) {
+        return {
+            Decode: {
+                DirectPlayProfiles: [
+                    {
+                        Type: 'Video',
+                        Containers: containers,
+                        VideoCodecs: ['h264'],
+                        AudioCodecs: ['aac']
+                    }
+                ],
+                VideoCodecs: [
+                    { Codec: 'h264', Profiles: [], VideoRangeTypes: ['SDR'] }
+                ],
+                AudioCodecs: [{ Codec: 'aac' }],
+                SubtitleDelivery: [{ Format: 'vtt', Method: 'External' }],
+                SupportsHls: true,
+                SupportsDash: false
+            },
+            OutputProfiles: []
+        };
+    }
+
+    async function createFor(containers: string[], subtitleIndex: number) {
+        const movieId = await resolveItemIdByName('Smoke Test Movie (2020)');
+        const created = await createSession(
+            baseRequest({
+                ItemId: movieId,
+                MediaSourceId: movieId,
+                Capabilities: capabilities(containers),
+                Constraints: {
+                    AllowDirectPlay: true,
+                    AllowDirectStream: true,
+                    AllowTranscoding: true,
+                    AllowVideoStreamCopy: true,
+                    AllowAudioStreamCopy: true,
+                    MaxBitrate: null,
+                    MaxAudioChannels: null,
+                    PreferredAudioStreamIndex: null,
+                    PreferredSubtitleStreamIndex: subtitleIndex,
+                    SubtitleMode: 'Always',
+                    PreferredSubtitleLanguages: ['eng'],
+                    AlwaysBurnInSubtitleWhenTranscoding: false,
+                    StartTimeTicks: 0
+                }
+            })
+        );
+        expect(
+            created.status(),
+            `session creation failed: ${(await created.text()).slice(0, 400)}`
+        ).toBe(200);
+        return created.json();
+    }
+
+    /** The index of the EXTERNAL subtitle stream, resolved rather than assumed. */
+    async function externalSubtitleIndex(): Promise<number> {
+        const movieId = await resolveItemIdByName('Smoke Test Movie (2020)');
+        const info = await (
+            await ctx.api.post(`/Items/${movieId}/PlaybackInfo`, {
+                headers: { Authorization: ctx.token },
+                data: { UserId: ctx.userId }
+            })
+        ).json();
+        const streams = (info.MediaSources ?? [])[0]?.MediaStreams ?? [];
+        const external = streams.find(
+            (s: { Type: string; IsExternal: boolean }) =>
+                s.Type === 'Subtitle' && s.IsExternal
+        );
+        if (!external) {
+            throw new Error(
+                `no external subtitle stream on the fixture; streams=${JSON.stringify(
+                    streams.map((s: { Type: string; Index: number }) => [
+                        s.Type,
+                        s.Index
+                    ])
+                )}`
+            );
+        }
+        return Number(external.Index);
+    }
+
+    test('a Remux session carries the SEEK POSITION in its external subtitle URL, while DirectPlay keeps 0', async () => {
+        const subtitleIndex = await externalSubtitleIndex();
+        console.log(
+            `[suboffset] external subtitle stream index=${subtitleIndex}`
+        );
+
+        // ---- the REMUX arm: containers exclude mp4, so only the box is unsupported -------------
+        const remux = await createFor(['mkv'], subtitleIndex);
+        console.log(
+            `[suboffset][remux] Method=${remux.Method} Reasons=${JSON.stringify(remux.Reasons)}`
+        );
+        // Guard the premise: if this is not a Remux, the side effect under test is not in play.
+        expect(remux.Method).toBe('Remux');
+
+        const atZero = await getDescriptorAt(remux.Id, 0);
+        expect(atZero.status()).toBe(200);
+        const dZero = await atZero.json();
+        const atSeek = await getDescriptorAt(remux.Id, SEEK_TICKS);
+        expect(atSeek.status()).toBe(200);
+        const dSeek = await atSeek.json();
+
+        console.log(
+            `[suboffset][remux] ServedBy=${dSeek.ServedBy} FallbackReason=${dSeek.FallbackReason}`
+        );
+        console.log(
+            `[suboffset][remux] SubtitleUrl@0    =${dZero.SubtitleUrl}`
+        );
+        console.log(
+            `[suboffset][remux] SubtitleUrl@seek =${dSeek.SubtitleUrl}`
+        );
+
+        // Guard: v2 served this, so the ServedByV2-gated normalization actually applied.
+        expect(dSeek.FallbackReason).toBeFalsy();
+        expect(
+            dSeek.SubtitleUrl,
+            'no external subtitle URL on the descriptor — the sidecar was not delivered externally'
+        ).toBeTruthy();
+
+        // THE MEASUREMENT. At seek 0 the offset is 0; at a non-zero seek the normalization to
+        // Transcode carries the seek into the subtitle URL.
+        expect(subtitleOffsetOf(dZero.SubtitleUrl)).toBe('0');
+        expect(subtitleOffsetOf(dSeek.SubtitleUrl)).toBe(String(SEEK_TICKS));
+
+        // ---- the CONTROL arm: DirectPlay is deliberately NOT normalized by the #58 fix ---------
+        const direct = await createFor(['mp4', 'm4v'], subtitleIndex);
+        console.log(
+            `[suboffset][directplay] Method=${direct.Method} Reasons=${JSON.stringify(direct.Reasons)}`
+        );
+        expect(direct.Method).toBe('DirectPlay');
+
+        const directAtSeek = await getDescriptorAt(direct.Id, SEEK_TICKS);
+        expect(directAtSeek.status()).toBe(200);
+        const dDirect = await directAtSeek.json();
+        console.log(
+            `[suboffset][directplay] SubtitleUrl@seek=${dDirect.SubtitleUrl}`
+        );
+        expect(dDirect.SubtitleUrl).toBeTruthy();
+
+        // The contrast that makes the Remux measurement meaningful rather than a property of
+        // seeking in general: at the SAME seek, DirectPlay still offsets by 0.
+        expect(subtitleOffsetOf(dDirect.SubtitleUrl)).toBe('0');
+    });
+});
