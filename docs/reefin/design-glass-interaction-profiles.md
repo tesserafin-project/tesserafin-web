@@ -1,10 +1,16 @@
 # Design — Profils d'interaction Reefin Glass (issue #18, arbitrage §8-C de reefin#44)
 
-> **Statut : DESIGN DORMANT.** Aucun profil n'est activé. `useAppTheme` n'est pas modifié, aucun
-> attribut `data-rf-profile` n'est posé à l'exécution, aucun bloc `profiles` n'est écrit dans un
-> `theme.json` et `generate:tokens` n'est pas relancé. Glass reste **inatteignable depuis les
-> sélecteurs de thème** — la propriété que la PR #14 établit est conservée telle quelle. Activation
-> conditionnée à **LANE B** et **LANE E2E** (§7).
+> **Statut : ACTIF (W13.8b / G18a).** Les profils sont résolus et **projetés sur les custom
+> properties CSS** à l'exécution : `useAppTheme` appelle `useInteractionProfiles`, qui pose
+> `data-rf-profile` / `data-rf-reduced-motion` et écrit les `--rf-*` surchargées — y compris la
+> re-dérivation de `--rf-backdrop-filter-*`, sans laquelle une surcharge de flou restait vraie dans
+> l'objet TypeScript et fausse dans les computed styles (§4.1).
+>
+> Ce qui **reste** inchangé : Glass est toujours `experimental` dans `src/themes/registry.ts` et
+> donc **absent de tout sélecteur de thème** — la propriété d'inatteignabilité posée par la PR #14
+> est conservée. Rendre Glass publiquement sélectionnable (picker, sidebar flottante, mode clair)
+> est un travail distinct. Aucun bloc `profiles` n'est écrit dans un `theme.json` et
+> `generate:tokens` produit une sortie inchangée octet pour octet.
 
 ## 1. La décision de format à trancher
 
@@ -33,18 +39,21 @@ Trois raisons dirimantes, dans l'ordre de force :
    définit pas déjà.
 
 **Ce à quoi ces partials se rattachent.** Ils surchargent les tokens du **thème actif**, et leur
-cible fonctionnelle est **Glass** (issue #18). Glass n'est pas sur cette branche : la PR #14 est
-ouverte, `reefin-design/themes/` ne contient que `classic/`. Les valeurs ci-dessous sont donc
-écrites comme deep-partials de la **forme** définie par `tokens.schema.json`, et se lieront au
-`tokens.json` de Glass quand #14 sera fusionnée.
+cible fonctionnelle est **Glass** (issue #18). La PR #14 est fusionnée : Glass est sur `main`,
+`reefin-design/themes/glass/` existe, et ces partials se lient désormais à son `tokens.json` réel.
 
 Elles ne sont **pas** écrites contre Classic, et il faut être exact sur ce que ça implique :
 appliquées à Classic elles ne seraient **pas** des no-ops — `reducedTransparency` repeindrait la
 surface `#202020` de Classic en `#141a22`, et `remote` lui donnerait un flou non nul qu'il ne veut
-pas. Classic sert de base **dans le test seulement**, comme véhicule pour éprouver la *résolution*
-(c'est le seul thème présent sur cette branche). Ce qui rend ces valeurs inoffensives n'est donc pas
-leur contenu mais la **dormance** : aucun profil n'est résolu à l'exécution, sur aucun thème, tant
-que l'activation ne les a pas liées à Glass.
+pas. Ce qui protège Classic n'est donc pas le contenu des valeurs mais le **garde-fou de thème** :
+`useInteractionProfiles` ne projette rien tant que le thème actif n'est pas `official.glass`.
+Ce garde-fou est *prouvé*, pas supposé — `tests/e2e/glass-interaction-profiles.spec.ts` vérifie sur
+des computed styles réels que Classic ne bouge pas, et vérifie aussi que les mêmes partials
+**déplacent** bien Classic si on court-circuite le garde-fou, sans quoi la première assertion
+serait vide de sens.
+
+Classic reste la base utilisée par `profiles.test.ts`, comme véhicule pour éprouver la
+*résolution* indépendamment des valeurs d'un thème donné.
 
 ## 2. Cascade — ordre de priorité
 
@@ -147,12 +156,9 @@ Seules les durées tombent ; les courbes d'easing restent, puisqu'une transition
 les échantillonne pas et qu'une future durée non nulle doit retrouver la même identité de
 mouvement.
 
-## 4. Le setter d'exécution `data-rf-profile`
+## 4. Le setter d'exécution
 
-Spécifié ici, **non implémenté** : `useAppTheme` continue de ne poser que
-`data-rf-theme`/`data-rf-mode`.
-
-À l'activation :
+Implémenté par `src/themes/useInteractionProfiles.ts`, appelé par `useAppTheme` :
 
 - `data-rf-profile` porte **un seul** gagnant de la cascade — l'attribut sert au scoping CSS, et un
   sélecteur ne peut pas arbitrer une priorité tout seul. Valeurs :
@@ -160,30 +166,74 @@ Spécifié ici, **non implémenté** : `useAppTheme` continue de ne poser que
 - `data-rf-reduced-motion` est un attribut **distinct** (`"true"` / absent). Le repli de
   `reducedMotion` dans `data-rf-profile` est exactement l'erreur que §2.1 interdit : deux axes, deux
   attributs.
-- Signaux : `matchMedia('(prefers-reduced-transparency: reduce)')` pour `reducedTransparency`,
+- Signaux (`src/themes/interactionProfileSignals.ts`), tous observables et réversibles à chaud :
+  `matchMedia('(prefers-reduced-transparency: reduce)')` pour `reducedTransparency`,
   `navigator.getBattery()` + `matchMedia('(update: slow)')` pour `lowPower`,
-  `layoutManager.tv` pour `remote`, `matchMedia('(prefers-reduced-motion: reduce)')` pour
-  `reducedMotion`. Tous observables et réversibles à chaud.
+  la classe `.layout-tv` sur `<html>` pour `remote`,
+  `matchMedia('(prefers-reduced-motion: reduce)')` pour `reducedMotion`.
+  Le signal `remote` lit la classe que `components/layoutManager` **publie** plutôt que d'importer
+  le module : importer `layoutManager` tirerait `apphost`, `globalize` et le reste de la chaîne de
+  boot héritée dans le chemin de thème, qui est sur le bundle principal. La classe est un contrat
+  déjà consommé par `src/styles/site.scss`, et la lire via `MutationObserver` capte en plus un
+  layout appliqué *avant* l'abonnement, ce qu'un événement `modechange` manquerait.
+- Tout écouteur est retiré au démontage, y compris les deux écouteurs de batterie — qui s'attachent
+  **après** résolution de `navigator.getBattery()` et peuvent donc arriver une fois le teardown
+  déjà passé. Ce cas est traité explicitement, pas laissé au hasard.
 - **L'attribut est un miroir, pas la source de vérité.** Les tokens résolus sont l'autorité ; un
   CSS qui déduirait ses valeurs du seul nom de profil réintroduirait la table de résolution cachée
   écartée en §1.
 
-## 5. Ce que ce document ne fait pas
+### 4.1 L'autorité d'exécution : la projection régénère les variables dérivées
 
-- Ne touche pas `src/themes/useAppTheme.ts`.
-- N'ajoute aucun bloc `profiles` à un `theme.json`, ne relance pas `generate:tokens`, ne modifie
-  aucun fichier sous `src/ui/tokens/official.*` — `verify:tokens-fresh` reste vert sans rien
-  régénérer.
-- Ne rend Glass sélectionnable nulle part. La propriété d'inatteignabilité posée par la PR #14 est
-  conservée.
+C'est le point qui manquait, et le défaut qu'il corrige mérite d'être nommé précisément.
+
+`generate:tokens` émet **deux** variables par clé de flou : la primitive `--rf-blur-<k>` et la
+**dérivée** `--rf-backdrop-filter-<k>`. `_glass-surface.scss` lit la **dérivée** (parce que
+`blur(0)` alloue encore une couche de compositing là où `none` n'en alloue aucune). Un profil qui
+surcharge `blur.md` ne changeait que l'objet TypeScript : la dérivée, calculée au build, restait
+figée. La surcharge était **vraie dans l'objet et fausse dans les computed styles**.
+
+Deux issues étaient possibles : (1) que Glass compose son filtre depuis les primitives réellement
+surchargées, ou (2) que la projection régénère explicitement les dérivées.
+
+**Retenu : (2).** (1) obligerait `_glass-surface.scss` à écrire `blur(var(--rf-blur-md))`, ce qui
+ferait passer Classic de `none` à `blur(0px)` — une régression de computed style sur un thème qui
+n'est pas concerné, et une violation du contrat du mixin (« les consommateurs ne branchent jamais
+sur le thème actif »). Ça ferait aussi retomber `reducedTransparency` sur `blur(0px)`, c'est-à-dire
+conserver le coût GPU que ce profil existe pour supprimer.
+
+**Une seule formule, deux appelants.** `toBackdropFilter` vit dans
+`reefin-design/web/backdrop-filter.mjs` et est importée à la fois par le générateur (build) et par
+`src/ui/tokens/projectTokens.ts` (runtime). Aucune seconde formule n'est écrite : c'est la garantie
+que build et runtime ne peuvent pas diverger sur ce que vaut un flou donné.
+
+**Pas de table sémantique cachée.** Les noms de custom properties sont *calculés* depuis le chemin
+du token (`spacing.md` → `--rf-spacing-md`), jamais cherchés dans une table ; les partials portent
+leurs valeurs concrètes (§1). Rien dans la chaîne ne résout un *nom* de profil vers une valeur.
+
+## 5. Ce que cette tranche ne fait **pas**
+
+- **Ne rend Glass sélectionnable nulle part.** `official.glass` reste `experimental` dans
+  `src/themes/registry.ts`, donc absent de `getSelectableThemeEntries()` et de tout picker. La
+  propriété d'inatteignabilité posée par la PR #14 est conservée telle quelle. Les profils ne sont
+  atteignables qu'en appliquant Glass **par id**.
+- **N'ajoute pas de picker, de sidebar flottante ni de mode clair** — travail distinct (G18b).
+- N'ajoute aucun bloc `profiles` à un `theme.json` ; `generate:tokens` produit une sortie
+  **identique octet pour octet** et `verify:tokens-fresh` reste vert. (Le générateur a été touché,
+  mais uniquement pour importer `toBackdropFilter` au lieu d'en héberger une copie — §4.1 ; la
+  sortie est inchangée, ce qui est précisément la preuve que l'extraction n'a rien fait dériver.)
 - Ne modifie pas `theme.schema.json` : le schéma décrit déjà `profileOverride` comme un
   deep-partial, la décision de §1 le confirme au lieu de le changer.
 
-Le seul code livré est **dormant** : `src/ui/tokens/profiles.ts` n'est importé que par son test et
-n'est **pas** ré-exporté depuis `src/ui/index.ts` — le ré-exporter le rendrait atteignable depuis
-un point d'entrée webpack et lui ferait peser des octets. Il en pèse **0**.
+`src/ui/tokens/profiles.ts` n'est plus dormant : il est désormais atteignable depuis le chemin de
+thème (bundle principal) via `useInteractionProfiles`, et pèse donc des octets. Ce que la
+projection évite en revanche, c'est de tirer la **palette** de Glass hors de son chunk paresseux :
+elle projette le *delta* des profils (des littéraux locaux) au lieu de résoudre contre l'objet de
+tokens complet, ce qui importerait `officialGlassTokens` dans le bundle principal.
 
-## 6. Contrôles couverts par `src/ui/tokens/profiles.test.ts`
+## 6. Contrôles
+
+`src/ui/tokens/profiles.test.ts` — la **résolution** (objet) :
 
 1. Chaque partial est un sous-ensemble strict des clés de `tokens.schema.json` — aucun profil
    n'invente de token.
@@ -195,16 +245,28 @@ un point d'entrée webpack et lui ferait peser des octets. Il en pèse **0**.
    `reducedMotion` ne touche que `motion`.
 6. `data-rf-profile` ne porte qu'un gagnant, et `reducedMotion` n'y apparaît jamais.
 
-## 7. Conditions d'activation
+`src/ui/tokens/projectTokens.test.ts` — la **projection** (noms et valeurs) : chaque nom projeté
+existe réellement dans `official.glass.css` (un nom erroné serait un no-op silencieux, pas une
+erreur) ; toute surcharge de `blur.<k>` régénère `--rf-backdrop-filter-<k>` ; le delta et la
+résolution complète coïncident clé pour clé.
 
-Identiques au volet Library, et pour les mêmes raisons :
+`src/themes/interactionProfileSignals.test.ts` — les **signaux** : mapping, réversibilité à chaud,
+et retrait de *tous* les écouteurs au démontage, y compris la sonde batterie résolue après teardown.
 
-1. **LANE B** — marge bundle de **84,7 KiB** aujourd'hui (86 737 o ; 374 063 o sur `main`,
-   plafond 460 800 o), objectif 30 KiB : seuil numériquement **atteint** depuis la fusion de
-   #26. Le gate global reste fermé tant que LANE E2E l'est. La consommation des
-   profils ajoute du code au chemin de thème, qui est sur le bundle principal (`useAppTheme` n'est
-   pas lazy). Rien n'est activé avant que la marge soit acquise, et les leviers sont conjonctifs
-   (reefin#44 §4).
-2. **LANE E2E** — aucune capture desktop/mobile/TV n'est vérifiable sans serveur réel ;
-   `playwright.config.ts` n'a pas de `webServer` et reefin#39 n'est pas fusionnée. Un profil qui
-   changerait le rendu sans capture croisée est une régression non observable.
+`tests/e2e/glass-interaction-profiles.spec.ts` — la **preuve navigateur**, et la seule qui compte
+pour §4.1 : dans un vrai Chromium, sur du CSS généré réel et le vrai mixin compilé, elle lit le
+`backdrop-filter` *computed* avant / pendant / après chaque profil. Une assertion sur l'objet
+TypeScript ne prouverait rien ici — c'était déjà vrai quand le bug existait.
+
+## 7. Conditions d'activation — **levées**
+
+Les deux lanes qui bloquaient l'activation sont closes :
+
+1. **LANE B** (marge bundle) — seuil de 30 KiB atteint depuis la fusion de #26 et conservé après
+   cette tranche ; voir la PR pour les octets mesurés.
+2. **LANE E2E** — reefin#39 est fusionnée et Glass est sur `main`, donc le gate croisé n'est plus
+   bloqué par leur absence. Par ailleurs les preuves de §4.1 ne dépendent d'aucun serveur : elles
+   portent sur le pont CSS (tokens → variables → mixin → computed style), qui n'a besoin ni de
+   médiathèque ni de session, et tournent sur `page.setContent`. Les captures d'application
+   croisées desktop/mobile/TV restent, elles, dépendantes d'une instance réelle
+   (`tests/e2e/theme-glass.spec.ts`).

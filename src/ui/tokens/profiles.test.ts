@@ -20,13 +20,23 @@ import {
 import type { ReefinTokens } from './types';
 
 /**
- * Behavioural spec for the dormant interaction profiles
- * (`docs/reefin/design-glass-interaction-profiles.md`). Nothing here activates a profile; these
- * assertions pin the cascade order and the `reducedMotion` orthogonality so a later activation
- * slice cannot quietly reorder them.
+ * Behavioural spec for interaction-profile *resolution*
+ * (`docs/reefin/design-glass-interaction-profiles.md`): the cascade order and the `reducedMotion`
+ * orthogonality, pinned so neither can be quietly reordered.
  *
- * `official.classic` is used as the base token set purely because it is the only theme on this
- * branch (Glass is PR #14). The assertions are about the *resolution*, not about Classic.
+ * Scope note: these assertions are about the resolved token object only. That object was never the
+ * broken half — a profile could always be resolved correctly and still not reach the page, because
+ * nothing re-derived the `--rf-backdrop-filter-*` custom properties that Glass's CSS actually
+ * reads. The projection onto custom properties is `./projectTokens.test.ts`, and the proof that it
+ * moves a real browser's computed `backdrop-filter` is
+ * `tests/e2e/glass-interaction-profiles.spec.ts`. An object-level assertion here is necessary and
+ * not sufficient; treat it as such.
+ *
+ * `official.classic` is used as the base token set because these assertions are about the
+ * resolution rather than about any one theme's values. Profiles are applied to Glass alone in the
+ * app (`src/themes/useInteractionProfiles.ts` guards on the active theme id) — the partials are
+ * emphatically not no-ops against Classic, which is exactly why that guard exists and is tested
+ * against real computed styles.
  */
 const base: ReefinTokens = officialClassic;
 

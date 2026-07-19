@@ -6,6 +6,7 @@ import Events, { type Event } from 'utils/events';
 
 import { ensureColorSchemeLoaded, getColorSchemes } from './colorSchemeCache';
 import { getDefaultThemeEntry, getThemeEntry } from './registry';
+import { useInteractionProfiles } from './useInteractionProfiles';
 import { buildAppTheme } from '.';
 
 export interface AppTheme {
@@ -33,6 +34,10 @@ export interface AppTheme {
 /**
  * Builds (and rebuilds, as lazily-loaded color schemes arrive) the app's MUI theme, and keeps
  * `data-rf-theme`/`data-rf-mode` on `<html>` in sync with the active theme (RFC-0005 §7.1/§9.1).
+ *
+ * It also drives Reefin Glass's interaction profiles via `useInteractionProfiles` — which projects
+ * `data-rf-profile`, `data-rf-reduced-motion` and the profile's `--rf-*` overrides onto `<html>`,
+ * and which no-ops entirely for every theme other than `official.glass` (RFC-0005 §7.2).
  *
  * @param explicitThemeId When provided, the hook applies exactly this theme id and reacts only to
  * it changing — this is the `utils/reactUtils.tsx` legacy-view mount path, which already resolves
@@ -83,6 +88,8 @@ export function useAppTheme(explicitThemeId?: string): AppTheme {
         root.setAttribute('data-rf-theme', activeThemeId);
         root.setAttribute('data-rf-mode', entry?.defaultMode ?? 'dark');
     }, [activeThemeId]);
+
+    useInteractionProfiles(activeThemeId);
 
     const theme = useMemo(
         () => buildAppTheme(getColorSchemes()),

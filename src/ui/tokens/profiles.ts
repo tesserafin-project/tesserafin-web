@@ -2,25 +2,31 @@
  * Interaction-profile token overrides (RFC-0005 §7.2, issue #18), specified in
  * `docs/reefin/design-glass-interaction-profiles.md`.
  *
- * **DORMANT — imported by its test only, and deliberately NOT re-exported from `src/ui/index.ts`.**
- * Re-exporting it would make it reachable from a webpack entry point and cost bundle bytes; as it
- * stands it costs 0. Nothing here sets `data-rf-profile`, and `src/themes/useAppTheme.ts` is
- * untouched. Activation is gated on **LANE B** (bundle margin, target 30 KiB — now measured at
- * 84.7 KiB / 86 737 B, so the numeric threshold is met) **and** **LANE E2E** (cross gate, blocked
- * on reefin#39, still closed). Both are required, so activation remains blocked.
+ * **LIVE.** These partials are resolved at runtime by `src/themes/useInteractionProfiles.ts` and
+ * projected onto CSS custom properties by `./projectTokens.ts`, so an override is true in this
+ * object *and* in the browser's computed styles. (It was previously dormant, gated on two lanes
+ * that have since closed: Reefin Glass landed on `main` with PR #14, reefin#39 merged, and the
+ * bundle margin target was met — see the git history of this comment.)
+ *
+ * **Bound to Glass only.** `useInteractionProfiles` projects nothing unless the active theme is
+ * `official.glass`. That binding matters, because these partials are *not* no-ops against Classic
+ * — `REDUCED_TRANSPARENCY_OVERRIDE` would repaint Classic's `#202020` surface to `#141a22`, and
+ * `REMOTE_OVERRIDE` would give it a non-zero blur it does not want. Classic is used as a base in
+ * the unit test only, as a vehicle for asserting the *resolution*; what keeps it safe in the app
+ * is the theme guard, which `glass-interaction-profiles.spec.ts` asserts against real computed
+ * styles rather than trusting.
+ *
+ * Note that Glass itself remains `experimental` in `src/themes/registry.ts` and so is absent from
+ * every theme picker: profiles are reachable today only by applying Glass by id. Making Glass
+ * publicly selectable is separate work.
  *
  * **Format decision (issue #18 item 1):** a profile override is a *concrete deep-partial* of
  * `tokens.schema.json`, not a semantic value (`"blur": "reduced"`). A semantic value needs a
  * per-theme resolution table that is neither published nor shared across renderers; a concrete
  * partial carries its own values. `theme.schema.json`'s `profileOverride` already says
- * "deep-partial of tokens.schema.json" — this confirms the schema rather than changing it.
- *
- * These partials target **Glass**'s tokens (PR #14, not on this branch). They are *not* no-ops
- * against Classic — `REDUCED_TRANSPARENCY_OVERRIDE` would repaint Classic's `#202020` surface to
- * `#141a22`, and `REMOTE_OVERRIDE` would give it a non-zero blur it does not want. Classic is used
- * as a base in the test only, as a vehicle for asserting the *resolution*. What keeps that from
- * mattering is not the values but the dormancy: nothing resolves a profile at runtime, on any
- * theme, until activation binds these to Glass.
+ * "deep-partial of tokens.schema.json" — this confirms the schema rather than changing it. The
+ * runtime honors that decision literally: `projectTokens.ts` computes custom-property names from
+ * token paths, so no profile-name → value table exists anywhere in the chain.
  */
 
 import type { ReefinTokens } from './types';
@@ -164,6 +170,42 @@ export const resolveTokensForProfiles = (
         resolveProfileTokens(base, active),
         active.reducedMotion
     );
+
+/**
+ * The active profiles merged into a **single deep-partial**, in the same cumulative cascade order
+ * as `resolveProfileTokens` and with the orthogonal motion axis folded in last.
+ *
+ * This is what the runtime actually projects, and it is deliberately *not*
+ * `resolveTokensForProfiles(base, active)`. Two reasons, one of which is load-bearing:
+ *
+ *   - **Bundle.** Resolving against a base would require importing a theme's full token object.
+ *     `useInteractionProfiles` runs on the main-bundle theme path, so importing
+ *     `officialGlassTokens` there would drag Glass's entire palette out of its lazy chunk and into
+ *     the main bundle — precisely the separation RFC-0005 §9.1 buys by making Glass a dynamic
+ *     `import()`. A delta carries only the literals declared above.
+ *   - **Restore fidelity.** Projecting a delta means deactivation only has to *remove* what it
+ *     wrote, letting the stylesheet's build-time value re-emerge unchanged. Projecting a full
+ *     resolved set would mean writing back a remembered copy of every token, which is exact only
+ *     as long as the remembered copy is.
+ *
+ * The merge order is identical to `resolveProfileTokens`'s, so a delta applied to a base and a
+ * resolution against that base agree key for key — `projectTokens.test.ts` pins that equivalence.
+ */
+export const resolveProfileOverride = (
+    active: ActiveProfiles
+): ReefinTokensOverride => {
+    const cascaded = PROFILE_CASCADE.reduce<ReefinTokensOverride>(
+        (override, profile) =>
+            active[profile]
+                ? deepMerge(override, CASCADE_OVERRIDES[profile])
+                : override,
+        {}
+    );
+
+    return active.reducedMotion
+        ? deepMerge(cascaded, REDUCED_MOTION_OVERRIDE)
+        : cascaded;
+};
 
 /**
  * The single cascade winner, for `data-rf-profile` CSS scoping — a selector cannot arbitrate a
