@@ -67,35 +67,34 @@ export const toCustomProperties = (
 ): CustomProperties => {
     const properties: CustomProperties = {};
 
+    /** Turns one leaf token (a resolved scalar at `path`) into its custom properties. */
+    const addLeaf = (path: readonly string[], value: string): void => {
+        // `color.<mode>.<key>`: keep only the active mode, and drop the mode segment — the
+        // generator distinguishes modes by selector (`[data-rf-mode]`), not by property name.
+        if (path[0] === 'color') {
+            if (path[1] === mode) {
+                properties[`--rf-color-${kebab(path[2])}`] = value;
+            }
+            return;
+        }
+
+        properties[`--rf-${path.map(kebab).join('-')}`] = value;
+
+        // The derived companion. `blur.<key>` invalidates `--rf-backdrop-filter-<key>`, so the
+        // projection regenerates it from the same source of truth the generator used.
+        if (path[0] === 'blur' && path.length === 2) {
+            properties[`--rf-backdrop-filter-${path[1]}`] =
+                toBackdropFilter(value);
+        }
+    };
+
     const walk = (node: unknown, path: readonly string[]): void => {
         if (isPlainObject(node)) {
             for (const [key, value] of Object.entries(node)) {
                 walk(value, [...path, key]);
             }
-            return;
-        }
-        if (node === undefined || node === null) {
-            return;
-        }
-
-        // `color.<mode>.<key>`: keep only the active mode, and drop the mode segment — the
-        // generator distinguishes modes by selector (`[data-rf-mode]`), not by property name.
-        if (path[0] === 'color') {
-            if (path[1] !== mode) {
-                return;
-            }
-            properties[`--rf-color-${kebab(path[2])}`] = String(node);
-            return;
-        }
-
-        properties[`--rf-${path.map(kebab).join('-')}`] = String(node);
-
-        // The derived companion. `blur.<key>` invalidates `--rf-backdrop-filter-<key>`, so the
-        // projection regenerates it from the same source of truth the generator used.
-        if (path[0] === 'blur' && path.length === 2) {
-            properties[`--rf-backdrop-filter-${path[1]}`] = toBackdropFilter(
-                String(node)
-            );
+        } else if (node !== undefined && node !== null) {
+            addLeaf(path, String(node));
         }
     };
 

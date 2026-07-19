@@ -10,22 +10,34 @@
  *   - `reducedMotion`       ← `matchMedia('(prefers-reduced-motion: reduce)')`
  *   - `lowPower`            ← `matchMedia('(update: slow)')` OR a discharging battery at or below
  *                             {@link LOW_BATTERY_THRESHOLD}
- *   - `remote`              ← `layoutManager.tv`, re-read on its `modechange` event
+ *   - `remote`              ← the {@link TV_LAYOUT_CLASS} class on `<html>`, watched for changes
  *
  * This module owns subscription and teardown only; it resolves nothing and applies nothing. What a
  * given profile *means* lives in `src/ui/tokens/profiles.ts` as concrete token partials, and
  * reaches the page through `src/ui/tokens/projectTokens.ts`.
  *
- * Every listener registered here is removed by the returned unsubscribe function, including the
- * two battery listeners — which attach asynchronously, after `navigator.getBattery()` resolves, and
- * so can land *after* teardown has already run. That race is handled explicitly below rather than
- * left to chance: a battery event firing against a torn-down subscription would push profile state
- * onto an unmounted consumer.
+ * ## Why `remote` reads the DOM instead of importing `layoutManager`
+ *
+ * `components/layoutManager` is the authority on the TV layout, but importing it here would pull
+ * `apphost` — and through it `globalize`, `datetime` and the rest of the legacy boot chain — into
+ * the theme path, which is main-bundle and initialises early. Coupling the design system to that
+ * graph is a cost with no matching benefit, and it makes this module untestable in isolation.
+ *
+ * Instead the signal reads the thing `layoutManager` *publishes*: it writes `layout-<mode>` onto
+ * `document.documentElement` on every mode change, and `.layout-tv` is already a long-standing
+ * public contract that `src/styles/site.scss` and much of the legacy CSS style against. Watching
+ * the class is watching the same state, one level down, with a `MutationObserver` in place of the
+ * `modechange` event — and it is strictly more robust, since it also catches a layout applied
+ * before this subscription started.
+ *
+ * ## Teardown
+ *
+ * Every listener registered here is removed by the returned unsubscribe function: the media
+ * queries, the mutation observer, and the two battery listeners — which attach asynchronously,
+ * after `navigator.getBattery()` resolves, and so can land *after* teardown has already run. That
+ * race is handled explicitly below rather than left to chance: a battery event firing against a
+ * torn-down subscription would push profile state onto an unmounted consumer.
  */
-
-import Events from 'utils/events';
-
-import layoutManager from '../components/layoutManager';
 
 import type { ActiveProfiles } from '../ui/tokens/profiles';
 
@@ -40,6 +52,12 @@ const LOW_BATTERY_THRESHOLD = 0.2;
 const SLOW_UPDATE_QUERY = '(update: slow)';
 const REDUCED_TRANSPARENCY_QUERY = '(prefers-reduced-transparency: reduce)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+/**
+ * The class `components/layoutManager` puts on `<html>` for the TV layout (`LayoutMode.Tv`). See
+ * the module comment for why the class is read rather than the manager imported.
+ */
+export const TV_LAYOUT_CLASS = 'layout-tv';
 
 interface BatteryLike {
     charging: boolean;
@@ -94,7 +112,9 @@ export const subscribeToProfileSignals = (
             return;
         }
         onChange({
-            remote: Boolean(layoutManager.tv),
+            remote: document.documentElement.classList.contains(
+                TV_LAYOUT_CLASS
+            ),
             lowPower: isLowPower(),
             reducedTransparency: Boolean(reducedTransparency?.matches),
             reducedMotion: Boolean(reducedMotion?.matches)
@@ -121,8 +141,17 @@ export const subscribeToProfileSignals = (
         listenTo(slowUpdate)
     ];
 
-    Events.on(layoutManager, 'modechange', emit);
-    unlisten.push(() => Events.off(layoutManager, 'modechange', emit));
+    // Layout changes arrive as a class swap on `<html>`. Scoped to the `class` attribute of that
+    // one element (no subtree, no character data), so the observer cannot become a general-purpose
+    // DOM firehose as the app grows.
+    if (typeof MutationObserver === 'function') {
+        const observer = new MutationObserver(emit);
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        unlisten.push(() => observer.disconnect());
+    }
 
     const navigatorWithBattery = navigator as NavigatorWithBattery;
     if (typeof navigatorWithBattery.getBattery === 'function') {

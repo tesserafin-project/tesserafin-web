@@ -42,8 +42,12 @@ export interface ThemeRegistryEntry {
      * meant to be reachable from a theme picker — a hidden/experimental foundation landing ahead
      * of its own enablement work. Selector-facing consumers (`useThemes()`,
      * `webSettings.js#getSelectableThemes`, the legacy display-settings `<select>`) must filter
-     * these out via `getSelectableThemeEntries()`; direct id lookups are unaffected. Set on
-     * `official.glass` until issue #18 lifts it.
+     * these out via `getSelectableThemeEntries()`; direct id lookups are unaffected.
+     *
+     * Still set on `official.glass`. Issue #18's first slice wired Glass's interaction profiles to
+     * real CSS custom properties (`./useInteractionProfiles.ts`) but deliberately did **not** make
+     * Glass selectable — profiles are reachable only by applying Glass by id. Lifting this flag is
+     * the remaining slice of #18 (theme picker, floating sidebar, light mode).
      */
     experimental?: boolean;
     /**
@@ -165,7 +169,8 @@ export const getThemeEntry = (id: string): ThemeRegistryEntry | undefined =>
  * The subset of `THEME_REGISTRY` a theme picker should offer (RFC-0005 §7.4). Excludes
  * `experimental` entries — currently `official.glass` — which stay fully functional via
  * `getThemeEntry()`/`loadColorScheme()` but must not be reachable from any selector until their
- * own enablement work lands (issue #18). `useThemes()` and `webSettings.js#getSelectableThemes`
+ * own enablement work lands (the remaining slice of issue #18; wiring Glass's interaction profiles
+ * did not lift it). `useThemes()` and `webSettings.js#getSelectableThemes`
  * are the two read sites; keep any future selector UI reading from here too rather than
  * `THEME_REGISTRY` directly.
  */

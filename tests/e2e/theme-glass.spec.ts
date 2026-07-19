@@ -10,9 +10,11 @@ import { expect, request, test } from '@playwright/test';
  * frosted tokens onto `/home` and `/library` — not just that the theme is registered. The
  * discriminator is the resolved `--rf-blur-md` custom property on `<html>`, which can only differ
  * if the Glass token chunk really loaded and its `[data-rf-theme="official.glass"]` rules won the
- * cascade: it resolves to `0` under Classic (statically bundled) and `16px` under Glass. The media
- * card that consumes it via `backdrop-filter: blur(var(--rf-blur-md))` is unit-covered separately;
- * asserting the token here keeps the check independent of transient shelf/library render state.
+ * cascade: it resolves to `0` under Classic (statically bundled) and `16px` under Glass. Note that
+ * the media card does not consume `--rf-blur-md` directly — it reads the *derived*
+ * `--rf-backdrop-filter-md` (`src/ui/styles/_glass-surface.scss`), since `blur(0)` and `none` are
+ * not equivalent; `--rf-blur-md` is asserted here purely as the discriminator for chunk arrival,
+ * which keeps the check independent of transient shelf/library render state.
  * Both themes are also screenshotted on both routes so the visual difference can be reviewed as an
  * artifact (RFC-0005 §8.2 asks for dedicated Playwright captures).
  *
