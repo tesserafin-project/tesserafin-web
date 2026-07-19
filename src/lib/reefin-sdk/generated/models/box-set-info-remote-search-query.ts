@@ -23,11 +23,11 @@ import type { BoxSetInfo } from './box-set-info';
  */
 export interface BoxSetInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {BoxSetInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof BoxSetInfoRemoteSearchQuery
      */
-    'SearchInfo'?: BoxSetInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface BoxSetInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {BoxSetInfo}
+     * @memberof BoxSetInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: BoxSetInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof BoxSetInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof BoxSetInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

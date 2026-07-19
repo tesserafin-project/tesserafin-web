@@ -29,11 +29,23 @@ import type { PlaybackDecisionReasonSubject } from './playback-decision-reason-s
  */
 export interface PlaybackDecisionReasonNode {
     /**
+     * The sub-reasons that led to this node, or empty for a leaf.
+     * @type {Array<PlaybackDecisionReasonNode>}
+     * @memberof PlaybackDecisionReasonNode
+     */
+    'Children'?: Array<PlaybackDecisionReasonNode>;
+    /**
      * The stable, serializable reason code for this node.
      * @type {PlaybackDecisionReasonCode}
      * @memberof PlaybackDecisionReasonNode
      */
     'Code'?: PlaybackDecisionReasonCode;
+    /**
+     * Free-form detail (for example observed vs. expected values), or null if none.
+     * @type {string}
+     * @memberof PlaybackDecisionReasonNode
+     */
+    'Detail'?: string | null;
     /**
      * The result recorded for Subject.
      * @type {PlaybackDecisionReasonOutcome}
@@ -46,18 +58,6 @@ export interface PlaybackDecisionReasonNode {
      * @memberof PlaybackDecisionReasonNode
      */
     'Subject'?: PlaybackDecisionReasonSubject;
-    /**
-     * Free-form detail (for example observed vs. expected values), or null if none.
-     * @type {string}
-     * @memberof PlaybackDecisionReasonNode
-     */
-    'Detail'?: string | null;
-    /**
-     * The sub-reasons that led to this node, or empty for a leaf.
-     * @type {Array<PlaybackDecisionReasonNode>}
-     * @memberof PlaybackDecisionReasonNode
-     */
-    'Children'?: Array<PlaybackDecisionReasonNode>;
 }
 
 

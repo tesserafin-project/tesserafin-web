@@ -26,6 +26,12 @@ export interface ServerDiscoveryInfo {
      */
     'Address'?: string;
     /**
+     * Gets the endpoint address.
+     * @type {string}
+     * @memberof ServerDiscoveryInfo
+     */
+    'EndpointAddress'?: string | null;
+    /**
      * Gets the server identifier.
      * @type {string}
      * @memberof ServerDiscoveryInfo
@@ -37,11 +43,5 @@ export interface ServerDiscoveryInfo {
      * @memberof ServerDiscoveryInfo
      */
     'Name'?: string;
-    /**
-     * Gets the endpoint address.
-     * @type {string}
-     * @memberof ServerDiscoveryInfo
-     */
-    'EndpointAddress'?: string | null;
 }
 

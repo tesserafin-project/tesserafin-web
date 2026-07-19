@@ -48,22 +48,46 @@ import type { VideoType } from './video-type';
 export interface MediaSourceInfo {
     /**
      * 
-     * @type {MediaProtocol}
+     * @type {number}
      * @memberof MediaSourceInfo
      */
-    'Protocol'?: MediaProtocol;
+    'AnalyzeDurationMs'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'Bitrate'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'BufferMs'?: number | null;
     /**
      * 
      * @type {string}
      * @memberof MediaSourceInfo
      */
-    'Id'?: string | null;
+    'Container'?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'DefaultAudioStreamIndex'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'DefaultSubtitleStreamIndex'?: number | null;
     /**
      * 
      * @type {string}
      * @memberof MediaSourceInfo
      */
-    'Path'?: string | null;
+    'ETag'?: string | null;
     /**
      * 
      * @type {string}
@@ -78,58 +102,34 @@ export interface MediaSourceInfo {
     'EncoderProtocol'?: MediaProtocol | null;
     /**
      * 
-     * @type {MediaSourceType}
-     * @memberof MediaSourceInfo
-     */
-    'Type'?: MediaSourceType;
-    /**
-     * 
-     * @type {string}
-     * @memberof MediaSourceInfo
-     */
-    'Container'?: string | null;
-    /**
-     * 
      * @type {number}
      * @memberof MediaSourceInfo
      */
-    'Size'?: number | null;
+    'FallbackMaxStreamingBitrate'?: number | null;
     /**
      * 
-     * @type {string}
+     * @type {Array<string>}
      * @memberof MediaSourceInfo
      */
-    'Name'?: string | null;
-    /**
-     * Gets or sets a value indicating whether the media is remote. Differentiate internet url vs local network.
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
-    'IsRemote'?: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof MediaSourceInfo
-     */
-    'ETag'?: string | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'RunTimeTicks'?: number | null;
-    /**
-     * Gets or sets the playback position for this specific source.
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'PlaybackPositionTicks'?: number | null;
+    'Formats'?: Array<string> | null;
     /**
      * 
      * @type {boolean}
      * @memberof MediaSourceInfo
      */
-    'ReadAtNativeFramerate'?: boolean;
+    'GenPtsInput'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
+    'HasSegments'?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof MediaSourceInfo
+     */
+    'Id'?: string | null;
     /**
      * 
      * @type {boolean}
@@ -147,55 +147,19 @@ export interface MediaSourceInfo {
      * @type {boolean}
      * @memberof MediaSourceInfo
      */
-    'GenPtsInput'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
-    'SupportsTranscoding'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
-    'SupportsDirectStream'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
-    'SupportsDirectPlay'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
     'IsInfiniteStream'?: boolean;
     /**
-     * 
+     * Gets or sets a value indicating whether the media is remote. Differentiate internet url vs local network.
      * @type {boolean}
      * @memberof MediaSourceInfo
      */
-    'UseMostCompatibleTranscodingProfile'?: boolean;
+    'IsRemote'?: boolean;
     /**
      * 
-     * @type {boolean}
+     * @type {IsoType}
      * @memberof MediaSourceInfo
      */
-    'RequiresOpening'?: boolean;
-    /**
-     * 
-     * @type {string}
-     * @memberof MediaSourceInfo
-     */
-    'OpenToken'?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof MediaSourceInfo
-     */
-    'RequiresClosing'?: boolean;
+    'IsoType'?: IsoType | null;
     /**
      * 
      * @type {string}
@@ -204,10 +168,64 @@ export interface MediaSourceInfo {
     'LiveStreamId'?: string | null;
     /**
      * 
+     * @type {Array<MediaAttachment>}
+     * @memberof MediaSourceInfo
+     */
+    'MediaAttachments'?: Array<MediaAttachment> | null;
+    /**
+     * 
+     * @type {Array<MediaStream>}
+     * @memberof MediaSourceInfo
+     */
+    'MediaStreams'?: Array<MediaStream> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof MediaSourceInfo
+     */
+    'Name'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof MediaSourceInfo
+     */
+    'OpenToken'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof MediaSourceInfo
+     */
+    'Path'?: string | null;
+    /**
+     * Gets or sets the playback position for this specific source.
      * @type {number}
      * @memberof MediaSourceInfo
      */
-    'BufferMs'?: number | null;
+    'PlaybackPositionTicks'?: number | null;
+    /**
+     * 
+     * @type {MediaProtocol}
+     * @memberof MediaSourceInfo
+     */
+    'Protocol'?: MediaProtocol;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
+    'ReadAtNativeFramerate'?: boolean;
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof MediaSourceInfo
+     */
+    'RequiredHttpHeaders'?: { [key: string]: string | null; } | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
+    'RequiresClosing'?: boolean;
     /**
      * 
      * @type {boolean}
@@ -219,55 +237,43 @@ export interface MediaSourceInfo {
      * @type {boolean}
      * @memberof MediaSourceInfo
      */
+    'RequiresOpening'?: boolean;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'RunTimeTicks'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof MediaSourceInfo
+     */
+    'Size'?: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
+    'SupportsDirectPlay'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
+    'SupportsDirectStream'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof MediaSourceInfo
+     */
     'SupportsProbing'?: boolean;
     /**
      * 
-     * @type {VideoType}
+     * @type {boolean}
      * @memberof MediaSourceInfo
      */
-    'VideoType'?: VideoType | null;
-    /**
-     * 
-     * @type {IsoType}
-     * @memberof MediaSourceInfo
-     */
-    'IsoType'?: IsoType | null;
-    /**
-     * 
-     * @type {Video3DFormat}
-     * @memberof MediaSourceInfo
-     */
-    'Video3DFormat'?: Video3DFormat | null;
-    /**
-     * 
-     * @type {Array<MediaStream>}
-     * @memberof MediaSourceInfo
-     */
-    'MediaStreams'?: Array<MediaStream> | null;
-    /**
-     * 
-     * @type {Array<MediaAttachment>}
-     * @memberof MediaSourceInfo
-     */
-    'MediaAttachments'?: Array<MediaAttachment> | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof MediaSourceInfo
-     */
-    'Formats'?: Array<string> | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'Bitrate'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'FallbackMaxStreamingBitrate'?: number | null;
+    'SupportsTranscoding'?: boolean;
     /**
      * 
      * @type {TransportStreamTimestamp}
@@ -276,16 +282,10 @@ export interface MediaSourceInfo {
     'Timestamp'?: TransportStreamTimestamp | null;
     /**
      * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof MediaSourceInfo
-     */
-    'RequiredHttpHeaders'?: { [key: string]: string | null; } | null;
-    /**
-     * 
      * @type {string}
      * @memberof MediaSourceInfo
      */
-    'TranscodingUrl'?: string | null;
+    'TranscodingContainer'?: string | null;
     /**
      * Media streaming protocol. Lowercase for backwards compatibility.
      * @type {MediaStreamProtocol}
@@ -297,31 +297,31 @@ export interface MediaSourceInfo {
      * @type {string}
      * @memberof MediaSourceInfo
      */
-    'TranscodingContainer'?: string | null;
+    'TranscodingUrl'?: string | null;
     /**
      * 
-     * @type {number}
+     * @type {MediaSourceType}
      * @memberof MediaSourceInfo
      */
-    'AnalyzeDurationMs'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'DefaultAudioStreamIndex'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof MediaSourceInfo
-     */
-    'DefaultSubtitleStreamIndex'?: number | null;
+    'Type'?: MediaSourceType;
     /**
      * 
      * @type {boolean}
      * @memberof MediaSourceInfo
      */
-    'HasSegments'?: boolean;
+    'UseMostCompatibleTranscodingProfile'?: boolean;
+    /**
+     * 
+     * @type {Video3DFormat}
+     * @memberof MediaSourceInfo
+     */
+    'Video3DFormat'?: Video3DFormat | null;
+    /**
+     * 
+     * @type {VideoType}
+     * @memberof MediaSourceInfo
+     */
+    'VideoType'?: VideoType | null;
 }
 
 

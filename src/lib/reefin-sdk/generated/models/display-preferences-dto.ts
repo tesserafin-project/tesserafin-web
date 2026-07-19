@@ -26,35 +26,29 @@ import type { SortOrder } from './sort-order';
  */
 export interface DisplayPreferencesDto {
     /**
+     * Gets or sets the client.
+     * @type {string}
+     * @memberof DisplayPreferencesDto
+     */
+    'Client'?: string | null;
+    /**
+     * Gets or sets the custom prefs.
+     * @type {{ [key: string]: string | null; }}
+     * @memberof DisplayPreferencesDto
+     */
+    'CustomPrefs'?: { [key: string]: string | null; };
+    /**
      * Gets or sets the user id.
      * @type {string}
      * @memberof DisplayPreferencesDto
      */
     'Id'?: string | null;
     /**
-     * Gets or sets the type of the view.
-     * @type {string}
-     * @memberof DisplayPreferencesDto
-     */
-    'ViewType'?: string | null;
-    /**
-     * Gets or sets the sort by.
-     * @type {string}
-     * @memberof DisplayPreferencesDto
-     */
-    'SortBy'?: string | null;
-    /**
      * Gets or sets the index by.
      * @type {string}
      * @memberof DisplayPreferencesDto
      */
     'IndexBy'?: string | null;
-    /**
-     * Gets or sets a value indicating whether [remember indexing].
-     * @type {boolean}
-     * @memberof DisplayPreferencesDto
-     */
-    'RememberIndexing'?: boolean;
     /**
      * Gets or sets the height of the primary image.
      * @type {number}
@@ -68,11 +62,17 @@ export interface DisplayPreferencesDto {
      */
     'PrimaryImageWidth'?: number;
     /**
-     * Gets or sets the custom prefs.
-     * @type {{ [key: string]: string | null; }}
+     * Gets or sets a value indicating whether [remember indexing].
+     * @type {boolean}
      * @memberof DisplayPreferencesDto
      */
-    'CustomPrefs'?: { [key: string]: string | null; };
+    'RememberIndexing'?: boolean;
+    /**
+     * Gets or sets a value indicating whether [remember sorting].
+     * @type {boolean}
+     * @memberof DisplayPreferencesDto
+     */
+    'RememberSorting'?: boolean;
     /**
      * Gets or sets the scroll direction.
      * @type {ScrollDirection}
@@ -86,11 +86,17 @@ export interface DisplayPreferencesDto {
      */
     'ShowBackdrop'?: boolean;
     /**
-     * Gets or sets a value indicating whether [remember sorting].
+     * Gets or sets a value indicating whether [show sidebar].
      * @type {boolean}
      * @memberof DisplayPreferencesDto
      */
-    'RememberSorting'?: boolean;
+    'ShowSidebar'?: boolean;
+    /**
+     * Gets or sets the sort by.
+     * @type {string}
+     * @memberof DisplayPreferencesDto
+     */
+    'SortBy'?: string | null;
     /**
      * Gets or sets the sort order.
      * @type {SortOrder}
@@ -98,17 +104,11 @@ export interface DisplayPreferencesDto {
      */
     'SortOrder'?: SortOrder;
     /**
-     * Gets or sets a value indicating whether [show sidebar].
-     * @type {boolean}
-     * @memberof DisplayPreferencesDto
-     */
-    'ShowSidebar'?: boolean;
-    /**
-     * Gets or sets the client.
+     * Gets or sets the type of the view.
      * @type {string}
      * @memberof DisplayPreferencesDto
      */
-    'Client'?: string | null;
+    'ViewType'?: string | null;
 }
 
 

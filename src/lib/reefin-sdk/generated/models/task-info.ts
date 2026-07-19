@@ -29,17 +29,11 @@ import type { TaskTriggerInfo } from './task-trigger-info';
  */
 export interface TaskInfo {
     /**
-     * Gets or sets the name.
+     * Gets or sets the category.
      * @type {string}
      * @memberof TaskInfo
      */
-    'Name'?: string | null;
-    /**
-     * Gets or sets the state of the task.
-     * @type {TaskState}
-     * @memberof TaskInfo
-     */
-    'State'?: TaskState;
+    'Category'?: string | null;
     /**
      * Gets or sets the progress.
      * @type {number}
@@ -47,35 +41,17 @@ export interface TaskInfo {
      */
     'CurrentProgressPercentage'?: number | null;
     /**
-     * Gets or sets the id.
-     * @type {string}
-     * @memberof TaskInfo
-     */
-    'Id'?: string | null;
-    /**
-     * Gets or sets the last execution result.
-     * @type {TaskResult}
-     * @memberof TaskInfo
-     */
-    'LastExecutionResult'?: TaskResult | null;
-    /**
-     * Gets or sets the triggers.
-     * @type {Array<TaskTriggerInfo>}
-     * @memberof TaskInfo
-     */
-    'Triggers'?: Array<TaskTriggerInfo> | null;
-    /**
      * Gets or sets the description.
      * @type {string}
      * @memberof TaskInfo
      */
     'Description'?: string | null;
     /**
-     * Gets or sets the category.
+     * Gets or sets the id.
      * @type {string}
      * @memberof TaskInfo
      */
-    'Category'?: string | null;
+    'Id'?: string | null;
     /**
      * Gets or sets a value indicating whether this instance is hidden.
      * @type {boolean}
@@ -88,6 +64,30 @@ export interface TaskInfo {
      * @memberof TaskInfo
      */
     'Key'?: string | null;
+    /**
+     * Gets or sets the last execution result.
+     * @type {TaskResult}
+     * @memberof TaskInfo
+     */
+    'LastExecutionResult'?: TaskResult | null;
+    /**
+     * Gets or sets the name.
+     * @type {string}
+     * @memberof TaskInfo
+     */
+    'Name'?: string | null;
+    /**
+     * Gets or sets the state of the task.
+     * @type {TaskState}
+     * @memberof TaskInfo
+     */
+    'State'?: TaskState;
+    /**
+     * Gets or sets the triggers.
+     * @type {Array<TaskTriggerInfo>}
+     * @memberof TaskInfo
+     */
+    'Triggers'?: Array<TaskTriggerInfo> | null;
 }
 
 

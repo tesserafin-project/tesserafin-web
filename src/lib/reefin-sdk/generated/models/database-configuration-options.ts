@@ -26,17 +26,17 @@ import type { DatabaseLockingBehaviorTypes } from './database-locking-behavior-t
  */
 export interface DatabaseConfigurationOptions {
     /**
-     * Gets or Sets the type of database reefin should use.
-     * @type {string}
-     * @memberof DatabaseConfigurationOptions
-     */
-    'DatabaseType': string;
-    /**
      * Gets or sets the options required to use a custom database provider.
      * @type {CustomDatabaseOptions}
      * @memberof DatabaseConfigurationOptions
      */
     'CustomProviderOptions'?: CustomDatabaseOptions | null;
+    /**
+     * Gets or Sets the type of database reefin should use.
+     * @type {string}
+     * @memberof DatabaseConfigurationOptions
+     */
+    'DatabaseType': string;
     /**
      * Gets or Sets the kind of locking behavior reefin should perform. Possible options are \"NoLock\", \"Pessimistic\", \"Optimistic\". Defaults to \"NoLock\".
      * @type {DatabaseLockingBehaviorTypes}

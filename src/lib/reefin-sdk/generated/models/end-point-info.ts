@@ -24,12 +24,12 @@ export interface EndPointInfo {
      * @type {boolean}
      * @memberof EndPointInfo
      */
-    'IsLocal'?: boolean;
+    'IsInNetwork'?: boolean;
     /**
      * 
      * @type {boolean}
      * @memberof EndPointInfo
      */
-    'IsInNetwork'?: boolean;
+    'IsLocal'?: boolean;
 }
 

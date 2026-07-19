@@ -23,17 +23,17 @@ import type { GroupUpdateType } from './group-update-type';
  */
 export interface SyncPlayUserLeftUpdate {
     /**
-     * Gets the group identifier.
-     * @type {string}
-     * @memberof SyncPlayUserLeftUpdate
-     */
-    'GroupId'?: string;
-    /**
      * Gets the update data.
      * @type {string}
      * @memberof SyncPlayUserLeftUpdate
      */
     'Data'?: string;
+    /**
+     * Gets the group identifier.
+     * @type {string}
+     * @memberof SyncPlayUserLeftUpdate
+     */
+    'GroupId'?: string;
     /**
      * Enum GroupUpdateType.
      * @type {GroupUpdateType}

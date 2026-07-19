@@ -27,7 +27,7 @@ export interface AllThemeMediaResult {
      * @type {ThemeMediaResult}
      * @memberof AllThemeMediaResult
      */
-    'ThemeVideosResult'?: ThemeMediaResult | null;
+    'SoundtrackSongsResult'?: ThemeMediaResult | null;
     /**
      * Class ThemeMediaResult.
      * @type {ThemeMediaResult}
@@ -39,6 +39,6 @@ export interface AllThemeMediaResult {
      * @type {ThemeMediaResult}
      * @memberof AllThemeMediaResult
      */
-    'SoundtrackSongsResult'?: ThemeMediaResult | null;
+    'ThemeVideosResult'?: ThemeMediaResult | null;
 }
 

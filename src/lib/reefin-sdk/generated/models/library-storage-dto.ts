@@ -23,6 +23,12 @@ import type { FolderStorageDto } from './folder-storage-dto';
  */
 export interface LibraryStorageDto {
     /**
+     * Gets or sets the storage informations about the folders used in a library.
+     * @type {Array<FolderStorageDto>}
+     * @memberof LibraryStorageDto
+     */
+    'Folders': Array<FolderStorageDto>;
+    /**
      * Gets or sets the Library Id.
      * @type {string}
      * @memberof LibraryStorageDto
@@ -34,11 +40,5 @@ export interface LibraryStorageDto {
      * @memberof LibraryStorageDto
      */
     'Name': string;
-    /**
-     * Gets or sets the storage informations about the folders used in a library.
-     * @type {Array<FolderStorageDto>}
-     * @memberof LibraryStorageDto
-     */
-    'Folders': Array<FolderStorageDto>;
 }
 

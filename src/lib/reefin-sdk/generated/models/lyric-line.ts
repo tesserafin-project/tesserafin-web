@@ -23,11 +23,11 @@ import type { LyricLineCue } from './lyric-line-cue';
  */
 export interface LyricLine {
     /**
-     * Gets the text of this lyric line.
-     * @type {string}
+     * Gets the time-aligned cues for the song\'s lyrics.
+     * @type {Array<LyricLineCue>}
      * @memberof LyricLine
      */
-    'Text'?: string;
+    'Cues'?: Array<LyricLineCue> | null;
     /**
      * Gets the start time in ticks.
      * @type {number}
@@ -35,10 +35,10 @@ export interface LyricLine {
      */
     'Start'?: number | null;
     /**
-     * Gets the time-aligned cues for the song\'s lyrics.
-     * @type {Array<LyricLineCue>}
+     * Gets the text of this lyric line.
+     * @type {string}
      * @memberof LyricLine
      */
-    'Cues'?: Array<LyricLineCue> | null;
+    'Text'?: string;
 }
 

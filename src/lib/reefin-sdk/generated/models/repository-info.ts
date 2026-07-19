@@ -20,6 +20,12 @@
  */
 export interface RepositoryInfo {
     /**
+     * Gets or sets a value indicating whether the repository is enabled.
+     * @type {boolean}
+     * @memberof RepositoryInfo
+     */
+    'Enabled'?: boolean;
+    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof RepositoryInfo
@@ -31,11 +37,5 @@ export interface RepositoryInfo {
      * @memberof RepositoryInfo
      */
     'Url'?: string | null;
-    /**
-     * Gets or sets a value indicating whether the repository is enabled.
-     * @type {boolean}
-     * @memberof RepositoryInfo
-     */
-    'Enabled'?: boolean;
 }
 

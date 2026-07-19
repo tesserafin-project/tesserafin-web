@@ -29,23 +29,23 @@ import type { LibraryOptionInfoDto } from './library-option-info-dto';
  */
 export interface LibraryTypeOptionsDto {
     /**
-     * Gets or sets the type.
-     * @type {string}
+     * Gets or sets the default image options.
+     * @type {Array<ImageOption>}
      * @memberof LibraryTypeOptionsDto
      */
-    'Type'?: string | null;
-    /**
-     * Gets or sets the metadata fetchers.
-     * @type {Array<LibraryOptionInfoDto>}
-     * @memberof LibraryTypeOptionsDto
-     */
-    'MetadataFetchers'?: Array<LibraryOptionInfoDto>;
+    'DefaultImageOptions'?: Array<ImageOption>;
     /**
      * Gets or sets the image fetchers.
      * @type {Array<LibraryOptionInfoDto>}
      * @memberof LibraryTypeOptionsDto
      */
     'ImageFetchers'?: Array<LibraryOptionInfoDto>;
+    /**
+     * Gets or sets the metadata fetchers.
+     * @type {Array<LibraryOptionInfoDto>}
+     * @memberof LibraryTypeOptionsDto
+     */
+    'MetadataFetchers'?: Array<LibraryOptionInfoDto>;
     /**
      * Gets or sets the similar item providers.
      * @type {Array<LibraryOptionInfoDto>}
@@ -59,10 +59,10 @@ export interface LibraryTypeOptionsDto {
      */
     'SupportedImageTypes'?: Array<ImageType>;
     /**
-     * Gets or sets the default image options.
-     * @type {Array<ImageOption>}
+     * Gets or sets the type.
+     * @type {string}
      * @memberof LibraryTypeOptionsDto
      */
-    'DefaultImageOptions'?: Array<ImageOption>;
+    'Type'?: string | null;
 }
 

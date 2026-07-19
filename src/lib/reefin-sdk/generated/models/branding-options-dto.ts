@@ -20,17 +20,17 @@
  */
 export interface BrandingOptionsDto {
     /**
-     * Gets or sets the login disclaimer.
-     * @type {string}
-     * @memberof BrandingOptionsDto
-     */
-    'LoginDisclaimer'?: string | null;
-    /**
      * Gets or sets the custom CSS.
      * @type {string}
      * @memberof BrandingOptionsDto
      */
     'CustomCss'?: string | null;
+    /**
+     * Gets or sets the login disclaimer.
+     * @type {string}
+     * @memberof BrandingOptionsDto
+     */
+    'LoginDisclaimer'?: string | null;
     /**
      * Gets or sets a value indicating whether to enable the splashscreen.
      * @type {boolean}

@@ -29,16 +29,16 @@ export interface ActivityLogEntryQueryResult {
      */
     'Items'?: Array<ActivityLogEntry>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof ActivityLogEntryQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof ActivityLogEntryQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof ActivityLogEntryQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

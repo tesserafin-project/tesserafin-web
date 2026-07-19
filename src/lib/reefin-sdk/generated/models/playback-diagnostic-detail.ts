@@ -48,6 +48,9 @@ import type { PlaybackDecisionSelectedStreams } from './playback-decision-select
 // May contain unused imports in some cases
 // @ts-ignore
 import type { PlaybackDecisionTransformKind } from './playback-decision-transform-kind';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { PlaybackLiveWiringOutcome } from './playback-live-wiring-outcome';
 
 /**
  * The richer, admin-only diagnostic projection of a tracked playback session (docs/pr92-design-playback-api-and-diagnostics.md §4.3, PR113): every Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse field, plus the request context, client capabilities, source snapshot, full reasoning tree, and legacy/v2 comparison retained from a shadow run - when one was retained at all.
@@ -55,6 +58,30 @@ import type { PlaybackDecisionTransformKind } from './playback-decision-transfor
  * @interface PlaybackDiagnosticDetail
  */
 export interface PlaybackDiagnosticDetail {
+    /**
+     * Everything the v2 engine needs to know about a requesting client: what it can decode as-is (Reefin.Playback.Decision.ClientCapabilities.Decode), and separately, what the server should produce when it must transcode (Reefin.Playback.Decision.ClientCapabilities.OutputProfiles).
+     * @type {PlaybackDecisionClientCapabilities}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'Capabilities'?: PlaybackDecisionClientCapabilities | null;
+    /**
+     * The legacy-vs-v2 shadow comparison, or null if no diagnostic was retained.
+     * @type {DiagnosticComparison}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'Comparison'?: DiagnosticComparison | null;
+    /**
+     * When the session was first created.
+     * @type {string}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'CreatedAt'?: string;
+    /**
+     * See Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse.DecisionVersion.
+     * @type {number}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'DecisionVersion'?: number;
     /**
      * The session identifier.
      * @type {string}
@@ -68,11 +95,11 @@ export interface PlaybackDiagnosticDetail {
      */
     'Kind'?: PlaybackDecisionMediaKind;
     /**
-     * See Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse.DecisionVersion.
-     * @type {number}
+     * PR115c: the observable outcome of the live-wiring decision `MediaInfoHelper.SetDeviceSpecificData` makes for one request - whether the response was actually served from the v2 Reefin.Playback.Execution.PlaybackExecutionPlan, or why it fell back to the legacy `StreamInfo` instead. Retained per session (last decision wins, mirroring Reefin.MediaEncoding.Playback.V2PlanRecord\'s own per-session retention) so the admin diagnostics surface can show it - see Reefin.MediaEncoding.Playback.IPlaybackLiveWiringDiagnosticsStore.
+     * @type {PlaybackLiveWiringOutcome}
      * @memberof PlaybackDiagnosticDetail
      */
-    'DecisionVersion'?: number;
+    'LiveWiring'?: PlaybackLiveWiringOutcome | null;
     /**
      * The method by which the engine decided to deliver a media source to the client.
      * @type {PlaybackDecisionPlaybackMethod}
@@ -86,53 +113,11 @@ export interface PlaybackDiagnosticDetail {
      */
     'Output'?: PlaybackDecisionOutputSpec;
     /**
-     * The video, audio, and subtitle streams selected for a Reefin.Playback.Decision.PlaybackDecision.
-     * @type {PlaybackDecisionSelectedStreams}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'SelectedStreams'?: PlaybackDecisionSelectedStreams;
-    /**
-     * The pipeline transforms this decision implies.
-     * @type {Array<PlaybackDecisionTransformKind>}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'Transforms'?: Array<PlaybackDecisionTransformKind>;
-    /**
-     * A flat summary of the reason codes behind this decision.
-     * @type {Array<PlaybackDecisionReasonCode>}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'Reasons'?: Array<PlaybackDecisionReasonCode>;
-    /**
-     * When the session was first created.
+     * Issue #43: the opaque, client-supplied attempt id recorded on this session, or null when the client sent none. This is the field that lets an operator pull up every session — and therefore every retry — belonging to ONE playback attempt, which neither Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.Id (per session) nor Reefin.Api.Models.PlaybackSessionDtos.DiagnosticTimelineEntry.RequestId (per request, issue #42) can do. Opaque: displayed verbatim, never parsed.
      * @type {string}
      * @memberof PlaybackDiagnosticDetail
      */
-    'CreatedAt'?: string;
-    /**
-     * When the session was last created or replaced.
-     * @type {string}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'UpdatedAt'?: string;
-    /**
-     * The who/what/when of a playback request, independent of transport.
-     * @type {PlaybackDecisionPlaybackRequestContext}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'RequestContext'?: PlaybackDecisionPlaybackRequestContext | null;
-    /**
-     * Everything the v2 engine needs to know about a requesting client: what it can decode as-is (Reefin.Playback.Decision.ClientCapabilities.Decode), and separately, what the server should produce when it must transcode (Reefin.Playback.Decision.ClientCapabilities.OutputProfiles).
-     * @type {PlaybackDecisionClientCapabilities}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'Capabilities'?: PlaybackDecisionClientCapabilities | null;
-    /**
-     * The media source characteristics (codecs/streams/protocol) a retained shadow run captured, or null if none was retained. Never a file path or URL - Reefin.Playback.Decision.MediaSourceSnapshot carries none by construction.
-     * @type {Array<PlaybackDecisionMediaSourceSnapshot>}
-     * @memberof PlaybackDiagnosticDetail
-     */
-    'SourceSnapshot'?: Array<PlaybackDecisionMediaSourceSnapshot> | null;
+    'PlaybackAttemptId'?: string | null;
     /**
      * One node in the structured explanation tree for a Reefin.Playback.Decision.PlaybackDecision: what was evaluated, what came of it, and (via Reefin.Playback.Decision.ReasonNode.Children) what sub-reasons led there. This replaces a flat reason enum with causality: not just which walls were hit, but why the chosen method follows from them.
      * @type {PlaybackDecisionReasonNode}
@@ -140,17 +125,47 @@ export interface PlaybackDiagnosticDetail {
      */
     'Reasoning'?: PlaybackDecisionReasonNode | null;
     /**
-     * The legacy-vs-v2 shadow comparison, or null if no diagnostic was retained.
-     * @type {DiagnosticComparison}
+     * A flat summary of the reason codes behind this decision.
+     * @type {Array<PlaybackDecisionReasonCode>}
      * @memberof PlaybackDiagnosticDetail
      */
-    'Comparison'?: DiagnosticComparison | null;
+    'Reasons'?: Array<PlaybackDecisionReasonCode>;
+    /**
+     * The who/what/when of a playback request, independent of transport.
+     * @type {PlaybackDecisionPlaybackRequestContext}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'RequestContext'?: PlaybackDecisionPlaybackRequestContext | null;
+    /**
+     * The video, audio, and subtitle streams selected for a Reefin.Playback.Decision.PlaybackDecision.
+     * @type {PlaybackDecisionSelectedStreams}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'SelectedStreams'?: PlaybackDecisionSelectedStreams;
+    /**
+     * The media source characteristics (codecs/streams/protocol) a retained shadow run captured, or null if none was retained. Never a file path or URL - Reefin.Playback.Decision.MediaSourceSnapshot carries none by construction.
+     * @type {Array<PlaybackDecisionMediaSourceSnapshot>}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'SourceSnapshot'?: Array<PlaybackDecisionMediaSourceSnapshot> | null;
     /**
      * The lifecycle timeline for this session: `Created`/`Updated` from the session record, plus (PR113b) any of `FfmpegStarted`/`PlaybackStarted`/`PlaybackStopped` that was actually observed for it, each stamped with its real, received-at timestamp - never a fabricated or approximated one. A stage that was never observed is simply absent, not defaulted.
      * @type {Array<DiagnosticTimelineEntry>}
      * @memberof PlaybackDiagnosticDetail
      */
     'Timeline'?: Array<DiagnosticTimelineEntry>;
+    /**
+     * The pipeline transforms this decision implies.
+     * @type {Array<PlaybackDecisionTransformKind>}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'Transforms'?: Array<PlaybackDecisionTransformKind>;
+    /**
+     * When the session was last created or replaced.
+     * @type {string}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'UpdatedAt'?: string;
 }
 
 

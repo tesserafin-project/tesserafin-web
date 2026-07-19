@@ -20,30 +20,6 @@
  */
 export interface PlaybackDecisionAudioStreamSnapshot {
     /**
-     * The stream index within the source.
-     * @type {number}
-     * @memberof PlaybackDecisionAudioStreamSnapshot
-     */
-    'Index'?: number;
-    /**
-     * The normalized codec name (for example `\"aac\"`).
-     * @type {string}
-     * @memberof PlaybackDecisionAudioStreamSnapshot
-     */
-    'Codec'?: string;
-    /**
-     * The channel count, or null if unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionAudioStreamSnapshot
-     */
-    'Channels'?: number | null;
-    /**
-     * The sample rate in Hz, or null if unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionAudioStreamSnapshot
-     */
-    'SampleRate'?: number | null;
-    /**
      * The bit depth, or null if unknown.
      * @type {number}
      * @memberof PlaybackDecisionAudioStreamSnapshot
@@ -56,16 +32,40 @@ export interface PlaybackDecisionAudioStreamSnapshot {
      */
     'Bitrate'?: number | null;
     /**
-     * The stream\'s language tag, or null if unknown.
+     * The channel count, or null if unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionAudioStreamSnapshot
+     */
+    'Channels'?: number | null;
+    /**
+     * The normalized codec name (for example `\"aac\"`).
      * @type {string}
      * @memberof PlaybackDecisionAudioStreamSnapshot
      */
-    'Language'?: string | null;
+    'Codec'?: string;
+    /**
+     * The stream index within the source.
+     * @type {number}
+     * @memberof PlaybackDecisionAudioStreamSnapshot
+     */
+    'Index'?: number;
     /**
      * Whether this is the default audio stream on the source.
      * @type {boolean}
      * @memberof PlaybackDecisionAudioStreamSnapshot
      */
     'IsDefault'?: boolean;
+    /**
+     * The stream\'s language tag, or null if unknown.
+     * @type {string}
+     * @memberof PlaybackDecisionAudioStreamSnapshot
+     */
+    'Language'?: string | null;
+    /**
+     * The sample rate in Hz, or null if unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionAudioStreamSnapshot
+     */
+    'SampleRate'?: number | null;
 }
 

@@ -20,28 +20,28 @@
  */
 export interface CountryInfo {
     /**
-     * Gets or sets the name.
-     * @type {string}
-     * @memberof CountryInfo
-     */
-    'Name'?: string | null;
-    /**
      * Gets or sets the display name.
      * @type {string}
      * @memberof CountryInfo
      */
     'DisplayName'?: string | null;
     /**
-     * Gets or sets the name of the two letter ISO region.
+     * Gets or sets the name.
      * @type {string}
      * @memberof CountryInfo
      */
-    'TwoLetterISORegionName'?: string | null;
+    'Name'?: string | null;
     /**
      * Gets or sets the name of the three letter ISO region.
      * @type {string}
      * @memberof CountryInfo
      */
     'ThreeLetterISORegionName'?: string | null;
+    /**
+     * Gets or sets the name of the two letter ISO region.
+     * @type {string}
+     * @memberof CountryInfo
+     */
+    'TwoLetterISORegionName'?: string | null;
 }
 

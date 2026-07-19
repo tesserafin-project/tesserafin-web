@@ -26,17 +26,17 @@ import type { PlayQueueUpdate } from './play-queue-update';
  */
 export interface SyncPlayPlayQueueUpdate {
     /**
-     * Gets the group identifier.
-     * @type {string}
-     * @memberof SyncPlayPlayQueueUpdate
-     */
-    'GroupId'?: string;
-    /**
      * Gets the update data.
      * @type {PlayQueueUpdate}
      * @memberof SyncPlayPlayQueueUpdate
      */
     'Data'?: PlayQueueUpdate;
+    /**
+     * Gets the group identifier.
+     * @type {string}
+     * @memberof SyncPlayPlayQueueUpdate
+     */
+    'GroupId'?: string;
     /**
      * Enum GroupUpdateType.
      * @type {GroupUpdateType}

@@ -44,191 +44,23 @@ import type { TonemappingRange } from './tonemapping-range';
  */
 export interface EncodingOptions {
     /**
-     * Gets or sets the thread count used for encoding.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'EncodingThreadCount'?: number;
-    /**
-     * Gets or sets the temporary transcoding path.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'TranscodingTempPath'?: string | null;
-    /**
-     * Gets or sets the path to the fallback font.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'FallbackFontPath'?: string | null;
-    /**
-     * Gets or sets a value indicating whether to use the fallback font.
+     * Gets or sets a value indicating whether AV1 encoding is enabled.
      * @type {boolean}
      * @memberof EncodingOptions
      */
-    'EnableFallbackFont'?: boolean;
+    'AllowAv1Encoding'?: boolean;
     /**
-     * Gets or sets a value indicating whether audio VBR is enabled.
+     * Gets or sets a value indicating whether HEVC encoding is enabled.
      * @type {boolean}
      * @memberof EncodingOptions
      */
-    'EnableAudioVbr'?: boolean;
+    'AllowHevcEncoding'?: boolean;
     /**
-     * Gets or sets the audio boost applied when downmixing audio.
-     * @type {number}
+     * Gets or sets the file extensions on-demand metadata based keyframe extraction is enabled for.
+     * @type {Array<string>}
      * @memberof EncodingOptions
      */
-    'DownMixAudioBoost'?: number;
-    /**
-     * Gets or sets the algorithm used for downmixing audio to stereo.
-     * @type {DownMixStereoAlgorithms}
-     * @memberof EncodingOptions
-     */
-    'DownMixStereoAlgorithm'?: DownMixStereoAlgorithms;
-    /**
-     * Gets or sets the maximum size of the muxing queue.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'MaxMuxingQueueSize'?: number;
-    /**
-     * Gets or sets a value indicating whether throttling is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableThrottling'?: boolean;
-    /**
-     * Gets or sets the delay after which throttling happens.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'ThrottleDelaySeconds'?: number;
-    /**
-     * Gets or sets a value indicating whether segment deletion is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableSegmentDeletion'?: boolean;
-    /**
-     * Gets or sets seconds for which segments should be kept before being deleted.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'SegmentKeepSeconds'?: number;
-    /**
-     * Gets or sets the hardware acceleration type.
-     * @type {HardwareAccelerationType}
-     * @memberof EncodingOptions
-     */
-    'HardwareAccelerationType'?: HardwareAccelerationType;
-    /**
-     * Gets or sets the FFmpeg path as set by the user via the UI.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'EncoderAppPath'?: string | null;
-    /**
-     * Gets or sets the current FFmpeg path being used by the system and displayed on the transcode page.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'EncoderAppPathDisplay'?: string | null;
-    /**
-     * Gets or sets the VA-API device.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'VaapiDevice'?: string | null;
-    /**
-     * Gets or sets the QSV device.
-     * @type {string}
-     * @memberof EncodingOptions
-     */
-    'QsvDevice'?: string | null;
-    /**
-     * Gets or sets a value indicating whether tonemapping is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableTonemapping'?: boolean;
-    /**
-     * Gets or sets a value indicating whether VPP tonemapping is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableVppTonemapping'?: boolean;
-    /**
-     * Gets or sets a value indicating whether videotoolbox tonemapping is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableVideoToolboxTonemapping'?: boolean;
-    /**
-     * Gets or sets the tone-mapping algorithm.
-     * @type {TonemappingAlgorithm}
-     * @memberof EncodingOptions
-     */
-    'TonemappingAlgorithm'?: TonemappingAlgorithm;
-    /**
-     * Gets or sets the tone-mapping mode.
-     * @type {TonemappingMode}
-     * @memberof EncodingOptions
-     */
-    'TonemappingMode'?: TonemappingMode;
-    /**
-     * Gets or sets the tone-mapping range.
-     * @type {TonemappingRange}
-     * @memberof EncodingOptions
-     */
-    'TonemappingRange'?: TonemappingRange;
-    /**
-     * Gets or sets the tone-mapping desaturation.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'TonemappingDesat'?: number;
-    /**
-     * Gets or sets the tone-mapping peak.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'TonemappingPeak'?: number;
-    /**
-     * Gets or sets the tone-mapping parameters.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'TonemappingParam'?: number;
-    /**
-     * Gets or sets the VPP tone-mapping brightness.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'VppTonemappingBrightness'?: number;
-    /**
-     * Gets or sets the VPP tone-mapping contrast.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'VppTonemappingContrast'?: number;
-    /**
-     * Gets or sets the H264 CRF.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'H264Crf'?: number;
-    /**
-     * Gets or sets the H265 CRF.
-     * @type {number}
-     * @memberof EncodingOptions
-     */
-    'H265Crf'?: number;
-    /**
-     * Gets or sets the encoder preset.
-     * @type {EncoderPreset}
-     * @memberof EncodingOptions
-     */
-    'EncoderPreset'?: EncoderPreset;
+    'AllowOnDemandMetadataBasedKeyframeExtractionForExtensions'?: Array<string> | null;
     /**
      * Gets or sets a value indicating whether the framerate is doubled when deinterlacing.
      * @type {boolean}
@@ -242,23 +74,41 @@ export interface EncodingOptions {
      */
     'DeinterlaceMethod'?: DeinterlaceMethod;
     /**
+     * Gets or sets the audio boost applied when downmixing audio.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'DownMixAudioBoost'?: number;
+    /**
+     * Gets or sets the algorithm used for downmixing audio to stereo.
+     * @type {DownMixStereoAlgorithms}
+     * @memberof EncodingOptions
+     */
+    'DownMixStereoAlgorithm'?: DownMixStereoAlgorithms;
+    /**
+     * Gets or sets a value indicating whether audio VBR is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableAudioVbr'?: boolean;
+    /**
      * Gets or sets a value indicating whether 10bit HEVC decoding is enabled.
      * @type {boolean}
      * @memberof EncodingOptions
      */
     'EnableDecodingColorDepth10Hevc'?: boolean;
     /**
-     * Gets or sets a value indicating whether 10bit VP9 decoding is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'EnableDecodingColorDepth10Vp9'?: boolean;
-    /**
      * Gets or sets a value indicating whether 8/10bit HEVC RExt decoding is enabled.
      * @type {boolean}
      * @memberof EncodingOptions
      */
     'EnableDecodingColorDepth10HevcRext'?: boolean;
+    /**
+     * Gets or sets a value indicating whether 10bit VP9 decoding is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableDecodingColorDepth10Vp9'?: boolean;
     /**
      * Gets or sets a value indicating whether 12bit HEVC RExt decoding is enabled.
      * @type {boolean}
@@ -272,11 +122,17 @@ export interface EncodingOptions {
      */
     'EnableEnhancedNvdecDecoder'?: boolean;
     /**
-     * Gets or sets a value indicating whether the system native hardware decoder should be used.
+     * Gets or sets a value indicating whether to use the fallback font.
      * @type {boolean}
      * @memberof EncodingOptions
      */
-    'PreferSystemNativeHwDecoder'?: boolean;
+    'EnableFallbackFont'?: boolean;
+    /**
+     * Gets or sets a value indicating whether hardware encoding is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableHardwareEncoding'?: boolean;
     /**
      * Gets or sets a value indicating whether the Intel H264 low-power hardware encoder should be used.
      * @type {boolean}
@@ -290,23 +146,11 @@ export interface EncodingOptions {
      */
     'EnableIntelLowPowerHevcHwEncoder'?: boolean;
     /**
-     * Gets or sets a value indicating whether hardware encoding is enabled.
+     * Gets or sets a value indicating whether segment deletion is enabled.
      * @type {boolean}
      * @memberof EncodingOptions
      */
-    'EnableHardwareEncoding'?: boolean;
-    /**
-     * Gets or sets a value indicating whether HEVC encoding is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'AllowHevcEncoding'?: boolean;
-    /**
-     * Gets or sets a value indicating whether AV1 encoding is enabled.
-     * @type {boolean}
-     * @memberof EncodingOptions
-     */
-    'AllowAv1Encoding'?: boolean;
+    'EnableSegmentDeletion'?: boolean;
     /**
      * Gets or sets a value indicating whether subtitle extraction is enabled.
      * @type {boolean}
@@ -314,11 +158,77 @@ export interface EncodingOptions {
      */
     'EnableSubtitleExtraction'?: boolean;
     /**
-     * Gets or sets the timeout for subtitle extraction in minutes.
+     * Gets or sets a value indicating whether throttling is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableThrottling'?: boolean;
+    /**
+     * Gets or sets a value indicating whether tonemapping is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableTonemapping'?: boolean;
+    /**
+     * Gets or sets a value indicating whether videotoolbox tonemapping is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableVideoToolboxTonemapping'?: boolean;
+    /**
+     * Gets or sets a value indicating whether VPP tonemapping is enabled.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'EnableVppTonemapping'?: boolean;
+    /**
+     * Gets or sets the FFmpeg path as set by the user via the UI.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'EncoderAppPath'?: string | null;
+    /**
+     * Gets or sets the current FFmpeg path being used by the system and displayed on the transcode page.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'EncoderAppPathDisplay'?: string | null;
+    /**
+     * Gets or sets the encoder preset.
+     * @type {EncoderPreset}
+     * @memberof EncodingOptions
+     */
+    'EncoderPreset'?: EncoderPreset;
+    /**
+     * Gets or sets the thread count used for encoding.
      * @type {number}
      * @memberof EncodingOptions
      */
-    'SubtitleExtractionTimeoutMinutes'?: number;
+    'EncodingThreadCount'?: number;
+    /**
+     * Gets or sets the path to the fallback font.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'FallbackFontPath'?: string | null;
+    /**
+     * Gets or sets the H264 CRF.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'H264Crf'?: number;
+    /**
+     * Gets or sets the H265 CRF.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'H265Crf'?: number;
+    /**
+     * Gets or sets the hardware acceleration type.
+     * @type {HardwareAccelerationType}
+     * @memberof EncodingOptions
+     */
+    'HardwareAccelerationType'?: HardwareAccelerationType;
     /**
      * Gets or sets the codecs hardware encoding is used for.
      * @type {Array<string>}
@@ -326,17 +236,107 @@ export interface EncodingOptions {
      */
     'HardwareDecodingCodecs'?: Array<string> | null;
     /**
-     * Gets or sets the file extensions on-demand metadata based keyframe extraction is enabled for.
-     * @type {Array<string>}
-     * @memberof EncodingOptions
-     */
-    'AllowOnDemandMetadataBasedKeyframeExtractionForExtensions'?: Array<string> | null;
-    /**
      * Gets or sets the method used for audio seeking in HLS.
      * @type {HlsAudioSeekStrategy}
      * @memberof EncodingOptions
      */
     'HlsAudioSeekStrategy'?: HlsAudioSeekStrategy;
+    /**
+     * Gets or sets the maximum size of the muxing queue.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'MaxMuxingQueueSize'?: number;
+    /**
+     * Gets or sets a value indicating whether the system native hardware decoder should be used.
+     * @type {boolean}
+     * @memberof EncodingOptions
+     */
+    'PreferSystemNativeHwDecoder'?: boolean;
+    /**
+     * Gets or sets the QSV device.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'QsvDevice'?: string | null;
+    /**
+     * Gets or sets seconds for which segments should be kept before being deleted.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'SegmentKeepSeconds'?: number;
+    /**
+     * Gets or sets the timeout for subtitle extraction in minutes.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'SubtitleExtractionTimeoutMinutes'?: number;
+    /**
+     * Gets or sets the delay after which throttling happens.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'ThrottleDelaySeconds'?: number;
+    /**
+     * Gets or sets the tone-mapping algorithm.
+     * @type {TonemappingAlgorithm}
+     * @memberof EncodingOptions
+     */
+    'TonemappingAlgorithm'?: TonemappingAlgorithm;
+    /**
+     * Gets or sets the tone-mapping desaturation.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'TonemappingDesat'?: number;
+    /**
+     * Gets or sets the tone-mapping mode.
+     * @type {TonemappingMode}
+     * @memberof EncodingOptions
+     */
+    'TonemappingMode'?: TonemappingMode;
+    /**
+     * Gets or sets the tone-mapping parameters.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'TonemappingParam'?: number;
+    /**
+     * Gets or sets the tone-mapping peak.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'TonemappingPeak'?: number;
+    /**
+     * Gets or sets the tone-mapping range.
+     * @type {TonemappingRange}
+     * @memberof EncodingOptions
+     */
+    'TonemappingRange'?: TonemappingRange;
+    /**
+     * Gets or sets the temporary transcoding path.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'TranscodingTempPath'?: string | null;
+    /**
+     * Gets or sets the VA-API device.
+     * @type {string}
+     * @memberof EncodingOptions
+     */
+    'VaapiDevice'?: string | null;
+    /**
+     * Gets or sets the VPP tone-mapping brightness.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'VppTonemappingBrightness'?: number;
+    /**
+     * Gets or sets the VPP tone-mapping contrast.
+     * @type {number}
+     * @memberof EncodingOptions
+     */
+    'VppTonemappingContrast'?: number;
 }
 
 

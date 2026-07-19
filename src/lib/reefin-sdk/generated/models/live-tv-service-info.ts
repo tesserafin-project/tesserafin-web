@@ -23,17 +23,29 @@ import type { LiveTvServiceStatus } from './live-tv-service-status';
  */
 export interface LiveTvServiceInfo {
     /**
-     * Gets or sets the name.
-     * @type {string}
+     * Gets or sets a value indicating whether this instance has update available.
+     * @type {boolean}
      * @memberof LiveTvServiceInfo
      */
-    'Name'?: string | null;
+    'HasUpdateAvailable'?: boolean;
     /**
      * Gets or sets the home page URL.
      * @type {string}
      * @memberof LiveTvServiceInfo
      */
     'HomePageUrl'?: string | null;
+    /**
+     * Gets or sets a value indicating whether this instance is visible.
+     * @type {boolean}
+     * @memberof LiveTvServiceInfo
+     */
+    'IsVisible'?: boolean;
+    /**
+     * Gets or sets the name.
+     * @type {string}
+     * @memberof LiveTvServiceInfo
+     */
+    'Name'?: string | null;
     /**
      * Gets or sets the status.
      * @type {LiveTvServiceStatus}
@@ -47,29 +59,17 @@ export interface LiveTvServiceInfo {
      */
     'StatusMessage'?: string | null;
     /**
-     * Gets or sets the version.
-     * @type {string}
-     * @memberof LiveTvServiceInfo
-     */
-    'Version'?: string | null;
-    /**
-     * Gets or sets a value indicating whether this instance has update available.
-     * @type {boolean}
-     * @memberof LiveTvServiceInfo
-     */
-    'HasUpdateAvailable'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this instance is visible.
-     * @type {boolean}
-     * @memberof LiveTvServiceInfo
-     */
-    'IsVisible'?: boolean;
-    /**
      * 
      * @type {Array<string>}
      * @memberof LiveTvServiceInfo
      */
     'Tuners'?: Array<string> | null;
+    /**
+     * Gets or sets the version.
+     * @type {string}
+     * @memberof LiveTvServiceInfo
+     */
+    'Version'?: string | null;
 }
 
 

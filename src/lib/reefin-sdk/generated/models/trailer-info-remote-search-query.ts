@@ -23,11 +23,11 @@ import type { TrailerInfo } from './trailer-info';
  */
 export interface TrailerInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {TrailerInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof TrailerInfoRemoteSearchQuery
      */
-    'SearchInfo'?: TrailerInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface TrailerInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {TrailerInfo}
+     * @memberof TrailerInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: TrailerInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof TrailerInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof TrailerInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

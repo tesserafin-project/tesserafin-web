@@ -24,12 +24,6 @@ export interface BaseItemPersonImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemPersonImageBlurHashes
      */
-    'Primary'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
     'Art'?: { [key: string]: string | null; };
     /**
      * 
@@ -48,43 +42,7 @@ export interface BaseItemPersonImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemPersonImageBlurHashes
      */
-    'Logo'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
-    'Thumb'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
-    'Disc'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
     'Box'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
-    'Screenshot'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
-    'Menu'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemPersonImageBlurHashes
-     */
-    'Chapter'?: { [key: string]: string | null; };
     /**
      * 
      * @type {{ [key: string]: string | null; }}
@@ -96,6 +54,48 @@ export interface BaseItemPersonImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemPersonImageBlurHashes
      */
+    'Chapter'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Disc'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Logo'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Menu'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Primary'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
     'Profile'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Screenshot'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemPersonImageBlurHashes
+     */
+    'Thumb'?: { [key: string]: string | null; };
 }
 

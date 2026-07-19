@@ -26,36 +26,58 @@ import type { InstallationInfo } from './installation-info';
  */
 export interface SystemInfo {
     /**
-     * Gets or sets the local address.
-     * @type {string}
-     * @memberof SystemInfo
-     */
-    'LocalAddress'?: string | null;
-    /**
-     * Gets or sets the name of the server.
-     * @type {string}
-     * @memberof SystemInfo
-     */
-    'ServerName'?: string | null;
-    /**
-     * Gets or sets the server version.
-     * @type {string}
-     * @memberof SystemInfo
-     */
-    'Version'?: string | null;
-    /**
-     * Gets or sets the product name. This is the AssemblyProduct name.
-     * @type {string}
-     * @memberof SystemInfo
-     */
-    'ProductName'?: string | null;
-    /**
-     * Gets or sets the operating system.
+     * Gets or sets the cache path.
      * @type {string}
      * @memberof SystemInfo
      * @deprecated
      */
-    'OperatingSystem'?: string | null;
+    'CachePath'?: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'CanLaunchWebBrowser'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this instance can self restart.
+     * @type {boolean}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'CanSelfRestart'?: boolean;
+    /**
+     * Gets or sets the list of cast receiver applications.
+     * @type {Array<CastReceiverApplication>}
+     * @memberof SystemInfo
+     */
+    'CastReceiverApplications'?: Array<CastReceiverApplication> | null;
+    /**
+     * Gets or sets the completed installations.
+     * @type {Array<InstallationInfo>}
+     * @memberof SystemInfo
+     */
+    'CompletedInstallations'?: Array<InstallationInfo> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'EncoderLocation'?: string | null;
+    /**
+     * Gets or sets a value indicating whether this instance has pending restart.
+     * @type {boolean}
+     * @memberof SystemInfo
+     */
+    'HasPendingRestart'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this instance has update available.
+     * @type {boolean}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'HasUpdateAvailable'?: boolean;
     /**
      * Gets or sets the id.
      * @type {string}
@@ -63,11 +85,45 @@ export interface SystemInfo {
      */
     'Id'?: string | null;
     /**
-     * Gets or sets a value indicating whether the startup wizard is completed.
+     * Gets or sets the internal metadata path.
+     * @type {string}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'InternalMetadataPath'?: string | null;
+    /**
+     * 
      * @type {boolean}
      * @memberof SystemInfo
      */
-    'StartupWizardCompleted'?: boolean | null;
+    'IsShuttingDown'?: boolean;
+    /**
+     * Gets or sets the items by name path.
+     * @type {string}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'ItemsByNamePath'?: string | null;
+    /**
+     * Gets or sets the local address.
+     * @type {string}
+     * @memberof SystemInfo
+     */
+    'LocalAddress'?: string | null;
+    /**
+     * Gets or sets the log path.
+     * @type {string}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'LogPath'?: string | null;
+    /**
+     * Gets or sets the operating system.
+     * @type {string}
+     * @memberof SystemInfo
+     * @deprecated
+     */
+    'OperatingSystem'?: string | null;
     /**
      * Gets or sets the display name of the operating system.
      * @type {string}
@@ -82,49 +138,11 @@ export interface SystemInfo {
      */
     'PackageName'?: string | null;
     /**
-     * Gets or sets a value indicating whether this instance has pending restart.
-     * @type {boolean}
+     * Gets or sets the product name. This is the AssemblyProduct name.
+     * @type {string}
      * @memberof SystemInfo
      */
-    'HasPendingRestart'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SystemInfo
-     */
-    'IsShuttingDown'?: boolean;
-    /**
-     * Gets or sets a value indicating whether [supports library monitor].
-     * @type {boolean}
-     * @memberof SystemInfo
-     */
-    'SupportsLibraryMonitor'?: boolean;
-    /**
-     * Gets or sets the web socket port number.
-     * @type {number}
-     * @memberof SystemInfo
-     */
-    'WebSocketPortNumber'?: number;
-    /**
-     * Gets or sets the completed installations.
-     * @type {Array<InstallationInfo>}
-     * @memberof SystemInfo
-     */
-    'CompletedInstallations'?: Array<InstallationInfo> | null;
-    /**
-     * Gets or sets a value indicating whether this instance can self restart.
-     * @type {boolean}
-     * @memberof SystemInfo
-     * @deprecated
-     */
-    'CanSelfRestart'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SystemInfo
-     * @deprecated
-     */
-    'CanLaunchWebBrowser'?: boolean;
+    'ProductName'?: string | null;
     /**
      * Gets or sets the program data path.
      * @type {string}
@@ -133,40 +151,30 @@ export interface SystemInfo {
      */
     'ProgramDataPath'?: string | null;
     /**
-     * Gets or sets the web UI resources path.
+     * Gets or sets the name of the server.
      * @type {string}
      * @memberof SystemInfo
-     * @deprecated
      */
-    'WebPath'?: string | null;
+    'ServerName'?: string | null;
     /**
-     * Gets or sets the items by name path.
-     * @type {string}
+     * Gets or sets a value indicating whether the startup wizard is completed.
+     * @type {boolean}
      * @memberof SystemInfo
-     * @deprecated
      */
-    'ItemsByNamePath'?: string | null;
+    'StartupWizardCompleted'?: boolean | null;
     /**
-     * Gets or sets the cache path.
-     * @type {string}
+     * Gets or sets a value indicating whether [supports library monitor].
+     * @type {boolean}
      * @memberof SystemInfo
-     * @deprecated
      */
-    'CachePath'?: string | null;
+    'SupportsLibraryMonitor'?: boolean;
     /**
-     * Gets or sets the log path.
+     * 
      * @type {string}
      * @memberof SystemInfo
      * @deprecated
      */
-    'LogPath'?: string | null;
-    /**
-     * Gets or sets the internal metadata path.
-     * @type {string}
-     * @memberof SystemInfo
-     * @deprecated
-     */
-    'InternalMetadataPath'?: string | null;
+    'SystemArchitecture'?: string | null;
     /**
      * Gets or sets the transcode path.
      * @type {string}
@@ -175,31 +183,23 @@ export interface SystemInfo {
      */
     'TranscodingTempPath'?: string | null;
     /**
-     * Gets or sets the list of cast receiver applications.
-     * @type {Array<CastReceiverApplication>}
+     * Gets or sets the server version.
+     * @type {string}
      * @memberof SystemInfo
      */
-    'CastReceiverApplications'?: Array<CastReceiverApplication> | null;
+    'Version'?: string | null;
     /**
-     * Gets or sets a value indicating whether this instance has update available.
-     * @type {boolean}
-     * @memberof SystemInfo
-     * @deprecated
-     */
-    'HasUpdateAvailable'?: boolean;
-    /**
-     * 
+     * Gets or sets the web UI resources path.
      * @type {string}
      * @memberof SystemInfo
      * @deprecated
      */
-    'EncoderLocation'?: string | null;
+    'WebPath'?: string | null;
     /**
-     * 
-     * @type {string}
+     * Gets or sets the web socket port number.
+     * @type {number}
      * @memberof SystemInfo
-     * @deprecated
      */
-    'SystemArchitecture'?: string | null;
+    'WebSocketPortNumber'?: number;
 }
 

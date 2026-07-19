@@ -20,11 +20,11 @@
  */
 export interface ValidatePathDto {
     /**
-     * Gets or sets a value indicating whether validate if path is writable.
+     * Gets or sets is path file.
      * @type {boolean}
      * @memberof ValidatePathDto
      */
-    'ValidateWritable'?: boolean;
+    'IsFile'?: boolean | null;
     /**
      * Gets or sets the path.
      * @type {string}
@@ -32,10 +32,10 @@ export interface ValidatePathDto {
      */
     'Path'?: string | null;
     /**
-     * Gets or sets is path file.
+     * Gets or sets a value indicating whether validate if path is writable.
      * @type {boolean}
      * @memberof ValidatePathDto
      */
-    'IsFile'?: boolean | null;
+    'ValidateWritable'?: boolean;
 }
 

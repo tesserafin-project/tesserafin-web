@@ -23,11 +23,11 @@ import type { LiveTvServiceInfo } from './live-tv-service-info';
  */
 export interface LiveTvInfo {
     /**
-     * Gets or sets the services.
-     * @type {Array<LiveTvServiceInfo>}
+     * Gets or sets the enabled users.
+     * @type {Array<string>}
      * @memberof LiveTvInfo
      */
-    'Services'?: Array<LiveTvServiceInfo>;
+    'EnabledUsers'?: Array<string>;
     /**
      * Gets or sets a value indicating whether this instance is enabled.
      * @type {boolean}
@@ -35,10 +35,10 @@ export interface LiveTvInfo {
      */
     'IsEnabled'?: boolean;
     /**
-     * Gets or sets the enabled users.
-     * @type {Array<string>}
+     * Gets or sets the services.
+     * @type {Array<LiveTvServiceInfo>}
      * @memberof LiveTvInfo
      */
-    'EnabledUsers'?: Array<string>;
+    'Services'?: Array<LiveTvServiceInfo>;
 }
 

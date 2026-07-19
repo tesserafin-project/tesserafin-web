@@ -27,18 +27,6 @@ import type { RecommendationType } from './recommendation-type';
 export interface RecommendationDto {
     /**
      * 
-     * @type {Array<BaseItemDto>}
-     * @memberof RecommendationDto
-     */
-    'Items'?: Array<BaseItemDto> | null;
-    /**
-     * 
-     * @type {RecommendationType}
-     * @memberof RecommendationDto
-     */
-    'RecommendationType'?: RecommendationType;
-    /**
-     * 
      * @type {string}
      * @memberof RecommendationDto
      */
@@ -49,6 +37,18 @@ export interface RecommendationDto {
      * @memberof RecommendationDto
      */
     'CategoryId'?: string;
+    /**
+     * 
+     * @type {Array<BaseItemDto>}
+     * @memberof RecommendationDto
+     */
+    'Items'?: Array<BaseItemDto> | null;
+    /**
+     * 
+     * @type {RecommendationType}
+     * @memberof RecommendationDto
+     */
+    'RecommendationType'?: RecommendationType;
 }
 
 

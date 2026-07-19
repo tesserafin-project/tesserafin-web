@@ -29,59 +29,11 @@ import type { UnratedItem } from './unrated-item';
  */
 export interface UserPolicy {
     /**
-     * Gets or sets a value indicating whether this instance is administrator.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'IsAdministrator'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this instance is hidden.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'IsHidden'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this instance can manage collections.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnableCollectionManagement'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this instance can manage subtitles.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnableSubtitleManagement'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this user can manage lyrics.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnableLyricManagement'?: boolean;
-    /**
-     * Gets or sets a value indicating whether this instance is disabled.
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'IsDisabled'?: boolean;
-    /**
-     * Gets or sets the max parental rating.
-     * @type {number}
-     * @memberof UserPolicy
-     */
-    'MaxParentalRating'?: number | null;
-    /**
      * 
-     * @type {number}
+     * @type {Array<AccessSchedule>}
      * @memberof UserPolicy
      */
-    'MaxParentalSubRating'?: number | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserPolicy
-     */
-    'BlockedTags'?: Array<string> | null;
+    'AccessSchedules'?: Array<AccessSchedule> | null;
     /**
      * 
      * @type {Array<string>}
@@ -90,16 +42,10 @@ export interface UserPolicy {
     'AllowedTags'?: Array<string> | null;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof UserPolicy
      */
-    'EnableUserPreferenceAccess'?: boolean;
-    /**
-     * 
-     * @type {Array<AccessSchedule>}
-     * @memberof UserPolicy
-     */
-    'AccessSchedules'?: Array<AccessSchedule> | null;
+    'AuthenticationProviderId': string;
     /**
      * 
      * @type {Array<UnratedItem>}
@@ -108,40 +54,40 @@ export interface UserPolicy {
     'BlockUnratedItems'?: Array<UnratedItem> | null;
     /**
      * 
-     * @type {boolean}
+     * @type {Array<string>}
      * @memberof UserPolicy
      */
-    'EnableRemoteControlOfOtherUsers'?: boolean;
+    'BlockedChannels'?: Array<string> | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserPolicy
+     */
+    'BlockedMediaFolders'?: Array<string> | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof UserPolicy
+     */
+    'BlockedTags'?: Array<string> | null;
     /**
      * 
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableSharedDeviceControl'?: boolean;
+    'EnableAllChannels'?: boolean;
     /**
      * 
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableRemoteAccess'?: boolean;
+    'EnableAllDevices'?: boolean;
     /**
      * 
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableLiveTvManagement'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnableLiveTvAccess'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnableMediaPlayback'?: boolean;
+    'EnableAllFolders'?: boolean;
     /**
      * 
      * @type {boolean}
@@ -149,23 +95,11 @@ export interface UserPolicy {
      */
     'EnableAudioPlaybackTranscoding'?: boolean;
     /**
-     * 
+     * Gets or sets a value indicating whether this instance can manage collections.
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableVideoPlaybackTranscoding'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'EnablePlaybackRemuxing'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserPolicy
-     */
-    'ForceRemoteSourceTranscoding'?: boolean;
+    'EnableCollectionManagement'?: boolean;
     /**
      * 
      * @type {boolean}
@@ -185,6 +119,72 @@ export interface UserPolicy {
      */
     'EnableContentDownloading'?: boolean;
     /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableLiveTvAccess'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableLiveTvManagement'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this user can manage lyrics.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableLyricManagement'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableMediaConversion'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableMediaPlayback'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnablePlaybackRemuxing'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnablePublicSharing'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableRemoteAccess'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableRemoteControlOfOtherUsers'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableSharedDeviceControl'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this instance can manage subtitles.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableSubtitleManagement'?: boolean;
+    /**
      * Gets or sets a value indicating whether [enable synchronize].
      * @type {boolean}
      * @memberof UserPolicy
@@ -195,19 +195,13 @@ export interface UserPolicy {
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableMediaConversion'?: boolean;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserPolicy
-     */
-    'EnabledDevices'?: Array<string> | null;
+    'EnableUserPreferenceAccess'?: boolean;
     /**
      * 
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableAllDevices'?: boolean;
+    'EnableVideoPlaybackTranscoding'?: boolean;
     /**
      * 
      * @type {Array<string>}
@@ -216,10 +210,10 @@ export interface UserPolicy {
     'EnabledChannels'?: Array<string> | null;
     /**
      * 
-     * @type {boolean}
+     * @type {Array<string>}
      * @memberof UserPolicy
      */
-    'EnableAllChannels'?: boolean;
+    'EnabledDevices'?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
@@ -231,13 +225,31 @@ export interface UserPolicy {
      * @type {boolean}
      * @memberof UserPolicy
      */
-    'EnableAllFolders'?: boolean;
+    'ForceRemoteSourceTranscoding'?: boolean;
     /**
      * 
      * @type {number}
      * @memberof UserPolicy
      */
     'InvalidLoginAttemptCount'?: number;
+    /**
+     * Gets or sets a value indicating whether this instance is administrator.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'IsAdministrator'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this instance is disabled.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'IsDisabled'?: boolean;
+    /**
+     * Gets or sets a value indicating whether this instance is hidden.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'IsHidden'?: boolean;
     /**
      * 
      * @type {number}
@@ -251,41 +263,29 @@ export interface UserPolicy {
      */
     'MaxActiveSessions'?: number;
     /**
-     * 
-     * @type {boolean}
+     * Gets or sets the max parental rating.
+     * @type {number}
      * @memberof UserPolicy
      */
-    'EnablePublicSharing'?: boolean;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserPolicy
-     */
-    'BlockedMediaFolders'?: Array<string> | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserPolicy
-     */
-    'BlockedChannels'?: Array<string> | null;
+    'MaxParentalRating'?: number | null;
     /**
      * 
      * @type {number}
      * @memberof UserPolicy
      */
-    'RemoteClientBitrateLimit'?: number;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserPolicy
-     */
-    'AuthenticationProviderId': string;
+    'MaxParentalSubRating'?: number | null;
     /**
      * 
      * @type {string}
      * @memberof UserPolicy
      */
     'PasswordResetProviderId': string;
+    /**
+     * 
+     * @type {number}
+     * @memberof UserPolicy
+     */
+    'RemoteClientBitrateLimit'?: number;
     /**
      * Gets or sets a value indicating what SyncPlay features the user can access.
      * @type {SyncPlayUserAccessType}

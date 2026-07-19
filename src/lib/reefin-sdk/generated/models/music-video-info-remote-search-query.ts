@@ -23,11 +23,11 @@ import type { MusicVideoInfo } from './music-video-info';
  */
 export interface MusicVideoInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {MusicVideoInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof MusicVideoInfoRemoteSearchQuery
      */
-    'SearchInfo'?: MusicVideoInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface MusicVideoInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {MusicVideoInfo}
+     * @memberof MusicVideoInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: MusicVideoInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof MusicVideoInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof MusicVideoInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

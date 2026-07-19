@@ -23,11 +23,23 @@ import type { LogLevel } from './log-level';
  */
 export interface ActivityLogEntry {
     /**
+     * Gets or sets the date.
+     * @type {string}
+     * @memberof ActivityLogEntry
+     */
+    'Date'?: string;
+    /**
      * Gets or sets the identifier.
      * @type {number}
      * @memberof ActivityLogEntry
      */
     'Id'?: number;
+    /**
+     * Gets or sets the item identifier.
+     * @type {string}
+     * @memberof ActivityLogEntry
+     */
+    'ItemId'?: string | null;
     /**
      * Gets or sets the name.
      * @type {string}
@@ -41,6 +53,12 @@ export interface ActivityLogEntry {
      */
     'Overview'?: string | null;
     /**
+     * Gets or sets the log severity.
+     * @type {LogLevel}
+     * @memberof ActivityLogEntry
+     */
+    'Severity'?: LogLevel;
+    /**
      * Gets or sets the short overview.
      * @type {string}
      * @memberof ActivityLogEntry
@@ -52,18 +70,6 @@ export interface ActivityLogEntry {
      * @memberof ActivityLogEntry
      */
     'Type'?: string;
-    /**
-     * Gets or sets the item identifier.
-     * @type {string}
-     * @memberof ActivityLogEntry
-     */
-    'ItemId'?: string | null;
-    /**
-     * Gets or sets the date.
-     * @type {string}
-     * @memberof ActivityLogEntry
-     */
-    'Date'?: string;
     /**
      * Gets or sets the user identifier.
      * @type {string}
@@ -77,12 +83,6 @@ export interface ActivityLogEntry {
      * @deprecated
      */
     'UserPrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets the log severity.
-     * @type {LogLevel}
-     * @memberof ActivityLogEntry
-     */
-    'Severity'?: LogLevel;
 }
 
 

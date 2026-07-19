@@ -20,59 +20,17 @@
  */
 export interface UserItemDataDto {
     /**
-     * Gets or sets the rating.
-     * @type {number}
-     * @memberof UserItemDataDto
-     */
-    'Rating'?: number | null;
-    /**
-     * Gets or sets the played percentage.
-     * @type {number}
-     * @memberof UserItemDataDto
-     */
-    'PlayedPercentage'?: number | null;
-    /**
-     * Gets or sets the unplayed item count.
-     * @type {number}
-     * @memberof UserItemDataDto
-     */
-    'UnplayedItemCount'?: number | null;
-    /**
-     * Gets or sets the playback position ticks.
-     * @type {number}
-     * @memberof UserItemDataDto
-     */
-    'PlaybackPositionTicks'?: number;
-    /**
-     * Gets or sets the play count.
-     * @type {number}
-     * @memberof UserItemDataDto
-     */
-    'PlayCount'?: number;
-    /**
      * Gets or sets a value indicating whether this instance is favorite.
      * @type {boolean}
      * @memberof UserItemDataDto
      */
     'IsFavorite'?: boolean;
     /**
-     * Gets or sets a value indicating whether this Reefin.Model.Dto.UserItemDataDto is likes.
-     * @type {boolean}
-     * @memberof UserItemDataDto
-     */
-    'Likes'?: boolean | null;
-    /**
-     * Gets or sets the last played date.
+     * Gets or sets the item identifier.
      * @type {string}
      * @memberof UserItemDataDto
      */
-    'LastPlayedDate'?: string | null;
-    /**
-     * Gets or sets a value indicating whether this Reefin.Model.Dto.UserItemDataDto is played.
-     * @type {boolean}
-     * @memberof UserItemDataDto
-     */
-    'Played'?: boolean;
+    'ItemId'?: string;
     /**
      * Gets or sets the key.
      * @type {string}
@@ -80,10 +38,52 @@ export interface UserItemDataDto {
      */
     'Key': string;
     /**
-     * Gets or sets the item identifier.
+     * Gets or sets the last played date.
      * @type {string}
      * @memberof UserItemDataDto
      */
-    'ItemId'?: string;
+    'LastPlayedDate'?: string | null;
+    /**
+     * Gets or sets a value indicating whether this Reefin.Model.Dto.UserItemDataDto is likes.
+     * @type {boolean}
+     * @memberof UserItemDataDto
+     */
+    'Likes'?: boolean | null;
+    /**
+     * Gets or sets the play count.
+     * @type {number}
+     * @memberof UserItemDataDto
+     */
+    'PlayCount'?: number;
+    /**
+     * Gets or sets the playback position ticks.
+     * @type {number}
+     * @memberof UserItemDataDto
+     */
+    'PlaybackPositionTicks'?: number;
+    /**
+     * Gets or sets a value indicating whether this Reefin.Model.Dto.UserItemDataDto is played.
+     * @type {boolean}
+     * @memberof UserItemDataDto
+     */
+    'Played'?: boolean;
+    /**
+     * Gets or sets the played percentage.
+     * @type {number}
+     * @memberof UserItemDataDto
+     */
+    'PlayedPercentage'?: number | null;
+    /**
+     * Gets or sets the rating.
+     * @type {number}
+     * @memberof UserItemDataDto
+     */
+    'Rating'?: number | null;
+    /**
+     * Gets or sets the unplayed item count.
+     * @type {number}
+     * @memberof UserItemDataDto
+     */
+    'UnplayedItemCount'?: number | null;
 }
 

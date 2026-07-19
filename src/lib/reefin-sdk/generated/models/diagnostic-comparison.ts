@@ -17,17 +17,38 @@
 import type { DivergenceClass } from './divergence-class';
 // May contain unused imports in some cases
 // @ts-ignore
+import type { PlaybackDecisionOutputSpec } from './playback-decision-output-spec';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { PlaybackDecisionPlaybackMethod } from './playback-decision-playback-method';
 // May contain unused imports in some cases
 // @ts-ignore
 import type { PlaybackDecisionReasonCode } from './playback-decision-reason-code';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { PlaybackDecisionSelectedStreams } from './playback-decision-selected-streams';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { PlaybackDecisionTransformKind } from './playback-decision-transform-kind';
 
 /**
- * The legacy-vs-v2 shadow comparison for a session\'s retained diagnostic (§4.3): what legacy (the source of truth) actually decided, alongside the heuristic classification of how it compares to the shadowed v2 decision.
+ * The legacy-vs-v2 shadow comparison for a session\'s retained diagnostic (§4.3): what legacy (the source of truth) actually decided, the v2 engine\'s own decision shape, and the heuristic classification of how the two compare. PR114: Reefin.Api.Models.PlaybackSessionDtos.DiagnosticComparison.V2Method/Reefin.Api.Models.PlaybackSessionDtos.DiagnosticComparison.V2Output/ Reefin.Api.Models.PlaybackSessionDtos.DiagnosticComparison.V2SelectedStreams/Reefin.Api.Models.PlaybackSessionDtos.DiagnosticComparison.V2Transforms were added so the admin diagnostics UI can render a real \"live legacy vs. v2 decision\" comparison - before this, only v2\'s Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.Reasoning tree was exposed, never its concrete decision shape (the parent Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail\'s own `Method`/`Output`/ `SelectedStreams`/`Transforms` are always legacy-sourced, per Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponseMapper - never v2\'s).
  * @export
  * @interface DiagnosticComparison
  */
 export interface DiagnosticComparison {
+    /**
+     * The heuristic classification of the legacy/v2 divergence.
+     * @type {DivergenceClass}
+     * @memberof DiagnosticComparison
+     */
+    'DivergenceClass'?: DivergenceClass;
+    /**
+     * A short, human-readable summary of the divergence (`ShadowDivergence.Summary`), suitable for display alongside Reefin.Api.Models.PlaybackSessionDtos.DiagnosticComparison.DivergenceClass without the reader having to know the classification vocabulary.
+     * @type {string}
+     * @memberof DiagnosticComparison
+     */
+    'DivergenceSummary'?: string;
     /**
      * The method by which the engine decided to deliver a media source to the client.
      * @type {PlaybackDecisionPlaybackMethod}
@@ -41,11 +62,29 @@ export interface DiagnosticComparison {
      */
     'LegacyReasons'?: Array<PlaybackDecisionReasonCode>;
     /**
-     * The heuristic classification of the legacy/v2 divergence.
-     * @type {DivergenceClass}
+     * The method by which the engine decided to deliver a media source to the client.
+     * @type {PlaybackDecisionPlaybackMethod}
      * @memberof DiagnosticComparison
      */
-    'DivergenceClass'?: DivergenceClass;
+    'V2Method'?: PlaybackDecisionPlaybackMethod;
+    /**
+     * The shape of the output a Reefin.Playback.Decision.PlaybackDecision produces.
+     * @type {PlaybackDecisionOutputSpec}
+     * @memberof DiagnosticComparison
+     */
+    'V2Output'?: PlaybackDecisionOutputSpec;
+    /**
+     * The video, audio, and subtitle streams selected for a Reefin.Playback.Decision.PlaybackDecision.
+     * @type {PlaybackDecisionSelectedStreams}
+     * @memberof DiagnosticComparison
+     */
+    'V2SelectedStreams'?: PlaybackDecisionSelectedStreams;
+    /**
+     * The pipeline transforms the v2 engine\'s decision implies.
+     * @type {Array<PlaybackDecisionTransformKind>}
+     * @memberof DiagnosticComparison
+     */
+    'V2Transforms'?: Array<PlaybackDecisionTransformKind>;
 }
 
 

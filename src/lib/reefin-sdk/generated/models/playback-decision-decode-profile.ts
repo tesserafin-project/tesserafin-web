@@ -23,11 +23,11 @@ import type { PlaybackDecisionMediaKind } from './playback-decision-media-kind';
  */
 export interface PlaybackDecisionDecodeProfile {
     /**
-     * Whether this profile is for audio-only or video (with or without audio) direct play.
-     * @type {PlaybackDecisionMediaKind}
+     * The audio codecs this profile accepts. Empty is a wildcard (matches any audio codec), same semantics as a legacy `DirectPlayProfile` with no `AudioCodec` declared.
+     * @type {Array<string>}
      * @memberof PlaybackDecisionDecodeProfile
      */
-    'Type'?: PlaybackDecisionMediaKind;
+    'AudioCodecs'?: Array<string>;
     /**
      * The containers this profile accepts. An empty list is a wildcard - matches any container - same semantics as the legacy `DirectPlayProfile`, where an empty `Container` string means unrestricted.
      * @type {Array<string>}
@@ -35,17 +35,17 @@ export interface PlaybackDecisionDecodeProfile {
      */
     'Containers'?: Array<string>;
     /**
+     * Whether this profile is for audio-only or video (with or without audio) direct play.
+     * @type {PlaybackDecisionMediaKind}
+     * @memberof PlaybackDecisionDecodeProfile
+     */
+    'Type'?: PlaybackDecisionMediaKind;
+    /**
      * The video codecs this profile accepts. Empty is a wildcard (matches any video codec), same semantics as a legacy `DirectPlayProfile` with no `VideoCodec` declared. Always empty for a Reefin.Playback.Decision.MediaKind.Audio profile.
      * @type {Array<string>}
      * @memberof PlaybackDecisionDecodeProfile
      */
     'VideoCodecs'?: Array<string>;
-    /**
-     * The audio codecs this profile accepts. Empty is a wildcard (matches any audio codec), same semantics as a legacy `DirectPlayProfile` with no `AudioCodec` declared.
-     * @type {Array<string>}
-     * @memberof PlaybackDecisionDecodeProfile
-     */
-    'AudioCodecs'?: Array<string>;
 }
 
 

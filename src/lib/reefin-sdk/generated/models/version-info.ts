@@ -20,12 +20,6 @@
  */
 export interface VersionInfo {
     /**
-     * Gets or sets the version.
-     * @type {string}
-     * @memberof VersionInfo
-     */
-    'version'?: string;
-    /**
      * Gets the version as a System.Version.
      * @type {string}
      * @memberof VersionInfo
@@ -38,29 +32,11 @@ export interface VersionInfo {
      */
     'changelog'?: string | null;
     /**
-     * Gets or sets the ABI that this version was built against.
-     * @type {string}
-     * @memberof VersionInfo
-     */
-    'targetAbi'?: string | null;
-    /**
-     * Gets or sets the source URL.
-     * @type {string}
-     * @memberof VersionInfo
-     */
-    'sourceUrl'?: string | null;
-    /**
      * Gets or sets a checksum for the binary.
      * @type {string}
      * @memberof VersionInfo
      */
     'checksum'?: string | null;
-    /**
-     * Gets or sets a timestamp of when the binary was built.
-     * @type {string}
-     * @memberof VersionInfo
-     */
-    'timestamp'?: string | null;
     /**
      * Gets or sets the repository name.
      * @type {string}
@@ -73,5 +49,29 @@ export interface VersionInfo {
      * @memberof VersionInfo
      */
     'repositoryUrl'?: string;
+    /**
+     * Gets or sets the source URL.
+     * @type {string}
+     * @memberof VersionInfo
+     */
+    'sourceUrl'?: string | null;
+    /**
+     * Gets or sets the ABI that this version was built against.
+     * @type {string}
+     * @memberof VersionInfo
+     */
+    'targetAbi'?: string | null;
+    /**
+     * Gets or sets a timestamp of when the binary was built.
+     * @type {string}
+     * @memberof VersionInfo
+     */
+    'timestamp'?: string | null;
+    /**
+     * Gets or sets the version.
+     * @type {string}
+     * @memberof VersionInfo
+     */
+    'version'?: string;
 }
 

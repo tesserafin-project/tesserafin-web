@@ -29,16 +29,16 @@ export interface BaseItemDtoQueryResult {
      */
     'Items'?: Array<BaseItemDto>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof BaseItemDtoQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof BaseItemDtoQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof BaseItemDtoQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

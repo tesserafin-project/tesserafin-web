@@ -23,12 +23,6 @@ import type { PlaybackDecisionSelectedSubtitle } from './playback-decision-selec
  */
 export interface PlaybackDecisionSelectedStreams {
     /**
-     * The selected video stream index, or null if no video stream was selected.
-     * @type {number}
-     * @memberof PlaybackDecisionSelectedStreams
-     */
-    'Video'?: number | null;
-    /**
      * The selected audio stream index, or null if no audio stream was selected.
      * @type {number}
      * @memberof PlaybackDecisionSelectedStreams
@@ -40,5 +34,11 @@ export interface PlaybackDecisionSelectedStreams {
      * @memberof PlaybackDecisionSelectedStreams
      */
     'Subtitle'?: PlaybackDecisionSelectedSubtitle | null;
+    /**
+     * The selected video stream index, or null if no video stream was selected.
+     * @type {number}
+     * @memberof PlaybackDecisionSelectedStreams
+     */
+    'Video'?: number | null;
 }
 

@@ -26,41 +26,17 @@ import type { PlaybackDecisionStreamingProtocol } from './playback-decision-stre
  */
 export interface PlaybackDecisionPlaybackOutputProfile {
     /**
-     * Whether this profile targets audio-only or video output.
-     * @type {PlaybackDecisionMediaKind}
-     * @memberof PlaybackDecisionPlaybackOutputProfile
-     */
-    'Type'?: PlaybackDecisionMediaKind;
-    /**
-     * The streaming protocol this output is delivered over.
-     * @type {PlaybackDecisionStreamingProtocol}
-     * @memberof PlaybackDecisionPlaybackOutputProfile
-     */
-    'Protocol'?: PlaybackDecisionStreamingProtocol;
-    /**
-     * The target container for this output.
-     * @type {string}
-     * @memberof PlaybackDecisionPlaybackOutputProfile
-     */
-    'Container'?: string;
-    /**
-     * The target video codecs, in the client\'s preference order (index 0 = most preferred). Empty for an audio-only profile (Reefin.Playback.Decision.PlaybackOutputProfile.Type of Reefin.Playback.Decision.MediaKind.Audio).
-     * @type {Array<string>}
-     * @memberof PlaybackDecisionPlaybackOutputProfile
-     */
-    'VideoCodecs'?: Array<string>;
-    /**
      * The target audio codecs, in the client\'s preference order (index 0 = most preferred).
      * @type {Array<string>}
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
     'AudioCodecs'?: Array<string>;
     /**
-     * The maximum video bitrate for this output, or null if unbounded/unknown.
-     * @type {number}
+     * The target container for this output.
+     * @type {string}
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
-    'MaxVideoBitrate'?: number | null;
+    'Container'?: string;
     /**
      * The maximum audio bitrate for this output, or null if unbounded/unknown.
      * @type {number}
@@ -73,6 +49,30 @@ export interface PlaybackDecisionPlaybackOutputProfile {
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
     'MaxAudioChannels'?: number | null;
+    /**
+     * The maximum video bitrate for this output, or null if unbounded/unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionPlaybackOutputProfile
+     */
+    'MaxVideoBitrate'?: number | null;
+    /**
+     * The streaming protocol this output is delivered over.
+     * @type {PlaybackDecisionStreamingProtocol}
+     * @memberof PlaybackDecisionPlaybackOutputProfile
+     */
+    'Protocol'?: PlaybackDecisionStreamingProtocol;
+    /**
+     * Whether this profile targets audio-only or video output.
+     * @type {PlaybackDecisionMediaKind}
+     * @memberof PlaybackDecisionPlaybackOutputProfile
+     */
+    'Type'?: PlaybackDecisionMediaKind;
+    /**
+     * The target video codecs, in the client\'s preference order (index 0 = most preferred). Empty for an audio-only profile (Reefin.Playback.Decision.PlaybackOutputProfile.Type of Reefin.Playback.Decision.MediaKind.Audio).
+     * @type {Array<string>}
+     * @memberof PlaybackDecisionPlaybackOutputProfile
+     */
+    'VideoCodecs'?: Array<string>;
 }
 
 

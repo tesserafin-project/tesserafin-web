@@ -21,10 +21,16 @@
 export interface XbmcMetadataOptions {
     /**
      * 
-     * @type {string}
+     * @type {boolean}
      * @memberof XbmcMetadataOptions
      */
-    'UserId'?: string | null;
+    'EnableExtraThumbsDuplication'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof XbmcMetadataOptions
+     */
+    'EnablePathSubstitution'?: boolean;
     /**
      * 
      * @type {string}
@@ -39,15 +45,9 @@ export interface XbmcMetadataOptions {
     'SaveImagePathsInNfo'?: boolean;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof XbmcMetadataOptions
      */
-    'EnablePathSubstitution'?: boolean;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof XbmcMetadataOptions
-     */
-    'EnableExtraThumbsDuplication'?: boolean;
+    'UserId'?: string | null;
 }
 

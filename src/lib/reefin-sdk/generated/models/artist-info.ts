@@ -23,6 +23,30 @@ import type { SongInfo } from './song-info';
  */
 export interface ArtistInfo {
     /**
+     * 
+     * @type {number}
+     * @memberof ArtistInfo
+     */
+    'IndexNumber'?: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof ArtistInfo
+     */
+    'IsAutomated'?: boolean;
+    /**
+     * Gets or sets the metadata country code.
+     * @type {string}
+     * @memberof ArtistInfo
+     */
+    'MetadataCountryCode'?: string | null;
+    /**
+     * Gets or sets the metadata language.
+     * @type {string}
+     * @memberof ArtistInfo
+     */
+    'MetadataLanguage'?: string | null;
+    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof ArtistInfo
@@ -35,47 +59,17 @@ export interface ArtistInfo {
      */
     'OriginalTitle'?: string | null;
     /**
-     * Gets or sets the path.
-     * @type {string}
-     * @memberof ArtistInfo
-     */
-    'Path'?: string | null;
-    /**
-     * Gets or sets the metadata language.
-     * @type {string}
-     * @memberof ArtistInfo
-     */
-    'MetadataLanguage'?: string | null;
-    /**
-     * Gets or sets the metadata country code.
-     * @type {string}
-     * @memberof ArtistInfo
-     */
-    'MetadataCountryCode'?: string | null;
-    /**
-     * Gets or sets the provider ids.
-     * @type {{ [key: string]: string | null; }}
-     * @memberof ArtistInfo
-     */
-    'ProviderIds'?: { [key: string]: string | null; } | null;
-    /**
-     * Gets or sets the year.
-     * @type {number}
-     * @memberof ArtistInfo
-     */
-    'Year'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof ArtistInfo
-     */
-    'IndexNumber'?: number | null;
-    /**
      * 
      * @type {number}
      * @memberof ArtistInfo
      */
     'ParentIndexNumber'?: number | null;
+    /**
+     * Gets or sets the path.
+     * @type {string}
+     * @memberof ArtistInfo
+     */
+    'Path'?: string | null;
     /**
      * 
      * @type {string}
@@ -83,16 +77,22 @@ export interface ArtistInfo {
      */
     'PremiereDate'?: string | null;
     /**
-     * 
-     * @type {boolean}
+     * Gets or sets the provider ids.
+     * @type {{ [key: string]: string | null; }}
      * @memberof ArtistInfo
      */
-    'IsAutomated'?: boolean;
+    'ProviderIds'?: { [key: string]: string | null; } | null;
     /**
      * 
      * @type {Array<SongInfo>}
      * @memberof ArtistInfo
      */
     'SongInfos'?: Array<SongInfo>;
+    /**
+     * Gets or sets the year.
+     * @type {number}
+     * @memberof ArtistInfo
+     */
+    'Year'?: number | null;
 }
 

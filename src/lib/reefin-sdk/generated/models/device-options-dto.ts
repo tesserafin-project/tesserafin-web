@@ -20,11 +20,11 @@
  */
 export interface DeviceOptionsDto {
     /**
-     * Gets or sets the id.
-     * @type {number}
+     * Gets or sets the custom name.
+     * @type {string}
      * @memberof DeviceOptionsDto
      */
-    'Id'?: number;
+    'CustomName'?: string | null;
     /**
      * Gets or sets the device id.
      * @type {string}
@@ -32,10 +32,10 @@ export interface DeviceOptionsDto {
      */
     'DeviceId'?: string | null;
     /**
-     * Gets or sets the custom name.
-     * @type {string}
+     * Gets or sets the id.
+     * @type {number}
      * @memberof DeviceOptionsDto
      */
-    'CustomName'?: string | null;
+    'Id'?: number;
 }
 

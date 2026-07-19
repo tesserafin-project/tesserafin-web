@@ -23,11 +23,11 @@ import type { AlbumInfo } from './album-info';
  */
 export interface AlbumInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {AlbumInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof AlbumInfoRemoteSearchQuery
      */
-    'SearchInfo'?: AlbumInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface AlbumInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {AlbumInfo}
+     * @memberof AlbumInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: AlbumInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof AlbumInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof AlbumInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

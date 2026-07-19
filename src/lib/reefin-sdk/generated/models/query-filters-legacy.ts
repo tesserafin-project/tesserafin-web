@@ -30,13 +30,13 @@ export interface QueryFiltersLegacy {
      * @type {Array<string>}
      * @memberof QueryFiltersLegacy
      */
-    'Tags'?: Array<string> | null;
+    'OfficialRatings'?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof QueryFiltersLegacy
      */
-    'OfficialRatings'?: Array<string> | null;
+    'Tags'?: Array<string> | null;
     /**
      * 
      * @type {Array<number>}

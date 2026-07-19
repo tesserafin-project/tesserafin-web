@@ -26,49 +26,17 @@ import type { UserPolicy } from './user-policy';
  */
 export interface UserDto {
     /**
-     * Gets or sets the name.
-     * @type {string}
+     * Gets or sets the configuration.
+     * @type {UserConfiguration}
      * @memberof UserDto
      */
-    'Name'?: string | null;
+    'Configuration'?: UserConfiguration | null;
     /**
-     * Gets or sets the server identifier.
-     * @type {string}
-     * @memberof UserDto
-     */
-    'ServerId'?: string | null;
-    /**
-     * Gets or sets the name of the server. This is not used by the server and is for client-side usage only.
-     * @type {string}
-     * @memberof UserDto
-     */
-    'ServerName'?: string | null;
-    /**
-     * Gets or sets the id.
-     * @type {string}
-     * @memberof UserDto
-     */
-    'Id'?: string;
-    /**
-     * Gets or sets the primary image tag.
-     * @type {string}
-     * @memberof UserDto
-     */
-    'PrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets a value indicating whether this instance has password.
+     * Gets or sets whether async login is enabled or not.
      * @type {boolean}
      * @memberof UserDto
-     * @deprecated
      */
-    'HasPassword'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance has configured password.
-     * @type {boolean}
-     * @memberof UserDto
-     * @deprecated
-     */
-    'HasConfiguredPassword'?: boolean | null;
+    'EnableAutoLogin'?: boolean | null;
     /**
      * Gets or sets a value indicating whether this instance has configured easy password.
      * @type {boolean}
@@ -77,17 +45,25 @@ export interface UserDto {
      */
     'HasConfiguredEasyPassword'?: boolean | null;
     /**
-     * Gets or sets whether async login is enabled or not.
+     * Gets or sets a value indicating whether this instance has configured password.
      * @type {boolean}
      * @memberof UserDto
+     * @deprecated
      */
-    'EnableAutoLogin'?: boolean | null;
+    'HasConfiguredPassword'?: boolean | null;
     /**
-     * Gets or sets the last login date.
+     * Gets or sets a value indicating whether this instance has password.
+     * @type {boolean}
+     * @memberof UserDto
+     * @deprecated
+     */
+    'HasPassword'?: boolean | null;
+    /**
+     * Gets or sets the id.
      * @type {string}
      * @memberof UserDto
      */
-    'LastLoginDate'?: string | null;
+    'Id'?: string;
     /**
      * Gets or sets the last activity date.
      * @type {string}
@@ -95,11 +71,17 @@ export interface UserDto {
      */
     'LastActivityDate'?: string | null;
     /**
-     * Gets or sets the configuration.
-     * @type {UserConfiguration}
+     * Gets or sets the last login date.
+     * @type {string}
      * @memberof UserDto
      */
-    'Configuration'?: UserConfiguration | null;
+    'LastLoginDate'?: string | null;
+    /**
+     * Gets or sets the name.
+     * @type {string}
+     * @memberof UserDto
+     */
+    'Name'?: string | null;
     /**
      * Gets or sets the policy.
      * @type {UserPolicy}
@@ -112,5 +94,23 @@ export interface UserDto {
      * @memberof UserDto
      */
     'PrimaryImageAspectRatio'?: number | null;
+    /**
+     * Gets or sets the primary image tag.
+     * @type {string}
+     * @memberof UserDto
+     */
+    'PrimaryImageTag'?: string | null;
+    /**
+     * Gets or sets the server identifier.
+     * @type {string}
+     * @memberof UserDto
+     */
+    'ServerId'?: string | null;
+    /**
+     * Gets or sets the name of the server. This is not used by the server and is for client-side usage only.
+     * @type {string}
+     * @memberof UserDto
+     */
+    'ServerName'?: string | null;
 }
 

@@ -26,23 +26,11 @@ import type { RatingType } from './rating-type';
  */
 export interface RemoteImageInfo {
     /**
-     * Gets or sets the name of the provider.
-     * @type {string}
+     * Gets or sets the community rating.
+     * @type {number}
      * @memberof RemoteImageInfo
      */
-    'ProviderName'?: string | null;
-    /**
-     * Gets or sets the URL.
-     * @type {string}
-     * @memberof RemoteImageInfo
-     */
-    'Url'?: string | null;
-    /**
-     * Gets or sets a url used for previewing a smaller version.
-     * @type {string}
-     * @memberof RemoteImageInfo
-     */
-    'ThumbnailUrl'?: string | null;
+    'CommunityRating'?: number | null;
     /**
      * Gets or sets the height.
      * @type {number}
@@ -50,29 +38,29 @@ export interface RemoteImageInfo {
      */
     'Height'?: number | null;
     /**
-     * Gets or sets the width.
-     * @type {number}
-     * @memberof RemoteImageInfo
-     */
-    'Width'?: number | null;
-    /**
-     * Gets or sets the community rating.
-     * @type {number}
-     * @memberof RemoteImageInfo
-     */
-    'CommunityRating'?: number | null;
-    /**
-     * Gets or sets the vote count.
-     * @type {number}
-     * @memberof RemoteImageInfo
-     */
-    'VoteCount'?: number | null;
-    /**
      * Gets or sets the language.
      * @type {string}
      * @memberof RemoteImageInfo
      */
     'Language'?: string | null;
+    /**
+     * Gets or sets the name of the provider.
+     * @type {string}
+     * @memberof RemoteImageInfo
+     */
+    'ProviderName'?: string | null;
+    /**
+     * Gets or sets the type of the rating.
+     * @type {RatingType}
+     * @memberof RemoteImageInfo
+     */
+    'RatingType'?: RatingType;
+    /**
+     * Gets or sets a url used for previewing a smaller version.
+     * @type {string}
+     * @memberof RemoteImageInfo
+     */
+    'ThumbnailUrl'?: string | null;
     /**
      * Gets or sets the type.
      * @type {ImageType}
@@ -80,11 +68,23 @@ export interface RemoteImageInfo {
      */
     'Type'?: ImageType;
     /**
-     * Gets or sets the type of the rating.
-     * @type {RatingType}
+     * Gets or sets the URL.
+     * @type {string}
      * @memberof RemoteImageInfo
      */
-    'RatingType'?: RatingType;
+    'Url'?: string | null;
+    /**
+     * Gets or sets the vote count.
+     * @type {number}
+     * @memberof RemoteImageInfo
+     */
+    'VoteCount'?: number | null;
+    /**
+     * Gets or sets the width.
+     * @type {number}
+     * @memberof RemoteImageInfo
+     */
+    'Width'?: number | null;
 }
 
 

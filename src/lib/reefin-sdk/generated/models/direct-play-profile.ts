@@ -23,29 +23,29 @@ import type { DlnaProfileType } from './dlna-profile-type';
  */
 export interface DirectPlayProfile {
     /**
-     * Gets or sets the container.
-     * @type {string}
-     * @memberof DirectPlayProfile
-     */
-    'Container'?: string;
-    /**
      * Gets or sets the audio codec.
      * @type {string}
      * @memberof DirectPlayProfile
      */
     'AudioCodec'?: string | null;
     /**
-     * Gets or sets the video codec.
+     * Gets or sets the container.
      * @type {string}
      * @memberof DirectPlayProfile
      */
-    'VideoCodec'?: string | null;
+    'Container'?: string;
     /**
      * Gets or sets the Dlna profile type.
      * @type {DlnaProfileType}
      * @memberof DirectPlayProfile
      */
     'Type'?: DlnaProfileType;
+    /**
+     * Gets or sets the video codec.
+     * @type {string}
+     * @memberof DirectPlayProfile
+     */
+    'VideoCodec'?: string | null;
 }
 
 

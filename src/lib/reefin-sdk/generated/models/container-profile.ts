@@ -26,12 +26,6 @@ import type { ProfileCondition } from './profile-condition';
  */
 export interface ContainerProfile {
     /**
-     * Gets or sets the Reefin.Model.Dlna.DlnaProfileType which this container must meet.
-     * @type {DlnaProfileType}
-     * @memberof ContainerProfile
-     */
-    'Type'?: DlnaProfileType;
-    /**
      * Gets or sets the list of Reefin.Model.Dlna.ProfileCondition which this container will be applied to.
      * @type {Array<ProfileCondition>}
      * @memberof ContainerProfile
@@ -49,6 +43,12 @@ export interface ContainerProfile {
      * @memberof ContainerProfile
      */
     'SubContainer'?: string | null;
+    /**
+     * Gets or sets the Reefin.Model.Dlna.DlnaProfileType which this container must meet.
+     * @type {DlnaProfileType}
+     * @memberof ContainerProfile
+     */
+    'Type'?: DlnaProfileType;
 }
 
 

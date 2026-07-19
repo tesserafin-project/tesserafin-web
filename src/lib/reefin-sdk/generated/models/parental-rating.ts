@@ -29,16 +29,16 @@ export interface ParentalRating {
      */
     'Name'?: string;
     /**
-     * Gets or sets the value.
-     * @type {number}
-     * @memberof ParentalRating
-     */
-    'Value'?: number | null;
-    /**
      * Gets or sets the rating score.
      * @type {ParentalRatingScore}
      * @memberof ParentalRating
      */
     'RatingScore'?: ParentalRatingScore | null;
+    /**
+     * Gets or sets the value.
+     * @type {number}
+     * @memberof ParentalRating
+     */
+    'Value'?: number | null;
 }
 

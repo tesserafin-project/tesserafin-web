@@ -20,18 +20,6 @@
  */
 export interface StartupConfigurationDto {
     /**
-     * Gets or sets the server name.
-     * @type {string}
-     * @memberof StartupConfigurationDto
-     */
-    'ServerName'?: string | null;
-    /**
-     * Gets or sets UI language culture.
-     * @type {string}
-     * @memberof StartupConfigurationDto
-     */
-    'UICulture'?: string | null;
-    /**
      * Gets or sets the metadata country code.
      * @type {string}
      * @memberof StartupConfigurationDto
@@ -43,5 +31,17 @@ export interface StartupConfigurationDto {
      * @memberof StartupConfigurationDto
      */
     'PreferredMetadataLanguage'?: string | null;
+    /**
+     * Gets or sets the server name.
+     * @type {string}
+     * @memberof StartupConfigurationDto
+     */
+    'ServerName'?: string | null;
+    /**
+     * Gets or sets UI language culture.
+     * @type {string}
+     * @memberof StartupConfigurationDto
+     */
+    'UICulture'?: string | null;
 }
 

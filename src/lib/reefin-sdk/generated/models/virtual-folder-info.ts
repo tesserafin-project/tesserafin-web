@@ -26,23 +26,17 @@ import type { LibraryOptions } from './library-options';
  */
 export interface VirtualFolderInfo {
     /**
-     * Gets or sets the name.
-     * @type {string}
-     * @memberof VirtualFolderInfo
-     */
-    'Name'?: string | null;
-    /**
-     * Gets or sets the locations.
-     * @type {Array<string>}
-     * @memberof VirtualFolderInfo
-     */
-    'Locations'?: Array<string> | null;
-    /**
      * Gets or sets the type of the collection.
      * @type {CollectionTypeOptions}
      * @memberof VirtualFolderInfo
      */
     'CollectionType'?: CollectionTypeOptions | null;
+    /**
+     * Gets or sets the item identifier.
+     * @type {string}
+     * @memberof VirtualFolderInfo
+     */
+    'ItemId'?: string | null;
     /**
      * 
      * @type {LibraryOptions}
@@ -50,11 +44,17 @@ export interface VirtualFolderInfo {
      */
     'LibraryOptions'?: LibraryOptions | null;
     /**
-     * Gets or sets the item identifier.
+     * Gets or sets the locations.
+     * @type {Array<string>}
+     * @memberof VirtualFolderInfo
+     */
+    'Locations'?: Array<string> | null;
+    /**
+     * Gets or sets the name.
      * @type {string}
      * @memberof VirtualFolderInfo
      */
-    'ItemId'?: string | null;
+    'Name'?: string | null;
     /**
      * Gets or sets the primary image item identifier.
      * @type {string}

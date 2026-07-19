@@ -29,16 +29,16 @@ export interface MediaSegmentDtoQueryResult {
      */
     'Items'?: Array<MediaSegmentDto>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof MediaSegmentDtoQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof MediaSegmentDtoQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof MediaSegmentDtoQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

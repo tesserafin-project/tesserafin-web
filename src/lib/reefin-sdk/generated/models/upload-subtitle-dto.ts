@@ -20,11 +20,11 @@
  */
 export interface UploadSubtitleDto {
     /**
-     * Gets or sets the subtitle language.
+     * Gets or sets the subtitle data.
      * @type {string}
      * @memberof UploadSubtitleDto
      */
-    'Language': string;
+    'Data': string;
     /**
      * Gets or sets the subtitle format.
      * @type {string}
@@ -44,10 +44,10 @@ export interface UploadSubtitleDto {
      */
     'IsHearingImpaired': boolean;
     /**
-     * Gets or sets the subtitle data.
+     * Gets or sets the subtitle language.
      * @type {string}
      * @memberof UploadSubtitleDto
      */
-    'Data': string;
+    'Language': string;
 }
 

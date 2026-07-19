@@ -20,18 +20,6 @@
  */
 export interface ReadyRequestDto {
     /**
-     * Gets or sets when the request has been made by the client.
-     * @type {string}
-     * @memberof ReadyRequestDto
-     */
-    'When'?: string;
-    /**
-     * Gets or sets the position ticks.
-     * @type {number}
-     * @memberof ReadyRequestDto
-     */
-    'PositionTicks'?: number;
-    /**
      * Gets or sets a value indicating whether the client playback is unpaused.
      * @type {boolean}
      * @memberof ReadyRequestDto
@@ -43,5 +31,17 @@ export interface ReadyRequestDto {
      * @memberof ReadyRequestDto
      */
     'PlaylistItemId'?: string;
+    /**
+     * Gets or sets the position ticks.
+     * @type {number}
+     * @memberof ReadyRequestDto
+     */
+    'PositionTicks'?: number;
+    /**
+     * Gets or sets when the request has been made by the client.
+     * @type {string}
+     * @memberof ReadyRequestDto
+     */
+    'When'?: string;
 }
 

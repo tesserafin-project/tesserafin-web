@@ -23,18 +23,6 @@ import type { CustomDatabaseOption } from './custom-database-option';
  */
 export interface CustomDatabaseOptions {
     /**
-     * Gets or sets the Plugin name to search for database providers.
-     * @type {string}
-     * @memberof CustomDatabaseOptions
-     */
-    'PluginName': string;
-    /**
-     * Gets or sets the plugin assembly to search for providers.
-     * @type {string}
-     * @memberof CustomDatabaseOptions
-     */
-    'PluginAssembly': string;
-    /**
      * Gets or sets the connection string for the custom database provider.
      * @type {string}
      * @memberof CustomDatabaseOptions
@@ -46,5 +34,17 @@ export interface CustomDatabaseOptions {
      * @memberof CustomDatabaseOptions
      */
     'Options'?: Array<CustomDatabaseOption>;
+    /**
+     * Gets or sets the plugin assembly to search for providers.
+     * @type {string}
+     * @memberof CustomDatabaseOptions
+     */
+    'PluginAssembly': string;
+    /**
+     * Gets or sets the Plugin name to search for database providers.
+     * @type {string}
+     * @memberof CustomDatabaseOptions
+     */
+    'PluginName': string;
 }
 

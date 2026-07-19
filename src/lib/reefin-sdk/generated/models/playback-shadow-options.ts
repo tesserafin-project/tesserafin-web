@@ -12,6 +12,12 @@
  */
 
 
+// May contain unused imports in some cases
+// @ts-ignore
+import type { PlaybackEngineMode } from './playback-engine-mode';
+// May contain unused imports in some cases
+// @ts-ignore
+import type { PlaybackStopThresholdOptions } from './playback-stop-threshold-options';
 
 /**
  * Configures the PR98 shadow mode that dual-runs the v2 playback decision engine (`Reefin.Playback.Engine`) alongside the legacy `StreamBuilder`-based planner for comparison. Legacy always remains the source of truth for the plan returned to clients, regardless of these settings; they only control whether/how often/how expensively the shadow comparison itself runs.
@@ -20,11 +26,29 @@
  */
 export interface PlaybackShadowOptions {
     /**
-     * Gets or sets a value indicating whether the shadow comparison runs at all. Defaults to false: shadow mode is opt-in, since PR100 removed the previous always-on behavior for safety.
+     * Gets or sets the percentage (0-100) of user/device pairs in the canary cohort when Reefin.Model.Configuration.PlaybackShadowOptions.Mode is Reefin.Model.Configuration.PlaybackEngineMode.Canary. Cohort membership is a deterministic hash of the requesting user and device - the same pair is always in or always out for a given percentage, never a fresh random draw per request. Clamped to [0, 100] on set, following this type\'s PR104 clamp-don\'t-throw convention. Defaults to 0: enabling canary mode without choosing a cohort size enrolls nobody.
+     * @type {number}
+     * @memberof PlaybackShadowOptions
+     */
+    'CanaryPercentage'?: number;
+    /**
+     * Gets or sets a value indicating whether the shadow comparison runs at all. Defaults to false: shadow mode is opt-in, since PR100 removed the previous always-on behavior for safety. PR115a: kept for backward compatibility with configurations that predate Reefin.Model.Configuration.PlaybackShadowOptions.Mode - see M:Reefin.Model.Configuration.PlaybackShadowOptions.GetEffectiveMode for how the two combine. New configurations should set Reefin.Model.Configuration.PlaybackShadowOptions.Mode instead.
      * @type {boolean}
      * @memberof PlaybackShadowOptions
      */
     'Enabled'?: boolean;
+    /**
+     * Gets or sets the soft time budget, in milliseconds, for a single shadow execution (capability/source mapping + v2 engine decision + projection/comparison). Exceeding this budget is logged and counted; it never cancels or otherwise affects the run in progress, and never affects the legacy result. PR104: clamped to a minimum of 1 on set - a zero-or-negative budget would mean \"every execution always exceeds budget,\" which is never the intent of a misconfigured value.
+     * @type {number}
+     * @memberof PlaybackShadowOptions
+     */
+    'MaxExecutionMs'?: number;
+    /**
+     * Gets or sets the explicit role the v2 engine plays for live playback (PR115a). Defaults to Reefin.Model.Configuration.PlaybackEngineMode.Legacy. When left at that default, a pre-PR115a configuration with Reefin.Model.Configuration.PlaybackShadowOptions.Enabled set still gets shadow behavior - see M:Reefin.Model.Configuration.PlaybackShadowOptions.GetEffectiveMode.
+     * @type {PlaybackEngineMode}
+     * @memberof PlaybackShadowOptions
+     */
+    'Mode'?: PlaybackEngineMode;
     /**
      * Gets or sets the fraction of eligible playback decisions (0.0-1.0) that actually run the shadow comparison when Reefin.Model.Configuration.PlaybackShadowOptions.Enabled is true. 1.0 (the default) means every decision is shadowed; lower values sample. PR104: clamped to [0, 1] on set - a value outside that range (including NaN, clamped to 0) has no meaningful sampling interpretation, so it is corrected rather than left to produce nonsensical behavior downstream (for example a negative rate always sampling out, or a rate above 1 being indistinguishable from 1).
      * @type {number}
@@ -32,10 +56,12 @@ export interface PlaybackShadowOptions {
      */
     'SampleRate'?: number;
     /**
-     * Gets or sets the soft time budget, in milliseconds, for a single shadow execution (capability/source mapping + v2 engine decision + projection/comparison). Exceeding this budget is logged and counted; it never cancels or otherwise affects the run in progress, and never affects the legacy result. PR104: clamped to a minimum of 1 on set - a zero-or-negative budget would mean \"every execution always exceeds budget,\" which is never the intent of a misconfigured value.
-     * @type {number}
+     * Gets or sets the PR115d operational stop-threshold guard configuration - see Reefin.Model.Configuration.PlaybackStopThresholdOptions for why this is a sibling type rather than fields on this class directly. Never null; defaults to a fresh, enabled instance with its own PR115d defaults, so a configuration that predates PR115d still gets the guard\'s protection without needing to add anything.
+     * @type {PlaybackStopThresholdOptions}
      * @memberof PlaybackShadowOptions
      */
-    'MaxExecutionMs'?: number;
+    'StopThresholds'?: PlaybackStopThresholdOptions;
 }
+
+
 

@@ -23,23 +23,11 @@ import type { PlayCommand } from './play-command';
  */
 export interface PlayRequest {
     /**
-     * Gets or sets the item ids.
-     * @type {Array<string>}
-     * @memberof PlayRequest
-     */
-    'ItemIds'?: Array<string> | null;
-    /**
-     * Gets or sets the start position ticks that the first item should be played at.
+     * 
      * @type {number}
      * @memberof PlayRequest
      */
-    'StartPositionTicks'?: number | null;
-    /**
-     * Gets or sets the play command.
-     * @type {PlayCommand}
-     * @memberof PlayRequest
-     */
-    'PlayCommand'?: PlayCommand;
+    'AudioStreamIndex'?: number | null;
     /**
      * Gets or sets the controlling user identifier.
      * @type {string}
@@ -47,17 +35,11 @@ export interface PlayRequest {
      */
     'ControllingUserId'?: string;
     /**
-     * 
-     * @type {number}
+     * Gets or sets the item ids.
+     * @type {Array<string>}
      * @memberof PlayRequest
      */
-    'SubtitleStreamIndex'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof PlayRequest
-     */
-    'AudioStreamIndex'?: number | null;
+    'ItemIds'?: Array<string> | null;
     /**
      * 
      * @type {string}
@@ -65,11 +47,29 @@ export interface PlayRequest {
      */
     'MediaSourceId'?: string | null;
     /**
+     * Gets or sets the play command.
+     * @type {PlayCommand}
+     * @memberof PlayRequest
+     */
+    'PlayCommand'?: PlayCommand;
+    /**
      * 
      * @type {number}
      * @memberof PlayRequest
      */
     'StartIndex'?: number | null;
+    /**
+     * Gets or sets the start position ticks that the first item should be played at.
+     * @type {number}
+     * @memberof PlayRequest
+     */
+    'StartPositionTicks'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof PlayRequest
+     */
+    'SubtitleStreamIndex'?: number | null;
 }
 
 

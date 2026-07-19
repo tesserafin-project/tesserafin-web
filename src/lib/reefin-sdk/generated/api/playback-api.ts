@@ -25,6 +25,8 @@ import type { CreatePlaybackSessionRequest } from '../models';
 // @ts-ignore
 import type { PlaybackSessionResponse } from '../models';
 // @ts-ignore
+import type { PlaybackSessionStreamDescriptor } from '../models';
+// @ts-ignore
 import type { ProblemDetails } from '../models';
 // @ts-ignore
 import type { ReplacePlaybackSessionRequest } from '../models';
@@ -96,6 +98,48 @@ export const PlaybackApiAxiosParamCreator = function (configuration?: Configurat
 
             // authentication CustomAuthentication required
             await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary PR117 (docs/pr116d-url-contract-design.md §2): resolves the executable URL for a session already planned via M:Reefin.Api.Controllers.PlaybackSessionsController.CreatePlaybackSession(Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest)/M:Reefin.Api.Controllers.PlaybackSessionsController.ReplacePlaybackSession(Reefin.Controller.MediaEncoding.PlaybackSessionId,Reefin.Api.Models.PlaybackSessionDtos.ReplacePlaybackSessionRequest). A read, not a decision (§2.2): re-projects `session.Plan`/`session.Request` that already exist, re-evaluating the kill switch/stop-threshold guard/plan resolution at THIS call (§3.1) - the same live-wiring decision the legacy `PlaybackInfo` path makes on every request, never cached from the original `POST`/`PUT`.
+         * @param {string} id The session to resolve a stream URL for.
+         * @param {number} [startTimeTicks] The position, in ticks, playback should start from - a property of the moment a client asks to read, not of the session\&#39;s own planning decision (§2.2, option (i)).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPlaybackSessionStream: async (id: string, startTimeTicks?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('getPlaybackSessionStream', 'id', id)
+            const localVarPath = `/Playback/Sessions/{id}/Stream`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
+            if (startTimeTicks !== undefined) {
+                localVarQueryParameter['startTimeTicks'] = startTimeTicks;
+            }
 
 
     
@@ -187,6 +231,20 @@ export const PlaybackApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary PR117 (docs/pr116d-url-contract-design.md §2): resolves the executable URL for a session already planned via M:Reefin.Api.Controllers.PlaybackSessionsController.CreatePlaybackSession(Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest)/M:Reefin.Api.Controllers.PlaybackSessionsController.ReplacePlaybackSession(Reefin.Controller.MediaEncoding.PlaybackSessionId,Reefin.Api.Models.PlaybackSessionDtos.ReplacePlaybackSessionRequest). A read, not a decision (§2.2): re-projects `session.Plan`/`session.Request` that already exist, re-evaluating the kill switch/stop-threshold guard/plan resolution at THIS call (§3.1) - the same live-wiring decision the legacy `PlaybackInfo` path makes on every request, never cached from the original `POST`/`PUT`.
+         * @param {string} id The session to resolve a stream URL for.
+         * @param {number} [startTimeTicks] The position, in ticks, playback should start from - a property of the moment a client asks to read, not of the session\&#39;s own planning decision (§2.2, option (i)).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getPlaybackSessionStream(id: string, startTimeTicks?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackSessionStreamDescriptor>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getPlaybackSessionStream(id, startTimeTicks, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['PlaybackApi.getPlaybackSessionStream']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
          * @summary Fully re-plans an existing session with a complete new set of options. Decision v1 (PR92 §3): this replaces the misnamed `PATCH` the point-1 protocol shipped with, which already required a complete body — `PUT` states that honestly.
          * @param {string} id The session to replace.
          * @param {ReplacePlaybackSessionRequest} [replacePlaybackSessionRequest] The complete new options to plan.
@@ -231,6 +289,16 @@ export const PlaybackApiFactory = function (configuration?: Configuration, baseP
         },
         /**
          * 
+         * @summary PR117 (docs/pr116d-url-contract-design.md §2): resolves the executable URL for a session already planned via M:Reefin.Api.Controllers.PlaybackSessionsController.CreatePlaybackSession(Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest)/M:Reefin.Api.Controllers.PlaybackSessionsController.ReplacePlaybackSession(Reefin.Controller.MediaEncoding.PlaybackSessionId,Reefin.Api.Models.PlaybackSessionDtos.ReplacePlaybackSessionRequest). A read, not a decision (§2.2): re-projects `session.Plan`/`session.Request` that already exist, re-evaluating the kill switch/stop-threshold guard/plan resolution at THIS call (§3.1) - the same live-wiring decision the legacy `PlaybackInfo` path makes on every request, never cached from the original `POST`/`PUT`.
+         * @param {PlaybackApiGetPlaybackSessionStreamRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getPlaybackSessionStream(requestParameters: PlaybackApiGetPlaybackSessionStreamRequest, options?: RawAxiosRequestConfig): AxiosPromise<PlaybackSessionStreamDescriptor> {
+            return localVarFp.getPlaybackSessionStream(requestParameters.id, requestParameters.startTimeTicks, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Fully re-plans an existing session with a complete new set of options. Decision v1 (PR92 §3): this replaces the misnamed `PATCH` the point-1 protocol shipped with, which already required a complete body — `PUT` states that honestly.
          * @param {PlaybackApiReplacePlaybackSessionRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -270,6 +338,16 @@ export interface PlaybackApiInterface {
 
     /**
      * 
+     * @summary PR117 (docs/pr116d-url-contract-design.md §2): resolves the executable URL for a session already planned via M:Reefin.Api.Controllers.PlaybackSessionsController.CreatePlaybackSession(Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest)/M:Reefin.Api.Controllers.PlaybackSessionsController.ReplacePlaybackSession(Reefin.Controller.MediaEncoding.PlaybackSessionId,Reefin.Api.Models.PlaybackSessionDtos.ReplacePlaybackSessionRequest). A read, not a decision (§2.2): re-projects `session.Plan`/`session.Request` that already exist, re-evaluating the kill switch/stop-threshold guard/plan resolution at THIS call (§3.1) - the same live-wiring decision the legacy `PlaybackInfo` path makes on every request, never cached from the original `POST`/`PUT`.
+     * @param {PlaybackApiGetPlaybackSessionStreamRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PlaybackApiInterface
+     */
+    getPlaybackSessionStream(requestParameters: PlaybackApiGetPlaybackSessionStreamRequest, options?: RawAxiosRequestConfig): AxiosPromise<PlaybackSessionStreamDescriptor>;
+
+    /**
+     * 
      * @summary Fully re-plans an existing session with a complete new set of options. Decision v1 (PR92 §3): this replaces the misnamed `PATCH` the point-1 protocol shipped with, which already required a complete body — `PUT` states that honestly.
      * @param {PlaybackApiReplacePlaybackSessionRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -306,6 +384,27 @@ export interface PlaybackApiDeletePlaybackSessionRequest {
      * @memberof PlaybackApiDeletePlaybackSession
      */
     readonly id: string
+}
+
+/**
+ * Request parameters for getPlaybackSessionStream operation in PlaybackApi.
+ * @export
+ * @interface PlaybackApiGetPlaybackSessionStreamRequest
+ */
+export interface PlaybackApiGetPlaybackSessionStreamRequest {
+    /**
+     * The session to resolve a stream URL for.
+     * @type {string}
+     * @memberof PlaybackApiGetPlaybackSessionStream
+     */
+    readonly id: string
+
+    /**
+     * The position, in ticks, playback should start from - a property of the moment a client asks to read, not of the session\&#39;s own planning decision (§2.2, option (i)).
+     * @type {number}
+     * @memberof PlaybackApiGetPlaybackSessionStream
+     */
+    readonly startTimeTicks?: number
 }
 
 /**
@@ -358,6 +457,18 @@ export class PlaybackApi extends BaseAPI implements PlaybackApiInterface {
      */
     public deletePlaybackSession(requestParameters: PlaybackApiDeletePlaybackSessionRequest, options?: RawAxiosRequestConfig) {
         return PlaybackApiFp(this.configuration).deletePlaybackSession(requestParameters.id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary PR117 (docs/pr116d-url-contract-design.md §2): resolves the executable URL for a session already planned via M:Reefin.Api.Controllers.PlaybackSessionsController.CreatePlaybackSession(Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest)/M:Reefin.Api.Controllers.PlaybackSessionsController.ReplacePlaybackSession(Reefin.Controller.MediaEncoding.PlaybackSessionId,Reefin.Api.Models.PlaybackSessionDtos.ReplacePlaybackSessionRequest). A read, not a decision (§2.2): re-projects `session.Plan`/`session.Request` that already exist, re-evaluating the kill switch/stop-threshold guard/plan resolution at THIS call (§3.1) - the same live-wiring decision the legacy `PlaybackInfo` path makes on every request, never cached from the original `POST`/`PUT`.
+     * @param {PlaybackApiGetPlaybackSessionStreamRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PlaybackApi
+     */
+    public getPlaybackSessionStream(requestParameters: PlaybackApiGetPlaybackSessionStreamRequest, options?: RawAxiosRequestConfig) {
+        return PlaybackApiFp(this.configuration).getPlaybackSessionStream(requestParameters.id, requestParameters.startTimeTicks, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

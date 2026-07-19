@@ -35,11 +35,11 @@ export interface GroupInfoDto {
      */
     'GroupName'?: string;
     /**
-     * Gets the group state.
-     * @type {GroupStateType}
+     * Gets the date when this DTO has been created.
+     * @type {string}
      * @memberof GroupInfoDto
      */
-    'State'?: GroupStateType;
+    'LastUpdatedAt'?: string;
     /**
      * Gets the participants.
      * @type {Array<string>}
@@ -47,11 +47,11 @@ export interface GroupInfoDto {
      */
     'Participants'?: Array<string>;
     /**
-     * Gets the date when this DTO has been created.
-     * @type {string}
+     * Gets the group state.
+     * @type {GroupStateType}
      * @memberof GroupInfoDto
      */
-    'LastUpdatedAt'?: string;
+    'State'?: GroupStateType;
 }
 
 

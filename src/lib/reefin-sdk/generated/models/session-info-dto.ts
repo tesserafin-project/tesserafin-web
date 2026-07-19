@@ -44,17 +44,17 @@ import type { TranscodingInfo } from './transcoding-info';
  */
 export interface SessionInfoDto {
     /**
-     * Gets or sets the play state.
-     * @type {PlayerStateInfo}
-     * @memberof SessionInfoDto
-     */
-    'PlayState'?: PlayerStateInfo | null;
-    /**
      * Gets or sets the additional users.
      * @type {Array<SessionUserInfo>}
      * @memberof SessionInfoDto
      */
     'AdditionalUsers'?: Array<SessionUserInfo> | null;
+    /**
+     * Gets or sets the application version.
+     * @type {string}
+     * @memberof SessionInfoDto
+     */
+    'ApplicationVersion'?: string | null;
     /**
      * Gets or sets the client capabilities.
      * @type {ClientCapabilitiesDto}
@@ -62,59 +62,17 @@ export interface SessionInfoDto {
      */
     'Capabilities'?: ClientCapabilitiesDto | null;
     /**
-     * Gets or sets the remote end point.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'RemoteEndPoint'?: string | null;
-    /**
-     * Gets or sets the playable media types.
-     * @type {Array<MediaType>}
-     * @memberof SessionInfoDto
-     */
-    'PlayableMediaTypes'?: Array<MediaType>;
-    /**
-     * Gets or sets the id.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'Id'?: string | null;
-    /**
-     * Gets or sets the user id.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'UserId'?: string;
-    /**
-     * Gets or sets the username.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'UserName'?: string | null;
-    /**
      * Gets or sets the type of the client.
      * @type {string}
      * @memberof SessionInfoDto
      */
     'Client'?: string | null;
     /**
-     * Gets or sets the last activity date.
+     * Gets or sets the device id.
      * @type {string}
      * @memberof SessionInfoDto
      */
-    'LastActivityDate'?: string;
-    /**
-     * Gets or sets the last playback check in.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'LastPlaybackCheckIn'?: string;
-    /**
-     * Gets or sets the last paused date.
-     * @type {string}
-     * @memberof SessionInfoDto
-     */
-    'LastPausedDate'?: string | null;
+    'DeviceId'?: string | null;
     /**
      * Gets or sets the name of the device.
      * @type {string}
@@ -128,11 +86,53 @@ export interface SessionInfoDto {
      */
     'DeviceType'?: string | null;
     /**
+     * Gets or sets a value indicating whether this session has a custom device name.
+     * @type {boolean}
+     * @memberof SessionInfoDto
+     */
+    'HasCustomDeviceName'?: boolean;
+    /**
+     * Gets or sets the id.
+     * @type {string}
+     * @memberof SessionInfoDto
+     */
+    'Id'?: string | null;
+    /**
+     * Gets or sets a value indicating whether this session is active.
+     * @type {boolean}
+     * @memberof SessionInfoDto
+     */
+    'IsActive'?: boolean;
+    /**
+     * Gets or sets the last activity date.
+     * @type {string}
+     * @memberof SessionInfoDto
+     */
+    'LastActivityDate'?: string;
+    /**
+     * Gets or sets the last paused date.
+     * @type {string}
+     * @memberof SessionInfoDto
+     */
+    'LastPausedDate'?: string | null;
+    /**
+     * Gets or sets the last playback check in.
+     * @type {string}
+     * @memberof SessionInfoDto
+     */
+    'LastPlaybackCheckIn'?: string;
+    /**
      * Gets or sets the now playing item.
      * @type {BaseItemDto}
      * @memberof SessionInfoDto
      */
     'NowPlayingItem'?: BaseItemDto | null;
+    /**
+     * Gets or sets the now playing queue.
+     * @type {Array<QueueItem>}
+     * @memberof SessionInfoDto
+     */
+    'NowPlayingQueue'?: Array<QueueItem> | null;
     /**
      * Gets or sets the now viewing item.
      * @type {BaseItemDto}
@@ -140,29 +140,41 @@ export interface SessionInfoDto {
      */
     'NowViewingItem'?: BaseItemDto | null;
     /**
-     * Gets or sets the device id.
+     * Gets or sets the play state.
+     * @type {PlayerStateInfo}
+     * @memberof SessionInfoDto
+     */
+    'PlayState'?: PlayerStateInfo | null;
+    /**
+     * Gets or sets the playable media types.
+     * @type {Array<MediaType>}
+     * @memberof SessionInfoDto
+     */
+    'PlayableMediaTypes'?: Array<MediaType>;
+    /**
+     * Gets or sets the playlist item id.
      * @type {string}
      * @memberof SessionInfoDto
      */
-    'DeviceId'?: string | null;
+    'PlaylistItemId'?: string | null;
     /**
-     * Gets or sets the application version.
+     * Gets or sets the remote end point.
      * @type {string}
      * @memberof SessionInfoDto
      */
-    'ApplicationVersion'?: string | null;
+    'RemoteEndPoint'?: string | null;
     /**
-     * Gets or sets the transcoding info.
-     * @type {TranscodingInfo}
+     * Gets or sets the server id.
+     * @type {string}
      * @memberof SessionInfoDto
      */
-    'TranscodingInfo'?: TranscodingInfo | null;
+    'ServerId'?: string | null;
     /**
-     * Gets or sets a value indicating whether this session is active.
-     * @type {boolean}
+     * Gets or sets the supported commands.
+     * @type {Array<GeneralCommandType>}
      * @memberof SessionInfoDto
      */
-    'IsActive'?: boolean;
+    'SupportedCommands'?: Array<GeneralCommandType>;
     /**
      * Gets or sets a value indicating whether the session supports media control.
      * @type {boolean}
@@ -176,40 +188,28 @@ export interface SessionInfoDto {
      */
     'SupportsRemoteControl'?: boolean;
     /**
-     * Gets or sets the now playing queue.
-     * @type {Array<QueueItem>}
+     * Gets or sets the transcoding info.
+     * @type {TranscodingInfo}
      * @memberof SessionInfoDto
      */
-    'NowPlayingQueue'?: Array<QueueItem> | null;
+    'TranscodingInfo'?: TranscodingInfo | null;
     /**
-     * Gets or sets a value indicating whether this session has a custom device name.
-     * @type {boolean}
-     * @memberof SessionInfoDto
-     */
-    'HasCustomDeviceName'?: boolean;
-    /**
-     * Gets or sets the playlist item id.
+     * Gets or sets the user id.
      * @type {string}
      * @memberof SessionInfoDto
      */
-    'PlaylistItemId'?: string | null;
+    'UserId'?: string;
     /**
-     * Gets or sets the server id.
+     * Gets or sets the username.
      * @type {string}
      * @memberof SessionInfoDto
      */
-    'ServerId'?: string | null;
+    'UserName'?: string | null;
     /**
      * Gets or sets the user primary image tag.
      * @type {string}
      * @memberof SessionInfoDto
      */
     'UserPrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets the supported commands.
-     * @type {Array<GeneralCommandType>}
-     * @memberof SessionInfoDto
-     */
-    'SupportedCommands'?: Array<GeneralCommandType>;
 }
 

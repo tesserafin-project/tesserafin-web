@@ -20,17 +20,11 @@
  */
 export interface ChapterInfo {
     /**
-     * Gets or sets the start position ticks.
-     * @type {number}
-     * @memberof ChapterInfo
-     */
-    'StartPositionTicks'?: number;
-    /**
-     * Gets or sets the name.
+     * 
      * @type {string}
      * @memberof ChapterInfo
      */
-    'Name'?: string | null;
+    'ImageDateModified'?: string;
     /**
      * Gets or sets the image path.
      * @type {string}
@@ -42,12 +36,18 @@ export interface ChapterInfo {
      * @type {string}
      * @memberof ChapterInfo
      */
-    'ImageDateModified'?: string;
+    'ImageTag'?: string | null;
     /**
-     * 
+     * Gets or sets the name.
      * @type {string}
      * @memberof ChapterInfo
      */
-    'ImageTag'?: string | null;
+    'Name'?: string | null;
+    /**
+     * Gets or sets the start position ticks.
+     * @type {number}
+     * @memberof ChapterInfo
+     */
+    'StartPositionTicks'?: number;
 }
 

@@ -20,6 +20,30 @@
  */
 export interface BookInfo {
     /**
+     * 
+     * @type {number}
+     * @memberof BookInfo
+     */
+    'IndexNumber'?: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BookInfo
+     */
+    'IsAutomated'?: boolean;
+    /**
+     * Gets or sets the metadata country code.
+     * @type {string}
+     * @memberof BookInfo
+     */
+    'MetadataCountryCode'?: string | null;
+    /**
+     * Gets or sets the metadata language.
+     * @type {string}
+     * @memberof BookInfo
+     */
+    'MetadataLanguage'?: string | null;
+    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof BookInfo
@@ -32,47 +56,17 @@ export interface BookInfo {
      */
     'OriginalTitle'?: string | null;
     /**
-     * Gets or sets the path.
-     * @type {string}
-     * @memberof BookInfo
-     */
-    'Path'?: string | null;
-    /**
-     * Gets or sets the metadata language.
-     * @type {string}
-     * @memberof BookInfo
-     */
-    'MetadataLanguage'?: string | null;
-    /**
-     * Gets or sets the metadata country code.
-     * @type {string}
-     * @memberof BookInfo
-     */
-    'MetadataCountryCode'?: string | null;
-    /**
-     * Gets or sets the provider ids.
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BookInfo
-     */
-    'ProviderIds'?: { [key: string]: string | null; } | null;
-    /**
-     * Gets or sets the year.
-     * @type {number}
-     * @memberof BookInfo
-     */
-    'Year'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof BookInfo
-     */
-    'IndexNumber'?: number | null;
-    /**
      * 
      * @type {number}
      * @memberof BookInfo
      */
     'ParentIndexNumber'?: number | null;
+    /**
+     * Gets or sets the path.
+     * @type {string}
+     * @memberof BookInfo
+     */
+    'Path'?: string | null;
     /**
      * 
      * @type {string}
@@ -80,16 +74,22 @@ export interface BookInfo {
      */
     'PremiereDate'?: string | null;
     /**
-     * 
-     * @type {boolean}
+     * Gets or sets the provider ids.
+     * @type {{ [key: string]: string | null; }}
      * @memberof BookInfo
      */
-    'IsAutomated'?: boolean;
+    'ProviderIds'?: { [key: string]: string | null; } | null;
     /**
      * 
      * @type {string}
      * @memberof BookInfo
      */
     'SeriesName'?: string | null;
+    /**
+     * Gets or sets the year.
+     * @type {number}
+     * @memberof BookInfo
+     */
+    'Year'?: number | null;
 }
 

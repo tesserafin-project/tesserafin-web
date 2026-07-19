@@ -38,6 +38,18 @@ import type { PlaybackDecisionTransformKind } from './playback-decision-transfor
  */
 export interface PlaybackSessionResponse {
     /**
+     * When the session was first created.
+     * @type {string}
+     * @memberof PlaybackSessionResponse
+     */
+    'CreatedAt'?: string;
+    /**
+     * The version of the decision engine that produced this session\'s plan. Since PR115a, this is the real `PlaybackDecision.EngineVersion` when the session\'s plan authority is v2 (canary cohort member, or full v2 mode) and this response reflects that decision (see Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponseMapper\'s `Map(PlaybackSession, Reefin.MediaEncoding.Playback.V2PlanRecord?)` overload) — otherwise it is Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse.LegacyDecisionVersion, the sentinel for a legacy-projected response.
+     * @type {number}
+     * @memberof PlaybackSessionResponse
+     */
+    'DecisionVersion'?: number;
+    /**
      * The session identifier.
      * @type {string}
      * @memberof PlaybackSessionResponse
@@ -49,12 +61,6 @@ export interface PlaybackSessionResponse {
      * @memberof PlaybackSessionResponse
      */
     'Kind'?: PlaybackDecisionMediaKind;
-    /**
-     * The version of the decision engine that produced this session\'s plan. Through PR112, the legacy planner is the only source of truth for this response (see Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponseMapper), so this is always Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse.LegacyDecisionVersion — never `PlaybackEngine.EngineVersion`: v2 does not yet produce the decision this response reflects, it only shadow-compares against it (see docs/pr92-design-playback-api-and-diagnostics.md §6). A future PR that makes v2 the source of truth (PR115) would populate this from the engine that actually decided.
-     * @type {number}
-     * @memberof PlaybackSessionResponse
-     */
-    'DecisionVersion'?: number;
     /**
      * The method by which the engine decided to deliver a media source to the client.
      * @type {PlaybackDecisionPlaybackMethod}
@@ -68,6 +74,18 @@ export interface PlaybackSessionResponse {
      */
     'Output'?: PlaybackDecisionOutputSpec;
     /**
+     * Issue #43. The opaque attempt id the client supplied on the request that created or last re-planned this session, echoed back verbatim, or null when none was supplied. Echoing it lets a client confirm the server filed its attempt under the value it meant, and lets an operator join this response to the client\'s own trace for the SAME attempt — including across a retry, where the value is identical while the `RequestId` of issue #42 is not. Additive and optional: a client that never sends it never sees it, and nothing else changes.
+     * @type {string}
+     * @memberof PlaybackSessionResponse
+     */
+    'PlaybackAttemptId'?: string | null;
+    /**
+     * A flat summary of the reason codes behind this decision (no technical detail beyond the code itself, and never a file path, token, or ffmpeg argument). For legacy-sourced sessions, only the constraint codes that mirror `Reefin.Model.Session.TranscodeReason` one-to-one can be derived — positive/marker codes such as Reefin.Playback.Decision.ReasonCode.TonemapRequired or Reefin.Playback.Decision.ReasonCode.MethodChosen have no legacy reason bit and never appear here.
+     * @type {Array<PlaybackDecisionReasonCode>}
+     * @memberof PlaybackSessionResponse
+     */
+    'Reasons'?: Array<PlaybackDecisionReasonCode>;
+    /**
      * The video, audio, and subtitle streams selected for a Reefin.Playback.Decision.PlaybackDecision.
      * @type {PlaybackDecisionSelectedStreams}
      * @memberof PlaybackSessionResponse
@@ -79,18 +97,6 @@ export interface PlaybackSessionResponse {
      * @memberof PlaybackSessionResponse
      */
     'Transforms'?: Array<PlaybackDecisionTransformKind>;
-    /**
-     * A flat summary of the reason codes behind this decision (no technical detail beyond the code itself, and never a file path, token, or ffmpeg argument). For legacy-sourced sessions, only the constraint codes that mirror `Reefin.Model.Session.TranscodeReason` one-to-one can be derived — positive/marker codes such as Reefin.Playback.Decision.ReasonCode.TonemapRequired or Reefin.Playback.Decision.ReasonCode.MethodChosen have no legacy reason bit and never appear here.
-     * @type {Array<PlaybackDecisionReasonCode>}
-     * @memberof PlaybackSessionResponse
-     */
-    'Reasons'?: Array<PlaybackDecisionReasonCode>;
-    /**
-     * When the session was first created.
-     * @type {string}
-     * @memberof PlaybackSessionResponse
-     */
-    'CreatedAt'?: string;
     /**
      * When the session was last created or replaced.
      * @type {string}

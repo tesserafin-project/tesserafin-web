@@ -26,17 +26,11 @@ import type { LibraryStorageDto } from './library-storage-dto';
  */
 export interface SystemStorageDto {
     /**
-     * Gets or sets the Storage information of the program data folder.
+     * Gets or sets the Storage information of the cache folder.
      * @type {FolderStorageDto}
      * @memberof SystemStorageDto
      */
-    'ProgramDataFolder': FolderStorageDto;
-    /**
-     * Gets or sets the Storage information of the web UI resources folder.
-     * @type {FolderStorageDto}
-     * @memberof SystemStorageDto
-     */
-    'WebFolder': FolderStorageDto;
+    'CacheFolder': FolderStorageDto;
     /**
      * Gets or sets the Storage information of the folder where images are cached.
      * @type {FolderStorageDto}
@@ -44,11 +38,17 @@ export interface SystemStorageDto {
      */
     'ImageCacheFolder': FolderStorageDto;
     /**
-     * Gets or sets the Storage information of the cache folder.
+     * Gets or sets the Storage information of the folder where metadata is stored.
      * @type {FolderStorageDto}
      * @memberof SystemStorageDto
      */
-    'CacheFolder': FolderStorageDto;
+    'InternalMetadataFolder': FolderStorageDto;
+    /**
+     * Gets or sets the storage informations of all libraries.
+     * @type {Array<LibraryStorageDto>}
+     * @memberof SystemStorageDto
+     */
+    'Libraries': Array<LibraryStorageDto>;
     /**
      * Gets or sets the Storage information of the folder where logfiles are saved to.
      * @type {FolderStorageDto}
@@ -56,11 +56,11 @@ export interface SystemStorageDto {
      */
     'LogFolder': FolderStorageDto;
     /**
-     * Gets or sets the Storage information of the folder where metadata is stored.
+     * Gets or sets the Storage information of the program data folder.
      * @type {FolderStorageDto}
      * @memberof SystemStorageDto
      */
-    'InternalMetadataFolder': FolderStorageDto;
+    'ProgramDataFolder': FolderStorageDto;
     /**
      * Gets or sets the Storage information of the transcoding cache.
      * @type {FolderStorageDto}
@@ -68,10 +68,10 @@ export interface SystemStorageDto {
      */
     'TranscodingTempFolder': FolderStorageDto;
     /**
-     * Gets or sets the storage informations of all libraries.
-     * @type {Array<LibraryStorageDto>}
+     * Gets or sets the Storage information of the web UI resources folder.
+     * @type {FolderStorageDto}
      * @memberof SystemStorageDto
      */
-    'Libraries': Array<LibraryStorageDto>;
+    'WebFolder': FolderStorageDto;
 }
 

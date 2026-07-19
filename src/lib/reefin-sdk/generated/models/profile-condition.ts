@@ -33,6 +33,12 @@ export interface ProfileCondition {
     'Condition'?: ProfileConditionType;
     /**
      * 
+     * @type {boolean}
+     * @memberof ProfileCondition
+     */
+    'IsRequired'?: boolean;
+    /**
+     * 
      * @type {ProfileConditionValue}
      * @memberof ProfileCondition
      */
@@ -43,12 +49,6 @@ export interface ProfileCondition {
      * @memberof ProfileCondition
      */
     'Value'?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof ProfileCondition
-     */
-    'IsRequired'?: boolean;
 }
 
 

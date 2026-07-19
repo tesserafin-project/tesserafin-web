@@ -23,17 +23,11 @@ import type { PluginStatus } from './plugin-status';
  */
 export interface PluginInfo {
     /**
-     * Gets or sets the name.
-     * @type {string}
+     * Gets or sets a value indicating whether the plugin can be uninstalled.
+     * @type {boolean}
      * @memberof PluginInfo
      */
-    'Name'?: string;
-    /**
-     * Gets or sets the version.
-     * @type {string}
-     * @memberof PluginInfo
-     */
-    'Version'?: string;
+    'CanUninstall'?: boolean;
     /**
      * Gets or sets the name of the configuration file.
      * @type {string}
@@ -47,29 +41,35 @@ export interface PluginInfo {
      */
     'Description'?: string;
     /**
-     * Gets or sets the unique id.
-     * @type {string}
-     * @memberof PluginInfo
-     */
-    'Id'?: string;
-    /**
-     * Gets or sets a value indicating whether the plugin can be uninstalled.
-     * @type {boolean}
-     * @memberof PluginInfo
-     */
-    'CanUninstall'?: boolean;
-    /**
      * Gets or sets a value indicating whether this plugin has a valid image.
      * @type {boolean}
      * @memberof PluginInfo
      */
     'HasImage'?: boolean;
     /**
+     * Gets or sets the unique id.
+     * @type {string}
+     * @memberof PluginInfo
+     */
+    'Id'?: string;
+    /**
+     * Gets or sets the name.
+     * @type {string}
+     * @memberof PluginInfo
+     */
+    'Name'?: string;
+    /**
      * Gets or sets a value indicating the status of the plugin.
      * @type {PluginStatus}
      * @memberof PluginInfo
      */
     'Status'?: PluginStatus;
+    /**
+     * Gets or sets the version.
+     * @type {string}
+     * @memberof PluginInfo
+     */
+    'Version'?: string;
 }
 
 

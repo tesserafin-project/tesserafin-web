@@ -20,17 +20,23 @@
  */
 export interface PlaybackDecisionSubtitleStreamSnapshot {
     /**
+     * The normalized subtitle format (for example `\"srt\"`, `\"pgs\"`).
+     * @type {string}
+     * @memberof PlaybackDecisionSubtitleStreamSnapshot
+     */
+    'Format'?: string;
+    /**
      * The stream index within the source.
      * @type {number}
      * @memberof PlaybackDecisionSubtitleStreamSnapshot
      */
     'Index'?: number;
     /**
-     * The normalized subtitle format (for example `\"srt\"`, `\"pgs\"`).
-     * @type {string}
+     * Whether this is the default subtitle stream on the source.
+     * @type {boolean}
      * @memberof PlaybackDecisionSubtitleStreamSnapshot
      */
-    'Format'?: string;
+    'IsDefault'?: boolean;
     /**
      * Whether the subtitle track is stored externally to the source.
      * @type {boolean}
@@ -43,12 +49,6 @@ export interface PlaybackDecisionSubtitleStreamSnapshot {
      * @memberof PlaybackDecisionSubtitleStreamSnapshot
      */
     'IsForced'?: boolean;
-    /**
-     * Whether this is the default subtitle stream on the source.
-     * @type {boolean}
-     * @memberof PlaybackDecisionSubtitleStreamSnapshot
-     */
-    'IsDefault'?: boolean;
     /**
      * The stream\'s language tag, or null if unknown.
      * @type {string}
