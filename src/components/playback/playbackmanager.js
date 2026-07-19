@@ -43,6 +43,13 @@ import {
 } from '../../scripts/playbackAttemptId.ts';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
 import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
+// reefin #43: static import is safe for the bundle budget - the module it pulls in
+// (`playbackSessionTeardown.ts`) has zero imports of its own, same constraint
+// `playbackAttemptId.ts` documents, so `lib/reefin-sdk` stays behind the lazy boundary.
+import {
+    adoptPlaybackSessionForTeardown,
+    releasePlaybackSessionOnStop
+} from '../../scripts/playbackSessionTeardownTrigger.ts';
 // Static import is deliberate and does NOT reintroduce bundle anchor 2 (reefin#44 §5):
 // `playbackExecutionDecision.ts` has zero imports of its own, so it pulls no `lib/reefin-sdk`
 // scope into the main chunk. The v2 URL path itself stays behind the lazy trigger above.
@@ -3581,6 +3588,15 @@ export class PlaybackManager {
                     playerData.playbackAttemptId =
                         playOptions.playbackAttemptId;
 
+                    // reefin #43: take ownership of the v2 session this streamInfo was built
+                    // from, so the stop path can give it back with DELETE. A no-op unless the
+                    // decision above actually came from v2 (flag on, POST succeeded) - legacy
+                    // playback creates no tracker and registers no listener.
+                    adoptPlaybackSessionForTeardown(
+                        playerData,
+                        ServerConnections.getApi(apiClient.serverId())
+                    );
+
                     return player.play(streamInfo).then(
                         function () {
                             loading.hide();
@@ -4580,6 +4596,17 @@ export class PlaybackManager {
 
             const errorOccurred =
                 displayErrorCode && typeof displayErrorCode === 'string';
+
+            // reefin #43: give the v2 session back. Placed here, before the reporting and
+            // queue-advance work below, so a session is released even if something further
+            // down throws. A no-op for legacy playback (no tracker was ever created), and a
+            // no-op for a stop that fires after the next item has already been adopted - the
+            // trigger names the session it is ending. Never awaited and never able to throw:
+            // playback has already ended, so nothing downstream may depend on it.
+            releasePlaybackSessionOnStop(
+                data,
+                errorOccurred ? 'error' : 'stopped'
+            );
 
             const nextItem =
                 self._playNextAfterEnded && !errorOccurred

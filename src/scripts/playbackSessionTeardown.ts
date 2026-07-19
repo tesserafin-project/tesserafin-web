@@ -88,7 +88,10 @@ export class PlaybackSessionTracker {
      * `sessionId` absent/blank is a valid no-op: it means the v2 path did not establish a
      * session (flag off, fallback to legacy), and there is nothing to own.
      */
-    adopt(api: TeardownApi | null | undefined, sessionId: string | null | undefined): void {
+    adopt(
+        api: TeardownApi | null | undefined,
+        sessionId: string | null | undefined
+    ): void {
         const trimmed = sessionId?.trim();
 
         // Release the outgoing session first - a replacement is a teardown of the old one.

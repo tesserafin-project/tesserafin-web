@@ -119,12 +119,13 @@ describe('error handling', () => {
     it('never throws when the DELETE rejects', async () => {
         const fetchImpl = vi.fn().mockRejectedValue(new Error('offline'));
         const logger = { debug: vi.fn() };
-        const tracker = new PlaybackSessionTracker({ fetchImpl, logger } as never);
+        const tracker = new PlaybackSessionTracker({
+            fetchImpl,
+            logger
+        } as never);
 
         tracker.adopt(api, 's1');
-        expect(() =>
-            tracker.release('stopped')
-        ).not.toThrow();
+        expect(() => tracker.release('stopped')).not.toThrow();
 
         await Promise.resolve();
         await Promise.resolve();
@@ -134,7 +135,10 @@ describe('error handling', () => {
     it('does not log a 404 as a failure - the session being gone is the goal', async () => {
         const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404 });
         const logger = { debug: vi.fn() };
-        const tracker = new PlaybackSessionTracker({ fetchImpl, logger } as never);
+        const tracker = new PlaybackSessionTracker({
+            fetchImpl,
+            logger
+        } as never);
 
         tracker.adopt(api, 's1');
         tracker.release('stopped');
@@ -147,7 +151,10 @@ describe('error handling', () => {
     it('logs a 403 without retrying', async () => {
         const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403 });
         const logger = { debug: vi.fn() };
-        const tracker = new PlaybackSessionTracker({ fetchImpl, logger } as never);
+        const tracker = new PlaybackSessionTracker({
+            fetchImpl,
+            logger
+        } as never);
 
         tracker.adopt(api, 's1');
         tracker.release('stopped');
@@ -165,9 +172,7 @@ describe('error handling', () => {
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
 
         tracker.adopt(api, 's1');
-        expect(() =>
-            tracker.release('stopped')
-        ).not.toThrow();
+        expect(() => tracker.release('stopped')).not.toThrow();
     });
 });
 
@@ -188,7 +193,7 @@ describe('concurrent attempts', () => {
         expect(b.ownedSessionId).toBe('session-B');
     });
 
-    it("a stale teardown cannot delete the attempt that replaced it", () => {
+    it('a stale teardown cannot delete the attempt that replaced it', () => {
         const fetchImpl = okFetch();
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
 
@@ -204,9 +209,7 @@ describe('concurrent attempts', () => {
         expect(urls).toEqual([
             'https://server.example/reefin/Playback/Sessions/session-A'
         ]);
-        expect(
-            urls.some((u) => u.endsWith('session-B'))
-        ).toBe(false);
+        expect(urls.some((u) => u.endsWith('session-B'))).toBe(false);
         expect(tracker.ownedSessionId).toBe('session-B');
     });
 
@@ -238,22 +241,25 @@ describe('registerTeardownFlush', () => {
         return {
             handlers,
             addEventListener: (t: string, h: () => void) => {
-                (handlers[t] ??= []).push(h);
+                handlers[t] = handlers[t] ?? [];
+                handlers[t].push(h);
             },
             removeEventListener: (t: string, h: () => void) => {
                 handlers[t] = (handlers[t] ?? []).filter((x) => x !== h);
             },
-            fire: (t: string) => (handlers[t] ?? []).forEach((h) => h())
+            fire: (t: string) => {
+                for (const h of handlers[t] ?? []) {
+                    h();
+                }
+            }
         };
     }
 
     it('registers pagehide and visibilitychange, but not beforeunload', () => {
         const target = fakeTarget();
-        registerTeardownFlush(
-            new PlaybackSessionTracker(),
-            target,
-            { visibilityState: 'visible' }
-        );
+        registerTeardownFlush(new PlaybackSessionTracker(), target, {
+            visibilityState: 'visible'
+        });
 
         expect(Object.keys(target.handlers).sort()).toEqual([
             'pagehide',
@@ -266,11 +272,7 @@ describe('registerTeardownFlush', () => {
         const target = fakeTarget();
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
         tracker.adopt(api, 's1');
-        registerTeardownFlush(
-            tracker,
-            target,
-            { visibilityState: 'visible' }
-        );
+        registerTeardownFlush(tracker, target, { visibilityState: 'visible' });
 
         target.fire('pagehide');
 
@@ -284,7 +286,7 @@ describe('registerTeardownFlush', () => {
         const doc = { visibilityState: 'visible' };
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
         tracker.adopt(api, 's1');
-        registerTeardownFlush(tracker, target, doc, deps(fetchImpl));
+        registerTeardownFlush(tracker, target, doc);
 
         // The mobile tab-switch case: hidden, but playback has not ended.
         doc.visibilityState = 'hidden';
@@ -300,7 +302,7 @@ describe('registerTeardownFlush', () => {
         const doc = { visibilityState: 'visible' };
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
         tracker.adopt(api, 's1');
-        registerTeardownFlush(tracker, target, doc, deps(fetchImpl));
+        registerTeardownFlush(tracker, target, doc);
 
         tracker.markEnded();
         doc.visibilityState = 'hidden';
@@ -314,11 +316,9 @@ describe('registerTeardownFlush', () => {
         const target = fakeTarget();
         const tracker = new PlaybackSessionTracker(deps(fetchImpl));
         tracker.adopt(api, 's1');
-        const off = registerTeardownFlush(
-            tracker,
-            target,
-            { visibilityState: 'visible' }
-        );
+        const off = registerTeardownFlush(tracker, target, {
+            visibilityState: 'visible'
+        });
 
         off();
         target.fire('pagehide');
