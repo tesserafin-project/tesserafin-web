@@ -1,3 +1,54 @@
+# PARKED — manual trigger only. GitHub refuses to allocate a hosted runner
+# for this PRIVATE repo BEFORE the first step (account-wide 2000 free
+# minutes/month exhausted, spending limit $0), so this went red on every push
+# to main without running a single step.
+# Nothing is fixed here — the trigger is disarmed to stop the noise.
+#
+# The checks are NOT unguarded meanwhile: the mandatory merge gate during the
+# outage is the local gate, `npm run validate:full` plus the real end-to-end
+# Playwright suite. See docs/local-ci.md.
+#
+# SECURITY DEBT: this workflow is the push entry point for __codeql.yml.
+# Parking it — together with pull_request.yml — means CodeQL
+# javascript-typescript analysis NO LONGER RUNS AT ALL on this repository.
+# This is visible, temporary debt; nothing else compensates for it.
+# See docs/local-ci.md.
+#
+# NOTE: deployment is disarmed with it. No push to main will publish an
+# unstable release or deploy a preview while this stamp is present.
+#
+# ── Parking stamp ──────────────────────────────────────────────────────────
+# Parked on : 2026-07-19
+# Cause     : external, account-wide. GitHub refuses runner allocation before
+#             the first step. all3f0r1 = free plan, all3f0r1/reefin-web =
+#             PRIVATE, so Actions minutes are metered against a 2000 min/month
+#             ACCOUNT-WIDE allowance. July 2026 weighted usage ~2646 min
+#             (Linux 634 x1 + Windows 266 x2 + macOS 148 x10), drained mostly
+#             by another repo of the account (youtube-chapter-splitter, macOS
+#             runs billed x10). Spending limit is $0, so the overage is
+#             refused rather than billed. The overage holds even ignoring
+#             Windows: 634 + 1480 = 2114 > 2000.
+# Evidence  : run 29700076245 (Push & Release) — 8 jobs, ALL `failure` in 1-2s
+#             with ZERO steps executed; run 29700069992 (Pull Request) —
+#             7 jobs, same signature. Each failing job carries exactly one
+#             GitHub annotation: "The job was not started because recent
+#             account payments have failed or your spending limit needs to be
+#             increased. Please check the 'Billing & plans' section in your
+#             settings". Even the cheapest jobs never started.
+#             GET /repos/all3f0r1/reefin-web/actions/runners -> total_count: 0.
+# Restore   : see the checklist in docs/local-ci.md (section 'Retour a la
+#             normale'). The original trigger is recorded below verbatim.
+#
+# Previous trigger (verbatim, for the restore):
+#   on:
+#     push:
+#       branches:
+#         - main
+#         - release*
+#       paths-ignore:
+#         - '**/*.md'
+# ───────────────────────────────────────────────────────────────────────────
+
 name: Push & Release 🌍
 
 concurrency:
@@ -5,12 +56,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - main
-      - release*
-    paths-ignore:
-      - '**/*.md'
+  workflow_dispatch:
 
 jobs:
   main:

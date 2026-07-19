@@ -1,3 +1,54 @@
+# PARKED — manual trigger only. GitHub refuses to allocate a hosted runner
+# for this PRIVATE repo BEFORE the first step (account-wide 2000 free
+# minutes/month exhausted, spending limit $0), so this went red on every
+# completion of the "Pull Request" workflow without running a single step.
+# Nothing is fixed here — the trigger is disarmed to stop the noise.
+#
+# Why this one is parked too, and not just left to lapse: its `Automation`
+# job (Merge conflict labeling) is NOT gated on the upstream conclusion, so
+# it was dispatched — and refused — on every "Pull Request" completion,
+# including the failed ones. The `Metadata` and `Deploy` jobs are gated on
+# `workflow_run.conclusion == 'success'` and merely showed up as `skipped`.
+# The Automation job alone is what turned this workflow red 23 times.
+#
+# Consequence while parked: merge-conflict labeling and PR preview
+# deployment/commenting no longer happen automatically.
+#
+# The checks are NOT unguarded meanwhile: the mandatory merge gate during the
+# outage is the local gate, `npm run validate:full` plus the real end-to-end
+# Playwright suite. See docs/local-ci.md.
+#
+# ── Parking stamp ──────────────────────────────────────────────────────────
+# Parked on : 2026-07-19
+# Cause     : external, account-wide. GitHub refuses runner allocation before
+#             the first step. all3f0r1 = free plan, all3f0r1/reefin-web =
+#             PRIVATE, so Actions minutes are metered against a 2000 min/month
+#             ACCOUNT-WIDE allowance. July 2026 weighted usage ~2646 min
+#             (Linux 634 x1 + Windows 266 x2 + macOS 148 x10), drained mostly
+#             by another repo of the account (youtube-chapter-splitter, macOS
+#             runs billed x10). Spending limit is $0, so the overage is
+#             refused rather than billed. The overage holds even ignoring
+#             Windows: 634 + 1480 = 2114 > 2000.
+# Evidence  : run 29700073736 and run 29696265791 (both Workflow Run) — the
+#             `Automation / Merge conflict labeling` job `failure` in 2-3s
+#             with ZERO steps executed, the other two jobs `skipped`. Each
+#             failing job carries exactly one GitHub annotation: "The job was
+#             not started because recent account payments have failed or your
+#             spending limit needs to be increased. Please check the 'Billing
+#             & plans' section in your settings".
+#             GET /repos/all3f0r1/reefin-web/actions/runners -> total_count: 0.
+# Restore   : see the checklist in docs/local-ci.md (section 'Retour a la
+#             normale'). The original trigger is recorded below verbatim.
+#
+# Previous trigger (verbatim, for the restore):
+#   on:
+#     workflow_run:
+#       workflows:
+#       - Pull Request
+#       types:
+#       - completed
+# ───────────────────────────────────────────────────────────────────────────
+
 name: Workflow Run
 
 concurrency:
@@ -5,11 +56,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  workflow_run:
-    workflows:
-    - Pull Request
-    types:
-    - completed
+  workflow_dispatch:
 
 jobs:
   metadata:
