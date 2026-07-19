@@ -1,9 +1,7 @@
-import { Api } from '@jellyfin/sdk/lib/api';
-import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
-import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
-import { SortOrder } from '@jellyfin/sdk/lib/generated-client/models/sort-order';
 import type { AxiosInstance } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
+
+import { BaseItemKind, ItemSortBy, ReefinApi, SortOrder } from 'lib/reefin-sdk';
 
 import {
     fetchLibraryItems,
@@ -20,14 +18,11 @@ import {
 vi.mock('hooks/useApi', () => ({ useApi: () => ({}) }));
 
 /**
- * Tests `fetchLibraryItems` in isolation against a real `@jellyfin/sdk` `Api` built with a mocked
- * axios instance - same pattern as `apps/modern/features/home/api/useLatestMedia.test.ts` uses for
- * `lib/reefin-sdk`'s `ReefinApi` (`getLibraryApi(api).getItems()` and `ReefinApi`'s generated
- * `LibraryApi` are both openapi-generator axios clients that dispatch through
- * `axiosInstance.request(...)`, so the harness carries over unchanged).
+ * Tests `fetchLibraryItems` in isolation against a `ReefinApi` built with a mocked axios instance -
+ * same pattern as `apps/modern/features/home/api/useLatestMedia.test.ts`.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): Api =>
-    new Api(
+const createMockApi = (request: ReturnType<typeof vi.fn>): ReefinApi =>
+    new ReefinApi(
         'https://example.com',
         { name: 'Reefin Web', version: '1.0.0' },
         { name: 'Test Device', id: 'device-1' },

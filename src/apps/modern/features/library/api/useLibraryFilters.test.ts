@@ -1,4 +1,4 @@
-import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
+import { BaseItemKind } from 'lib/reefin-sdk';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useLibraryFilters } from './useLibraryFilters';

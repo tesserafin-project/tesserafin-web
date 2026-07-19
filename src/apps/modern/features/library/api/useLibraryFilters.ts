@@ -1,4 +1,4 @@
-import type { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
+import { BaseItemKind } from 'lib/reefin-sdk';
 
 import { useGetQueryFiltersLegacy } from 'hooks/useFetchItems';
 import type { ParentId } from 'types/library';
@@ -11,6 +11,12 @@ import type { ParentId } from 'types/library';
  * `FiltersGenres`/`FiltersYears` - and its response shape (`QueryFiltersLegacy`) already carries both
  * `Genres` and `Years` in one call, so this is a thin, named re-export rather than a second
  * `getGenreApi`/custom-years implementation.
+ *
+ * Residual `@jellyfin/sdk` usage (issue #15): `hooks/useFetchItems` is a *shared* hook, still
+ * SDK-based and used by the legacy library screens. Reusing it is precisely what avoids a manual
+ * API wrapper here; rewriting this route against `lib/reefin-sdk`'s generated `FilterApi` would
+ * duplicate an endpoint the shared hook already covers and add bundle weight for no behaviour
+ * change. Migrating the shared hook is a separate, cross-cutting change.
  */
 export const useLibraryFilters = (
     parentId: ParentId,
