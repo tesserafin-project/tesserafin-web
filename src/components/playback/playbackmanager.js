@@ -43,6 +43,13 @@ import {
 } from '../../scripts/playbackAttemptId.ts';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
 import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
+// Static import is deliberate and does NOT reintroduce bundle anchor 2 (reefin#44 §5):
+// `playbackExecutionDecision.ts` has zero imports of its own, so it pulls no `lib/reefin-sdk`
+// scope into the main chunk. The v2 URL path itself stays behind the lazy trigger above.
+import {
+    buildLegacyExecutionDecision,
+    buildRetryMetadata
+} from '../../scripts/playbackExecutionDecision.ts';
 
 const UNLIMITED_ITEMS = -1;
 
@@ -210,13 +217,20 @@ function getItemsForPlayback(serverId, query) {
 
 function createStreamInfoFromUrlItem(item) {
     // Check item.Path for games
-    return {
+    const streamInfo = {
         url: item.Url || item.Path,
         playMethod: 'DirectPlay',
         item: item,
         textTracks: [],
         mediaType: item.MediaType
     };
+
+    // Stamped here too so every streamInfo that can reach onPlaybackError carries a decision, and
+    // the retry handler never has to guess at a missing one. An external-URL item has no
+    // mediaSource and so can never be retried with transcoding anyway.
+    streamInfo.executionDecision = buildLegacyExecutionDecision(streamInfo);
+
+    return streamInfo;
 }
 
 function mergePlaybackQueries(obj1, obj2) {
@@ -2120,7 +2134,8 @@ export class PlaybackManager {
                                 currentItem,
                                 currentMediaSource,
                                 ticks,
-                                player
+                                player,
+                                options
                             );
                             streamInfo.fullscreen =
                                 currentPlayOptions.fullscreen;
@@ -3509,7 +3524,8 @@ export class PlaybackManager {
                         item,
                         mediaSource,
                         startPosition,
-                        player
+                        player,
+                        options
                     );
 
                     // PR116d (docs/pr116-client-migration-design.md §3, docs/pr116d-url-contract-design.md,
@@ -3531,7 +3547,21 @@ export class PlaybackManager {
                             // explicitly so this POST can never pick up a concurrent attempt's id.
                             playbackAttemptId: playOptions.playbackAttemptId
                         },
-                        apiClient
+                        apiClient,
+                        {
+                            // Fallback only. Since `reefin` #46 the v2 `GET .../Stream` response
+                            // reports the effective output `Container` and `MimeType`, and the
+                            // server's `MimeType` outranks this for every play method - which is
+                            // what re-enables remux and transcode on the v2 path (issue #44 §8-A).
+                            // This still covers a pre-#46 server, where a v2 DirectPlay needs the
+                            // source container's mime type from here; a remux/transcode against
+                            // such a server keeps the whole legacy decision (see V2ExecutionContext).
+                            directPlayMimeType: getMimeType(
+                                (item.MediaType || '').toLowerCase(),
+                                (mediaSource.Container || '').toLowerCase()
+                            ),
+                            requestOptions: options
+                        }
                     );
 
                     streamInfo.aspectRatio = playOptions.aspectRatio;
@@ -3627,7 +3657,8 @@ export class PlaybackManager {
                                 item,
                                 mediaSource,
                                 startPosition,
-                                player
+                                player,
+                                mediaOptions
                             );
                         });
                     });
@@ -3679,13 +3710,20 @@ export class PlaybackManager {
             });
         };
 
+        /**
+         * @param {object} [requestOptions] The `PlaybackInfo` request options this stream was
+         * requested with. Load-bearing for the transcoding-retry ladder: `allowVideoStreamCopy`/
+         * `allowAudioStreamCopy` are client-originated and used to be recovered by string-matching
+         * the resulting URL (see `playbackExecutionDecision.ts`).
+         */
         function createStreamInfo(
             apiClient,
             type,
             item,
             mediaSource,
             startPosition,
-            player
+            player,
+            requestOptions
         ) {
             let mediaUrl;
             let contentType;
@@ -3804,6 +3842,14 @@ export class PlaybackManager {
                 playSessionId: getParam('playSessionId', mediaUrl),
                 title: item.Name
             };
+
+            // The legacy execution state, captured as a typed unit. On the v2 path
+            // applyV2PlaybackUrlToStreamInfo() replaces this wholesale, together with every field it
+            // describes - never field by field (reefin issue #41).
+            resultInfo.executionDecision = buildLegacyExecutionDecision(
+                resultInfo,
+                requestOptions
+            );
 
             const backdropUrl = getItemBackdropImageUrl(
                 apiClient,
@@ -4464,17 +4510,21 @@ export class PlaybackManager {
                 error.streamInfo || getPlayerData(player).streamInfo;
 
             if (streamInfo?.url) {
-                const isAlreadyFallbacking = streamInfo.url
-                    .toLowerCase()
-                    .includes('transcodereasons');
+                // Read the retry inputs from the typed decision carried on streamInfo, never by
+                // string-matching the URL. The old heuristics parsed `transcodereasons` and
+                // `allowvideostreamcopy=false` out of the URL, which only ever worked for the
+                // legacy server-built TranscodingUrl - a v2 URL carries none of those params, so
+                // every flag silently read false and this retry ladder degraded without an error
+                // (reefin issue #41). The decision is stamped by whichever path actually produced
+                // the stream, so this works identically for both.
+                const retry =
+                    streamInfo.executionDecision?.retry ??
+                    buildRetryMetadata(streamInfo.playMethod, null);
+                const isAlreadyFallbacking = retry.isAlreadyFallbacking;
                 const currentlyPreventsVideoStreamCopy =
-                    streamInfo.url
-                        .toLowerCase()
-                        .indexOf('allowvideostreamcopy=false') !== -1;
+                    retry.preventsVideoStreamCopy;
                 const currentlyPreventsAudioStreamCopy =
-                    streamInfo.url
-                        .toLowerCase()
-                        .indexOf('allowaudiostreamcopy=false') !== -1;
+                    retry.preventsAudioStreamCopy;
 
                 // Auto switch to transcoding
                 if (

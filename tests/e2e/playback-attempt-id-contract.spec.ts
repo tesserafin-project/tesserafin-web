@@ -247,6 +247,21 @@ async function waitForSessionPosts(wire: Wire, count: number) {
         .toBeGreaterThanOrEqual(count);
 }
 
+/** Waits for the RESPONSES, which is a strictly later event than the requests.
+ *
+ * `waitForSessionPosts` only observes `page.on('request')`. A test that waits on it and then reads
+ * `wire.responses` synchronously races the round trip and intermittently sees an EMPTY list — which
+ * is exactly how the "POST is exactly 200" assertion below used to fail on a perfectly healthy
+ * server, reporting "no Playback/Sessions response was observed". */
+async function waitForSessionResponses(wire: Wire, count: number) {
+    await expect
+        .poll(
+            () => wire.responses.filter((r) => V2_SESSIONS.test(r.url)).length,
+            { timeout: 45_000 }
+        )
+        .toBeGreaterThanOrEqual(count);
+}
+
 test.describe('PlaybackAttemptId wire contract', () => {
     let movieIds: string[] = [];
 
@@ -310,6 +325,9 @@ test.describe('PlaybackAttemptId wire contract', () => {
         expect(sessionIds[0]).toBe(infoIds[0]);
 
         // ---- requirement 2: exactly 200, not merely "not 400". ----
+        // Wait for the RESPONSE, not just the request that provoked it — see
+        // `waitForSessionResponses`.
+        await waitForSessionResponses(wire, 1);
         const sessionResponses = wire.responses.filter((r) =>
             V2_SESSIONS.test(r.url)
         );
@@ -438,6 +456,183 @@ test.describe('PlaybackAttemptId wire contract', () => {
             );
         }
         await api.dispose();
+    });
+
+    /**
+     * THE RETRY TRAVERSAL (reefin issue #41 / #43).
+     *
+     * The first media delivery is failed ONCE, at route level, with `route.abort()`. That is an
+     * abort of the MEDIA request — it does not rewrite any request body, and it is the only way to
+     * provoke a genuine player error without patching client source. The `POST /Playback/Sessions`
+     * and `PlaybackInfo` bodies this test asserts on are untouched.
+     *
+     * What must hold when the player recovers through `onPlaybackError` -> `changeStream()`:
+     *   - the retry belongs to the SAME user action, so the `PlaybackAttemptId` is UNCHANGED across
+     *     it (`playbackAttemptId.ts`: `changeStream()` re-enters `getPlaybackInfo()` but
+     *     deliberately never re-mints the attempt id);
+     *   - each HTTP request still gets its OWN `X-Request-Id`;
+     *   - and the retry inputs are read from the typed `streamInfo.executionDecision.retry`, never
+     *     by string-matching `transcodereasons` / `allowvideostreamcopy` out of the URL — the
+     *     heuristic that silently degraded on v2 URLs, which carry no such params.
+     */
+    test('a failed media URL retries through onPlaybackError -> changeStream, keeping the SAME PlaybackAttemptId', async ({
+        page
+    }) => {
+        test.setTimeout(180_000);
+        const wire = instrument(page);
+
+        // Fail the FIRST media delivery exactly once, then let everything through untouched.
+        let abortedUrl = '';
+        await page.route(
+            /\/videos\/[^/]+\/(stream|master|main)\./i,
+            (route) => {
+                if (!abortedUrl) {
+                    abortedUrl = route.request().url();
+                    console.log(
+                        `[retry] aborting first media request: ${abortedUrl}`
+                    );
+                    return route.abort('failed');
+                }
+                return route.continue();
+            }
+        );
+
+        await signIn(page);
+        await pressPlay(page, movieIds[0]);
+        await assertV2PathReallyRan(page, wire);
+        await waitForSessionPosts(wire, 1);
+
+        // The abort must actually have happened, or there is no retry to observe and every
+        // assertion below would pass vacuously against an ordinary first-try playback.
+        await expect.poll(() => abortedUrl, { timeout: 45_000 }).not.toBe('');
+
+        // The recovery is a SECOND PlaybackInfo POST: `changeStream()` re-enters
+        // `getPlaybackInfo()`. That is the observable signature of the traversal.
+        await expect
+            .poll(() => postsTo(wire, PLAYBACK_INFO).length, {
+                timeout: 60_000
+            })
+            .toBeGreaterThanOrEqual(2);
+
+        const infoPosts = postsTo(wire, PLAYBACK_INFO);
+        const infoIds = infoPosts.map((r) => attemptIdOf(r.postData));
+        console.log(
+            `[retry] PlaybackInfo attempt ids across the retry=${JSON.stringify(infoIds)}`
+        );
+
+        // Non-empty first — two absent ids would satisfy "all equal" for free.
+        for (const id of infoIds) {
+            expect(
+                id,
+                'a PlaybackInfo POST carried no PlaybackAttemptId'
+            ).not.toBe('');
+        }
+
+        // THE LOAD-BEARING ASSERTION: one user action, one attempt id, across the retry.
+        expect(
+            [...new Set(infoIds)],
+            `the retry minted a new PlaybackAttemptId; observed ${JSON.stringify(infoIds)}`
+        ).toHaveLength(1);
+        const attemptDuringRetry = infoIds[0];
+
+        // Per-request correlation still varies across those same requests.
+        //
+        // POLLED, not read synchronously. The poll above waits on `wire.requests`; the RESPONSES to
+        // those same requests are recorded by a separate listener that fires later, so reading
+        // `wire.responses` immediately races the second PlaybackInfo response. Measured on this rig:
+        // two requests observed with one response recorded, failing `>= 2` while the behaviour under
+        // test was entirely correct. Same precondition, polled on the collection actually read.
+        const playbackInfoRids = () =>
+            wire.responses
+                .filter((r) => PLAYBACK_INFO.test(r.url))
+                .map((r) => r.headers[REQUEST_ID_HEADER])
+                .filter(Boolean);
+        await expect
+            .poll(() => playbackInfoRids().length, { timeout: 60_000 })
+            .toBeGreaterThanOrEqual(2);
+
+        const infoRids = playbackInfoRids();
+        console.log(
+            `[retry] PlaybackInfo X-Request-Ids=${JSON.stringify(infoRids)}`
+        );
+        expect(
+            [...new Set(infoRids)].length,
+            'two requests of the same attempt shared one RequestId'
+        ).toBeGreaterThanOrEqual(2);
+
+        // ---------------------------------------------------------------------------------------
+        // THE ISSUE #41 REGRESSION PROOF — and a correction of what "no URL parsing" can mean.
+        //
+        // An earlier revision asserted that NO media URL in this attempt contains
+        // `transcodereasons` / `allowvideostreamcopy`. That is wrong, and it failed against a
+        // healthy rig: the RETRY leg is a legacy server-built TranscodingUrl
+        // (`/videos/{id}/master.m3u8?...&transcodereasons=directplayerror&allowvideostreamcopy=false`),
+        // and legacy URLs carry those params entirely legitimately. The client not PARSING a param
+        // and the server not EMITTING it are different claims; only the former is #41's fix.
+        //
+        // What is actually provable on the wire is stronger and stable: the URL that FAILED — the
+        // one whose failure had to drive the ladder — carried neither param. Under the pre-#41
+        // heuristics, which recovered `isAlreadyFallbacking` / `preventsVideoStreamCopy` by
+        // string-matching exactly those two params out of the current URL, every flag would have
+        // read `false` and the ladder would have silently degraded. It did not: the player
+        // correctly escalated to a transcode (`transcodereasons=directplayerror` on the NEXT leg,
+        // which is the server describing why IT is transcoding). So the retry inputs demonstrably
+        // came from the typed `streamInfo.executionDecision.retry`, not from the URL.
+        // ---------------------------------------------------------------------------------------
+        expect(abortedUrl.toLowerCase()).not.toContain('transcodereasons');
+        expect(abortedUrl.toLowerCase()).not.toContain('allowvideostreamcopy');
+
+        // POLLED for the same reason as the X-Request-Id list above: the retry leg is issued
+        // ASYNCHRONOUSLY after `changeStream()` re-enters `getPlaybackInfo()`, and that leg is a
+        // legacy TRANSCODE (`master.m3u8`), so the server has to spin ffmpeg up before the player
+        // requests it. Reading `wire.requests` synchronously here observed only the aborted leg on
+        // this rig even though the ladder had demonstrably run (two PlaybackInfo POSTs sharing one
+        // attempt id). The assertion below is unchanged — only its precondition is now awaited.
+        const mediaLegs = () =>
+            wire.requests
+                .map((r) => r.url)
+                .filter((u) =>
+                    /\/videos\/[^/]+\/(stream|master|main)\./i.test(u)
+                );
+        // The escalation really happened: a leg beyond the aborted one was fetched.
+        await expect
+            .poll(() => mediaLegs().filter((u) => u !== abortedUrl).length, {
+                timeout: 60_000
+            })
+            .toBeGreaterThan(0);
+
+        const mediaUrls = mediaLegs();
+        console.log(
+            `[retry] media legs=${JSON.stringify(mediaUrls.map((u) => u.split('?')[0]))}`
+        );
+        expect(
+            mediaUrls.filter((u) => u !== abortedUrl).length,
+            'no media leg after the aborted one — the retry ladder did not run'
+        ).toBeGreaterThan(0);
+
+        // A NEW user-initiated attempt mints a NEW id — the asymmetry that makes the field useful.
+        await stopPlayback(page);
+        await pressPlay(page, movieIds[1]);
+        await expect
+            .poll(
+                () =>
+                    postsTo(wire, PLAYBACK_INFO)
+                        .map((r) => attemptIdOf(r.postData))
+                        .filter((id) => id !== '' && id !== attemptDuringRetry)
+                        .length,
+                { timeout: 60_000 }
+            )
+            .toBeGreaterThan(0);
+
+        const allInfoIds = postsTo(wire, PLAYBACK_INFO).map((r) =>
+            attemptIdOf(r.postData)
+        );
+        console.log(
+            `[retry] all PlaybackInfo attempt ids incl. the new attempt=${JSON.stringify(allInfoIds)}`
+        );
+        expect(
+            [...new Set(allInfoIds.filter((i) => i !== ''))].length
+        ).toBeGreaterThanOrEqual(2);
     });
 
     test('RequestId is per-REQUEST: X-Request-Id differs between two requests of the SAME attempt', async ({
