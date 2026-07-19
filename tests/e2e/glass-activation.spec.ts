@@ -297,6 +297,24 @@ test.describe('Reefin Glass: desktop / mobile / TV captures', () => {
             }) => {
                 await page.setViewportSize(viewport);
 
+                /**
+                 * The TV form factor is a *layout*, not a resolution: `components/layoutManager`
+                 * publishes it as the `layout-tv` class on `<html>`, and 1920x1080 in a desktop
+                 * Chromium otherwise renders the plain desktop layout. Capturing at that size and
+                 * calling it TV would label a desktop shot as something it is not — so the class is
+                 * applied on the page, before capture, for the `tv` viewport only.
+                 *
+                 * This also makes the TV capture show the `remote` interaction profile doing its
+                 * job: `interactionProfileSignals` watches exactly this class, so the larger targets
+                 * and type proved in `glass-light-and-sidebar.spec.ts` are what gets photographed.
+                 */
+                const applyTvLayout = async () => {
+                    if (formFactor !== 'tv') return;
+                    await page.evaluate(() =>
+                        document.documentElement.classList.add('layout-tv')
+                    );
+                };
+
                 await page.goto('/');
                 await page.waitForLoadState('networkidle');
                 if (page.url().includes('/login')) {
@@ -343,6 +361,7 @@ test.describe('Reefin Glass: desktop / mobile / TV captures', () => {
                     timeout: 20_000
                 });
 
+                await applyTvLayout();
                 await page.screenshot({
                     path: capturePath(`${label}-home-${formFactor}.png`)
                 });
@@ -361,6 +380,17 @@ test.describe('Reefin Glass: desktop / mobile / TV captures', () => {
                     'official.glass',
                     { timeout: 20_000 }
                 );
+
+                await applyTvLayout();
+                // On TV the `remote` profile must actually be engaged in the captured frame, not
+                // merely requested — otherwise this is a desktop shot at 1920x1080.
+                if (formFactor === 'tv') {
+                    await expect(page.locator('html')).toHaveAttribute(
+                        'data-rf-profile',
+                        'remote',
+                        { timeout: 20_000 }
+                    );
+                }
 
                 await page.screenshot({
                     path: capturePath(`${label}-library-${formFactor}.png`)

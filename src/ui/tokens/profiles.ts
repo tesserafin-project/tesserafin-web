@@ -17,9 +17,9 @@
  * styles rather than trusting.
  *
  * Since issue #18's G18b-1 slice Glass is selectable from the theme pickers (opt-in, badged
- * `experimental` in `src/themes/registry.ts` — never the default), so these profiles are now
- * reachable by ordinary use rather than only by applying Glass by id. The Glass-only binding above
- * is unchanged and is what still keeps them off Classic.
+ * `experimental` in `src/themes/registry.ts` — never the default), in both its modes, so these
+ * profiles are now reachable by ordinary use rather than only by applying Glass by id. The
+ * Glass-only binding above is unchanged and is what still keeps them off Classic.
  *
  * **Format decision (issue #18 item 1):** a profile override is a *concrete deep-partial* of
  * `tokens.schema.json`, not a semantic value (`"blur": "reduced"`). A semantic value needs a

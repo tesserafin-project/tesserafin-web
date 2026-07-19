@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import officialClassic from './official.classic';
+import officialGlass from './official.glass';
 import {
     applyReducedMotion,
     CASCADE_OVERRIDES,
@@ -303,5 +304,168 @@ describe('interaction profiles (dormant)', () => {
                 getProfileAttribute({ remote: true, reducedMotion: true })
             ).toBe('remote');
         });
+    });
+});
+
+describe('Reefin Glass light frosted mode: WCAG contrast', () => {
+    /**
+     * The light palette is authored for contrast over the *composited* frosted surface, not over an
+     * assumed opaque one — Glass Light's `surface` is `rgba(255, 255, 255, 0.55)`, so what a reader
+     * actually sees behind the text is that white blended over `background`. Checking a foreground
+     * against the raw token would measure a color nothing ever paints.
+     *
+     * These assertions are the durable form of the arithmetic the palette was designed with; before
+     * them, "contrast" was a claim in a comment.
+     */
+
+    type Rgb = [number, number, number, number];
+
+    const parseColor = (value: string): Rgb => {
+        const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+        if (hex) {
+            const digits =
+                hex[1].length === 3
+                    ? hex[1]
+                          .split('')
+                          .map((d) => d + d)
+                          .join('')
+                    : hex[1];
+            const n = Number.parseInt(digits, 16);
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 1];
+        }
+        const rgba =
+            /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)$/.exec(
+                value
+            );
+        if (rgba) {
+            return [
+                Number(rgba[1]),
+                Number(rgba[2]),
+                Number(rgba[3]),
+                rgba[4] === undefined ? 1 : Number(rgba[4])
+            ];
+        }
+        throw new Error(`unsupported color notation: ${value}`);
+    };
+
+    /** Source-over compositing, i.e. what the browser paints for a translucent layer. */
+    const composite = (foreground: Rgb, background: Rgb): Rgb => [
+        foreground[0] * foreground[3] + background[0] * (1 - foreground[3]),
+        foreground[1] * foreground[3] + background[1] * (1 - foreground[3]),
+        foreground[2] * foreground[3] + background[2] * (1 - foreground[3]),
+        1
+    ];
+
+    /** WCAG 2.x relative luminance. */
+    const luminance = ([r, g, b]: Rgb): number => {
+        const channel = (raw: number) => {
+            const c = raw / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+
+    const contrastRatio = (a: Rgb, b: Rgb): number => {
+        const [lighter, darker] = [luminance(a), luminance(b)].sort(
+            (x, y) => y - x
+        );
+        return (lighter + 0.05) / (darker + 0.05);
+    };
+
+    const light = officialGlass.color.light;
+
+    if (!light) {
+        throw new Error(
+            'Reefin Glass must declare a light color group (theme.json modes includes "light")'
+        );
+    }
+
+    const background = parseColor(light.background);
+    const surface = composite(parseColor(light.surface), background);
+    const surfaceVariant = composite(
+        parseColor(light.surfaceVariant),
+        background
+    );
+
+    const FOREGROUNDS = [
+        'text',
+        'textMuted',
+        'primary',
+        'accent',
+        'error',
+        'warning',
+        'success'
+    ] as const;
+
+    const SURFACES: ReadonlyArray<readonly [string, Rgb]> = [
+        ['background', background],
+        ['composited surface', surface],
+        ['composited surfaceVariant', surfaceVariant]
+    ];
+
+    it('composites its translucent surfaces to the expected opaque colors', () => {
+        // Pins the two values `REDUCED_TRANSPARENCY_OVERRIDE`'s light partial hardcodes, so the
+        // opaque fallback cannot drift away from the frosted appearance it stands in for.
+        const toHex = ([r, g, b]: Rgb) =>
+            `#${[r, g, b]
+                .map((v) => Math.round(v).toString(16).padStart(2, '0'))
+                .join('')}`;
+
+        expect(toHex(surface)).toBe('#f7f9fc');
+        expect(toHex(surfaceVariant)).toBe('#e0e7f3');
+        expect(REDUCED_TRANSPARENCY_OVERRIDE.color?.light?.surface).toBe(
+            '#f7f9fc'
+        );
+        expect(REDUCED_TRANSPARENCY_OVERRIDE.color?.light?.surfaceVariant).toBe(
+            '#e0e7f3'
+        );
+    });
+
+    it.each(
+        SURFACES.flatMap(([surfaceName, surfaceColor]) =>
+            FOREGROUNDS.map(
+                (foreground) => [foreground, surfaceName, surfaceColor] as const
+            )
+        )
+    )(
+        'renders %s on %s at WCAG AA or better',
+        (foreground, _surfaceName, surfaceColor) => {
+            const composited = composite(
+                parseColor(light[foreground]),
+                surfaceColor
+            );
+            expect(
+                contrastRatio(composited, surfaceColor)
+            ).toBeGreaterThanOrEqual(4.5);
+        }
+    );
+
+    it('keeps onPrimary legible on primary', () => {
+        expect(
+            contrastRatio(
+                parseColor(light.onPrimary),
+                parseColor(light.primary)
+            )
+        ).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('keeps the opaque reduced-transparency textMuted as legible as the frosted one', () => {
+        // The reduced-transparency profile must not trade contrast for opacity: it replaces a
+        // translucent muted text color with a flat one, and the two must read identically.
+        const frosted = contrastRatio(
+            composite(parseColor(light.textMuted), surface),
+            surface
+        );
+        const opaque = contrastRatio(
+            parseColor(
+                REDUCED_TRANSPARENCY_OVERRIDE.color?.light?.textMuted as string
+            ),
+            parseColor(
+                REDUCED_TRANSPARENCY_OVERRIDE.color?.light?.surface as string
+            )
+        );
+
+        expect(opaque).toBeGreaterThanOrEqual(4.5);
+        expect(Math.abs(opaque - frosted)).toBeLessThan(0.05);
     });
 });

@@ -33,9 +33,10 @@
  *
  * Since issue #18's G18b-1 slice Glass is selectable from the theme pickers (opt-in and badged,
  * never the default), so this hook engages for ordinary users rather than only for someone who
- * applied Glass by id. Note it is keyed on the theme `useAppTheme` resolved as *active*, not on the
- * one requested — so a Glass preference whose chunk failed to load falls back to Classic and
- * projects nothing, rather than projecting for a theme that never rendered.
+ * applied Glass by id — and for BOTH Glass modes, which is why the guard below keys on the token
+ * theme id rather than the registry entry id. Note it is keyed on the theme `useAppTheme` resolved
+ * as *active*, not on the one requested — so a Glass preference whose chunk failed to load falls
+ * back to Classic and projects nothing, rather than projecting for a theme that never rendered.
  */
 
 import { useEffect } from 'react';
