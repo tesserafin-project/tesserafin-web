@@ -20,22 +20,31 @@ const cache: ColorSchemeMap = {
     dark: darkColorScheme,
     light: lightColorScheme
 };
-const pending = new Map<string, Promise<void>>();
+const pending = new Map<string, Promise<boolean>>();
 
 /** Current snapshot of loaded color schemes, keyed by theme id. */
 export const getColorSchemes = (): ColorSchemeMap => cache;
 
 /**
  * Ensures the color scheme for `id` is present in the cache, loading it from the theme registry
- * (RFC-0005 §7.4) when it is not cached yet. Resolves once the cache contains the requested id, or
- * immediately (no-op) for an already-cached or unknown id. Concurrent requests for the same id
- * share one in-flight promise.
+ * (RFC-0005 §7.4) when it is not cached yet. Concurrent requests for the same id share one
+ * in-flight promise.
+ *
+ * Resolves to whether a usable color scheme for `id` is now cached — `false` when the id is not in
+ * the registry at all (an invalid/stale manifest entry, or a preference persisted by an older
+ * build) or when its lazy chunk failed to load (network error, a chunk pruned by a deploy,
+ * a corrupt bundle). Both are reported the same way on purpose: from the caller's side "this theme
+ * cannot be rendered" is one condition with one correct response, which is to fall back to the
+ * default theme rather than leave the app tagged with a theme whose palette never arrived. That
+ * fallback is `useAppTheme.ts`'s job — see the `unavailableThemeIds` state there.
+ *
+ * `undefined` resolves to `true`: no theme was requested, so nothing is missing.
  */
 export const ensureColorSchemeLoaded = (
     id: string | undefined
-): Promise<void> => {
+): Promise<boolean> => {
     if (!id || cache[id]) {
-        return Promise.resolve();
+        return Promise.resolve(true);
     }
 
     const existingRequest = pending.get(id);
@@ -45,16 +54,21 @@ export const ensureColorSchemeLoaded = (
 
     const entry = getThemeEntry(id);
     if (!entry) {
-        return Promise.resolve();
+        console.error(
+            `[themes] no registry entry for theme "${id}" - falling back to the default theme`
+        );
+        return Promise.resolve(false);
     }
 
     const request = entry
         .loadColorScheme()
         .then((colorScheme) => {
             cache[id] = colorScheme;
+            return true;
         })
         .catch((err: unknown) => {
             console.error(`[themes] failed to load color scheme "${id}"`, err);
+            return false;
         })
         .finally(() => {
             pending.delete(id);

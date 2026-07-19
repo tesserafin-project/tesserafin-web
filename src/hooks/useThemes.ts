@@ -7,9 +7,12 @@ import type { Theme } from 'types/webConfig';
  * Reads the theme catalog from the single registry (RFC-0005 §7.4) rather than `config.json`'s
  * `themes` array — see the deprecation note on `Theme[]`/`themes` in `types/webConfig.ts` and on
  * `scripts/settings/webSettings.js#getThemes` for the legacy (non-React) equivalent. Uses
- * `getSelectableThemeEntries()`, not `THEME_REGISTRY` directly, so `experimental` themes (Reefin
- * Glass, pending issue #18) stay out of every picker built on this hook while remaining fully
- * resolvable by id via `getThemeEntry()`.
+ * `getSelectableThemeEntries()`, not `THEME_REGISTRY` directly, so "what a picker may offer" stays
+ * one decision in one place.
+ *
+ * `experimental` is carried through to the picker (`DisplayPreferences.tsx`), which renders a badge
+ * on those entries — since issue #18's G18b-1 slice, Reefin Glass is selectable rather than hidden.
+ * `defaultTheme` still resolves to Classic, so nothing here changes what an unset preference gets.
  */
 export function useThemes() {
     const themes = useMemo<Theme[]>(
@@ -18,7 +21,8 @@ export function useThemes() {
                 id: entry.id,
                 name: entry.name,
                 color: entry.color,
-                default: entry.default
+                default: entry.default,
+                experimental: entry.experimental
             })),
         []
     );

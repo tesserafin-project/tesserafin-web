@@ -16,9 +16,10 @@
  * is the theme guard, which `glass-interaction-profiles.spec.ts` asserts against real computed
  * styles rather than trusting.
  *
- * Note that Glass itself remains `experimental` in `src/themes/registry.ts` and so is absent from
- * every theme picker: profiles are reachable today only by applying Glass by id. Making Glass
- * publicly selectable is separate work.
+ * Since issue #18's G18b-1 slice Glass is selectable from the theme pickers (opt-in, badged
+ * `experimental` in `src/themes/registry.ts` — never the default), so these profiles are now
+ * reachable by ordinary use rather than only by applying Glass by id. The Glass-only binding above
+ * is unchanged and is what still keeps them off Classic.
  *
  * **Format decision (issue #18 item 1):** a profile override is a *concrete deep-partial* of
  * `tokens.schema.json`, not a semantic value (`"blur": "reduced"`). A semantic value needs a

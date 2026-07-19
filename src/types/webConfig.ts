@@ -3,6 +3,12 @@ export interface Theme {
     default?: boolean;
     id: string;
     color: string;
+    /**
+     * Mirrors `themes/registry.ts`'s `ThemeRegistryEntry.experimental`: the theme is selectable
+     * like any other, and pickers must additionally mark it as experimental/new. Presentation
+     * only — it never affects which themes are offered or which one is the default.
+     */
+    experimental?: boolean;
 }
 
 // NOTE(RFC-0005 §7.4): `WebConfig.themes` (backed by `config.json`'s `themes` array) is no longer

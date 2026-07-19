@@ -74,17 +74,21 @@ const toLegacyTheme = (entry) => ({
     name: entry.name,
     id: entry.id,
     color: entry.color,
-    default: entry.default
+    default: entry.default,
+    // Presentation marker only (issue #18 G18b-1): the legacy display-settings `<select>` appends
+    // an "experimental" suffix to these entries' labels, since an `<option>` can carry no markup.
+    experimental: entry.experimental
 });
 
-// Every registry entry, `experimental` ones (Reefin Glass, pending issue #18) included — needed so
-// `themeManager.js#getThemeStylesheetInfo` can still resolve/apply an experimental theme by id.
-// Selector UIs must use `getSelectableThemes()` below instead.
+// Every registry entry — the resolution catalog `themeManager.js#getThemeStylesheetInfo` uses to
+// map an id (including one restored from storage) onto a theme.
 const REGISTRY_THEMES = THEME_REGISTRY.map(toLegacyTheme);
 
-// Picker-safe subset — excludes `experimental` entries. This is what the legacy display-settings
-// `<select>` (`components/displaySettings/displaySettings.js#fillThemes`, via
-// `scripts/themeManager.js#getSelectableThemes`) must read.
+// What a picker may offer. Since issue #18's G18b-1 slice this is the whole registry — Reefin
+// Glass is selectable (badged), not hidden — but the two lists stay distinct so reachability
+// remains one decision in `themes/registry.ts#getSelectableThemeEntries`, read by the legacy
+// display-settings `<select>` (`components/displaySettings/displaySettings.js#fillThemes`, via
+// `scripts/themeManager.js#getSelectableThemes`).
 const SELECTABLE_REGISTRY_THEMES =
     getSelectableThemeEntries().map(toLegacyTheme);
 

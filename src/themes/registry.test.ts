@@ -28,8 +28,13 @@ describe('THEME_REGISTRY', () => {
         expect(glass?.default).toBeUndefined();
     });
 
-    it('marks official.glass as experimental (hidden from selectors until issue #18)', () => {
+    it('marks official.glass as experimental (badged in pickers, issue #18 G18b-1)', () => {
         expect(getThemeEntry('official.glass')?.experimental).toBe(true);
+    });
+
+    it('does not make official.glass the default (Glass is opt-in, never auto-activated)', () => {
+        expect(getThemeEntry('official.glass')?.default).toBeUndefined();
+        expect(getDefaultThemeEntry().id).toBe('official.classic');
     });
 
     it('does not mark any other entry as experimental', () => {
@@ -120,25 +125,26 @@ describe('getDefaultThemeEntry()', () => {
 });
 
 describe('getSelectableThemeEntries()', () => {
-    it('excludes experimental entries (official.glass)', () => {
+    // Inverts the pre-G18b-1 invariant: Glass used to be filtered out of every picker. Issue #18's
+    // G18b-1 slice makes it selectable (opt-in, badged) — so the assertion that it is *reachable*
+    // is now the one worth pinning, since regressing it would silently hide the theme again.
+    it('offers experimental entries (official.glass) rather than hiding them', () => {
         const selectable = getSelectableThemeEntries();
         expect(selectable.some((theme) => theme.id === 'official.glass')).toBe(
-            false
+            true
         );
     });
 
-    it('still includes every non-experimental builtin theme', () => {
-        const selectable = getSelectableThemeEntries();
-        const nonExperimentalIds = THEME_REGISTRY.filter(
-            (theme) => !theme.experimental
-        ).map((theme) => theme.id);
-
-        expect(selectable.map((theme) => theme.id)).toEqual(nonExperimentalIds);
+    it('offers every registry entry', () => {
+        expect(getSelectableThemeEntries().map((theme) => theme.id)).toEqual(
+            THEME_REGISTRY.map((theme) => theme.id)
+        );
     });
 
-    it('is a strict subset of THEME_REGISTRY, one entry short (official.glass)', () => {
-        expect(getSelectableThemeEntries()).toHaveLength(
-            THEME_REGISTRY.length - 1
+    it('offers exactly one default, still official.classic', () => {
+        const defaults = getSelectableThemeEntries().filter(
+            (theme) => theme.default
         );
+        expect(defaults.map((theme) => theme.id)).toEqual(['official.classic']);
     });
 });

@@ -790,6 +790,8 @@
     "LabelEpisodeNumber": "Episode number",
     "LabelEvent": "Event",
     "LabelEveryXMinutes": "Every",
+    "LabelExperimentalTheme": "Experimental",
+    "LabelExperimentalThemeHelp": "This theme is new and still being refined. You can switch back at any time.",
     "LabelExtractChaptersDuringLibraryScan": "Extract chapter images during the library scan",
     "LabelExtractChaptersDuringLibraryScanHelp": "Generate chapter images when videos are imported during the library scan. Otherwise, they will be extracted during the chapter images scheduled task, allowing the regular library scan to complete faster.",
     "LabelFailed": "Failed",
