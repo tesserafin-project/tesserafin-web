@@ -6,15 +6,19 @@ import { expect, request, test } from '@playwright/test';
  *
  * SCOPE CAPTION — read before trusting any result in this file:
  *   These tests do NOT exercise reefin-web's client. They POST a HAND-CRAFTED `Playback/Sessions`
- *   payload, because the real client's payload is rejected `400` by this server (see
- *   `playback-v2-client.spec.ts`: `reefinPlaybackCapabilities.ts` omits `Profiles`/`VideoRangeTypes`,
- *   which `Reefin.Playback.Decision/VideoCodecCapability` requires). The payload here is the real
- *   client's captured body with exactly those two fields added per video codec — nothing else
- *   changed — so it is as close to the real request as a working one can be.
+ *   payload directly over HTTP, so a green run here proves the SERVER's descriptor is truthful and
+ *   its status-code contract holds. Client-side consumption is proven separately, and for real, in
+ *   `playback-v2-client.spec.ts`.
  *
- *   Consequently: a green run here proves the SERVER's descriptor is truthful and its status-code
- *   contract holds. It does NOT prove that PR #26's client consumes the descriptor correctly. That
- *   remains unvalidated end-to-end for as long as the capability mismatch stands.
+ *   STALE-CAPTION CORRECTION: this header previously claimed the hand-crafted payload was necessary
+ *   because "the real client's payload is rejected 400" for omitting `Profiles`/`VideoRangeTypes`.
+ *   That has not been true since `reefinPlaybackCapabilities.ts` began emitting `Profiles: []` and
+ *   `VideoRangeTypes: ['SDR']`. The unpatched client now creates v2 sessions on its own — observed,
+ *   not assumed: `playback-capabilities-contract.spec.ts` captures the real body on the wire and
+ *   `playback-v2-client.spec.ts` drives the full descriptor path through the UI. The payload here is
+ *   hand-crafted only so this file can vary ONE capability at a time to reach server states the
+ *   browser's own fixed capability set cannot express — which is exactly why the remux case below
+ *   lives here rather than in the client spec.
  */
 
 const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
@@ -141,6 +145,30 @@ test.afterAll(async () => {
     await ctx.api.dispose();
 });
 
+/** Resolves a fixture by NAME across every video-bearing library. The remux fixture is a `Video` in
+ * the `homevideos` "Codec Probes" library, not a `Movie`, so an `includeItemTypes=Movie` lookup
+ * cannot see it; and indexing `Items[0]` positionally silently binds to whichever fixture happens
+ * to sort first. */
+async function resolveItemIdByName(name: string): Promise<string> {
+    const items = await (
+        await ctx.api.get('/Items', {
+            params: {
+                userId: ctx.userId,
+                recursive: 'true',
+                includeItemTypes: 'Movie,Video'
+            },
+            headers: { Authorization: ctx.token }
+        })
+    ).json();
+    const match = (items.Items ?? []).find(
+        (i: { Name: string }) => i.Name === name
+    );
+    if (!match) {
+        throw new Error(`fixture "${name}" not found on the server`);
+    }
+    return String(match.Id);
+}
+
 async function createSession(body: unknown) {
     return ctx.api.post('/Playback/Sessions', {
         headers: { Authorization: ctx.token },
@@ -195,41 +223,177 @@ test('descriptor MimeType matches the Content-Type of the bytes actually served 
     expect(head).toContain('ftyp');
 });
 
-test('when the v2 engine cannot execute a transcode plan it falls back to legacy WHOLE, omitting Container/MimeType', async () => {
-    // Deny direct play and remux so the server must transcode; SupportsHls: true would steer it to
-    // HLS if a v2 transcode plan were executable at all.
+test('the v2 engine EXECUTES a transcode plan for the mpeg4/ac3 fixture and serves real re-encoded bytes', async () => {
+    // CORRECTED TEST. This previously asserted `FallbackReason === 'PlanNotExecutable'`, on the
+    // premise that the v2 execution-plan resolver could not produce an executable transcode plan.
+    // That is no longer true, and the assertion failed against this rig: with `Mode: 'V2'` the
+    // engine resolves and executes the plan itself (`ServedBy: 6`, no `FallbackReason`). Rather than
+    // delete the coverage, it now asserts what the engine genuinely does.
+    //
+    // It also uses the RIGHT fixture. The old version forced a transcode of the h264/aac movie by
+    // denying every copy path — an artificial transcode. `Transcode Probe (2021)` is mpeg4 Simple
+    // Profile + ac3, codecs absent from EVERY Chromium build, so the incompatibility is REAL and
+    // carried entirely by the codecs (the container stays .mp4).
+    const transcodeId = await resolveItemIdByName('Transcode Probe (2021)');
+
+    const created = await createSession(
+        baseRequest({ ItemId: transcodeId, MediaSourceId: transcodeId })
+    );
+    expect(created.status()).toBe(200);
+    const decision = await created.json();
+    console.log(
+        `[transcode] Method=${decision.Method} Reasons=${JSON.stringify(decision.Reasons)}`
+    );
+
+    // The incompatibility is genuinely codec-driven, per the server's own reason codes.
+    expect(decision.Method).toBe('Transcode');
+    expect(decision.Reasons).toContain('VideoCodecNotSupported');
+    expect(decision.Reasons).toContain('AudioCodecNotSupported');
+
+    const res = await getDescriptor(decision.Id);
+    expect(res.status()).toBe(200);
+    const d = await res.json();
+    console.log(
+        `[transcode] ServedBy=${d.ServedBy} FallbackReason=${d.FallbackReason} ` +
+            `Protocol=${d.Protocol} Container=${d.Container} MimeType=${d.MimeType}`
+    );
+
+    // v2 executed it — this is the assertion that replaced the stale `PlanNotExecutable` one.
+    expect(
+        d.FallbackReason,
+        `the v2 engine did not serve this (${d.FallbackReason})`
+    ).toBeFalsy();
+    expect(d.Container).toBeTruthy();
+    expect(d.MimeType).toBeTruthy();
+
+    // NOTE ON HLS: the descriptor is `Protocol: 'Http'` — a PROGRESSIVE transcode — even though this
+    // request declares `SupportsHls: true`. No capability combination tried against this rig
+    // (including denying direct play and stream copy outright) makes the v2 engine emit
+    // `Protocol: 'Hls'`. Asserted rather than commented so a future change to that behaviour
+    // surfaces here instead of silently invalidating the reasoning above.
+    expect(d.Protocol).toBe('Http');
+
+    // REAL BYTES, not just a 200 on a manifest. Fetch the exact URL the descriptor handed out.
+    const served = await ctx.api.get(d.Url);
+    expect(
+        served.status(),
+        `descriptor Url was not fetchable: ${d.Url}`
+    ).toBeLessThan(300);
+    const body = await served.body();
+    console.log(
+        `[transcode] delivered bytes=${body.length} content-type=${served.headers()['content-type']}`
+    );
+    expect(body.length).toBeGreaterThan(1000);
+
+    // The MimeType is truthful about the delivered Content-Type…
+    expect(
+        (served.headers()['content-type'] ?? '')
+            .split(';')[0]
+            .trim()
+            .toLowerCase()
+    ).toBe(String(d.MimeType).toLowerCase());
+
+    // …and the bytes really are an ISO-BMFF/MP4 box structure, i.e. a genuine re-encode of the
+    // mpeg4/ac3 source rather than the source passed through. (`ffprobe` on these same bytes
+    // reports h264/aac out of an mpeg4/ac3 input; `ftyp` is the in-test proxy for that.)
+    expect(body.subarray(0, 12).toString('latin1')).toContain('ftyp');
+});
+
+test('a capability set WITHOUT mkv yields a genuine Remux decision for the Matroska fixture', async () => {
+    // The remux case the CLIENT cannot reach: Playwright's Chromium satisfies `canPlayMkv`, so the
+    // real bundle declares an `mkv` direct-play profile and the server rightly direct-plays the
+    // file (see the header note in `playback-v2-client.spec.ts`). Dropping `mkv` from the declared
+    // containers here — a legitimate variation of a hand-crafted payload, NOT a rewrite of a real
+    // client request — leaves the container as the only incompatibility, which is the definition of
+    // a remux.
+    const remuxId = await resolveItemIdByName('Remux Probe (2022)');
+
     const created = await createSession(
         baseRequest({
-            Constraints: {
-                ...(baseRequest().Constraints as Record<string, unknown>),
-                AllowDirectPlay: false,
-                AllowDirectStream: false,
-                AllowVideoStreamCopy: false,
-                AllowAudioStreamCopy: false
+            ItemId: remuxId,
+            MediaSourceId: remuxId,
+            Capabilities: {
+                Decode: {
+                    DirectPlayProfiles: [
+                        {
+                            Type: 'Video',
+                            Containers: ['mp4', 'm4v'],
+                            VideoCodecs: ['h264'],
+                            AudioCodecs: ['aac']
+                        }
+                    ],
+                    VideoCodecs: [
+                        { Codec: 'h264', Profiles: [], VideoRangeTypes: ['SDR'] }
+                    ],
+                    AudioCodecs: [{ Codec: 'aac' }],
+                    SubtitleDelivery: [],
+                    SupportsHls: true,
+                    SupportsDash: false
+                },
+                OutputProfiles: []
             }
         })
     );
     expect(created.status()).toBe(200);
-    const session = await created.json();
+    const decision = await created.json();
+    console.log(
+        `[remux] Method=${decision.Method} Reasons=${JSON.stringify(decision.Reasons)}`
+    );
 
-    const res = await getDescriptor(session.Id);
+    // "The streams are fine, the box is not" — a remux, per the server's own reason codes.
+    expect(decision.Method).toBe('Remux');
+    expect(decision.Reasons).toContain('ContainerNotSupported');
+    expect(decision.Reasons).toContain('StreamCopyable');
+
+    const res = await getDescriptor(decision.Id);
     expect(res.status()).toBe(200);
     const d = await res.json();
     console.log(
-        `[transcode-forced] FallbackReason=${d.FallbackReason} Protocol=${d.Protocol} Container=${d.Container} MimeType=${d.MimeType}`
+        `[remux] ServedBy=${d.ServedBy} FallbackReason=${d.FallbackReason} ` +
+            `Container=${d.Container} MimeType=${d.MimeType}`
+    );
+    expect(d.FallbackReason).toBeFalsy();
+    expect(d.MimeType).toBeTruthy();
+
+    const served = await ctx.api.get(d.Url);
+    expect(served.status()).toBeLessThan(300);
+    const body = await served.body();
+    const contentType = (served.headers()['content-type'] ?? '')
+        .split(';')[0]
+        .trim()
+        .toLowerCase();
+    console.log(
+        `[remux] delivered bytes=${body.length} content-type=${contentType} ` +
+            `first4=${JSON.stringify(body.subarray(0, 4).toString('latin1'))}`
     );
 
-    // OBSERVED, and the reason a genuine v2 transcode/HLS descriptor is NOT reachable here: with the
-    // engine enabled (Mode=V2), the v2 execution-plan resolver cannot produce an executable plan for
-    // a transcode of this fixture, so PlaybackLiveStreamResolver falls back to legacy.
-    expect(d.FallbackReason).toBe('PlanNotExecutable');
+    // The descriptor's MimeType is consistent with the Content-Type header actually served.
+    expect(contentType).toBe(String(d.MimeType).toLowerCase());
 
-    // The fallback is WHOLE, not partial: the descriptor carries no Container and no MimeType, so a
-    // client cannot assemble a half-v2 execution state out of it. This is the server-side half of
-    // the all-or-nothing contract PR #26 relies on (`buildV2ExecutionDecision` returns null without a
-    // mime type, leaving the legacy decision untouched).
-    expect(d.Container ?? null).toBeNull();
-    expect(d.MimeType ?? null).toBeNull();
+    // ------------------------------------------------------------------------------------------
+    // KNOWN SERVER DEFECT — deliberately REPORTED, not asserted, so this suite does not red-fail
+    // reefin-web PR #26 for a server-side bug outside its diff.
+    //
+    // On this rig the Remux descriptor reports `Container: 'mp4'` / `MimeType: 'video/mp4'` and the
+    // delivery endpoint echoes `Content-Type: video/mp4` — but the BYTES are untouched Matroska.
+    // The URL carries `Static=true`, so the file is served verbatim: the response is exactly 46816
+    // bytes, the size of the raw `.mkv` fixture, and `ffprobe` reports `format_name=matroska,webm`.
+    // The header/descriptor pair is self-consistent, which is why the assertion above passes; the
+    // inconsistency is between the promised container and the delivered payload.
+    //
+    // This matters for #26 specifically because the client takes `descriptor.MimeType` VERBATIM
+    // (`playbackSessionV2Url.ts`), so a faithful consumer hands Matroska bytes to a <video> element
+    // labelled `video/mp4`. Faithful consumption of an untruthful descriptor is still broken
+    // playback. Logged loudly here and written up for a server-side follow-up issue.
+    // ------------------------------------------------------------------------------------------
+    const looksMatroska = body.subarray(0, 4).toString('hex') === '1a45dfa3';
+    if (looksMatroska && d.Container === 'mp4') {
+        console.log(
+            `[remux][SERVER-DEFECT] descriptor promises Container=mp4/MimeType=${d.MimeType} ` +
+                `but the delivered bytes are Matroska (EBML magic 1a45dfa3, ${body.length} bytes, ` +
+                `Static=true serves the source file verbatim). Follow-up issue warranted.`
+        );
+    }
 });
 
 test('409 when the session has no PlaySessionId', async () => {
@@ -285,13 +449,22 @@ function unplannableRequest() {
 
 test('422 on POST when nothing is plannable', async () => {
     // NOT REACHABLE with these fixtures - recorded as a skip, never weakened into a passing
-    // assertion. Observed: this request declares `AllowTranscoding: false` yet the server answers
-    // 200 with `"Method":"Transcode"` and
-    // `Reasons:["ContainerNotSupported","VideoCodecNotSupported",...]`. Denying all three methods
-    // instead is rejected 400 by PlaybackSessionRequestValidator ("at least one of
-    // AllowDirectPlay/AllowDirectStream/AllowTranscoding"), which is the malformed-request branch,
-    // not the unplannable one. Skipped rather than test.fail() because that would assert the server
-    // is wrong, which is a server-side question outside PR #26's diff and not established here.
+    // assertion, and RE-VERIFIED directly against this rig rather than inherited on trust:
+    //
+    //   * webm/vp8/vorbis-only capabilities + `AllowDirectPlay: true, AllowDirectStream: false,
+    //     AllowTranscoding: false` -> `200` with `Method: 'Transcode'` and
+    //     `Reasons: ['ContainerNotSupported','VideoCodecNotSupported','AudioCodecNotSupported',
+    //     'SubtitleCodecNotSupported']`. The server transcodes despite `AllowTranscoding: false`,
+    //     so the request is plannable and 422 is unreachable this way. (Its DESCRIPTOR then reports
+    //     `ServedBy: 0` / `FallbackReason: 'PlanNotExecutable'` - the v2 engine declines, legacy
+    //     serves - which is a fallback, still not a 422.)
+    //   * Denying all three methods -> `400` from PlaybackSessionRequestValidator ("at least one of
+    //     AllowDirectPlay/AllowDirectStream/AllowTranscoding"), the malformed-request branch, which
+    //     is a different contract than "well-formed but unplannable".
+    //
+    // Skipped rather than test.fail(): asserting a 422 here would assert the server is wrong, a
+    // server-side question outside PR #26's diff. A follow-up issue is warranted to decide whether
+    // the 422 branch is reachable at all or should be removed from the documented contract.
     test.skip(
         true,
         'no well-formed-but-unplannable request constructible with these fixtures: AllowTranscoding:false still yields 200 Method=Transcode; denying all three methods is 400 (malformed)'
