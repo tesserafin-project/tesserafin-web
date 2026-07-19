@@ -1,5 +1,6 @@
-import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 import { describe, expect, it } from 'vitest';
+
+import { CollectionType } from 'lib/reefin-sdk';
 
 import moviesViews from 'apps/modern/features/libraries/constants/views/movies';
 import tvShowsViews from 'apps/modern/features/libraries/constants/views/tvshows';
