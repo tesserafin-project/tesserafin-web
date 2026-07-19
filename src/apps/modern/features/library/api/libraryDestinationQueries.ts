@@ -4,14 +4,17 @@ import {
     BaseItemKind,
     getGenreApi,
     getLibraryApi,
+    getMovieApi,
     getShowApi,
     getStudioApi,
     ImageType,
     ItemFields,
     ItemSortBy,
+    type RecommendationDto,
     type ReefinApi,
     SortOrder
 } from 'lib/reefin-sdk';
+import type { ItemDto } from 'types/base/models/item-dto';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 
 /**
@@ -20,10 +23,11 @@ import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result
  * `docs/reefin/design-library-navigation.md` §3.2, plus the Studios *filter*'s option list and the
  * Upcoming *shelf*, neither of which is a destination.
  *
- * **Not routed.** L15a delivers the queries and proves each one emits the request the design claims
- * it does; L15b wires them to `/library/:libraryId/:destination` and repoints
- * `appRouter.getRouteUrl()`. Nothing here is mounted, so the only consumer today is
- * `libraryDestinationQueries.test.ts`.
+ * **Routed as of L15b.** L15a delivered these queries dormant and proved each one emits the request
+ * its design entry claims; L15b mounts them under `/library/:libraryId/:destination` through
+ * `useLibraryDestinations.ts` and repoints `appRouter.getRouteUrl()`. The requests themselves did
+ * not change — `libraryDestinationQueries.test.ts` still asserts every one of them against the URL
+ * axios actually emits.
  *
  * Every request goes through `lib/reefin-sdk`'s generated client — no `@jellyfin/sdk` import
  * appears in this slice, which is the migration rule issue #15 enforces.
@@ -191,4 +195,128 @@ export const fetchLibraryUpcoming = async (
     );
 
     return response.data as ItemDtoQueryResult;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Suggestions shelves (L15b — the destination is now mounted)                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * L15a delivered Upcoming (above) because design §3.2 *moves* it — it was a legacy tab losing its
+ * home. The remaining shelves below were already inside the legacy Suggestions tab
+ * (`suggestionsTabContent.sectionsView.suggestionSections`), so they had nothing to move; they are
+ * added by L15b, when the destination stopped being dormant and had to actually render.
+ *
+ * They are added *here*, through `lib/reefin-sdk`, rather than by importing the existing
+ * `apps/legacy/features/libraries/api/use{ResumeItems,LatestMedia,NextUp}.ts` hooks. Those hooks are
+ * `@jellyfin/sdk`-based, and reusing them would have put a direct `@jellyfin/sdk` type dependency
+ * back into a slice L15a deliberately cleared of them — trading a migration invariant for three
+ * saved fetchers.
+ */
+
+export interface LibraryShelfParams {
+    parentId: string;
+    includeItemTypes: BaseItemKind[];
+    limit?: number;
+}
+
+/** The legacy suggestion shelves request 12 items each (`SuggestionsSectionView.tsx`'s section limits). */
+export const SHELF_LIMIT = 12;
+
+const shelfImageOptions = () => ({
+    fields: [ItemFields.PrimaryImageAspectRatio],
+    enableImageTypes: [ImageType.Primary],
+    imageTypeLimit: 1
+});
+
+/** `ContinueWatchingMovies` / `ContinueWatchingEpisode` — the same endpoint, differing only by item kind. */
+export const fetchLibraryResumeItems = async (
+    api: ReefinApi,
+    userId: string,
+    params: LibraryShelfParams,
+    options?: AxiosRequestConfig
+): Promise<ItemDtoQueryResult> => {
+    const response = await getLibraryApi(api).getResumeItems(
+        {
+            userId,
+            parentId: params.parentId,
+            includeItemTypes: params.includeItemTypes,
+            limit: params.limit ?? SHELF_LIMIT,
+            ...shelfImageOptions()
+        },
+        { signal: options?.signal }
+    );
+
+    return response.data as ItemDtoQueryResult;
+};
+
+/**
+ * `LatestMovies` / `LatestEpisode`. Note the return type: `getLatestMedia` answers with a bare
+ * `Array<BaseItemDto>`, not a `QueryResult` — so this normalizes to the same `{ Items }` shape the
+ * other shelves produce, keeping one rendering path for all of them.
+ */
+export const fetchLibraryLatestItems = async (
+    api: ReefinApi,
+    userId: string,
+    params: LibraryShelfParams,
+    options?: AxiosRequestConfig
+): Promise<ItemDtoQueryResult> => {
+    const response = await getLibraryApi(api).getLatestMedia(
+        {
+            userId,
+            parentId: params.parentId,
+            includeItemTypes: params.includeItemTypes,
+            limit: params.limit ?? SHELF_LIMIT,
+            ...shelfImageOptions()
+        },
+        { signal: options?.signal }
+    );
+
+    return { Items: (response.data ?? []) as ItemDto[] };
+};
+
+/** `NextUp` — tvshows only; the shelf list in `librarySections.ts` is what decides that. */
+export const fetchLibraryNextUp = async (
+    api: ReefinApi,
+    userId: string,
+    params: LibraryShelfParams,
+    options?: AxiosRequestConfig
+): Promise<ItemDtoQueryResult> => {
+    const response = await getShowApi(api).getNextUp(
+        {
+            userId,
+            parentId: params.parentId,
+            limit: params.limit ?? SHELF_LIMIT,
+            ...shelfImageOptions()
+        },
+        { signal: options?.signal }
+    );
+
+    return response.data as ItemDtoQueryResult;
+};
+
+/**
+ * `MovieRecommendations` — the one shelf that is not a flat item list: the endpoint returns
+ * *categories* (`RecommendationDto[]`, each with its own `Items` and a `BaselineItemName` like
+ * "Because you watched X"). It is returned in its native shape rather than flattened, because
+ * flattening would discard exactly the editorial framing that made Suggestions a destination
+ * instead of a query (design §3.1 criterion 2).
+ */
+export const fetchLibraryMovieRecommendations = async (
+    api: ReefinApi,
+    userId: string,
+    params: LibraryShelfParams,
+    options?: AxiosRequestConfig
+): Promise<RecommendationDto[]> => {
+    const response = await getMovieApi(api).getMovieRecommendations(
+        {
+            userId,
+            parentId: params.parentId,
+            itemLimit: params.limit ?? SHELF_LIMIT,
+            fields: [ItemFields.PrimaryImageAspectRatio]
+        },
+        { signal: options?.signal }
+    );
+
+    return response.data ?? [];
 };

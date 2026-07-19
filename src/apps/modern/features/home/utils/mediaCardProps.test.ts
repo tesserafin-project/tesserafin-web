@@ -166,7 +166,15 @@ describe('toMediaCardProps()', () => {
         }
     );
 
-    it('routes a library tile with a dedicated collection page to that page', () => {
+    /**
+     * The activation, seen from `/home` (issue #15, L15b). A movies or tvshows tile now opens the
+     * canonical four-destination route instead of the legacy per-type page. This assertion is the
+     * guard on the one duplication this module knowingly carries: it re-implements
+     * `appRouter.getRouteUrl()`'s library subset rather than importing the singleton, so if
+     * `getRouteUrl` moves and this does not, `/home`'s cards would quietly point somewhere else
+     * than every other entry point in the app.
+     */
+    it('routes a movies library tile to the canonical /library route', () => {
         const apiClient = fakeApiClient();
         const library = item({
             Id: 'lib-1',
@@ -178,8 +186,38 @@ describe('toMediaCardProps()', () => {
             imageAspect: 'backdrop'
         });
 
+        expect(props.href).toBe('#/library/lib-1');
+    });
+
+    it('routes a tvshows library tile to the canonical /library route', () => {
+        const apiClient = fakeApiClient();
+        const library = item({
+            Id: 'lib-tv',
+            Name: 'Shows',
+            CollectionType: CollectionType.Tvshows
+        });
+
+        const props = toMediaCardProps(library, apiClient, {
+            imageAspect: 'backdrop'
+        });
+
+        expect(props.href).toBe('#/library/lib-tv');
+    });
+
+    it('leaves an unmigrated collection type on its dedicated page', () => {
+        const apiClient = fakeApiClient();
+        const library = item({
+            Id: 'lib-music',
+            Name: 'Music',
+            CollectionType: CollectionType.Music
+        });
+
+        const props = toMediaCardProps(library, apiClient, {
+            imageAspect: 'backdrop'
+        });
+
         expect(props.href).toBe(
-            '#/movies?topParentId=lib-1&collectionType=movies'
+            '#/music?topParentId=lib-music&collectionType=music'
         );
     });
 

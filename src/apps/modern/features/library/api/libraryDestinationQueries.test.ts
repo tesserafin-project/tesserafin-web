@@ -6,8 +6,13 @@ import { BaseItemKind, ReefinApi } from 'lib/reefin-sdk';
 import {
     fetchLibraryCollections,
     fetchLibraryGenres,
+    fetchLibraryLatestItems,
+    fetchLibraryMovieRecommendations,
+    fetchLibraryNextUp,
+    fetchLibraryResumeItems,
     fetchLibraryStudios,
     fetchLibraryUpcoming,
+    SHELF_LIMIT,
     UPCOMING_LIMIT
 } from './libraryDestinationQueries';
 
@@ -130,5 +135,90 @@ describe('fetchLibraryUpcoming() — Upcoming shelf of Suggestions', () => {
         expect(request).toHaveBeenCalledWith(
             expect.objectContaining({ signal })
         );
+    });
+});
+
+/**
+ * The Suggestions shelves L15b adds (issue #15). Held to the same standard as the L15a fetchers:
+ * each one is proven against the URL axios is actually called with, so "the shelf calls the right
+ * endpoint" is a measurement, not a reading of the source.
+ */
+describe('Suggestions shelves', () => {
+    it('fetchLibraryResumeItems() hits /UserItems/Resume scoped to the library and kind', async () => {
+        const request = mockRequest();
+        const api = createMockApi(request);
+
+        await fetchLibraryResumeItems(api, 'user-1', {
+            parentId: 'library-1',
+            includeItemTypes: [BaseItemKind.Movie]
+        });
+
+        const url = urlOf(request);
+        expect(url).toContain('Resume?');
+        expect(url).toContain('parentId=library-1');
+        expect(url).toContain('includeItemTypes=Movie');
+        expect(url).toContain(`limit=${SHELF_LIMIT}`);
+    });
+
+    it('fetchLibraryLatestItems() hits /Items/Latest and normalises its bare array to an { Items } shape', async () => {
+        // `getLatestMedia` answers with `BaseItemDto[]`, not a QueryResult — the one shelf endpoint
+        // whose response shape differs, normalised so all shelves render through one path.
+        const request = vi.fn().mockResolvedValue({ data: [{ Id: 'movie-1' }] });
+        const api = createMockApi(request);
+
+        const result = await fetchLibraryLatestItems(api, 'user-1', {
+            parentId: 'library-1',
+            includeItemTypes: [BaseItemKind.Movie]
+        });
+
+        const url = urlOf(request);
+        expect(url).toContain('Latest?');
+        expect(url).toContain('parentId=library-1');
+        expect(result.Items).toHaveLength(1);
+    });
+
+    it('fetchLibraryLatestItems() normalises a null payload to an empty list', async () => {
+        const request = vi.fn().mockResolvedValue({ data: null });
+        const api = createMockApi(request);
+
+        const result = await fetchLibraryLatestItems(api, 'user-1', {
+            parentId: 'library-1',
+            includeItemTypes: [BaseItemKind.Episode]
+        });
+
+        expect(result.Items).toEqual([]);
+    });
+
+    it('fetchLibraryNextUp() hits /Shows/NextUp scoped to the library', async () => {
+        const request = mockRequest();
+        const api = createMockApi(request);
+
+        await fetchLibraryNextUp(api, 'user-1', {
+            parentId: 'library-2',
+            includeItemTypes: [BaseItemKind.Episode]
+        });
+
+        const url = urlOf(request);
+        expect(url).toContain('/Shows/NextUp?');
+        expect(url).toContain('parentId=library-2');
+    });
+
+    it('fetchLibraryMovieRecommendations() hits /Movies/Recommendations and keeps its categories', async () => {
+        const request = vi.fn().mockResolvedValue({
+            data: [{ CategoryId: 'c1', BaselineItemName: 'Alien', Items: [] }]
+        });
+        const api = createMockApi(request);
+
+        const result = await fetchLibraryMovieRecommendations(api, 'user-1', {
+            parentId: 'library-1',
+            includeItemTypes: [BaseItemKind.Movie]
+        });
+
+        const url = urlOf(request);
+        expect(url).toContain('/Movies/Recommendations?');
+        expect(url).toContain('parentId=library-1');
+        // Categories are kept, not flattened: the editorial framing is what makes Suggestions a
+        // destination rather than a query (design §3.1).
+        expect(result[0].BaselineItemName).toBe('Alien');
     });
 });

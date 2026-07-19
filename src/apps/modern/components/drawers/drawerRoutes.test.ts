@@ -29,8 +29,28 @@ describe('isDrawerPath', () => {
         expect(isDrawerPath('/library')).toBe(false);
     });
 
-    it('does not match extra path segments beyond the route', () => {
-        expect(isDrawerPath('/library/f1e2d3/extra')).toBe(false);
+    /**
+     * The mobile drawer must be reachable from every library destination, not just Browse. This is
+     * the same issue #17 failure mode one level deeper: `AppLayout.tsx` gates the hamburger button
+     * on `isDrawerAvailable`, so a destination the drawer does not recognise would strand a phone
+     * user on, say, `/library/x/genres` with no way back to another library.
+     */
+    it('matches every library destination segment (issue #15, L15b)', () => {
+        expect(isDrawerPath('/library/f1e2d3/genres')).toBe(true);
+        expect(isDrawerPath('/library/f1e2d3/collections')).toBe(true);
+        expect(isDrawerPath('/library/f1e2d3/suggestions')).toBe(true);
+    });
+
+    /**
+     * `library/:libraryId/:destination` is one parametrised route, not three literal ones, so an
+     * unknown segment matches it too — and that is correct rather than sloppy: `LibraryView`
+     * redirects the unknown segment back to the canonical short URL, and the drawer has to be
+     * available while that happens. What still must not match is a *third* segment, which no route
+     * declares.
+     */
+    it('matches an unknown destination segment but not a deeper path', () => {
+        expect(isDrawerPath('/library/f1e2d3/extra')).toBe(true);
+        expect(isDrawerPath('/library/f1e2d3/genres/extra')).toBe(false);
     });
 
     it('excludes drawerless routes', () => {

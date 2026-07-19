@@ -1,5 +1,16 @@
 import { ItemSortBy, SortOrder } from 'lib/reefin-sdk';
 
+import {
+    FAVORITE_QUERY_PARAM,
+    GRANULARITY_QUERY_PARAM,
+    isLibraryGranularity,
+    type LibraryGranularity,
+    LETTER_QUERY_PARAM,
+    parseFavorite,
+    parseLetter,
+    parseStudioIds,
+    STUDIO_QUERY_PARAM
+} from '../constants/librarySections';
 import { FIRST_PAGE } from './pagination';
 
 /**
@@ -39,6 +50,18 @@ export interface LibraryQueryState {
     genre?: string;
     /** A single production year (multi-select is documented debt, mission scope). */
     year?: number;
+    /**
+     * AlphaPicker selection (design §4.1, L15b activation). A single `A`–`Z` letter or the `#`
+     * non-alphabetic sentinel; parsing/validation lives in `constants/librarySections.ts` so the
+     * `#` → `nameLessThan: 'A'` rule has exactly one definition.
+     */
+    letter?: string;
+    /** Series ↔ Episodes depth on the same query (design §3.2). Only meaningful on tvshows. */
+    granularity?: LibraryGranularity;
+    /** Favorites *filter* (design §3.2): `?favorite=1`, absent means "no filter", never "false". */
+    favorite?: boolean;
+    /** Studios *filter* (design §3.2): comma-separated ids in one param. */
+    studioIds?: string[];
 }
 
 const QUERY_PARAM = {
@@ -46,7 +69,11 @@ const QUERY_PARAM = {
     order: 'order',
     page: 'page',
     genre: 'genre',
-    year: 'year'
+    year: 'year',
+    letter: LETTER_QUERY_PARAM,
+    granularity: GRANULARITY_QUERY_PARAM,
+    favorite: FAVORITE_QUERY_PARAM,
+    studio: STUDIO_QUERY_PARAM
 } as const;
 
 const isSupportedSortBy = (value: string | null): value is ItemSortBy =>
@@ -70,7 +97,18 @@ const parseYear = (value: string | null): number | undefined => {
     return Number.isInteger(year) ? year : undefined;
 };
 
-/** Reads the sort/order/page/genre/year state from the URL, falling back to defaults for anything absent or invalid. */
+/**
+ * Granularity is parsed *permissively* here — the URL is read without knowing the library's type,
+ * because `parseLibraryQueryState` is deliberately framework- and server-free. Whether `episodes` is
+ * actually reachable is decided by `resolveGranularity(value, isTvshows)` at the call site, which is
+ * where the collection type is known.
+ */
+const parseGranularity = (
+    value: string | null
+): LibraryGranularity | undefined =>
+    isLibraryGranularity(value) ? value : undefined;
+
+/** Reads the sort/order/page/genre/year/letter/granularity/favorite/studio state from the URL, falling back to defaults for anything absent or invalid. */
 export const parseLibraryQueryState = (
     searchParams: URLSearchParams
 ): LibraryQueryState => {
@@ -84,7 +122,11 @@ export const parseLibraryQueryState = (
             : DEFAULT_SORT_ORDER,
         page: parsePage(searchParams.get(QUERY_PARAM.page)),
         genre: parseGenre(searchParams.get(QUERY_PARAM.genre)),
-        year: parseYear(searchParams.get(QUERY_PARAM.year))
+        year: parseYear(searchParams.get(QUERY_PARAM.year)),
+        letter: parseLetter(searchParams.get(QUERY_PARAM.letter)),
+        granularity: parseGranularity(searchParams.get(QUERY_PARAM.granularity)),
+        favorite: parseFavorite(searchParams.get(QUERY_PARAM.favorite)),
+        studioIds: parseStudioIds(searchParams.get(QUERY_PARAM.studio))
     };
 };
 
@@ -128,6 +170,32 @@ export const withLibraryQueryState = (
         next.delete(QUERY_PARAM.year);
     } else {
         next.set(QUERY_PARAM.year, String(merged.year));
+    }
+
+    if (!merged.letter) {
+        next.delete(QUERY_PARAM.letter);
+    } else {
+        next.set(QUERY_PARAM.letter, merged.letter);
+    }
+
+    // `primary` is the default depth, so it is written as *absence* rather than `granularity=primary`
+    // — same clean-default-URL rule the sort/order/page params above follow.
+    if (!merged.granularity || merged.granularity === 'primary') {
+        next.delete(QUERY_PARAM.granularity);
+    } else {
+        next.set(QUERY_PARAM.granularity, merged.granularity);
+    }
+
+    if (!merged.favorite) {
+        next.delete(QUERY_PARAM.favorite);
+    } else {
+        next.set(QUERY_PARAM.favorite, '1');
+    }
+
+    if (!merged.studioIds?.length) {
+        next.delete(QUERY_PARAM.studio);
+    } else {
+        next.set(QUERY_PARAM.studio, merged.studioIds.join(','));
     }
 
     return next;
