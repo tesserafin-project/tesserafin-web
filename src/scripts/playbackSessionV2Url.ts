@@ -45,7 +45,7 @@
 import type { Api } from '@jellyfin/sdk';
 
 import appSettings from './settings/appSettings';
-import { getCurrentPlaybackAttemptId } from './playbackAttemptId';
+import { applyPlaybackAttemptId } from './playbackAttemptId';
 import {
     buildClientCapabilities,
     buildPlaybackConstraints
@@ -144,6 +144,13 @@ export interface ResolveV2PlaybackUrlParams {
     userId?: string;
     mediaSourceId?: string | null;
     startTimeTicks: number;
+    /** `reefin` #43: the id of the playback attempt this call belongs to, minted once by
+     * `playbackmanager.js#playInternal()` and threaded down. A REQUEST-scoped value rather than a
+     * module-level read, because two attempts can legitimately overlap (double-click Play, autoplay
+     * landing mid-start) and an ambient read would let this POST carry the other attempt's id - see
+     * `playbackAttemptId.ts`. Optional: absent is a valid request, and the caller passes nothing
+     * when minting produced no usable value. */
+    playbackAttemptId?: string;
 }
 
 /** Injectable seams for tests - production call sites use every default. */
@@ -153,12 +160,6 @@ export interface ResolveV2PlaybackUrlDeps {
     /** Defaults to `crypto.randomUUID()` - unlike the PR116b shadow call, this IS the real
      * `PlaySessionId` for the playback attempt (see file-level doc comment). */
     generatePlaySessionId?: () => string;
-    /** Defaults to `getCurrentPlaybackAttemptId()`. Distinct from `generatePlaySessionId` above and
-     * deliberately a READ, not a mint: the attempt id belongs to the whole playback attempt that
-     * `playbackmanager.js#playInternal()` already started, so this module must never create one of
-     * its own - doing so would hand the v2 POST a different id than the `PlaybackInfo` call of the
-     * same attempt (`reefin` #43). */
-    getAttemptId?: () => string | undefined;
     buildCapabilities?: typeof buildClientCapabilities;
     buildConstraints?: typeof buildPlaybackConstraints;
     /** Defaults to the real `fetchPlaybackSessionStream()` - swapped out in tests. */
@@ -194,7 +195,6 @@ type ResolvedDeps = Required<
     Pick<
         ResolveV2PlaybackUrlDeps,
         | 'generatePlaySessionId'
-        | 'getAttemptId'
         | 'buildCapabilities'
         | 'buildConstraints'
         | 'fetchStream'
@@ -205,7 +205,6 @@ function resolveDeps(deps: ResolveV2PlaybackUrlDeps): ResolvedDeps {
     return {
         generatePlaySessionId:
             deps.generatePlaySessionId ?? (() => crypto.randomUUID()),
-        getAttemptId: deps.getAttemptId ?? getCurrentPlaybackAttemptId,
         buildCapabilities: deps.buildCapabilities ?? buildClientCapabilities,
         buildConstraints: deps.buildConstraints ?? buildPlaybackConstraints,
         fetchStream: deps.fetchStream ?? fetchPlaybackSessionStream
@@ -233,14 +232,15 @@ async function createV2Session(
             })
         };
 
-    // reefin #43: the same attempt id the `PlaybackInfo` call of this attempt already sent - read,
-    // never minted here (see `getAttemptId` above). Assigned conditionally so the key is simply
-    // absent when there is no id: the server accepts an absent `PlaybackAttemptId` and rejects a
-    // blank one with a 400. Nothing below branches on it - it is carried for diagnostics only.
-    const attemptId = resolved.getAttemptId();
-    if (attemptId) {
-        createPlaybackSessionRequest.PlaybackAttemptId = attemptId;
-    }
+    // reefin #43: the same attempt id the `PlaybackInfo` call of this attempt already sent - carried
+    // in as a parameter, never minted and never read from module state here, so a concurrent second
+    // attempt cannot substitute its own id (see `playbackAttemptId.ts`). The helper omits the key
+    // entirely when there is no usable id: the server accepts an absent `PlaybackAttemptId` and
+    // rejects a blank one with a 400. Nothing below branches on it - diagnostics only.
+    applyPlaybackAttemptId(
+        createPlaybackSessionRequest,
+        params.playbackAttemptId
+    );
 
     const { data: session }: { data: PlaybackSessionResponse } =
         await playbackApiFor(params.api).createPlaybackSession({

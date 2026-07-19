@@ -26,11 +26,26 @@
  * bundle budget and keeps the `lib/reefin-sdk` scope behind the existing lazy `playback-v2-url`
  * boundary where PR #21 put it.
  *
- * Single module-level current attempt, rather than per-player state: only one attempt is ever in
- * its *starting* phase at a time (`playInternal()` is the sole mint site and the retry path never
- * re-enters it), so a singleton is sufficient and survives the `streamInfo` rebuild that
- * `changeStream()` performs - stashing the id on `streamInfo` would silently lose it on exactly
- * the retry this feature exists to correlate.
+ * NO module-level current attempt, and this is the correctness core of the module. An earlier
+ * revision kept the live id in a module global on the theory that "only one attempt is ever in its
+ * starting phase at a time". That theory is false: `playInternal()` is invoked fire-and-forget from
+ * `nextTrack()`, `previousTrack()` and `setCurrentPlaylistItem()`, with no await and no lock, so a
+ * double-click on Play or an autoplay landing mid-start gives two overlapping `playInternal()`
+ * calls. The second one's mint would overwrite the global while the first one's `getPlaybackInfo()`
+ * was still awaiting - and attempt A would then stamp attempt B's id onto its own `PlaybackInfo`
+ * and its own v2 `POST`, silently fusing two attempts in the server's diagnostics. Exactly the
+ * correlation this feature exists to provide.
+ *
+ * So the id is a VALUE, threaded explicitly: minted in `playInternal()`, passed down the start path
+ * as a parameter, and parked on the per-player state (`getPlayerData(player)`) so the retry path can
+ * recover the right attempt. Two overlapping attempts therefore hold two distinct values and cannot
+ * observe each other's.
+ *
+ * Why per-player state and not `streamInfo`: `changeStream()`'s transcoding retry does not re-enter
+ * `playInternal()` - it is driven by a player error event, so it has no lexical access to the
+ * minting call frame and must recover the id from somewhere. `changeStream()` REPLACES
+ * `playerData.streamInfo` wholesale, so stashing the id there would lose it on exactly the retry
+ * being correlated; `playerData` itself survives, which is why it is the home.
  */
 
 /** Injectable seam for tests - production callers use the default. */
@@ -38,13 +53,6 @@ export interface PlaybackAttemptIdDeps {
     /** Defaults to {@link generatePlaybackAttemptId}. */
     generate?: () => string;
 }
-
-/**
- * The current attempt's id, or `undefined` before the first attempt of the session. Never an empty
- * or blank string: the server rejects those with a `400` (absent is explicitly fine, blank is
- * not), so "no id" is represented by the absence of a value at every layer of this module.
- */
-let currentPlaybackAttemptId: string | undefined;
 
 /**
  * Mints an opaque attempt id. `crypto.randomUUID()` is the intended source and is available in
@@ -88,12 +96,16 @@ export function sanitizePlaybackAttemptId(
 }
 
 /**
- * Starts a NEW attempt and returns its id. Called once per `playInternal()`; the previous
- * attempt's id is simply replaced (there is nothing to clean up - the value is inert).
+ * Mints a NEW attempt's id and RETURNS it - it is stored nowhere. Called once per `playInternal()`,
+ * whose caller owns the returned value and threads it to every request of that attempt.
+ *
+ * Returning rather than storing is what makes concurrent attempts safe: two overlapping
+ * `playInternal()` calls receive two independent values and neither can observe the other's. See
+ * the file-level comment for the interleaving this replaced.
  *
  * Defensive re-sanitize of the generated value: a caller-injected `generate` seam could in
  * principle hand back something blank, and this function must never be the reason a `400`-inducing
- * value becomes current. If generation somehow yields nothing usable, the attempt proceeds with no
+ * value reaches the wire. If generation somehow yields nothing usable, the attempt proceeds with no
  * id at all - which the server accepts - rather than with a bad one.
  */
 export function beginPlaybackAttempt(
@@ -101,27 +113,21 @@ export function beginPlaybackAttempt(
 ): string | undefined {
     const generate = deps.generate ?? generatePlaybackAttemptId;
 
-    currentPlaybackAttemptId = sanitizePlaybackAttemptId(generate());
-
-    return currentPlaybackAttemptId;
+    return sanitizePlaybackAttemptId(generate());
 }
 
 /**
- * The current attempt's id, or `undefined` if no attempt has started (or the minted value was
- * unusable). Callers must treat `undefined` as an ordinary, valid outcome - never as an error.
- */
-export function getCurrentPlaybackAttemptId(): string | undefined {
-    return sanitizePlaybackAttemptId(currentPlaybackAttemptId);
-}
-
-/**
- * Attaches the current attempt's id to an outbound payload, in place, and returns that same
- * payload so this can be dropped into an existing expression.
+ * Attaches a specific attempt's id to an outbound payload, in place, and returns that same payload
+ * so this can be dropped into an existing expression.
  *
- * The key is set ONLY when there is a usable id: an absent `PlaybackAttemptId` is a valid request,
- * an empty one is a `400`. This is why the field is never pre-initialized to `''` and never
- * assigned unconditionally - the property simply does not appear on the payload when there is no
- * attempt id, which serializes to an omitted field exactly as the server expects.
+ * `attemptId` is a required parameter with no fallback to any ambient state - that absence is the
+ * point. A call site that cannot name which attempt it belongs to cannot stamp one, which is what
+ * structurally prevents attempt A's request from picking up attempt B's id.
+ *
+ * The key is set ONLY when the id is usable: an absent `PlaybackAttemptId` is a valid request, an
+ * empty one is a `400`. This is why the field is never pre-initialized to `''` and never assigned
+ * unconditionally - the property simply does not appear on the payload when there is no attempt id,
+ * which serializes to an omitted field exactly as the server expects.
  *
  * Used for the two payload types the client actually sends today (`PlaybackInfoDto` and
  * `CreatePlaybackSessionRequest`); it is intentionally shape-agnostic so a future
@@ -129,17 +135,12 @@ export function getCurrentPlaybackAttemptId(): string | undefined {
  */
 export function applyPlaybackAttemptId<
     T extends { PlaybackAttemptId?: string }
->(payload: T): T {
-    const attemptId = getCurrentPlaybackAttemptId();
+>(payload: T, attemptId: string | null | undefined): T {
+    const sanitized = sanitizePlaybackAttemptId(attemptId);
 
-    if (attemptId) {
-        payload.PlaybackAttemptId = attemptId;
+    if (sanitized) {
+        payload.PlaybackAttemptId = sanitized;
     }
 
     return payload;
-}
-
-/** Test-only reset of the module-level attempt state. Not called from production code. */
-export function resetPlaybackAttemptIdForTests(): void {
-    currentPlaybackAttemptId = undefined;
 }
