@@ -3,12 +3,16 @@
  * tabs, specified in `docs/reefin/design-library-navigation.md` (issue #15, arbitrage §8-C of
  * reefin#44).
  *
- * **DORMANT — imported by its test only.** Nothing in the app imports this module, so webpack never
- * reaches it from an entry point and it contributes 0 bytes to the main bundle. Activation (routing
- * the destinations, repointing `appRouter.getRouteUrl()`, adding legacy redirects) is gated on
- * **LANE B** (bundle margin, target 30 KiB — now measured at 84.7 KiB / 86 737 B, so the numeric
- * threshold is met) **and** **LANE E2E** (cross gate, itself blocked on reefin#39, still closed).
- * Both are required, so activation remains blocked. See §7 of the design doc.
+ * **NOT ROUTED.** `api/useLibraryItems.ts` now imports this module, so it is no longer test-only —
+ * but it still costs 0 bytes on the main bundle, for a sturdier reason: `library/:libraryId` is
+ * declared in `apps/modern/routes/asyncRoutes/user.ts` and loaded by `AsyncRoute.tsx` via
+ * `lazy: () => import(...)`, so this whole slice lives in an async chunk outside
+ * `main.jellyfin.bundle.js`.
+ *
+ * Both activation gates are now **available**: LANE B (bundle margin) is acquired with wide room,
+ * and LANE E2E's cross rig exists since reefin#39 merged. Availability is not activation — mounting
+ * the destinations, repointing `appRouter.getRouteUrl()` and adding legacy redirects is L15b, and it
+ * still owes the e2e spec that #39 made writable. See §7 of the design doc.
  *
  * Deliberately free of `@jellyfin/sdk` / `reefin-sdk` imports: this is the navigation vocabulary,
  * not a query builder, and it must not pre-empt the SDK migration that PR #22 carries.
@@ -45,8 +49,8 @@ export type LegacyTabFate =
 
 /**
  * Legacy `LibraryTab` value → its fate. Keys are the `types/libraryTab.ts` string values, so this
- * map can be checked against the real enum without importing it (and thus without coupling a
- * dormant module to a live one).
+ * map can be checked against the real enum without importing it (and thus without coupling this
+ * vocabulary module to the legacy slice).
  */
 export const LEGACY_TAB_FATE: Record<string, LegacyTabFate> = {
     movies: { kind: 'destination', destination: 'browse' },
@@ -144,8 +148,20 @@ export const toggleViewMode = (mode: LibraryViewMode): LibraryViewMode =>
 
 export const LETTER_QUERY_PARAM = 'letter';
 
+/** 1-indexed, mirroring `utils/pagination.ts`'s `FIRST_PAGE` (duplicated, not imported, to keep this vocabulary module free of app-side deps). */
+export const FIRST_LIBRARY_PAGE = 1;
+
 /** Sentinel for the non-alphabetic bucket. */
 export const NON_ALPHA_LETTER = '#';
+
+/**
+ * `#` is not a `nameStartsWith` value: the server expresses "sorts before A" as `nameLessThan: 'A'`.
+ * `utils/items.ts` already applies exactly this translation for the legacy pages
+ * (`nameLessThan: alphabetValue === '#' ? 'A' : undefined`); reusing the same constant is what makes
+ * the ported picker return the *same* set as the legacy one rather than a plausible-looking
+ * approximation.
+ */
+export const NON_ALPHA_NAME_LESS_THAN = 'A';
 
 export const ALPHA_PICKER_LETTERS: readonly string[] = [
     NON_ALPHA_LETTER,
@@ -184,3 +200,89 @@ export const toggleLetter = (
     current: string | undefined,
     letter: string
 ): string | undefined => (current === letter ? undefined : letter);
+
+/**
+ * A letter change always returns to page 1. Keeping the old page would land the user on, say, page 7
+ * of a "Q" result set that has two pages — the same out-of-range window `useCanonicalPage` has to
+ * repair after the fact. Resetting at the source avoids opening it at all.
+ *
+ * Returns the next `{ letter, page }` pair, so a caller cannot apply the letter and forget the page.
+ */
+export const selectLetter = (
+    current: string | undefined,
+    letter: string
+): { letter: string | undefined; page: number } => ({
+    letter: toggleLetter(current, letter),
+    page: FIRST_LIBRARY_PAGE
+});
+
+/* -------------------------------------------------------------------------- */
+/* Browse: Series/Episodes granularity                                        */
+/* -------------------------------------------------------------------------- */
+
+export const GRANULARITY_QUERY_PARAM = 'granularity';
+
+export const isLibraryGranularity = (
+    value: string | null | undefined
+): value is LibraryGranularity => value === 'primary' || value === 'episodes';
+
+/**
+ * Granularity only exists for tvshows: a movies library has no depth below `Movie`, so the control
+ * is absent there rather than disabled. Callers resolve the *primary* kind from the collection type
+ * as they already do, then let this swap in `Episode`.
+ */
+export const resolveGranularity = (
+    value: string | null | undefined,
+    isTvshows: boolean
+): LibraryGranularity =>
+    isTvshows && isLibraryGranularity(value) ? value : 'primary';
+
+/* -------------------------------------------------------------------------- */
+/* Browse: Favorites and Studios filters                                      */
+/* -------------------------------------------------------------------------- */
+
+export const FAVORITE_QUERY_PARAM = 'favorite';
+
+export const STUDIO_QUERY_PARAM = 'studio';
+
+/** `?favorite=1` — a single truthy sentinel, so an absent param means "no filter", not "false". */
+export const parseFavorite = (value: string | null): boolean | undefined =>
+    value === '1' ? true : undefined;
+
+/** Studio ids arrive comma-separated so one param carries a multi-select without repeating keys. */
+export const parseStudioIds = (value: string | null): string[] | undefined => {
+    if (!value) return undefined;
+    const ids = value
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
+    return ids.length ? ids : undefined;
+};
+
+/* -------------------------------------------------------------------------- */
+/* Suggestions: shelves                                                       */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The shelves of the Suggestions destination, per library type. These are exactly the
+ * `sectionsView.suggestionSections` the legacy `suggestionsTabContent` already requests
+ * (`constants/views/movies.ts`, `constants/views/tvshows.ts`) — plus `upcoming` on tvshows, which
+ * design §3.2 folds in from its own legacy tab (`upcomingTabContent` carries no `itemType`: it was
+ * already a sections view, not a list).
+ *
+ * Section names are the `types/sections.ts` `SectionType` string values, matched without importing
+ * the enum so this vocabulary module stays decoupled from the legacy slice.
+ */
+export const SUGGESTIONS_SHELVES: Record<string, readonly string[]> = {
+    movies: ['ContinueWatchingMovies', 'LatestMovies', 'MovieRecommendations'],
+    tvshows: [
+        'ContinueWatchingEpisode',
+        'LatestEpisode',
+        'NextUp',
+        'UpcomingEpisodes'
+    ]
+};
+
+export const getSuggestionsShelves = (
+    collectionType: string | null | undefined
+): readonly string[] => SUGGESTIONS_SHELVES[collectionType ?? ''] ?? [];
