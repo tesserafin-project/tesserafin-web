@@ -12,6 +12,27 @@ export default defineConfig({
     testDir: './tests/e2e',
     timeout: 60_000,
     fullyParallel: false,
+    /**
+     * ONE worker, and it must stay that way.
+     *
+     * `fullyParallel: false` only serializes tests WITHIN a file — Playwright still runs separate
+     * FILES concurrently, one per worker. That is unsafe here, because every spec in this directory
+     * drives the SAME single Reefin server, and the v2 engine switch
+     * (`PlaybackShadow.Mode`, set through `POST /System/Configuration`) is PERSISTENT, GLOBAL server
+     * state, not per-test state. Run in parallel, `playback-v2-client.spec.ts` sets `Mode: 'Legacy'`
+     * for its kill-switch case at the same moment the attempt-id, capabilities and server-contract
+     * specs require `Mode: 'V2'`, and whichever write lands last silently decides what the others
+     * observe.
+     *
+     * Measured on a real rig: at the default 6 workers the suite fails
+     * ("no media leg after the aborted one — the retry ladder did not run"), while the identical
+     * suite at `--workers=1` passes repeatedly. The failure is a harness artifact, not a product
+     * defect, which is the most expensive kind of red to debug.
+     *
+     * Making the engine mode per-test would require either a per-test server or a server-side
+     * override scoped to a request, neither of which exists today.
+     */
+    workers: 1,
     retries: 0,
     reporter: [['list']],
     use: {
