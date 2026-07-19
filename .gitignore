@@ -1,6 +1,10 @@
 # npm
 dist
-web
+# Anchored: this is the top-level build output directory. Unanchored, `web` matches a directory of
+# that name at ANY depth, which silently untracked `reefin-design/web/` — a source directory that
+# builds depend on. That failure is invisible locally (the file is on disk) and only surfaces as a
+# broken build from a fresh clone, so keep the leading slash.
+/web
 node_modules
 
 # test coverage
