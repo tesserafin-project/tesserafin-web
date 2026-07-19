@@ -9,15 +9,22 @@ import {
     ALPHA_PICKER_LETTERS,
     DEFAULT_DESTINATION,
     DEFAULT_VIEW_MODE,
+    FIRST_LIBRARY_PAGE,
+    getSuggestionsShelves,
+    getViewModeStorageKey,
     isAlphaPickerEnabled,
     LEGACY_MOVIE_TABS,
     LEGACY_TAB_FATE,
     LEGACY_TVSHOWS_TABS,
     LIBRARY_DESTINATIONS,
     NON_ALPHA_LETTER,
+    parseFavorite,
     parseLetter,
+    parseStudioIds,
     resolveDestination,
+    resolveGranularity,
     resolveViewMode,
+    selectLetter,
     toggleLetter,
     toggleViewMode
 } from './librarySections';
@@ -179,6 +186,110 @@ describe('library navigation model (dormant)', () => {
             expect(toggleLetter('A', 'A')).toBeUndefined();
             expect(toggleLetter('A', 'B')).toBe('B');
             expect(toggleLetter(undefined, 'A')).toBe('A');
+        });
+
+        it('resets pagination to page 1 on every letter change', () => {
+            expect(selectLetter(undefined, 'Q')).toEqual({
+                letter: 'Q',
+                page: FIRST_LIBRARY_PAGE
+            });
+            expect(selectLetter('A', 'B')).toEqual({
+                letter: 'B',
+                page: FIRST_LIBRARY_PAGE
+            });
+        });
+
+        it('resets pagination even when the letter is being cleared', () => {
+            // Clearing widens the result set, so a stale deep page is just as wrong as after a
+            // narrowing change.
+            expect(selectLetter('A', 'A')).toEqual({
+                letter: undefined,
+                page: FIRST_LIBRARY_PAGE
+            });
+        });
+    });
+
+    describe('Series/Episodes granularity', () => {
+        it('accepts episodes only for a tvshows library', () => {
+            expect(resolveGranularity('episodes', true)).toBe('episodes');
+            expect(resolveGranularity('primary', true)).toBe('primary');
+        });
+
+        it('ignores the param entirely for a movies library, which has no depth below Movie', () => {
+            expect(resolveGranularity('episodes', false)).toBe('primary');
+        });
+
+        it('falls back to primary for anything unrecognised', () => {
+            expect(resolveGranularity(null, true)).toBe('primary');
+            expect(resolveGranularity('seasons', true)).toBe('primary');
+        });
+    });
+
+    describe('Browse filters (Studios, Favorites)', () => {
+        it('reads ?favorite=1 as on, and anything else as no filter', () => {
+            expect(parseFavorite('1')).toBe(true);
+            expect(parseFavorite('0')).toBeUndefined();
+            expect(parseFavorite(null)).toBeUndefined();
+        });
+
+        it('parses a comma-separated studio list', () => {
+            expect(parseStudioIds('a,b')).toEqual(['a', 'b']);
+            expect(parseStudioIds(' a , b ')).toEqual(['a', 'b']);
+        });
+
+        it('treats an empty or blank studio param as no filter', () => {
+            expect(parseStudioIds(null)).toBeUndefined();
+            expect(parseStudioIds('')).toBeUndefined();
+            expect(parseStudioIds(',,')).toBeUndefined();
+        });
+    });
+
+    describe('view mode is per-library and orthogonal to density', () => {
+        it('keys storage per library, so two libraries do not share a mode', () => {
+            expect(getViewModeStorageKey('lib-a')).not.toBe(
+                getViewModeStorageKey('lib-b')
+            );
+            expect(getViewModeStorageKey('lib-a')).toContain('lib-a');
+        });
+
+        it('lets the URL win over the stored preference', () => {
+            expect(resolveViewMode('list', 'grid')).toBe('list');
+            expect(resolveViewMode('grid', 'list')).toBe('grid');
+        });
+
+        it('falls back to the stored preference, then to grid', () => {
+            expect(resolveViewMode(null, 'list')).toBe('list');
+            expect(resolveViewMode(null, undefined)).toBe(DEFAULT_VIEW_MODE);
+            expect(resolveViewMode('sideways', undefined)).toBe(
+                DEFAULT_VIEW_MODE
+            );
+        });
+
+        // Orthogonality: view mode resolves from its own param/key and never consults density, so
+        // all four (grid|list) x (comfortable|compact) combinations are reachable. The density
+        // half of the pair is pinned by `utils/density.test.ts`.
+        it('resolves without reference to density', () => {
+            expect(getViewModeStorageKey('lib-a')).not.toContain('density');
+            expect(resolveViewMode('list', undefined)).toBe('list');
+        });
+    });
+
+    describe('Suggestions shelves', () => {
+        it('carries the legacy movie suggestion sections', () => {
+            const shelves = getSuggestionsShelves('movies');
+            expect(shelves).toContain('ContinueWatchingMovies');
+            expect(shelves).toContain('LatestMovies');
+        });
+
+        it('folds Upcoming into the tvshows shelves rather than leaving it a tab', () => {
+            const shelves = getSuggestionsShelves('tvshows');
+            expect(shelves).toContain('NextUp');
+            expect(shelves).toContain('UpcomingEpisodes');
+        });
+
+        it('has no shelves for a library type outside v1 scope', () => {
+            expect(getSuggestionsShelves('music')).toEqual([]);
+            expect(getSuggestionsShelves(undefined)).toEqual([]);
         });
     });
 });

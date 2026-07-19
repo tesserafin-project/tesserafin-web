@@ -11,6 +11,11 @@ import type {
 } from 'lib/reefin-sdk';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 
+import {
+    NON_ALPHA_LETTER,
+    NON_ALPHA_NAME_LESS_THAN
+} from '../constants/librarySections';
+
 /**
  * `getItems` params for the `/library/:libraryId` grid (RFC-0005 §11 WP-C step 2). Mirrors
  * `hooks/useFetchItems.ts`'s `fetchGetItemsViewByType` default branch (same endpoint), trimmed to
@@ -25,6 +30,10 @@ import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result
  */
 export interface LibraryItemsParams {
     parentId: string;
+    /**
+     * The Series/Episodes granularity toggle rides on this field (design §3.2): Episodes is the same
+     * query at a different depth (`[Episode]` instead of `[Series]`), not a separate view.
+     */
     includeItemTypes: BaseItemKind[];
     sortBy: ItemSortBy;
     sortOrder: SortOrder;
@@ -32,6 +41,23 @@ export interface LibraryItemsParams {
     limit: number;
     genre?: string;
     year?: number;
+    /**
+     * Studios filter (design §3.2): `studioIds` is a *parameter of this query*, which is exactly why
+     * Studios is a control on Browse rather than a first-level destination.
+     */
+    studioIds?: string[];
+    /**
+     * Favorites filter (design §3.2): `isFavorite: true` is a pure predicate, so a dedicated tab
+     * would duplicate Browse to a boolean. Left `undefined` (not `false`) when off, so the request
+     * carries no `isFavorite` at all rather than explicitly asking for non-favorites.
+     */
+    isFavorite?: boolean;
+    /**
+     * AlphaPicker selection (design §4.1). `#` is the non-alphabetic bucket and maps to
+     * `nameLessThan: 'A'` rather than `nameStartsWith` - the same translation `utils/items.ts`
+     * already applies for the legacy pages, kept identical so the two produce the same result set.
+     */
+    letter?: string;
 }
 
 export const fetchLibraryItems = async (
@@ -52,6 +78,18 @@ export const fetchLibraryItems = async (
             limit: params.limit,
             genres: params.genre ? [params.genre] : undefined,
             years: params.year ? [params.year] : undefined,
+            studioIds: params.studioIds?.length
+                ? params.studioIds
+                : undefined,
+            isFavorite: params.isFavorite ? true : undefined,
+            nameStartsWith:
+                params.letter && params.letter !== NON_ALPHA_LETTER
+                    ? params.letter
+                    : undefined,
+            nameLessThan:
+                params.letter === NON_ALPHA_LETTER
+                    ? NON_ALPHA_NAME_LESS_THAN
+                    : undefined,
             fields: [ItemFields.PrimaryImageAspectRatio],
             enableImageTypes: [ImageType.Primary],
             imageTypeLimit: 1
