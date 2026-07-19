@@ -32,16 +32,16 @@ export interface LogFile {
      */
     'DateModified'?: string;
     /**
-     * Gets or sets the size.
-     * @type {number}
-     * @memberof LogFile
-     */
-    'Size'?: number;
-    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof LogFile
      */
     'Name': string;
+    /**
+     * Gets or sets the size.
+     * @type {number}
+     * @memberof LogFile
+     */
+    'Size'?: number;
 }
 

@@ -23,12 +23,6 @@ import type { ImageType } from './image-type';
  */
 export interface ImageOption {
     /**
-     * Gets or sets the type.
-     * @type {ImageType}
-     * @memberof ImageOption
-     */
-    'Type'?: ImageType;
-    /**
      * Gets or sets the limit.
      * @type {number}
      * @memberof ImageOption
@@ -40,6 +34,12 @@ export interface ImageOption {
      * @memberof ImageOption
      */
     'MinWidth'?: number;
+    /**
+     * Gets or sets the type.
+     * @type {ImageType}
+     * @memberof ImageOption
+     */
+    'Type'?: ImageType;
 }
 
 

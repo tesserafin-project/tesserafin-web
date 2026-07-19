@@ -26,23 +26,17 @@ import type { PlaylistUserPermissions } from './playlist-user-permissions';
  */
 export interface CreatePlaylistDto {
     /**
-     * Gets or sets the name of the new playlist.
-     * @type {string}
-     * @memberof CreatePlaylistDto
-     */
-    'Name': string;
-    /**
      * Gets or sets item ids to add to the playlist.
      * @type {Array<string>}
      * @memberof CreatePlaylistDto
      */
     'Ids'?: Array<string>;
     /**
-     * Gets or sets the user id.
-     * @type {string}
+     * Gets or sets a value indicating whether the playlist is public.
+     * @type {boolean}
      * @memberof CreatePlaylistDto
      */
-    'UserId'?: string | null;
+    'IsPublic'?: boolean;
     /**
      * Gets or sets the media type.
      * @type {MediaType}
@@ -50,17 +44,23 @@ export interface CreatePlaylistDto {
      */
     'MediaType'?: MediaType | null;
     /**
+     * Gets or sets the name of the new playlist.
+     * @type {string}
+     * @memberof CreatePlaylistDto
+     */
+    'Name': string;
+    /**
+     * Gets or sets the user id.
+     * @type {string}
+     * @memberof CreatePlaylistDto
+     */
+    'UserId'?: string | null;
+    /**
      * Gets or sets the playlist users.
      * @type {Array<PlaylistUserPermissions>}
      * @memberof CreatePlaylistDto
      */
     'Users'?: Array<PlaylistUserPermissions>;
-    /**
-     * Gets or sets a value indicating whether the playlist is public.
-     * @type {boolean}
-     * @memberof CreatePlaylistDto
-     */
-    'IsPublic'?: boolean;
 }
 
 

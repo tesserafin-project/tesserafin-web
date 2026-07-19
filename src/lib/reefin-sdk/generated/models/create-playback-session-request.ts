@@ -26,18 +26,6 @@ import type { PlaybackDecisionPlaybackConstraints } from './playback-decision-pl
  */
 export interface CreatePlaybackSessionRequest {
     /**
-     * The item to plan playback for.
-     * @type {string}
-     * @memberof CreatePlaybackSessionRequest
-     */
-    'ItemId'?: string;
-    /**
-     * The requesting user.
-     * @type {string}
-     * @memberof CreatePlaybackSessionRequest
-     */
-    'UserId'?: string;
-    /**
      * Everything the v2 engine needs to know about a requesting client: what it can decode as-is (Reefin.Playback.Decision.ClientCapabilities.Decode), and separately, what the server should produce when it must transcode (Reefin.Playback.Decision.ClientCapabilities.OutputProfiles).
      * @type {PlaybackDecisionClientCapabilities}
      * @memberof CreatePlaybackSessionRequest
@@ -50,6 +38,12 @@ export interface CreatePlaybackSessionRequest {
      */
     'Constraints'?: PlaybackDecisionPlaybackConstraints;
     /**
+     * The item to plan playback for.
+     * @type {string}
+     * @memberof CreatePlaybackSessionRequest
+     */
+    'ItemId'?: string;
+    /**
      * Optional. A specific media source id, if playing an alternate version.
      * @type {string}
      * @memberof CreatePlaybackSessionRequest
@@ -61,5 +55,17 @@ export interface CreatePlaybackSessionRequest {
      * @memberof CreatePlaybackSessionRequest
      */
     'PlaySessionId'?: string | null;
+    /**
+     * Issue #43. Optional, opaque, client-generated. The identifier of the playback ATTEMPT this request belongs to — generated once by the client when it starts trying to play something, and resent unchanged on every request of that attempt: `PlaybackInfo`, this `POST`, the `PUT`, and any retry. A new attempt gets a new value; a retry inside the same attempt keeps the old one.  Distinct from both neighbouring scopes and substitutable for neither. It is NOT the `RequestId`/`TraceId` of issue #42, which is server-derived and changes on every request. It is NOT Reefin.Api.Models.PlaybackSessionDtos.CreatePlaybackSessionRequest.PlaySessionId, which only exists once a session does — i.e. after `PlaybackInfo` has already happened — and which survives across several attempts. See `docs/observabilite-identifiants-correlation.md`. Diagnostics only: never an authorization key, no access decision is derived from it, and it replaces no existing access control. Validated for length and printability only (see Reefin.Api.Models.PlaybackSessionDtos.PlaybackAttemptIdValidator); no structure is imposed and no meaning is read out of it.
+     * @type {string}
+     * @memberof CreatePlaybackSessionRequest
+     */
+    'PlaybackAttemptId'?: string | null;
+    /**
+     * The requesting user.
+     * @type {string}
+     * @memberof CreatePlaybackSessionRequest
+     */
+    'UserId'?: string;
 }
 

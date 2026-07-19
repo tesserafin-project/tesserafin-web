@@ -26,17 +26,29 @@ import type { PersonKind } from './person-kind';
  */
 export interface BaseItemPerson {
     /**
+     * Gets or sets the identifier.
+     * @type {string}
+     * @memberof BaseItemPerson
+     */
+    'Id'?: string;
+    /**
+     * 
+     * @type {BaseItemPersonImageBlurHashes}
+     * @memberof BaseItemPerson
+     */
+    'ImageBlurHashes'?: BaseItemPersonImageBlurHashes | null;
+    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof BaseItemPerson
      */
     'Name'?: string | null;
     /**
-     * Gets or sets the identifier.
+     * Gets or sets the primary image tag.
      * @type {string}
      * @memberof BaseItemPerson
      */
-    'Id'?: string;
+    'PrimaryImageTag'?: string | null;
     /**
      * Gets or sets the role.
      * @type {string}
@@ -49,18 +61,6 @@ export interface BaseItemPerson {
      * @memberof BaseItemPerson
      */
     'Type'?: PersonKind;
-    /**
-     * Gets or sets the primary image tag.
-     * @type {string}
-     * @memberof BaseItemPerson
-     */
-    'PrimaryImageTag'?: string | null;
-    /**
-     * 
-     * @type {BaseItemPersonImageBlurHashes}
-     * @memberof BaseItemPerson
-     */
-    'ImageBlurHashes'?: BaseItemPersonImageBlurHashes | null;
 }
 
 

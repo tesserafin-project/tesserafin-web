@@ -26,17 +26,17 @@ import type { PlaybackDecisionStreamingProtocol } from './playback-decision-stre
  */
 export interface PlaybackDecisionOutputSpec {
     /**
-     * The normalized output container name, or null if not applicable.
-     * @type {string}
+     * The output audio stream\'s bitrate ceiling (PR103), or null if not applicable/unbounded. Populated only when the audio is being transcoded, as the narrowest of the used Reefin.Playback.Decision.PlaybackOutputProfile.MaxAudioBitrate and the target codec\'s Reefin.Playback.Decision.AudioCodecCapability.MaxBitrate.
+     * @type {number}
      * @memberof PlaybackDecisionOutputSpec
      */
-    'Container'?: string | null;
+    'AudioBitrate'?: number | null;
     /**
-     * The normalized output video codec, or null if not applicable.
-     * @type {string}
+     * The output audio channel count, or null if not applicable/unchanged.
+     * @type {number}
      * @memberof PlaybackDecisionOutputSpec
      */
-    'VideoCodec'?: string | null;
+    'AudioChannels'?: number | null;
     /**
      * The normalized output audio codec, or null if not applicable.
      * @type {string}
@@ -44,23 +44,29 @@ export interface PlaybackDecisionOutputSpec {
      */
     'AudioCodec'?: string | null;
     /**
+     * The normalized output container name, or null if not applicable.
+     * @type {string}
+     * @memberof PlaybackDecisionOutputSpec
+     */
+    'Container'?: string | null;
+    /**
+     * The transport protocol this output is delivered over (PR102b). For Direct Play and Remux, always Reefin.Playback.Decision.StreamingProtocol.Http - a protocol only diverges from plain HTTP when the server produces the encoding, i.e. when transcoding to a client-declared Reefin.Playback.Decision.PlaybackOutputProfile. Non-nullable: Reefin.Playback.Decision.StreamingProtocol.Http is the neutral value for the \"not applicable\" case too, so this decision never leaves the delivery protocol unstated.
+     * @type {PlaybackDecisionStreamingProtocol}
+     * @memberof PlaybackDecisionOutputSpec
+     */
+    'Protocol'?: PlaybackDecisionStreamingProtocol;
+    /**
      * The output resolution, or null if not applicable/unchanged.
      * @type {PlaybackDecisionResolution}
      * @memberof PlaybackDecisionOutputSpec
      */
     'Resolution'?: PlaybackDecisionResolution | null;
     /**
-     * The normalized output video range type, or null if not applicable/unchanged.
+     * The format the client will actually receive the selected subtitle in, mirroring legacy `StreamInfo.SubtitleFormat`, or null if not applicable/no subtitle selected.
      * @type {string}
      * @memberof PlaybackDecisionOutputSpec
      */
-    'VideoRange'?: string | null;
-    /**
-     * The output audio channel count, or null if not applicable/unchanged.
-     * @type {number}
-     * @memberof PlaybackDecisionOutputSpec
-     */
-    'AudioChannels'?: number | null;
+    'SubtitleFormat'?: string | null;
     /**
      * The output\'s overall bitrate ceiling (PR103), or null if not applicable/unbounded. Populated only when transcoding, as the narrowest of Reefin.Playback.Decision.PlaybackConstraints.MaxBitrate (the request\'s global cap) and the sum of Reefin.Playback.Decision.OutputSpec.VideoBitrate/Reefin.Playback.Decision.OutputSpec.AudioBitrate when both are known - never a fabricated value out of unknown per-stream ceilings.
      * @type {number}
@@ -74,23 +80,17 @@ export interface PlaybackDecisionOutputSpec {
      */
     'VideoBitrate'?: number | null;
     /**
-     * The output audio stream\'s bitrate ceiling (PR103), or null if not applicable/unbounded. Populated only when the audio is being transcoded, as the narrowest of the used Reefin.Playback.Decision.PlaybackOutputProfile.MaxAudioBitrate and the target codec\'s Reefin.Playback.Decision.AudioCodecCapability.MaxBitrate.
-     * @type {number}
-     * @memberof PlaybackDecisionOutputSpec
-     */
-    'AudioBitrate'?: number | null;
-    /**
-     * The transport protocol this output is delivered over (PR102b). For Direct Play and Remux, always Reefin.Playback.Decision.StreamingProtocol.Http - a protocol only diverges from plain HTTP when the server produces the encoding, i.e. when transcoding to a client-declared Reefin.Playback.Decision.PlaybackOutputProfile. Non-nullable: Reefin.Playback.Decision.StreamingProtocol.Http is the neutral value for the \"not applicable\" case too, so this decision never leaves the delivery protocol unstated.
-     * @type {PlaybackDecisionStreamingProtocol}
-     * @memberof PlaybackDecisionOutputSpec
-     */
-    'Protocol'?: PlaybackDecisionStreamingProtocol;
-    /**
-     * The format the client will actually receive the selected subtitle in, mirroring legacy `StreamInfo.SubtitleFormat`, or null if not applicable/no subtitle selected.
+     * The normalized output video codec, or null if not applicable.
      * @type {string}
      * @memberof PlaybackDecisionOutputSpec
      */
-    'SubtitleFormat'?: string | null;
+    'VideoCodec'?: string | null;
+    /**
+     * The normalized output video range type, or null if not applicable/unchanged.
+     * @type {string}
+     * @memberof PlaybackDecisionOutputSpec
+     */
+    'VideoRange'?: string | null;
 }
 
 

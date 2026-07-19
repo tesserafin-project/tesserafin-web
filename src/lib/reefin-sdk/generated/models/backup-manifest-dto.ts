@@ -23,12 +23,6 @@ import type { BackupOptionsDto } from './backup-options-dto';
  */
 export interface BackupManifestDto {
     /**
-     * Gets or sets the reefin version this backup was created with.
-     * @type {string}
-     * @memberof BackupManifestDto
-     */
-    'ServerVersion': string;
-    /**
      * Gets or sets the backup engine version this backup was created with.
      * @type {string}
      * @memberof BackupManifestDto
@@ -41,16 +35,22 @@ export interface BackupManifestDto {
      */
     'DateCreated': string;
     /**
+     * Gets or sets the contents of the backup archive.
+     * @type {BackupOptionsDto}
+     * @memberof BackupManifestDto
+     */
+    'Options': BackupOptionsDto;
+    /**
      * Gets or sets the path to the backup on the system.
      * @type {string}
      * @memberof BackupManifestDto
      */
     'Path': string;
     /**
-     * Gets or sets the contents of the backup archive.
-     * @type {BackupOptionsDto}
+     * Gets or sets the reefin version this backup was created with.
+     * @type {string}
      * @memberof BackupManifestDto
      */
-    'Options': BackupOptionsDto;
+    'ServerVersion': string;
 }
 

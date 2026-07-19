@@ -32,23 +32,17 @@ import type { PlaybackDecisionVideoCodecCapability } from './playback-decision-v
  */
 export interface PlaybackDecisionDecodeCapabilities {
     /**
-     * The direct-play combinations the client declares, in declared order. Distinct from Reefin.Playback.Decision.DecodeCapabilities.VideoCodecs/Reefin.Playback.Decision.DecodeCapabilities.AudioCodecs: those describe per-codec decode limits (used regardless of container), while this describes which container+codec(s) combinations are actually playable together without transcoding (RFC PR102b problem #1).
-     * @type {Array<PlaybackDecisionDecodeProfile>}
-     * @memberof PlaybackDecisionDecodeCapabilities
-     */
-    'DirectPlayProfiles'?: Array<PlaybackDecisionDecodeProfile>;
-    /**
-     * The video codecs the client can decode, and their limits.
-     * @type {Array<PlaybackDecisionVideoCodecCapability>}
-     * @memberof PlaybackDecisionDecodeCapabilities
-     */
-    'VideoCodecs'?: Array<PlaybackDecisionVideoCodecCapability>;
-    /**
      * The audio codecs the client can decode, and their limits.
      * @type {Array<PlaybackDecisionAudioCodecCapability>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
     'AudioCodecs'?: Array<PlaybackDecisionAudioCodecCapability>;
+    /**
+     * The direct-play combinations the client declares, in declared order. Distinct from Reefin.Playback.Decision.DecodeCapabilities.VideoCodecs/Reefin.Playback.Decision.DecodeCapabilities.AudioCodecs: those describe per-codec decode limits (used regardless of container), while this describes which container+codec(s) combinations are actually playable together without transcoding (RFC PR102b problem #1).
+     * @type {Array<PlaybackDecisionDecodeProfile>}
+     * @memberof PlaybackDecisionDecodeCapabilities
+     */
+    'DirectPlayProfiles'?: Array<PlaybackDecisionDecodeProfile>;
     /**
      * The subtitle formats the client can render, and how it wants them delivered.
      * @type {Array<PlaybackDecisionSubtitleCapability>}
@@ -56,16 +50,22 @@ export interface PlaybackDecisionDecodeCapabilities {
      */
     'SubtitleDelivery'?: Array<PlaybackDecisionSubtitleCapability>;
     /**
+     * Whether the client can play DASH renditions.
+     * @type {boolean}
+     * @memberof PlaybackDecisionDecodeCapabilities
+     */
+    'SupportsDash'?: boolean;
+    /**
      * Whether the client can play HLS renditions.
      * @type {boolean}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
     'SupportsHls'?: boolean;
     /**
-     * Whether the client can play DASH renditions.
-     * @type {boolean}
+     * The video codecs the client can decode, and their limits.
+     * @type {Array<PlaybackDecisionVideoCodecCapability>}
      * @memberof PlaybackDecisionDecodeCapabilities
      */
-    'SupportsDash'?: boolean;
+    'VideoCodecs'?: Array<PlaybackDecisionVideoCodecCapability>;
 }
 

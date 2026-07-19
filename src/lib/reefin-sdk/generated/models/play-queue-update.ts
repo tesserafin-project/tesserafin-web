@@ -32,11 +32,11 @@ import type { SyncPlayQueueItem } from './sync-play-queue-item';
  */
 export interface PlayQueueUpdate {
     /**
-     * Gets the request type that originated this update.
-     * @type {PlayQueueUpdateReason}
+     * Gets a value indicating whether the current item is playing.
+     * @type {boolean}
      * @memberof PlayQueueUpdate
      */
-    'Reason'?: PlayQueueUpdateReason;
+    'IsPlaying'?: boolean;
     /**
      * Gets the UTC time of the last change to the playing queue.
      * @type {string}
@@ -44,29 +44,29 @@ export interface PlayQueueUpdate {
      */
     'LastUpdate'?: string;
     /**
-     * Gets the playlist.
-     * @type {Array<SyncPlayQueueItem>}
-     * @memberof PlayQueueUpdate
-     */
-    'Playlist'?: Array<SyncPlayQueueItem>;
-    /**
      * Gets the playing item index in the playlist.
      * @type {number}
      * @memberof PlayQueueUpdate
      */
     'PlayingItemIndex'?: number;
     /**
-     * Gets the start position ticks.
-     * @type {number}
+     * Gets the playlist.
+     * @type {Array<SyncPlayQueueItem>}
      * @memberof PlayQueueUpdate
      */
-    'StartPositionTicks'?: number;
+    'Playlist'?: Array<SyncPlayQueueItem>;
     /**
-     * Gets a value indicating whether the current item is playing.
-     * @type {boolean}
+     * Gets the request type that originated this update.
+     * @type {PlayQueueUpdateReason}
      * @memberof PlayQueueUpdate
      */
-    'IsPlaying'?: boolean;
+    'Reason'?: PlayQueueUpdateReason;
+    /**
+     * Gets the repeat mode.
+     * @type {GroupRepeatMode}
+     * @memberof PlayQueueUpdate
+     */
+    'RepeatMode'?: GroupRepeatMode;
     /**
      * Gets the shuffle mode.
      * @type {GroupShuffleMode}
@@ -74,11 +74,11 @@ export interface PlayQueueUpdate {
      */
     'ShuffleMode'?: GroupShuffleMode;
     /**
-     * Gets the repeat mode.
-     * @type {GroupRepeatMode}
+     * Gets the start position ticks.
+     * @type {number}
      * @memberof PlayQueueUpdate
      */
-    'RepeatMode'?: GroupRepeatMode;
+    'StartPositionTicks'?: number;
 }
 
 

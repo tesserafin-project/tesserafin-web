@@ -6,8 +6,11 @@
     "webAppVersion": "13.0.0",
     "versionSkewNote": "Spec pinned at server 12.0.0; reefin-web is 13.0.0. Upgrade tracked for W14.1.",
     "openapi": "3.0.4",
-    "pathCount": 299,
-    "schemaCount": 395,
-    "source": "src/lib/reefin-sdk/spec/openapi.json",
-    "generatedAt": "2026-07-17T09:36:03.774Z"
+    "pathCount": 301,
+    "schemaCount": 401,
+    "source": "~/Repos/reefin/openapi/openapi.json",
+    "sourceCommit": "4a86c91a63c0b35fa0e6f16312efd2d01918360f",
+    "sourceRef": "4a86c91a63",
+    "specSha256": "2da8bd0a4be76196fd0f033eb9ab9ea54283336abe4bedfc30be7d1ff41ddf29",
+    "generatedAt": "2026-07-19T15:45:30.084Z"
 }

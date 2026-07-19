@@ -26,13 +26,13 @@ export interface ProblemDetails {
      * @type {string}
      * @memberof ProblemDetails
      */
-    'type'?: string | null;
+    'detail'?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProblemDetails
      */
-    'title'?: string | null;
+    'instance'?: string | null;
     /**
      * 
      * @type {number}
@@ -44,12 +44,12 @@ export interface ProblemDetails {
      * @type {string}
      * @memberof ProblemDetails
      */
-    'detail'?: string | null;
+    'title'?: string | null;
     /**
      * 
      * @type {string}
      * @memberof ProblemDetails
      */
-    'instance'?: string | null;
+    'type'?: string | null;
 }
 

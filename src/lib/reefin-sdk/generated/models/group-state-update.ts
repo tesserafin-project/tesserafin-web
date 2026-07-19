@@ -26,17 +26,17 @@ import type { PlaybackRequestType } from './playback-request-type';
  */
 export interface GroupStateUpdate {
     /**
-     * Gets the state of the group.
-     * @type {GroupStateType}
-     * @memberof GroupStateUpdate
-     */
-    'State'?: GroupStateType;
-    /**
      * Gets the reason of the state change.
      * @type {PlaybackRequestType}
      * @memberof GroupStateUpdate
      */
     'Reason'?: PlaybackRequestType;
+    /**
+     * Gets the state of the group.
+     * @type {GroupStateType}
+     * @memberof GroupStateUpdate
+     */
+    'State'?: GroupStateType;
 }
 
 

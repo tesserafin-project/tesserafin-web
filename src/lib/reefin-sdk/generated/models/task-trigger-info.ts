@@ -26,17 +26,11 @@ import type { TaskTriggerInfoType } from './task-trigger-info-type';
  */
 export interface TaskTriggerInfo {
     /**
-     * Gets or sets the type.
-     * @type {TaskTriggerInfoType}
+     * Gets or sets the day of week.
+     * @type {DayOfWeek}
      * @memberof TaskTriggerInfo
      */
-    'Type'?: TaskTriggerInfoType;
-    /**
-     * Gets or sets the time of day.
-     * @type {number}
-     * @memberof TaskTriggerInfo
-     */
-    'TimeOfDayTicks'?: number | null;
+    'DayOfWeek'?: DayOfWeek | null;
     /**
      * Gets or sets the interval.
      * @type {number}
@@ -44,17 +38,23 @@ export interface TaskTriggerInfo {
      */
     'IntervalTicks'?: number | null;
     /**
-     * Gets or sets the day of week.
-     * @type {DayOfWeek}
-     * @memberof TaskTriggerInfo
-     */
-    'DayOfWeek'?: DayOfWeek | null;
-    /**
      * Gets or sets the maximum runtime ticks.
      * @type {number}
      * @memberof TaskTriggerInfo
      */
     'MaxRuntimeTicks'?: number | null;
+    /**
+     * Gets or sets the time of day.
+     * @type {number}
+     * @memberof TaskTriggerInfo
+     */
+    'TimeOfDayTicks'?: number | null;
+    /**
+     * Gets or sets the type.
+     * @type {TaskTriggerInfoType}
+     * @memberof TaskTriggerInfo
+     */
+    'Type'?: TaskTriggerInfoType;
 }
 
 

@@ -23,11 +23,11 @@ import type { PersonLookupInfo } from './person-lookup-info';
  */
 export interface PersonLookupInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {PersonLookupInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof PersonLookupInfoRemoteSearchQuery
      */
-    'SearchInfo'?: PersonLookupInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface PersonLookupInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {PersonLookupInfo}
+     * @memberof PersonLookupInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: PersonLookupInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof PersonLookupInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof PersonLookupInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

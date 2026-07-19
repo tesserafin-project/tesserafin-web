@@ -23,11 +23,11 @@ import type { GeneralCommandType } from './general-command-type';
  */
 export interface GeneralCommand {
     /**
-     * This exists simply to identify a set of known commands.
-     * @type {GeneralCommandType}
+     * 
+     * @type {{ [key: string]: string; }}
      * @memberof GeneralCommand
      */
-    'Name'?: GeneralCommandType;
+    'Arguments'?: { [key: string]: string; };
     /**
      * 
      * @type {string}
@@ -35,11 +35,11 @@ export interface GeneralCommand {
      */
     'ControllingUserId'?: string;
     /**
-     * 
-     * @type {{ [key: string]: string; }}
+     * This exists simply to identify a set of known commands.
+     * @type {GeneralCommandType}
      * @memberof GeneralCommand
      */
-    'Arguments'?: { [key: string]: string; };
+    'Name'?: GeneralCommandType;
 }
 
 

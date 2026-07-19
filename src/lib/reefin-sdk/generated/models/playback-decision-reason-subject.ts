@@ -29,17 +29,17 @@ export interface PlaybackDecisionReasonSubject {
      */
     'Kind'?: PlaybackDecisionReasonSubjectKind;
     /**
-     * The stream index, when Kind is Reefin.Playback.Decision.ReasonSubjectKind.VideoStream, Reefin.Playback.Decision.ReasonSubjectKind.AudioStream, or Reefin.Playback.Decision.ReasonSubjectKind.Subtitle; otherwise null.
-     * @type {number}
-     * @memberof PlaybackDecisionReasonSubject
-     */
-    'StreamIndex'?: number | null;
-    /**
      * The source identifier, when Kind is Reefin.Playback.Decision.ReasonSubjectKind.Source; otherwise null.
      * @type {string}
      * @memberof PlaybackDecisionReasonSubject
      */
     'SourceId'?: string | null;
+    /**
+     * The stream index, when Kind is Reefin.Playback.Decision.ReasonSubjectKind.VideoStream, Reefin.Playback.Decision.ReasonSubjectKind.AudioStream, or Reefin.Playback.Decision.ReasonSubjectKind.Subtitle; otherwise null.
+     * @type {number}
+     * @memberof PlaybackDecisionReasonSubject
+     */
+    'StreamIndex'?: number | null;
 }
 
 

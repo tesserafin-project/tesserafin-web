@@ -23,23 +23,23 @@ import type { DeviceProfile } from './device-profile';
  */
 export interface PlaybackInfoDto {
     /**
-     * Gets or sets the playback userId.
-     * @type {string}
+     * Gets or sets a value indicating whether to allow audio stream copy.
+     * @type {boolean}
      * @memberof PlaybackInfoDto
      */
-    'UserId'?: string | null;
+    'AllowAudioStreamCopy'?: boolean | null;
     /**
-     * Gets or sets the max streaming bitrate.
-     * @type {number}
+     * Gets or sets a value indicating whether to enable video stream copy.
+     * @type {boolean}
      * @memberof PlaybackInfoDto
      */
-    'MaxStreamingBitrate'?: number | null;
+    'AllowVideoStreamCopy'?: boolean | null;
     /**
-     * Gets or sets the start time in ticks.
-     * @type {number}
+     * Gets or sets a value indicating whether always burn in subtitles when transcoding.
+     * @type {boolean}
      * @memberof PlaybackInfoDto
      */
-    'StartTimeTicks'?: number | null;
+    'AlwaysBurnInSubtitleWhenTranscoding'?: boolean | null;
     /**
      * Gets or sets the audio stream index.
      * @type {number}
@@ -47,29 +47,11 @@ export interface PlaybackInfoDto {
      */
     'AudioStreamIndex'?: number | null;
     /**
-     * Gets or sets the subtitle stream index.
-     * @type {number}
+     * Gets or sets a value indicating whether to auto open the live stream.
+     * @type {boolean}
      * @memberof PlaybackInfoDto
      */
-    'SubtitleStreamIndex'?: number | null;
-    /**
-     * Gets or sets the max audio channels.
-     * @type {number}
-     * @memberof PlaybackInfoDto
-     */
-    'MaxAudioChannels'?: number | null;
-    /**
-     * Gets or sets the media source id.
-     * @type {string}
-     * @memberof PlaybackInfoDto
-     */
-    'MediaSourceId'?: string | null;
-    /**
-     * Gets or sets the live stream id.
-     * @type {string}
-     * @memberof PlaybackInfoDto
-     */
-    'LiveStreamId'?: string | null;
+    'AutoOpenLiveStream'?: boolean | null;
     /**
      * A Reefin.Model.Dlna.DeviceProfile represents a set of metadata which determines which content a certain device is able to play.   Specifically, it defines the supported <see cref=\"P:Reefin.Model.Dlna.DeviceProfile.ContainerProfiles\">containers</see> and <see cref=\"P:Reefin.Model.Dlna.DeviceProfile.CodecProfiles\">codecs</see> (video and/or audio, including codec profiles and levels) the device is able to direct play (without transcoding or remuxing), as well as which <see cref=\"P:Reefin.Model.Dlna.DeviceProfile.TranscodingProfiles\">containers/codecs to transcode to</see> in case it isn\'t.
      * @type {DeviceProfile}
@@ -95,28 +77,52 @@ export interface PlaybackInfoDto {
      */
     'EnableTranscoding'?: boolean | null;
     /**
-     * Gets or sets a value indicating whether to enable video stream copy.
-     * @type {boolean}
+     * Gets or sets the live stream id.
+     * @type {string}
      * @memberof PlaybackInfoDto
      */
-    'AllowVideoStreamCopy'?: boolean | null;
+    'LiveStreamId'?: string | null;
     /**
-     * Gets or sets a value indicating whether to allow audio stream copy.
-     * @type {boolean}
+     * Gets or sets the max audio channels.
+     * @type {number}
      * @memberof PlaybackInfoDto
      */
-    'AllowAudioStreamCopy'?: boolean | null;
+    'MaxAudioChannels'?: number | null;
     /**
-     * Gets or sets a value indicating whether to auto open the live stream.
-     * @type {boolean}
+     * Gets or sets the max streaming bitrate.
+     * @type {number}
      * @memberof PlaybackInfoDto
      */
-    'AutoOpenLiveStream'?: boolean | null;
+    'MaxStreamingBitrate'?: number | null;
     /**
-     * Gets or sets a value indicating whether always burn in subtitles when transcoding.
-     * @type {boolean}
+     * Gets or sets the media source id.
+     * @type {string}
      * @memberof PlaybackInfoDto
      */
-    'AlwaysBurnInSubtitleWhenTranscoding'?: boolean | null;
+    'MediaSourceId'?: string | null;
+    /**
+     * Gets or sets the opaque, client-generated playback attempt id (issue #43).
+     * @type {string}
+     * @memberof PlaybackInfoDto
+     */
+    'PlaybackAttemptId'?: string | null;
+    /**
+     * Gets or sets the start time in ticks.
+     * @type {number}
+     * @memberof PlaybackInfoDto
+     */
+    'StartTimeTicks'?: number | null;
+    /**
+     * Gets or sets the subtitle stream index.
+     * @type {number}
+     * @memberof PlaybackInfoDto
+     */
+    'SubtitleStreamIndex'?: number | null;
+    /**
+     * Gets or sets the playback userId.
+     * @type {string}
+     * @memberof PlaybackInfoDto
+     */
+    'UserId'?: string | null;
 }
 

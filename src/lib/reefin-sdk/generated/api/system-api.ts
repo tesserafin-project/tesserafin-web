@@ -39,6 +39,8 @@ import type { MetadataOptions } from '../models';
 // @ts-ignore
 import type { PlaybackDiagnosticDetail } from '../models';
 // @ts-ignore
+import type { PlaybackOperationalMetricsResponse } from '../models';
+// @ts-ignore
 import type { PlaybackSessionListItem } from '../models';
 // @ts-ignore
 import type { ProblemDetails } from '../models';
@@ -355,6 +357,39 @@ export const SystemApiAxiosParamCreator = function (configuration?: Configuratio
             assertParamExists('getNamedConfiguration', 'key', key)
             const localVarPath = `/System/Configuration/{key}`
                 .replace(`{${"key"}}`, encodeURIComponent(String(key)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Gets the current cumulative operational metrics for the v2 live streaming path, plus the current stop-threshold guard state.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOperationalMetrics: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/System/PlaybackDiagnostics/Metrics`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;
@@ -1006,6 +1041,18 @@ export const SystemApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Gets the current cumulative operational metrics for the v2 live streaming path, plus the current stop-threshold guard state.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getOperationalMetrics(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PlaybackOperationalMetricsResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getOperationalMetrics(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['SystemApi.getOperationalMetrics']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
          * @summary Pings the system.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1269,6 +1316,15 @@ export const SystemApiFactory = function (configuration?: Configuration, basePat
         },
         /**
          * 
+         * @summary Gets the current cumulative operational metrics for the v2 live streaming path, plus the current stop-threshold guard state.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getOperationalMetrics(options?: RawAxiosRequestConfig): AxiosPromise<PlaybackOperationalMetricsResponse> {
+            return localVarFp.getOperationalMetrics(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Pings the system.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1482,6 +1538,15 @@ export interface SystemApiInterface {
      * @memberof SystemApiInterface
      */
     getNamedConfiguration(requestParameters: SystemApiGetNamedConfigurationRequest, options?: RawAxiosRequestConfig): AxiosPromise<File>;
+
+    /**
+     * 
+     * @summary Gets the current cumulative operational metrics for the v2 live streaming path, plus the current stop-threshold guard state.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof SystemApiInterface
+     */
+    getOperationalMetrics(options?: RawAxiosRequestConfig): AxiosPromise<PlaybackOperationalMetricsResponse>;
 
     /**
      * 
@@ -1935,6 +2000,17 @@ export class SystemApi extends BaseAPI implements SystemApiInterface {
      */
     public getNamedConfiguration(requestParameters: SystemApiGetNamedConfigurationRequest, options?: RawAxiosRequestConfig) {
         return SystemApiFp(this.configuration).getNamedConfiguration(requestParameters.key, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Gets the current cumulative operational metrics for the v2 live streaming path, plus the current stop-threshold guard state.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof SystemApi
+     */
+    public getOperationalMetrics(options?: RawAxiosRequestConfig) {
+        return SystemApiFp(this.configuration).getOperationalMetrics(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

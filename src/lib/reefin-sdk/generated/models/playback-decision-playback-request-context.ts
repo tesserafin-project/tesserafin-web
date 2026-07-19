@@ -23,11 +23,11 @@ import type { PlaybackDecisionMediaKind } from './playback-decision-media-kind';
  */
 export interface PlaybackDecisionPlaybackRequestContext {
     /**
-     * A unique identifier for this decision, for log/diagnostic correlation.
-     * @type {string}
+     * The version of the decision engine that will produce (or produced) the decision for this request.
+     * @type {number}
      * @memberof PlaybackDecisionPlaybackRequestContext
      */
-    'RequestId'?: string;
+    'EngineVersion'?: number;
     /**
      * The requested media item.
      * @type {string}
@@ -35,23 +35,23 @@ export interface PlaybackDecisionPlaybackRequestContext {
      */
     'ItemId'?: string;
     /**
+     * Whether audio or video playback is being requested.
+     * @type {PlaybackDecisionMediaKind}
+     * @memberof PlaybackDecisionPlaybackRequestContext
+     */
+    'MediaKind'?: PlaybackDecisionMediaKind;
+    /**
      * The specific alternate source version requested, or null to let the engine choose.
      * @type {string}
      * @memberof PlaybackDecisionPlaybackRequestContext
      */
     'MediaSourceId'?: string | null;
     /**
-     * The requesting user, used for policy/quota purposes rather than technical selection.
+     * A unique identifier for this decision, for log/diagnostic correlation.
      * @type {string}
      * @memberof PlaybackDecisionPlaybackRequestContext
      */
-    'UserId'?: string;
-    /**
-     * Whether audio or video playback is being requested.
-     * @type {PlaybackDecisionMediaKind}
-     * @memberof PlaybackDecisionPlaybackRequestContext
-     */
-    'MediaKind'?: PlaybackDecisionMediaKind;
+    'RequestId'?: string;
     /**
      * The timestamp the request was made.
      * @type {string}
@@ -59,11 +59,11 @@ export interface PlaybackDecisionPlaybackRequestContext {
      */
     'RequestedAt'?: string;
     /**
-     * The version of the decision engine that will produce (or produced) the decision for this request.
-     * @type {number}
+     * The requesting user, used for policy/quota purposes rather than technical selection.
+     * @type {string}
      * @memberof PlaybackDecisionPlaybackRequestContext
      */
-    'EngineVersion'?: number;
+    'UserId'?: string;
 }
 
 

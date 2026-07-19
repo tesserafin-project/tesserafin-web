@@ -23,6 +23,12 @@ import type { PlaybackDecisionSubtitlePlaybackMode } from './playback-decision-s
  */
 export interface PlaybackDecisionPlaybackConstraints {
     /**
+     * Whether the audio stream may be copied without re-encoding.
+     * @type {boolean}
+     * @memberof PlaybackDecisionPlaybackConstraints
+     */
+    'AllowAudioStreamCopy'?: boolean;
+    /**
      * Whether direct play is permitted for this request.
      * @type {boolean}
      * @memberof PlaybackDecisionPlaybackConstraints
@@ -47,17 +53,11 @@ export interface PlaybackDecisionPlaybackConstraints {
      */
     'AllowVideoStreamCopy'?: boolean;
     /**
-     * Whether the audio stream may be copied without re-encoding.
+     * Whether subtitles must always be burned in whenever transcoding occurs, regardless of client subtitle capability.
      * @type {boolean}
      * @memberof PlaybackDecisionPlaybackConstraints
      */
-    'AllowAudioStreamCopy'?: boolean;
-    /**
-     * The maximum overall bitrate allowed, or null if unbounded.
-     * @type {number}
-     * @memberof PlaybackDecisionPlaybackConstraints
-     */
-    'MaxBitrate'?: number | null;
+    'AlwaysBurnInSubtitleWhenTranscoding'?: boolean;
     /**
      * The maximum audio channel count allowed, or null if unbounded.
      * @type {number}
@@ -65,23 +65,17 @@ export interface PlaybackDecisionPlaybackConstraints {
      */
     'MaxAudioChannels'?: number | null;
     /**
+     * The maximum overall bitrate allowed, or null if unbounded.
+     * @type {number}
+     * @memberof PlaybackDecisionPlaybackConstraints
+     */
+    'MaxBitrate'?: number | null;
+    /**
      * The preferred audio stream index, or null for no preference.
      * @type {number}
      * @memberof PlaybackDecisionPlaybackConstraints
      */
     'PreferredAudioStreamIndex'?: number | null;
-    /**
-     * The preferred subtitle stream index, or null for no preference.
-     * @type {number}
-     * @memberof PlaybackDecisionPlaybackConstraints
-     */
-    'PreferredSubtitleStreamIndex'?: number | null;
-    /**
-     * How to auto-select a subtitle stream (PR103) when PreferredSubtitleStreamIndex is null - mirrors the legacy user-level `SubtitlePlaybackMode` preference consumed by `MediaStreamSelector.GetDefaultSubtitleStreamIndex`.
-     * @type {PlaybackDecisionSubtitlePlaybackMode}
-     * @memberof PlaybackDecisionPlaybackConstraints
-     */
-    'SubtitleMode'?: PlaybackDecisionSubtitlePlaybackMode;
     /**
      * The preferred subtitle languages, in preference order (PR103). An empty list is a wildcard - matches any language - the same semantics as the legacy `MediaStreamSelector.MatchesPreferredLanguage`.
      * @type {Array<string>}
@@ -89,17 +83,23 @@ export interface PlaybackDecisionPlaybackConstraints {
      */
     'PreferredSubtitleLanguages'?: Array<string>;
     /**
-     * Whether subtitles must always be burned in whenever transcoding occurs, regardless of client subtitle capability.
-     * @type {boolean}
+     * The preferred subtitle stream index, or null for no preference.
+     * @type {number}
      * @memberof PlaybackDecisionPlaybackConstraints
      */
-    'AlwaysBurnInSubtitleWhenTranscoding'?: boolean;
+    'PreferredSubtitleStreamIndex'?: number | null;
     /**
      * The playback start offset, in ticks.
      * @type {number}
      * @memberof PlaybackDecisionPlaybackConstraints
      */
     'StartTimeTicks'?: number;
+    /**
+     * How to auto-select a subtitle stream (PR103) when PreferredSubtitleStreamIndex is null - mirrors the legacy user-level `SubtitlePlaybackMode` preference consumed by `MediaStreamSelector.GetDefaultSubtitleStreamIndex`.
+     * @type {PlaybackDecisionSubtitlePlaybackMode}
+     * @memberof PlaybackDecisionPlaybackConstraints
+     */
+    'SubtitleMode'?: PlaybackDecisionSubtitlePlaybackMode;
 }
 
 

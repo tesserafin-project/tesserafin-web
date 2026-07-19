@@ -29,16 +29,16 @@ export interface DeviceInfoDtoQueryResult {
      */
     'Items'?: Array<DeviceInfoDto>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof DeviceInfoDtoQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof DeviceInfoDtoQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof DeviceInfoDtoQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

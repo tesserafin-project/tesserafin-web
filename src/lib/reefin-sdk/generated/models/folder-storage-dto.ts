@@ -20,11 +20,11 @@
  */
 export interface FolderStorageDto {
     /**
-     * Gets the path of the folder in question.
+     * Gets the Device Identifier.
      * @type {string}
      * @memberof FolderStorageDto
      */
-    'Path': string;
+    'DeviceId'?: string | null;
     /**
      * Gets the free space of the underlying storage device of the Reefin.Api.Models.SystemInfoDtos.FolderStorageDto.Path.
      * @type {number}
@@ -32,11 +32,11 @@ export interface FolderStorageDto {
      */
     'FreeSpace'?: number;
     /**
-     * Gets the used space of the underlying storage device of the Reefin.Api.Models.SystemInfoDtos.FolderStorageDto.Path.
-     * @type {number}
+     * Gets the path of the folder in question.
+     * @type {string}
      * @memberof FolderStorageDto
      */
-    'UsedSpace'?: number;
+    'Path': string;
     /**
      * Gets the kind of storage device of the Reefin.Api.Models.SystemInfoDtos.FolderStorageDto.Path.
      * @type {string}
@@ -44,10 +44,10 @@ export interface FolderStorageDto {
      */
     'StorageType'?: string | null;
     /**
-     * Gets the Device Identifier.
-     * @type {string}
+     * Gets the used space of the underlying storage device of the Reefin.Api.Models.SystemInfoDtos.FolderStorageDto.Path.
+     * @type {number}
      * @memberof FolderStorageDto
      */
-    'DeviceId'?: string | null;
+    'UsedSpace'?: number;
 }
 

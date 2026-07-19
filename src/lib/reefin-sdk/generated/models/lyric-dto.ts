@@ -26,16 +26,16 @@ import type { LyricMetadata } from './lyric-metadata';
  */
 export interface LyricDto {
     /**
-     * Gets or sets Metadata for the lyrics.
-     * @type {LyricMetadata}
-     * @memberof LyricDto
-     */
-    'Metadata'?: LyricMetadata;
-    /**
      * Gets or sets a collection of individual lyric lines.
      * @type {Array<LyricLine>}
      * @memberof LyricDto
      */
     'Lyrics'?: Array<LyricLine>;
+    /**
+     * Gets or sets Metadata for the lyrics.
+     * @type {LyricMetadata}
+     * @memberof LyricDto
+     */
+    'Metadata'?: LyricMetadata;
 }
 

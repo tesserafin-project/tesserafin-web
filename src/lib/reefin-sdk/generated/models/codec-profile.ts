@@ -26,18 +26,6 @@ import type { ProfileCondition } from './profile-condition';
  */
 export interface CodecProfile {
     /**
-     * Gets or sets the Reefin.Model.Dlna.CodecType which this container must meet.
-     * @type {CodecType}
-     * @memberof CodecProfile
-     */
-    'Type'?: CodecType;
-    /**
-     * Gets or sets the list of Reefin.Model.Dlna.ProfileCondition which this profile must meet.
-     * @type {Array<ProfileCondition>}
-     * @memberof CodecProfile
-     */
-    'Conditions'?: Array<ProfileCondition>;
-    /**
      * Gets or sets the list of Reefin.Model.Dlna.ProfileCondition to apply if this profile is met.
      * @type {Array<ProfileCondition>}
      * @memberof CodecProfile
@@ -50,6 +38,12 @@ export interface CodecProfile {
      */
     'Codec'?: string | null;
     /**
+     * Gets or sets the list of Reefin.Model.Dlna.ProfileCondition which this profile must meet.
+     * @type {Array<ProfileCondition>}
+     * @memberof CodecProfile
+     */
+    'Conditions'?: Array<ProfileCondition>;
+    /**
      * Gets or sets the container(s) which this profile will be applied to.
      * @type {string}
      * @memberof CodecProfile
@@ -61,6 +55,12 @@ export interface CodecProfile {
      * @memberof CodecProfile
      */
     'SubContainer'?: string | null;
+    /**
+     * Gets or sets the Reefin.Model.Dlna.CodecType which this container must meet.
+     * @type {CodecType}
+     * @memberof CodecProfile
+     */
+    'Type'?: CodecType;
 }
 
 

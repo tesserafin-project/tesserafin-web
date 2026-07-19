@@ -20,11 +20,17 @@
  */
 export interface PlaybackDecisionVideoStreamSnapshot {
     /**
-     * The stream index within the source.
+     * The bit depth, or null if unknown.
      * @type {number}
      * @memberof PlaybackDecisionVideoStreamSnapshot
      */
-    'Index'?: number;
+    'BitDepth'?: number | null;
+    /**
+     * The stream bitrate, or null if unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionVideoStreamSnapshot
+     */
+    'Bitrate'?: number | null;
     /**
      * The normalized codec name (for example `\"h264\"`).
      * @type {string}
@@ -32,23 +38,11 @@ export interface PlaybackDecisionVideoStreamSnapshot {
      */
     'Codec'?: string;
     /**
-     * The codec profile, or null if unknown.
-     * @type {string}
-     * @memberof PlaybackDecisionVideoStreamSnapshot
-     */
-    'Profile'?: string | null;
-    /**
-     * The codec level, or null if unknown.
+     * The framerate in frames per second, or null if unknown.
      * @type {number}
      * @memberof PlaybackDecisionVideoStreamSnapshot
      */
-    'Level'?: number | null;
-    /**
-     * The width in pixels, or null if unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionVideoStreamSnapshot
-     */
-    'Width'?: number | null;
+    'Framerate'?: number | null;
     /**
      * The height in pixels, or null if unknown.
      * @type {number}
@@ -56,29 +50,11 @@ export interface PlaybackDecisionVideoStreamSnapshot {
      */
     'Height'?: number | null;
     /**
-     * The bit depth, or null if unknown.
+     * The stream index within the source.
      * @type {number}
      * @memberof PlaybackDecisionVideoStreamSnapshot
      */
-    'BitDepth'?: number | null;
-    /**
-     * The video range type (for example `\"SDR\"`, `\"HDR10\"`), or null if unknown.
-     * @type {string}
-     * @memberof PlaybackDecisionVideoStreamSnapshot
-     */
-    'VideoRange'?: string | null;
-    /**
-     * The framerate in frames per second, or null if unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionVideoStreamSnapshot
-     */
-    'Framerate'?: number | null;
-    /**
-     * The stream bitrate, or null if unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionVideoStreamSnapshot
-     */
-    'Bitrate'?: number | null;
+    'Index'?: number;
     /**
      * Whether the stream is anamorphic.
      * @type {boolean}
@@ -91,5 +67,29 @@ export interface PlaybackDecisionVideoStreamSnapshot {
      * @memberof PlaybackDecisionVideoStreamSnapshot
      */
     'IsInterlaced'?: boolean;
+    /**
+     * The codec level, or null if unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionVideoStreamSnapshot
+     */
+    'Level'?: number | null;
+    /**
+     * The codec profile, or null if unknown.
+     * @type {string}
+     * @memberof PlaybackDecisionVideoStreamSnapshot
+     */
+    'Profile'?: string | null;
+    /**
+     * The video range type (for example `\"SDR\"`, `\"HDR10\"`), or null if unknown.
+     * @type {string}
+     * @memberof PlaybackDecisionVideoStreamSnapshot
+     */
+    'VideoRange'?: string | null;
+    /**
+     * The width in pixels, or null if unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionVideoStreamSnapshot
+     */
+    'Width'?: number | null;
 }
 

@@ -20,6 +20,12 @@
  */
 export interface LibraryUpdateInfo {
     /**
+     * 
+     * @type {Array<string>}
+     * @memberof LibraryUpdateInfo
+     */
+    'CollectionFolders'?: Array<string>;
+    /**
      * Gets or sets the folders added to.
      * @type {Array<string>}
      * @memberof LibraryUpdateInfo
@@ -31,6 +37,12 @@ export interface LibraryUpdateInfo {
      * @memberof LibraryUpdateInfo
      */
     'FoldersRemovedFrom'?: Array<string>;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof LibraryUpdateInfo
+     */
+    'IsEmpty'?: boolean;
     /**
      * Gets or sets the items added.
      * @type {Array<string>}
@@ -49,17 +61,5 @@ export interface LibraryUpdateInfo {
      * @memberof LibraryUpdateInfo
      */
     'ItemsUpdated'?: Array<string>;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof LibraryUpdateInfo
-     */
-    'CollectionFolders'?: Array<string>;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof LibraryUpdateInfo
-     */
-    'IsEmpty'?: boolean;
 }
 

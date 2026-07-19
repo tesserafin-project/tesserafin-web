@@ -26,18 +26,6 @@ export interface PlaybackDecisionAudioCodecCapability {
      */
     'Codec'?: string;
     /**
-     * The highest channel count the client supports, or null if unbounded/unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionAudioCodecCapability
-     */
-    'MaxChannels'?: number | null;
-    /**
-     * The highest sample rate (Hz) the client supports, or null if unbounded/unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionAudioCodecCapability
-     */
-    'MaxSampleRate'?: number | null;
-    /**
      * The highest bit depth the client supports, or null if unbounded/unknown.
      * @type {number}
      * @memberof PlaybackDecisionAudioCodecCapability
@@ -49,5 +37,17 @@ export interface PlaybackDecisionAudioCodecCapability {
      * @memberof PlaybackDecisionAudioCodecCapability
      */
     'MaxBitrate'?: number | null;
+    /**
+     * The highest channel count the client supports, or null if unbounded/unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionAudioCodecCapability
+     */
+    'MaxChannels'?: number | null;
+    /**
+     * The highest sample rate (Hz) the client supports, or null if unbounded/unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionAudioCodecCapability
+     */
+    'MaxSampleRate'?: number | null;
 }
 

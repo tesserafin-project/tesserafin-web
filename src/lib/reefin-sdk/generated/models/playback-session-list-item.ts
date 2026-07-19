@@ -23,16 +23,28 @@ import type { PlaybackSessionResponse } from './playback-session-response';
  */
 export interface PlaybackSessionListItem {
     /**
-     * The session\'s stable projection.
-     * @type {PlaybackSessionResponse}
+     * PR114: the requesting client\'s device identifier, or null under the same condition as Reefin.Api.Models.PlaybackSessionDtos.PlaybackSessionListItem.ItemId. Likewise the raw identifier only - never a resolved device/app display name.
+     * @type {string}
      * @memberof PlaybackSessionListItem
      */
-    'Session'?: PlaybackSessionResponse;
+    'DeviceId'?: string | null;
     /**
      * Whether a retained shadow diagnostic exists for this session - i.e. whether its detail route would return the v2-sourced fields populated rather than null/empty.
      * @type {boolean}
      * @memberof PlaybackSessionListItem
      */
     'HasDiagnostic'?: boolean;
+    /**
+     * PR114: the requested item\'s identifier, or null when the session was tracked directly (`IPlaybackSessionManager.Track`) rather than planned from a request, so no `MediaOptions` was ever attached. Deliberately the raw identifier only - never the resolved item name/library metadata, which would require this admin-only list to depend on `ILibraryManager` for what is otherwise a cheap, dependency-free projection.
+     * @type {string}
+     * @memberof PlaybackSessionListItem
+     */
+    'ItemId'?: string | null;
+    /**
+     * The session\'s stable projection.
+     * @type {PlaybackSessionResponse}
+     * @memberof PlaybackSessionListItem
+     */
+    'Session'?: PlaybackSessionResponse;
 }
 

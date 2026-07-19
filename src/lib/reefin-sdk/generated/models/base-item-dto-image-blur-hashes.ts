@@ -24,12 +24,6 @@ export interface BaseItemDtoImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemDtoImageBlurHashes
      */
-    'Primary'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
     'Art'?: { [key: string]: string | null; };
     /**
      * 
@@ -48,43 +42,7 @@ export interface BaseItemDtoImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemDtoImageBlurHashes
      */
-    'Logo'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
-    'Thumb'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
-    'Disc'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
     'Box'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
-    'Screenshot'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
-    'Menu'?: { [key: string]: string | null; };
-    /**
-     * 
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDtoImageBlurHashes
-     */
-    'Chapter'?: { [key: string]: string | null; };
     /**
      * 
      * @type {{ [key: string]: string | null; }}
@@ -96,6 +54,48 @@ export interface BaseItemDtoImageBlurHashes {
      * @type {{ [key: string]: string | null; }}
      * @memberof BaseItemDtoImageBlurHashes
      */
+    'Chapter'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Disc'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Logo'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Menu'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Primary'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
     'Profile'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Screenshot'?: { [key: string]: string | null; };
+    /**
+     * 
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDtoImageBlurHashes
+     */
+    'Thumb'?: { [key: string]: string | null; };
 }
 

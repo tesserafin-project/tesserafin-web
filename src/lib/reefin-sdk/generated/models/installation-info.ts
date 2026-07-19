@@ -23,6 +23,18 @@ import type { PackageInfo } from './package-info';
  */
 export interface InstallationInfo {
     /**
+     * Gets or sets the changelog for this version.
+     * @type {string}
+     * @memberof InstallationInfo
+     */
+    'Changelog'?: string | null;
+    /**
+     * Gets or sets a checksum for the binary.
+     * @type {string}
+     * @memberof InstallationInfo
+     */
+    'Checksum'?: string | null;
+    /**
      * Gets or sets the Id.
      * @type {string}
      * @memberof InstallationInfo
@@ -35,17 +47,11 @@ export interface InstallationInfo {
      */
     'Name'?: string | null;
     /**
-     * Gets or sets the version.
-     * @type {string}
+     * Gets or sets package information for the installation.
+     * @type {PackageInfo}
      * @memberof InstallationInfo
      */
-    'Version'?: string | null;
-    /**
-     * Gets or sets the changelog for this version.
-     * @type {string}
-     * @memberof InstallationInfo
-     */
-    'Changelog'?: string | null;
+    'PackageInfo'?: PackageInfo | null;
     /**
      * Gets or sets the source URL.
      * @type {string}
@@ -53,16 +59,10 @@ export interface InstallationInfo {
      */
     'SourceUrl'?: string | null;
     /**
-     * Gets or sets a checksum for the binary.
+     * Gets or sets the version.
      * @type {string}
      * @memberof InstallationInfo
      */
-    'Checksum'?: string | null;
-    /**
-     * Gets or sets package information for the installation.
-     * @type {PackageInfo}
-     * @memberof InstallationInfo
-     */
-    'PackageInfo'?: PackageInfo | null;
+    'Version'?: string | null;
 }
 

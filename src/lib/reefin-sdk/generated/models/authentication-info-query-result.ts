@@ -29,16 +29,16 @@ export interface AuthenticationInfoQueryResult {
      */
     'Items'?: Array<AuthenticationInfo>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof AuthenticationInfoQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof AuthenticationInfoQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof AuthenticationInfoQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

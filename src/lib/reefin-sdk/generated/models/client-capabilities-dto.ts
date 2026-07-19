@@ -29,6 +29,24 @@ import type { MediaType } from './media-type';
  */
 export interface ClientCapabilitiesDto {
     /**
+     * Gets or sets the app store url.
+     * @type {string}
+     * @memberof ClientCapabilitiesDto
+     */
+    'AppStoreUrl'?: string | null;
+    /**
+     * Gets or sets the device profile.
+     * @type {DeviceProfile}
+     * @memberof ClientCapabilitiesDto
+     */
+    'DeviceProfile'?: DeviceProfile | null;
+    /**
+     * Gets or sets the icon url.
+     * @type {string}
+     * @memberof ClientCapabilitiesDto
+     */
+    'IconUrl'?: string | null;
+    /**
      * Gets or sets the list of playable media types.
      * @type {Array<MediaType>}
      * @memberof ClientCapabilitiesDto
@@ -52,23 +70,5 @@ export interface ClientCapabilitiesDto {
      * @memberof ClientCapabilitiesDto
      */
     'SupportsPersistentIdentifier'?: boolean;
-    /**
-     * Gets or sets the device profile.
-     * @type {DeviceProfile}
-     * @memberof ClientCapabilitiesDto
-     */
-    'DeviceProfile'?: DeviceProfile | null;
-    /**
-     * Gets or sets the app store url.
-     * @type {string}
-     * @memberof ClientCapabilitiesDto
-     */
-    'AppStoreUrl'?: string | null;
-    /**
-     * Gets or sets the icon url.
-     * @type {string}
-     * @memberof ClientCapabilitiesDto
-     */
-    'IconUrl'?: string | null;
 }
 

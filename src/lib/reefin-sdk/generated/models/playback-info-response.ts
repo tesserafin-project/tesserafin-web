@@ -26,6 +26,12 @@ import type { PlaybackErrorCode } from './playback-error-code';
  */
 export interface PlaybackInfoResponse {
     /**
+     * Gets or sets the error code.
+     * @type {PlaybackErrorCode}
+     * @memberof PlaybackInfoResponse
+     */
+    'ErrorCode'?: PlaybackErrorCode | null;
+    /**
      * Gets or sets the media sources.
      * @type {Array<MediaSourceInfo>}
      * @memberof PlaybackInfoResponse
@@ -38,11 +44,11 @@ export interface PlaybackInfoResponse {
      */
     'PlaySessionId'?: string | null;
     /**
-     * Gets or sets the error code.
-     * @type {PlaybackErrorCode}
+     * Gets or sets the opaque, client-supplied playback attempt id (issue #43), echoed back verbatim, or `null` when the client supplied none.
+     * @type {string}
      * @memberof PlaybackInfoResponse
      */
-    'ErrorCode'?: PlaybackErrorCode | null;
+    'PlaybackAttemptId'?: string | null;
 }
 
 

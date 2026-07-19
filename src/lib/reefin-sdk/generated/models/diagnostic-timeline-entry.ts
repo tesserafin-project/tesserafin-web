@@ -20,16 +20,22 @@
  */
 export interface DiagnosticTimelineEntry {
     /**
-     * The stage name, e.g. `\"Created\"` or `\"Updated\"`.
-     * @type {string}
-     * @memberof DiagnosticTimelineEntry
-     */
-    'Stage'?: string;
-    /**
      * When this stage occurred.
      * @type {string}
      * @memberof DiagnosticTimelineEntry
      */
     'At'?: string;
+    /**
+     * Issue #42: the correlation id of the HTTP request in flight when this entry was observed, or `null` when none was — which is the normal case for entries derived from ffmpeg/session callbacks and for the synthetic `Created`/`Updated` entries. Optional and additive: existing clients that ignore it are unaffected.
+     * @type {string}
+     * @memberof DiagnosticTimelineEntry
+     */
+    'RequestId'?: string | null;
+    /**
+     * The stage name, e.g. `\"Created\"` or `\"Updated\"`.
+     * @type {string}
+     * @memberof DiagnosticTimelineEntry
+     */
+    'Stage'?: string;
 }
 

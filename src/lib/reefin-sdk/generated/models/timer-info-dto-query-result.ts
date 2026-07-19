@@ -29,16 +29,16 @@ export interface TimerInfoDtoQueryResult {
      */
     'Items'?: Array<TimerInfoDto>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
-     * @memberof TimerInfoDtoQueryResult
-     */
-    'TotalRecordCount'?: number;
-    /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
      * @memberof TimerInfoDtoQueryResult
      */
     'StartIndex'?: number;
+    /**
+     * Gets or sets the total number of records available.
+     * @type {number}
+     * @memberof TimerInfoDtoQueryResult
+     */
+    'TotalRecordCount'?: number;
 }
 

@@ -29,35 +29,11 @@ export interface UserConfiguration {
      */
     'AudioLanguagePreference'?: string | null;
     /**
-     * Gets or sets a value indicating whether [play default audio track].
-     * @type {boolean}
-     * @memberof UserConfiguration
-     */
-    'PlayDefaultAudioTrack'?: boolean;
-    /**
-     * Gets or sets the subtitle language preference.
+     * Gets or sets the id of the selected cast receiver.
      * @type {string}
      * @memberof UserConfiguration
      */
-    'SubtitleLanguagePreference'?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof UserConfiguration
-     */
-    'DisplayMissingEpisodes'?: boolean;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof UserConfiguration
-     */
-    'GroupedFolders'?: Array<string>;
-    /**
-     * An enum representing a subtitle playback mode.
-     * @type {SubtitlePlaybackMode}
-     * @memberof UserConfiguration
-     */
-    'SubtitleMode'?: SubtitlePlaybackMode;
+    'CastReceiverId'?: string | null;
     /**
      * 
      * @type {boolean}
@@ -69,13 +45,31 @@ export interface UserConfiguration {
      * @type {boolean}
      * @memberof UserConfiguration
      */
+    'DisplayMissingEpisodes'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserConfiguration
+     */
     'EnableLocalPassword'?: boolean;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserConfiguration
+     */
+    'EnableNextEpisodeAutoPlay'?: boolean;
     /**
      * 
      * @type {Array<string>}
      * @memberof UserConfiguration
      */
-    'OrderedViews'?: Array<string>;
+    'GroupedFolders'?: Array<string>;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof UserConfiguration
+     */
+    'HidePlayedInLatest'?: boolean;
     /**
      * 
      * @type {Array<string>}
@@ -90,10 +84,16 @@ export interface UserConfiguration {
     'MyMediaExcludes'?: Array<string>;
     /**
      * 
+     * @type {Array<string>}
+     * @memberof UserConfiguration
+     */
+    'OrderedViews'?: Array<string>;
+    /**
+     * Gets or sets a value indicating whether [play default audio track].
      * @type {boolean}
      * @memberof UserConfiguration
      */
-    'HidePlayedInLatest'?: boolean;
+    'PlayDefaultAudioTrack'?: boolean;
     /**
      * 
      * @type {boolean}
@@ -107,17 +107,17 @@ export interface UserConfiguration {
      */
     'RememberSubtitleSelections'?: boolean;
     /**
-     * 
-     * @type {boolean}
-     * @memberof UserConfiguration
-     */
-    'EnableNextEpisodeAutoPlay'?: boolean;
-    /**
-     * Gets or sets the id of the selected cast receiver.
+     * Gets or sets the subtitle language preference.
      * @type {string}
      * @memberof UserConfiguration
      */
-    'CastReceiverId'?: string | null;
+    'SubtitleLanguagePreference'?: string | null;
+    /**
+     * An enum representing a subtitle playback mode.
+     * @type {SubtitlePlaybackMode}
+     * @memberof UserConfiguration
+     */
+    'SubtitleMode'?: SubtitlePlaybackMode;
 }
 
 

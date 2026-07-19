@@ -23,6 +23,12 @@ import type { MediaSegmentType } from './media-segment-type';
  */
 export interface MediaSegmentDto {
     /**
+     * Gets or sets the end of the segment.
+     * @type {number}
+     * @memberof MediaSegmentDto
+     */
+    'EndTicks'?: number;
+    /**
      * Gets or sets the id of the media segment.
      * @type {string}
      * @memberof MediaSegmentDto
@@ -35,23 +41,17 @@ export interface MediaSegmentDto {
      */
     'ItemId'?: string;
     /**
-     * Gets or sets the type of content this segment defines.
-     * @type {MediaSegmentType}
-     * @memberof MediaSegmentDto
-     */
-    'Type'?: MediaSegmentType;
-    /**
      * Gets or sets the start of the segment.
      * @type {number}
      * @memberof MediaSegmentDto
      */
     'StartTicks'?: number;
     /**
-     * Gets or sets the end of the segment.
-     * @type {number}
+     * Gets or sets the type of content this segment defines.
+     * @type {MediaSegmentType}
      * @memberof MediaSegmentDto
      */
-    'EndTicks'?: number;
+    'Type'?: MediaSegmentType;
 }
 
 

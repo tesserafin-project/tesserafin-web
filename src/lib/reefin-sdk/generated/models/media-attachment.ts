@@ -38,11 +38,11 @@ export interface MediaAttachment {
      */
     'Comment'?: string | null;
     /**
-     * Gets or sets the index.
-     * @type {number}
+     * Gets or sets the delivery URL.
+     * @type {string}
      * @memberof MediaAttachment
      */
-    'Index'?: number;
+    'DeliveryUrl'?: string | null;
     /**
      * Gets or sets the filename.
      * @type {string}
@@ -50,16 +50,16 @@ export interface MediaAttachment {
      */
     'FileName'?: string | null;
     /**
+     * Gets or sets the index.
+     * @type {number}
+     * @memberof MediaAttachment
+     */
+    'Index'?: number;
+    /**
      * Gets or sets the MIME type.
      * @type {string}
      * @memberof MediaAttachment
      */
     'MimeType'?: string | null;
-    /**
-     * Gets or sets the delivery URL.
-     * @type {string}
-     * @memberof MediaAttachment
-     */
-    'DeliveryUrl'?: string | null;
 }
 

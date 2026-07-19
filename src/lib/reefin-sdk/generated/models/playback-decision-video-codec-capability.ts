@@ -29,11 +29,17 @@ export interface PlaybackDecisionVideoCodecCapability {
      */
     'Codec'?: string;
     /**
-     * The codec profiles the client supports. Empty means no profile restriction is expressed.
-     * @type {Array<string>}
+     * The highest bit depth the client supports, or null if unbounded/unknown.
+     * @type {number}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
-    'Profiles'?: Array<string>;
+    'MaxBitDepth'?: number | null;
+    /**
+     * The maximum video bitrate the client supports for this codec, or null if unbounded/unknown.
+     * @type {number}
+     * @memberof PlaybackDecisionVideoCodecCapability
+     */
+    'MaxBitrate'?: number | null;
     /**
      * The highest codec level the client supports, or null if unbounded/unknown.
      * @type {number}
@@ -41,28 +47,22 @@ export interface PlaybackDecisionVideoCodecCapability {
      */
     'MaxLevel'?: number | null;
     /**
-     * The highest bit depth the client supports, or null if unbounded/unknown.
-     * @type {number}
-     * @memberof PlaybackDecisionVideoCodecCapability
-     */
-    'MaxBitDepth'?: number | null;
-    /**
-     * The video range types (for example `\"SDR\"`, `\"HDR10\"`) the client supports for this codec.
-     * @type {Array<string>}
-     * @memberof PlaybackDecisionVideoCodecCapability
-     */
-    'VideoRangeTypes'?: Array<string>;
-    /**
      * The maximum resolution the client supports for this codec, or null if unbounded/unknown.
      * @type {PlaybackDecisionResolution}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
     'MaxResolution'?: PlaybackDecisionResolution | null;
     /**
-     * The maximum video bitrate the client supports for this codec, or null if unbounded/unknown.
-     * @type {number}
+     * The codec profiles the client supports. Empty means no profile restriction is expressed.
+     * @type {Array<string>}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
-    'MaxBitrate'?: number | null;
+    'Profiles'?: Array<string>;
+    /**
+     * The video range types (for example `\"SDR\"`, `\"HDR10\"`) the client supports for this codec.
+     * @type {Array<string>}
+     * @memberof PlaybackDecisionVideoCodecCapability
+     */
+    'VideoRangeTypes'?: Array<string>;
 }
 

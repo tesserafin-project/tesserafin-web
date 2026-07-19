@@ -23,23 +23,23 @@ import type { DynamicDayOfWeek } from './dynamic-day-of-week';
  */
 export interface AccessSchedule {
     /**
-     * Gets the id of this instance.
-     * @type {number}
-     * @memberof AccessSchedule
-     */
-    'Id'?: number;
-    /**
-     * Gets the id of the associated user.
-     * @type {string}
-     * @memberof AccessSchedule
-     */
-    'UserId'?: string;
-    /**
      * Gets or sets the day of week.
      * @type {DynamicDayOfWeek}
      * @memberof AccessSchedule
      */
     'DayOfWeek'?: DynamicDayOfWeek;
+    /**
+     * Gets or sets the end hour.
+     * @type {number}
+     * @memberof AccessSchedule
+     */
+    'EndHour'?: number;
+    /**
+     * Gets the id of this instance.
+     * @type {number}
+     * @memberof AccessSchedule
+     */
+    'Id'?: number;
     /**
      * Gets or sets the start hour.
      * @type {number}
@@ -47,11 +47,11 @@ export interface AccessSchedule {
      */
     'StartHour'?: number;
     /**
-     * Gets or sets the end hour.
-     * @type {number}
+     * Gets the id of the associated user.
+     * @type {string}
      * @memberof AccessSchedule
      */
-    'EndHour'?: number;
+    'UserId'?: string;
 }
 
 

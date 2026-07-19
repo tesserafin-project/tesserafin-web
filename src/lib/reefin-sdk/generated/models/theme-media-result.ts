@@ -29,11 +29,11 @@ export interface ThemeMediaResult {
      */
     'Items'?: Array<BaseItemDto>;
     /**
-     * Gets or sets the total number of records available.
-     * @type {number}
+     * Gets or sets the owner id.
+     * @type {string}
      * @memberof ThemeMediaResult
      */
-    'TotalRecordCount'?: number;
+    'OwnerId'?: string;
     /**
      * Gets or sets the index of the first record in Items.
      * @type {number}
@@ -41,10 +41,10 @@ export interface ThemeMediaResult {
      */
     'StartIndex'?: number;
     /**
-     * Gets or sets the owner id.
-     * @type {string}
+     * Gets or sets the total number of records available.
+     * @type {number}
      * @memberof ThemeMediaResult
      */
-    'OwnerId'?: string;
+    'TotalRecordCount'?: number;
 }
 

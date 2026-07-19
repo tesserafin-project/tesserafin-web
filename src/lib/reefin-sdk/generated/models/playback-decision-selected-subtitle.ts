@@ -23,17 +23,17 @@ import type { PlaybackDecisionSubtitleDeliveryMethod } from './playback-decision
  */
 export interface PlaybackDecisionSelectedSubtitle {
     /**
-     * The selected subtitle stream index.
-     * @type {number}
-     * @memberof PlaybackDecisionSelectedSubtitle
-     */
-    'Index'?: number;
-    /**
      * How the subtitle will be delivered to the client.
      * @type {PlaybackDecisionSubtitleDeliveryMethod}
      * @memberof PlaybackDecisionSelectedSubtitle
      */
     'Delivery'?: PlaybackDecisionSubtitleDeliveryMethod;
+    /**
+     * The selected subtitle stream index.
+     * @type {number}
+     * @memberof PlaybackDecisionSelectedSubtitle
+     */
+    'Index'?: number;
 }
 
 

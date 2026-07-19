@@ -26,18 +26,6 @@ import type { UserDto } from './user-dto';
  */
 export interface AuthenticationResult {
     /**
-     * Gets or sets the user.
-     * @type {UserDto}
-     * @memberof AuthenticationResult
-     */
-    'User'?: UserDto | null;
-    /**
-     * Gets or sets the session info.
-     * @type {SessionInfoDto}
-     * @memberof AuthenticationResult
-     */
-    'SessionInfo'?: SessionInfoDto | null;
-    /**
      * Gets or sets the access token.
      * @type {string}
      * @memberof AuthenticationResult
@@ -49,5 +37,17 @@ export interface AuthenticationResult {
      * @memberof AuthenticationResult
      */
     'ServerId'?: string | null;
+    /**
+     * Gets or sets the session info.
+     * @type {SessionInfoDto}
+     * @memberof AuthenticationResult
+     */
+    'SessionInfo'?: SessionInfoDto | null;
+    /**
+     * Gets or sets the user.
+     * @type {UserDto}
+     * @memberof AuthenticationResult
+     */
+    'User'?: UserDto | null;
 }
 

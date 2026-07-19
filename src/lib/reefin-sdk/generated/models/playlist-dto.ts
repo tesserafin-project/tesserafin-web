@@ -23,6 +23,12 @@ import type { PlaylistUserPermissions } from './playlist-user-permissions';
  */
 export interface PlaylistDto {
     /**
+     * Gets or sets the item ids.
+     * @type {Array<string>}
+     * @memberof PlaylistDto
+     */
+    'ItemIds': Array<string>;
+    /**
      * Gets or sets a value indicating whether the playlist is publicly readable.
      * @type {boolean}
      * @memberof PlaylistDto
@@ -34,11 +40,5 @@ export interface PlaylistDto {
      * @memberof PlaylistDto
      */
     'Shares': Array<PlaylistUserPermissions>;
-    /**
-     * Gets or sets the item ids.
-     * @type {Array<string>}
-     * @memberof PlaylistDto
-     */
-    'ItemIds': Array<string>;
 }
 

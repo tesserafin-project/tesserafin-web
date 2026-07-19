@@ -27,28 +27,10 @@ import type { TunerHostInfo } from './tuner-host-info';
 export interface LiveTvOptions {
     /**
      * 
-     * @type {number}
+     * @type {boolean}
      * @memberof LiveTvOptions
      */
-    'GuideDays'?: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof LiveTvOptions
-     */
-    'RecordingPath'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof LiveTvOptions
-     */
-    'MovieRecordingPath'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof LiveTvOptions
-     */
-    'SeriesRecordingPath'?: string | null;
+    'EnableOriginalAudioWithEncodedRecordings'?: boolean;
     /**
      * 
      * @type {boolean}
@@ -57,16 +39,10 @@ export interface LiveTvOptions {
     'EnableRecordingSubfolders'?: boolean;
     /**
      * 
-     * @type {boolean}
+     * @type {number}
      * @memberof LiveTvOptions
      */
-    'EnableOriginalAudioWithEncodedRecordings'?: boolean;
-    /**
-     * 
-     * @type {Array<TunerHostInfo>}
-     * @memberof LiveTvOptions
-     */
-    'TunerHosts'?: Array<TunerHostInfo> | null;
+    'GuideDays'?: number | null;
     /**
      * 
      * @type {Array<ListingsProviderInfo>}
@@ -75,10 +51,16 @@ export interface LiveTvOptions {
     'ListingProviders'?: Array<ListingsProviderInfo> | null;
     /**
      * 
-     * @type {number}
+     * @type {Array<string>}
      * @memberof LiveTvOptions
      */
-    'PrePaddingSeconds'?: number;
+    'MediaLocationsCreated'?: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof LiveTvOptions
+     */
+    'MovieRecordingPath'?: string | null;
     /**
      * 
      * @type {number}
@@ -87,10 +69,16 @@ export interface LiveTvOptions {
     'PostPaddingSeconds'?: number;
     /**
      * 
-     * @type {Array<string>}
+     * @type {number}
      * @memberof LiveTvOptions
      */
-    'MediaLocationsCreated'?: Array<string> | null;
+    'PrePaddingSeconds'?: number;
+    /**
+     * 
+     * @type {string}
+     * @memberof LiveTvOptions
+     */
+    'RecordingPath'?: string | null;
     /**
      * 
      * @type {string}
@@ -108,12 +96,24 @@ export interface LiveTvOptions {
      * @type {boolean}
      * @memberof LiveTvOptions
      */
-    'SaveRecordingNFO'?: boolean;
+    'SaveRecordingImages'?: boolean;
     /**
      * 
      * @type {boolean}
      * @memberof LiveTvOptions
      */
-    'SaveRecordingImages'?: boolean;
+    'SaveRecordingNFO'?: boolean;
+    /**
+     * 
+     * @type {string}
+     * @memberof LiveTvOptions
+     */
+    'SeriesRecordingPath'?: string | null;
+    /**
+     * 
+     * @type {Array<TunerHostInfo>}
+     * @memberof LiveTvOptions
+     */
+    'TunerHosts'?: Array<TunerHostInfo> | null;
 }
 

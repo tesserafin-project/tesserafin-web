@@ -21,22 +21,10 @@
 export interface MetadataOptions {
     /**
      * 
-     * @type {string}
-     * @memberof MetadataOptions
-     */
-    'ItemType'?: string | null;
-    /**
-     * 
      * @type {Array<string>}
      * @memberof MetadataOptions
      */
-    'DisabledMetadataSavers'?: Array<string> | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof MetadataOptions
-     */
-    'LocalMetadataReaderOrder'?: Array<string> | null;
+    'DisabledImageFetchers'?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
@@ -48,18 +36,30 @@ export interface MetadataOptions {
      * @type {Array<string>}
      * @memberof MetadataOptions
      */
-    'MetadataFetcherOrder'?: Array<string> | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof MetadataOptions
-     */
-    'DisabledImageFetchers'?: Array<string> | null;
+    'DisabledMetadataSavers'?: Array<string> | null;
     /**
      * 
      * @type {Array<string>}
      * @memberof MetadataOptions
      */
     'ImageFetcherOrder'?: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof MetadataOptions
+     */
+    'ItemType'?: string | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof MetadataOptions
+     */
+    'LocalMetadataReaderOrder'?: Array<string> | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof MetadataOptions
+     */
+    'MetadataFetcherOrder'?: Array<string> | null;
 }
 

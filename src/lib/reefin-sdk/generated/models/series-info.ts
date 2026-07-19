@@ -20,6 +20,30 @@
  */
 export interface SeriesInfo {
     /**
+     * 
+     * @type {number}
+     * @memberof SeriesInfo
+     */
+    'IndexNumber'?: number | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof SeriesInfo
+     */
+    'IsAutomated'?: boolean;
+    /**
+     * Gets or sets the metadata country code.
+     * @type {string}
+     * @memberof SeriesInfo
+     */
+    'MetadataCountryCode'?: string | null;
+    /**
+     * Gets or sets the metadata language.
+     * @type {string}
+     * @memberof SeriesInfo
+     */
+    'MetadataLanguage'?: string | null;
+    /**
      * Gets or sets the name.
      * @type {string}
      * @memberof SeriesInfo
@@ -32,23 +56,23 @@ export interface SeriesInfo {
      */
     'OriginalTitle'?: string | null;
     /**
+     * 
+     * @type {number}
+     * @memberof SeriesInfo
+     */
+    'ParentIndexNumber'?: number | null;
+    /**
      * Gets or sets the path.
      * @type {string}
      * @memberof SeriesInfo
      */
     'Path'?: string | null;
     /**
-     * Gets or sets the metadata language.
+     * 
      * @type {string}
      * @memberof SeriesInfo
      */
-    'MetadataLanguage'?: string | null;
-    /**
-     * Gets or sets the metadata country code.
-     * @type {string}
-     * @memberof SeriesInfo
-     */
-    'MetadataCountryCode'?: string | null;
+    'PremiereDate'?: string | null;
     /**
      * Gets or sets the provider ids.
      * @type {{ [key: string]: string | null; }}
@@ -61,29 +85,5 @@ export interface SeriesInfo {
      * @memberof SeriesInfo
      */
     'Year'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof SeriesInfo
-     */
-    'IndexNumber'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof SeriesInfo
-     */
-    'ParentIndexNumber'?: number | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof SeriesInfo
-     */
-    'PremiereDate'?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof SeriesInfo
-     */
-    'IsAutomated'?: boolean;
 }
 

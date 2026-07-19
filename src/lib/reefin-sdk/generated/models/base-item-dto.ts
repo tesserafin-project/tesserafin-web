@@ -92,71 +92,17 @@ import type { VideoType } from './video-type';
  */
 export interface BaseItemDto {
     /**
-     * Gets or sets the name.
+     * Gets or sets the air days.
+     * @type {Array<DayOfWeek>}
+     * @memberof BaseItemDto
+     */
+    'AirDays'?: Array<DayOfWeek> | null;
+    /**
+     * Gets or sets the air time.
      * @type {string}
      * @memberof BaseItemDto
      */
-    'Name'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'OriginalTitle'?: string | null;
-    /**
-     * Gets or sets the server identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ServerId'?: string | null;
-    /**
-     * Gets or sets the id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Id'?: string;
-    /**
-     * Gets or sets the etag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Etag'?: string | null;
-    /**
-     * Gets or sets the type of the source.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SourceType'?: string | null;
-    /**
-     * Gets or sets the playlist item identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'PlaylistItemId'?: string | null;
-    /**
-     * Gets or sets the date created.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'DateCreated'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'DateLastMediaAdded'?: string | null;
-    /**
-     * 
-     * @type {ExtraType}
-     * @memberof BaseItemDto
-     */
-    'ExtraType'?: ExtraType | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'AirsBeforeSeasonNumber'?: number | null;
+    'AirTime'?: string | null;
     /**
      * 
      * @type {number}
@@ -171,424 +117,16 @@ export interface BaseItemDto {
     'AirsBeforeEpisodeNumber'?: number | null;
     /**
      * 
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'CanDelete'?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'CanDownload'?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'HasLyrics'?: boolean | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'HasSubtitles'?: boolean | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'PreferredMetadataLanguage'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'PreferredMetadataCountryCode'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Container'?: string | null;
-    /**
-     * Gets or sets the name of the sort.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SortName'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ForcedSortName'?: string | null;
-    /**
-     * Gets or sets the video3 D format.
-     * @type {Video3DFormat}
-     * @memberof BaseItemDto
-     */
-    'Video3DFormat'?: Video3DFormat | null;
-    /**
-     * Gets or sets the premiere date.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'PremiereDate'?: string | null;
-    /**
-     * Gets or sets the external urls.
-     * @type {Array<ExternalUrl>}
-     * @memberof BaseItemDto
-     */
-    'ExternalUrls'?: Array<ExternalUrl> | null;
-    /**
-     * Gets or sets the media versions.
-     * @type {Array<MediaSourceInfo>}
-     * @memberof BaseItemDto
-     */
-    'MediaSources'?: Array<MediaSourceInfo> | null;
-    /**
-     * Gets or sets the critic rating.
      * @type {number}
      * @memberof BaseItemDto
      */
-    'CriticRating'?: number | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'ProductionLocations'?: Array<string> | null;
-    /**
-     * Gets or sets the path.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Path'?: string | null;
-    /**
-     * 
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'EnableMediaSourceDisplay'?: boolean | null;
-    /**
-     * Gets or sets the official rating.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'OfficialRating'?: string | null;
-    /**
-     * Gets or sets the custom rating.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'CustomRating'?: string | null;
-    /**
-     * Gets or sets the channel identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ChannelId'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ChannelName'?: string | null;
-    /**
-     * Gets or sets the overview.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Overview'?: string | null;
-    /**
-     * Gets or sets the taglines.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'Taglines'?: Array<string> | null;
-    /**
-     * Gets or sets the genres.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'Genres'?: Array<string> | null;
-    /**
-     * Gets or sets the community rating.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'CommunityRating'?: number | null;
-    /**
-     * Gets or sets the cumulative run time ticks.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'CumulativeRunTimeTicks'?: number | null;
-    /**
-     * Gets or sets the run time ticks.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'RunTimeTicks'?: number | null;
-    /**
-     * Gets or sets the play access.
-     * @type {PlayAccess}
-     * @memberof BaseItemDto
-     */
-    'PlayAccess'?: PlayAccess | null;
-    /**
-     * Gets or sets the aspect ratio.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'AspectRatio'?: string | null;
-    /**
-     * Gets or sets the production year.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'ProductionYear'?: number | null;
-    /**
-     * Gets or sets a value indicating whether this instance is place holder.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsPlaceHolder'?: boolean | null;
-    /**
-     * Gets or sets the number.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Number'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ChannelNumber'?: string | null;
-    /**
-     * Gets or sets the index number.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'IndexNumber'?: number | null;
-    /**
-     * Gets or sets the index number end.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'IndexNumberEnd'?: number | null;
-    /**
-     * Gets or sets the parent index number.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'ParentIndexNumber'?: number | null;
-    /**
-     * Gets or sets the trailer urls.
-     * @type {Array<MediaUrl>}
-     * @memberof BaseItemDto
-     */
-    'RemoteTrailers'?: Array<MediaUrl> | null;
-    /**
-     * Gets or sets the provider ids.
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDto
-     */
-    'ProviderIds'?: { [key: string]: string | null; } | null;
-    /**
-     * Gets or sets a value indicating whether this instance is HD.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsHD'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is folder.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsFolder'?: boolean | null;
-    /**
-     * Gets or sets the parent id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentId'?: string | null;
-    /**
-     * Gets or sets the type.
-     * @type {BaseItemKind}
-     * @memberof BaseItemDto
-     */
-    'Type'?: BaseItemKind;
-    /**
-     * Gets or sets the people.
-     * @type {Array<BaseItemPerson>}
-     * @memberof BaseItemDto
-     */
-    'People'?: Array<BaseItemPerson> | null;
-    /**
-     * Gets or sets the studios.
-     * @type {Array<NameGuidPair>}
-     * @memberof BaseItemDto
-     */
-    'Studios'?: Array<NameGuidPair> | null;
-    /**
-     * 
-     * @type {Array<NameGuidPair>}
-     * @memberof BaseItemDto
-     */
-    'GenreItems'?: Array<NameGuidPair> | null;
-    /**
-     * Gets or sets whether the item has a logo, this will hold the Id of the Parent that has one.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentLogoItemId'?: string | null;
-    /**
-     * Gets or sets whether the item has any backdrops, this will hold the Id of the Parent that has one.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentBackdropItemId'?: string | null;
-    /**
-     * Gets or sets the parent backdrop image tags.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'ParentBackdropImageTags'?: Array<string> | null;
-    /**
-     * Gets or sets the local trailer count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'LocalTrailerCount'?: number | null;
-    /**
-     * Gets or sets the user data for this item based on the user it\'s being requested for.
-     * @type {UserItemDataDto}
-     * @memberof BaseItemDto
-     */
-    'UserData'?: UserItemDataDto | null;
-    /**
-     * Gets or sets the recursive item count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'RecursiveItemCount'?: number | null;
-    /**
-     * Gets or sets the child count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'ChildCount'?: number | null;
-    /**
-     * Gets or sets the name of the series.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesName'?: string | null;
-    /**
-     * Gets or sets the series id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesId'?: string | null;
-    /**
-     * Gets or sets the season identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeasonId'?: string | null;
-    /**
-     * Gets or sets the special feature count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'SpecialFeatureCount'?: number | null;
-    /**
-     * Gets or sets the display preferences id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'DisplayPreferencesId'?: string | null;
-    /**
-     * Gets or sets the status.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'Status'?: string | null;
-    /**
-     * Gets or sets the air time.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'AirTime'?: string | null;
-    /**
-     * Gets or sets the air days.
-     * @type {Array<DayOfWeek>}
-     * @memberof BaseItemDto
-     */
-    'AirDays'?: Array<DayOfWeek> | null;
-    /**
-     * Gets or sets the tags.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'Tags'?: Array<string> | null;
-    /**
-     * Gets or sets the primary image aspect ratio, after image enhancements.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'PrimaryImageAspectRatio'?: number | null;
-    /**
-     * Gets or sets the artists.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'Artists'?: Array<string> | null;
-    /**
-     * Gets or sets the artist items.
-     * @type {Array<NameGuidPair>}
-     * @memberof BaseItemDto
-     */
-    'ArtistItems'?: Array<NameGuidPair> | null;
+    'AirsBeforeSeasonNumber'?: number | null;
     /**
      * Gets or sets the album.
      * @type {string}
      * @memberof BaseItemDto
      */
     'Album'?: string | null;
-    /**
-     * Gets or sets the type of the collection.
-     * @type {CollectionType}
-     * @memberof BaseItemDto
-     */
-    'CollectionType'?: CollectionType | null;
-    /**
-     * Gets or sets the display order.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'DisplayOrder'?: string | null;
-    /**
-     * Gets or sets the album id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'AlbumId'?: string | null;
-    /**
-     * Gets or sets the album image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'AlbumPrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets the series primary image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesPrimaryImageTag'?: string | null;
     /**
      * Gets or sets the album artist.
      * @type {string}
@@ -602,197 +140,41 @@ export interface BaseItemDto {
      */
     'AlbumArtists'?: Array<NameGuidPair> | null;
     /**
-     * Gets or sets the name of the season.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeasonName'?: string | null;
-    /**
-     * Gets or sets the media streams.
-     * @type {Array<MediaStream>}
-     * @memberof BaseItemDto
-     */
-    'MediaStreams'?: Array<MediaStream> | null;
-    /**
-     * Gets or sets the type of the video.
-     * @type {VideoType}
-     * @memberof BaseItemDto
-     */
-    'VideoType'?: VideoType | null;
-    /**
-     * Gets or sets the part count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'PartCount'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'MediaSourceCount'?: number | null;
-    /**
-     * Gets or sets the image tags.
-     * @type {{ [key: string]: string | null; }}
-     * @memberof BaseItemDto
-     */
-    'ImageTags'?: { [key: string]: string | null; } | null;
-    /**
-     * Gets or sets the backdrop image tags.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'BackdropImageTags'?: Array<string> | null;
-    /**
-     * Gets or sets the screenshot image tags.
-     * @type {Array<string>}
-     * @memberof BaseItemDto
-     */
-    'ScreenshotImageTags'?: Array<string> | null;
-    /**
-     * Gets or sets the parent logo image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentLogoImageTag'?: string | null;
-    /**
-     * Gets or sets whether the item has fan art, this will hold the Id of the Parent that has one.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentArtItemId'?: string | null;
-    /**
-     * Gets or sets the parent art image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentArtImageTag'?: string | null;
-    /**
-     * Gets or sets the series thumb image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesThumbImageTag'?: string | null;
-    /**
-     * 
-     * @type {BaseItemDtoImageBlurHashes}
-     * @memberof BaseItemDto
-     */
-    'ImageBlurHashes'?: BaseItemDtoImageBlurHashes | null;
-    /**
-     * Gets or sets the series studio.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesStudio'?: string | null;
-    /**
-     * Gets or sets the parent thumb item id.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentThumbItemId'?: string | null;
-    /**
-     * Gets or sets the parent thumb image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentThumbImageTag'?: string | null;
-    /**
-     * Gets or sets the parent primary image item identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentPrimaryImageItemId'?: string | null;
-    /**
-     * Gets or sets the parent primary image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ParentPrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets the chapters.
-     * @type {Array<ChapterInfo>}
-     * @memberof BaseItemDto
-     */
-    'Chapters'?: Array<ChapterInfo> | null;
-    /**
-     * Gets or sets the trickplay manifest.
-     * @type {{ [key: string]: { [key: string]: TrickplayInfoDto; } | null; }}
-     * @memberof BaseItemDto
-     */
-    'Trickplay'?: { [key: string]: { [key: string]: TrickplayInfoDto; } | null; } | null;
-    /**
-     * Gets or sets the type of the location.
-     * @type {LocationType}
-     * @memberof BaseItemDto
-     */
-    'LocationType'?: LocationType | null;
-    /**
-     * Gets or sets the type of the iso.
-     * @type {IsoType}
-     * @memberof BaseItemDto
-     */
-    'IsoType'?: IsoType | null;
-    /**
-     * Gets or sets the type of the media.
-     * @type {MediaType}
-     * @memberof BaseItemDto
-     */
-    'MediaType'?: MediaType;
-    /**
-     * Gets or sets the end date.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'EndDate'?: string | null;
-    /**
-     * Gets or sets the locked fields.
-     * @type {Array<MetadataField>}
-     * @memberof BaseItemDto
-     */
-    'LockedFields'?: Array<MetadataField> | null;
-    /**
-     * Gets or sets the trailer count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'TrailerCount'?: number | null;
-    /**
-     * Gets or sets the movie count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'MovieCount'?: number | null;
-    /**
-     * Gets or sets the series count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'SeriesCount'?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'ProgramCount'?: number | null;
-    /**
-     * Gets or sets the episode count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'EpisodeCount'?: number | null;
-    /**
-     * Gets or sets the song count.
-     * @type {number}
-     * @memberof BaseItemDto
-     */
-    'SongCount'?: number | null;
-    /**
      * Gets or sets the album count.
      * @type {number}
      * @memberof BaseItemDto
      */
     'AlbumCount'?: number | null;
+    /**
+     * Gets or sets the album id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'AlbumId'?: string | null;
+    /**
+     * Gets or sets the gain required for audio normalization. This field is inherited from music album normalization gain.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'AlbumNormalizationGain'?: number | null;
+    /**
+     * Gets or sets the album image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'AlbumPrimaryImageTag'?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'Altitude'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'Aperture'?: number | null;
     /**
      * 
      * @type {number}
@@ -800,29 +182,35 @@ export interface BaseItemDto {
      */
     'ArtistCount'?: number | null;
     /**
-     * Gets or sets the music video count.
-     * @type {number}
+     * Gets or sets the artist items.
+     * @type {Array<NameGuidPair>}
      * @memberof BaseItemDto
      */
-    'MusicVideoCount'?: number | null;
+    'ArtistItems'?: Array<NameGuidPair> | null;
     /**
-     * Gets or sets a value indicating whether [enable internet providers].
-     * @type {boolean}
+     * Gets or sets the artists.
+     * @type {Array<string>}
      * @memberof BaseItemDto
      */
-    'LockData'?: boolean | null;
+    'Artists'?: Array<string> | null;
     /**
-     * 
-     * @type {number}
+     * Gets or sets the aspect ratio.
+     * @type {string}
      * @memberof BaseItemDto
      */
-    'Width'?: number | null;
+    'AspectRatio'?: string | null;
     /**
-     * 
-     * @type {number}
+     * Gets or sets the audio.
+     * @type {ProgramAudio}
      * @memberof BaseItemDto
      */
-    'Height'?: number | null;
+    'Audio'?: ProgramAudio | null;
+    /**
+     * Gets or sets the backdrop image tags.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'BackdropImageTags'?: Array<string> | null;
     /**
      * 
      * @type {string}
@@ -837,16 +225,178 @@ export interface BaseItemDto {
     'CameraModel'?: string | null;
     /**
      * 
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'CanDelete'?: boolean | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'CanDownload'?: boolean | null;
+    /**
+     * Gets or sets the channel identifier.
      * @type {string}
      * @memberof BaseItemDto
      */
-    'Software'?: string | null;
+    'ChannelId'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ChannelName'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ChannelNumber'?: string | null;
+    /**
+     * Gets or sets the channel primary image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ChannelPrimaryImageTag'?: string | null;
+    /**
+     * Gets or sets the type of the channel.
+     * @type {ChannelType}
+     * @memberof BaseItemDto
+     */
+    'ChannelType'?: ChannelType | null;
+    /**
+     * Gets or sets the chapters.
+     * @type {Array<ChapterInfo>}
+     * @memberof BaseItemDto
+     */
+    'Chapters'?: Array<ChapterInfo> | null;
+    /**
+     * Gets or sets the child count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'ChildCount'?: number | null;
+    /**
+     * Gets or sets the type of the collection.
+     * @type {CollectionType}
+     * @memberof BaseItemDto
+     */
+    'CollectionType'?: CollectionType | null;
+    /**
+     * Gets or sets the community rating.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'CommunityRating'?: number | null;
+    /**
+     * Gets or sets the completion percentage.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'CompletionPercentage'?: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Container'?: string | null;
+    /**
+     * Gets or sets the critic rating.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'CriticRating'?: number | null;
+    /**
+     * Gets or sets the cumulative run time ticks.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'CumulativeRunTimeTicks'?: number | null;
+    /**
+     * Gets or sets the current program.
+     * @type {BaseItemDto}
+     * @memberof BaseItemDto
+     */
+    'CurrentProgram'?: BaseItemDto | null;
+    /**
+     * Gets or sets the custom rating.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'CustomRating'?: string | null;
+    /**
+     * Gets or sets the date created.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'DateCreated'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'DateLastMediaAdded'?: string | null;
+    /**
+     * Gets or sets the display order.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'DisplayOrder'?: string | null;
+    /**
+     * Gets or sets the display preferences id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'DisplayPreferencesId'?: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'EnableMediaSourceDisplay'?: boolean | null;
+    /**
+     * Gets or sets the end date.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'EndDate'?: string | null;
+    /**
+     * Gets or sets the episode count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'EpisodeCount'?: number | null;
+    /**
+     * Gets or sets the episode title.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'EpisodeTitle'?: string | null;
+    /**
+     * Gets or sets the etag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Etag'?: string | null;
     /**
      * 
      * @type {number}
      * @memberof BaseItemDto
      */
     'ExposureTime'?: number | null;
+    /**
+     * Gets or sets the external urls.
+     * @type {Array<ExternalUrl>}
+     * @memberof BaseItemDto
+     */
+    'ExternalUrls'?: Array<ExternalUrl> | null;
+    /**
+     * 
+     * @type {ExtraType}
+     * @memberof BaseItemDto
+     */
+    'ExtraType'?: ExtraType | null;
     /**
      * 
      * @type {number}
@@ -855,28 +405,184 @@ export interface BaseItemDto {
     'FocalLength'?: number | null;
     /**
      * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ForcedSortName'?: string | null;
+    /**
+     * 
+     * @type {Array<NameGuidPair>}
+     * @memberof BaseItemDto
+     */
+    'GenreItems'?: Array<NameGuidPair> | null;
+    /**
+     * Gets or sets the genres.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'Genres'?: Array<string> | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'HasLyrics'?: boolean | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'HasSubtitles'?: boolean | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'Height'?: number | null;
+    /**
+     * Gets or sets the id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Id'?: string;
+    /**
+     * 
+     * @type {BaseItemDtoImageBlurHashes}
+     * @memberof BaseItemDto
+     */
+    'ImageBlurHashes'?: BaseItemDtoImageBlurHashes | null;
+    /**
+     * 
      * @type {ImageOrientation}
      * @memberof BaseItemDto
      */
     'ImageOrientation'?: ImageOrientation | null;
     /**
-     * 
+     * Gets or sets the image tags.
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDto
+     */
+    'ImageTags'?: { [key: string]: string | null; } | null;
+    /**
+     * Gets or sets the index number.
      * @type {number}
      * @memberof BaseItemDto
      */
-    'Aperture'?: number | null;
+    'IndexNumber'?: number | null;
+    /**
+     * Gets or sets the index number end.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'IndexNumberEnd'?: number | null;
+    /**
+     * Gets or sets a value indicating whether this instance is folder.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsFolder'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is HD.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsHD'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is kids.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsKids'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is live.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsLive'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is movie.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsMovie'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is news.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsNews'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is place holder.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsPlaceHolder'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is premiere.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsPremiere'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is repeat.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsRepeat'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is series.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsSeries'?: boolean | null;
+    /**
+     * Gets or sets a value indicating whether this instance is sports.
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'IsSports'?: boolean | null;
     /**
      * 
      * @type {number}
      * @memberof BaseItemDto
      */
-    'ShutterSpeed'?: number | null;
+    'IsoSpeedRating'?: number | null;
+    /**
+     * Gets or sets the type of the iso.
+     * @type {IsoType}
+     * @memberof BaseItemDto
+     */
+    'IsoType'?: IsoType | null;
     /**
      * 
      * @type {number}
      * @memberof BaseItemDto
      */
     'Latitude'?: number | null;
+    /**
+     * Gets or sets the local trailer count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'LocalTrailerCount'?: number | null;
+    /**
+     * Gets or sets the type of the location.
+     * @type {LocationType}
+     * @memberof BaseItemDto
+     */
+    'LocationType'?: LocationType | null;
+    /**
+     * Gets or sets a value indicating whether [enable internet providers].
+     * @type {boolean}
+     * @memberof BaseItemDto
+     */
+    'LockData'?: boolean | null;
+    /**
+     * Gets or sets the locked fields.
+     * @type {Array<MetadataField>}
+     * @memberof BaseItemDto
+     */
+    'LockedFields'?: Array<MetadataField> | null;
     /**
      * 
      * @type {number}
@@ -888,115 +594,43 @@ export interface BaseItemDto {
      * @type {number}
      * @memberof BaseItemDto
      */
-    'Altitude'?: number | null;
+    'MediaSourceCount'?: number | null;
     /**
-     * 
+     * Gets or sets the media versions.
+     * @type {Array<MediaSourceInfo>}
+     * @memberof BaseItemDto
+     */
+    'MediaSources'?: Array<MediaSourceInfo> | null;
+    /**
+     * Gets or sets the media streams.
+     * @type {Array<MediaStream>}
+     * @memberof BaseItemDto
+     */
+    'MediaStreams'?: Array<MediaStream> | null;
+    /**
+     * Gets or sets the type of the media.
+     * @type {MediaType}
+     * @memberof BaseItemDto
+     */
+    'MediaType'?: MediaType;
+    /**
+     * Gets or sets the movie count.
      * @type {number}
      * @memberof BaseItemDto
      */
-    'IsoSpeedRating'?: number | null;
+    'MovieCount'?: number | null;
     /**
-     * Gets or sets the series timer identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'SeriesTimerId'?: string | null;
-    /**
-     * Gets or sets the program identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ProgramId'?: string | null;
-    /**
-     * Gets or sets the channel primary image tag.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'ChannelPrimaryImageTag'?: string | null;
-    /**
-     * Gets or sets the start date of the recording, in UTC.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'StartDate'?: string | null;
-    /**
-     * Gets or sets the completion percentage.
+     * Gets or sets the music video count.
      * @type {number}
      * @memberof BaseItemDto
      */
-    'CompletionPercentage'?: number | null;
+    'MusicVideoCount'?: number | null;
     /**
-     * Gets or sets a value indicating whether this instance is repeat.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsRepeat'?: boolean | null;
-    /**
-     * Gets or sets the episode title.
+     * Gets or sets the name.
      * @type {string}
      * @memberof BaseItemDto
      */
-    'EpisodeTitle'?: string | null;
-    /**
-     * Gets or sets the type of the channel.
-     * @type {ChannelType}
-     * @memberof BaseItemDto
-     */
-    'ChannelType'?: ChannelType | null;
-    /**
-     * Gets or sets the audio.
-     * @type {ProgramAudio}
-     * @memberof BaseItemDto
-     */
-    'Audio'?: ProgramAudio | null;
-    /**
-     * Gets or sets a value indicating whether this instance is movie.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsMovie'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is sports.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsSports'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is series.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsSeries'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is live.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsLive'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is news.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsNews'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is kids.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsKids'?: boolean | null;
-    /**
-     * Gets or sets a value indicating whether this instance is premiere.
-     * @type {boolean}
-     * @memberof BaseItemDto
-     */
-    'IsPremiere'?: boolean | null;
-    /**
-     * Gets or sets the timer identifier.
-     * @type {string}
-     * @memberof BaseItemDto
-     */
-    'TimerId'?: string | null;
+    'Name'?: string | null;
     /**
      * Gets or sets the gain required for audio normalization.
      * @type {number}
@@ -1004,23 +638,389 @@ export interface BaseItemDto {
      */
     'NormalizationGain'?: number | null;
     /**
-     * Gets or sets the gain required for audio normalization. This field is inherited from music album normalization gain.
-     * @type {number}
+     * Gets or sets the number.
+     * @type {string}
      * @memberof BaseItemDto
      */
-    'AlbumNormalizationGain'?: number | null;
+    'Number'?: string | null;
     /**
-     * Gets or sets the current program.
-     * @type {BaseItemDto}
+     * Gets or sets the official rating.
+     * @type {string}
      * @memberof BaseItemDto
      */
-    'CurrentProgram'?: BaseItemDto | null;
+    'OfficialRating'?: string | null;
     /**
      * 
      * @type {string}
      * @memberof BaseItemDto
      */
     'OriginalLanguage'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'OriginalTitle'?: string | null;
+    /**
+     * Gets or sets the overview.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Overview'?: string | null;
+    /**
+     * Gets or sets the parent art image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentArtImageTag'?: string | null;
+    /**
+     * Gets or sets whether the item has fan art, this will hold the Id of the Parent that has one.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentArtItemId'?: string | null;
+    /**
+     * Gets or sets the parent backdrop image tags.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'ParentBackdropImageTags'?: Array<string> | null;
+    /**
+     * Gets or sets whether the item has any backdrops, this will hold the Id of the Parent that has one.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentBackdropItemId'?: string | null;
+    /**
+     * Gets or sets the parent id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentId'?: string | null;
+    /**
+     * Gets or sets the parent index number.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'ParentIndexNumber'?: number | null;
+    /**
+     * Gets or sets the parent logo image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentLogoImageTag'?: string | null;
+    /**
+     * Gets or sets whether the item has a logo, this will hold the Id of the Parent that has one.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentLogoItemId'?: string | null;
+    /**
+     * Gets or sets the parent primary image item identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentPrimaryImageItemId'?: string | null;
+    /**
+     * Gets or sets the parent primary image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentPrimaryImageTag'?: string | null;
+    /**
+     * Gets or sets the parent thumb image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentThumbImageTag'?: string | null;
+    /**
+     * Gets or sets the parent thumb item id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ParentThumbItemId'?: string | null;
+    /**
+     * Gets or sets the part count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'PartCount'?: number | null;
+    /**
+     * Gets or sets the path.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Path'?: string | null;
+    /**
+     * Gets or sets the people.
+     * @type {Array<BaseItemPerson>}
+     * @memberof BaseItemDto
+     */
+    'People'?: Array<BaseItemPerson> | null;
+    /**
+     * Gets or sets the play access.
+     * @type {PlayAccess}
+     * @memberof BaseItemDto
+     */
+    'PlayAccess'?: PlayAccess | null;
+    /**
+     * Gets or sets the playlist item identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'PlaylistItemId'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'PreferredMetadataCountryCode'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'PreferredMetadataLanguage'?: string | null;
+    /**
+     * Gets or sets the premiere date.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'PremiereDate'?: string | null;
+    /**
+     * Gets or sets the primary image aspect ratio, after image enhancements.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'PrimaryImageAspectRatio'?: number | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'ProductionLocations'?: Array<string> | null;
+    /**
+     * Gets or sets the production year.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'ProductionYear'?: number | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'ProgramCount'?: number | null;
+    /**
+     * Gets or sets the program identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ProgramId'?: string | null;
+    /**
+     * Gets or sets the provider ids.
+     * @type {{ [key: string]: string | null; }}
+     * @memberof BaseItemDto
+     */
+    'ProviderIds'?: { [key: string]: string | null; } | null;
+    /**
+     * Gets or sets the recursive item count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'RecursiveItemCount'?: number | null;
+    /**
+     * Gets or sets the trailer urls.
+     * @type {Array<MediaUrl>}
+     * @memberof BaseItemDto
+     */
+    'RemoteTrailers'?: Array<MediaUrl> | null;
+    /**
+     * Gets or sets the run time ticks.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'RunTimeTicks'?: number | null;
+    /**
+     * Gets or sets the screenshot image tags.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'ScreenshotImageTags'?: Array<string> | null;
+    /**
+     * Gets or sets the season identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeasonId'?: string | null;
+    /**
+     * Gets or sets the name of the season.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeasonName'?: string | null;
+    /**
+     * Gets or sets the series count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'SeriesCount'?: number | null;
+    /**
+     * Gets or sets the series id.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesId'?: string | null;
+    /**
+     * Gets or sets the name of the series.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesName'?: string | null;
+    /**
+     * Gets or sets the series primary image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesPrimaryImageTag'?: string | null;
+    /**
+     * Gets or sets the series studio.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesStudio'?: string | null;
+    /**
+     * Gets or sets the series thumb image tag.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesThumbImageTag'?: string | null;
+    /**
+     * Gets or sets the series timer identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SeriesTimerId'?: string | null;
+    /**
+     * Gets or sets the server identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'ServerId'?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'ShutterSpeed'?: number | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Software'?: string | null;
+    /**
+     * Gets or sets the song count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'SongCount'?: number | null;
+    /**
+     * Gets or sets the name of the sort.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SortName'?: string | null;
+    /**
+     * Gets or sets the type of the source.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'SourceType'?: string | null;
+    /**
+     * Gets or sets the special feature count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'SpecialFeatureCount'?: number | null;
+    /**
+     * Gets or sets the start date of the recording, in UTC.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'StartDate'?: string | null;
+    /**
+     * Gets or sets the status.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'Status'?: string | null;
+    /**
+     * Gets or sets the studios.
+     * @type {Array<NameGuidPair>}
+     * @memberof BaseItemDto
+     */
+    'Studios'?: Array<NameGuidPair> | null;
+    /**
+     * Gets or sets the taglines.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'Taglines'?: Array<string> | null;
+    /**
+     * Gets or sets the tags.
+     * @type {Array<string>}
+     * @memberof BaseItemDto
+     */
+    'Tags'?: Array<string> | null;
+    /**
+     * Gets or sets the timer identifier.
+     * @type {string}
+     * @memberof BaseItemDto
+     */
+    'TimerId'?: string | null;
+    /**
+     * Gets or sets the trailer count.
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'TrailerCount'?: number | null;
+    /**
+     * Gets or sets the trickplay manifest.
+     * @type {{ [key: string]: { [key: string]: TrickplayInfoDto; } | null; }}
+     * @memberof BaseItemDto
+     */
+    'Trickplay'?: { [key: string]: { [key: string]: TrickplayInfoDto; } | null; } | null;
+    /**
+     * Gets or sets the type.
+     * @type {BaseItemKind}
+     * @memberof BaseItemDto
+     */
+    'Type'?: BaseItemKind;
+    /**
+     * Gets or sets the user data for this item based on the user it\'s being requested for.
+     * @type {UserItemDataDto}
+     * @memberof BaseItemDto
+     */
+    'UserData'?: UserItemDataDto | null;
+    /**
+     * Gets or sets the video3 D format.
+     * @type {Video3DFormat}
+     * @memberof BaseItemDto
+     */
+    'Video3DFormat'?: Video3DFormat | null;
+    /**
+     * Gets or sets the type of the video.
+     * @type {VideoType}
+     * @memberof BaseItemDto
+     */
+    'VideoType'?: VideoType | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BaseItemDto
+     */
+    'Width'?: number | null;
 }
 
 

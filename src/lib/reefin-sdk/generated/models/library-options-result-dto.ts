@@ -26,24 +26,6 @@ import type { LibraryTypeOptionsDto } from './library-type-options-dto';
  */
 export interface LibraryOptionsResultDto {
     /**
-     * Gets or sets the metadata savers.
-     * @type {Array<LibraryOptionInfoDto>}
-     * @memberof LibraryOptionsResultDto
-     */
-    'MetadataSavers'?: Array<LibraryOptionInfoDto>;
-    /**
-     * Gets or sets the metadata readers.
-     * @type {Array<LibraryOptionInfoDto>}
-     * @memberof LibraryOptionsResultDto
-     */
-    'MetadataReaders'?: Array<LibraryOptionInfoDto>;
-    /**
-     * Gets or sets the subtitle fetchers.
-     * @type {Array<LibraryOptionInfoDto>}
-     * @memberof LibraryOptionsResultDto
-     */
-    'SubtitleFetchers'?: Array<LibraryOptionInfoDto>;
-    /**
      * Gets or sets the list of lyric fetchers.
      * @type {Array<LibraryOptionInfoDto>}
      * @memberof LibraryOptionsResultDto
@@ -55,6 +37,24 @@ export interface LibraryOptionsResultDto {
      * @memberof LibraryOptionsResultDto
      */
     'MediaSegmentProviders'?: Array<LibraryOptionInfoDto>;
+    /**
+     * Gets or sets the metadata readers.
+     * @type {Array<LibraryOptionInfoDto>}
+     * @memberof LibraryOptionsResultDto
+     */
+    'MetadataReaders'?: Array<LibraryOptionInfoDto>;
+    /**
+     * Gets or sets the metadata savers.
+     * @type {Array<LibraryOptionInfoDto>}
+     * @memberof LibraryOptionsResultDto
+     */
+    'MetadataSavers'?: Array<LibraryOptionInfoDto>;
+    /**
+     * Gets or sets the subtitle fetchers.
+     * @type {Array<LibraryOptionInfoDto>}
+     * @memberof LibraryOptionsResultDto
+     */
+    'SubtitleFetchers'?: Array<LibraryOptionInfoDto>;
     /**
      * Gets or sets the type options.
      * @type {Array<LibraryTypeOptionsDto>}

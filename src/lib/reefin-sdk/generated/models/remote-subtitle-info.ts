@@ -21,34 +21,10 @@
 export interface RemoteSubtitleInfo {
     /**
      * 
-     * @type {string}
+     * @type {boolean}
      * @memberof RemoteSubtitleInfo
      */
-    'ThreeLetterISOLanguageName'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof RemoteSubtitleInfo
-     */
-    'Id'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof RemoteSubtitleInfo
-     */
-    'ProviderName'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof RemoteSubtitleInfo
-     */
-    'Name'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof RemoteSubtitleInfo
-     */
-    'Format'?: string | null;
+    'AiTranslated'?: boolean | null;
     /**
      * 
      * @type {string}
@@ -63,22 +39,16 @@ export interface RemoteSubtitleInfo {
     'Comment'?: string | null;
     /**
      * 
-     * @type {string}
-     * @memberof RemoteSubtitleInfo
-     */
-    'DateCreated'?: string | null;
-    /**
-     * 
      * @type {number}
      * @memberof RemoteSubtitleInfo
      */
     'CommunityRating'?: number | null;
     /**
      * 
-     * @type {number}
+     * @type {string}
      * @memberof RemoteSubtitleInfo
      */
-    'FrameRate'?: number | null;
+    'DateCreated'?: string | null;
     /**
      * 
      * @type {number}
@@ -90,13 +60,37 @@ export interface RemoteSubtitleInfo {
      * @type {boolean}
      * @memberof RemoteSubtitleInfo
      */
-    'IsHashMatch'?: boolean | null;
+    'Forced'?: boolean | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof RemoteSubtitleInfo
+     */
+    'Format'?: string | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof RemoteSubtitleInfo
+     */
+    'FrameRate'?: number | null;
     /**
      * 
      * @type {boolean}
      * @memberof RemoteSubtitleInfo
      */
-    'AiTranslated'?: boolean | null;
+    'HearingImpaired'?: boolean | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof RemoteSubtitleInfo
+     */
+    'Id'?: string | null;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof RemoteSubtitleInfo
+     */
+    'IsHashMatch'?: boolean | null;
     /**
      * 
      * @type {boolean}
@@ -105,15 +99,21 @@ export interface RemoteSubtitleInfo {
     'MachineTranslated'?: boolean | null;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof RemoteSubtitleInfo
      */
-    'Forced'?: boolean | null;
+    'Name'?: string | null;
     /**
      * 
-     * @type {boolean}
+     * @type {string}
      * @memberof RemoteSubtitleInfo
      */
-    'HearingImpaired'?: boolean | null;
+    'ProviderName'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof RemoteSubtitleInfo
+     */
+    'ThreeLetterISOLanguageName'?: string | null;
 }
 

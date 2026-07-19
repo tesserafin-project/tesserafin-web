@@ -23,11 +23,11 @@ import type { ArtistInfo } from './artist-info';
  */
 export interface ArtistInfoRemoteSearchQuery {
     /**
-     * 
-     * @type {ArtistInfo}
+     * Gets or sets a value indicating whether disabled providers should be included.
+     * @type {boolean}
      * @memberof ArtistInfoRemoteSearchQuery
      */
-    'SearchInfo'?: ArtistInfo | null;
+    'IncludeDisabledProviders'?: boolean;
     /**
      * 
      * @type {string}
@@ -35,16 +35,16 @@ export interface ArtistInfoRemoteSearchQuery {
      */
     'ItemId'?: string;
     /**
+     * 
+     * @type {ArtistInfo}
+     * @memberof ArtistInfoRemoteSearchQuery
+     */
+    'SearchInfo'?: ArtistInfo | null;
+    /**
      * Gets or sets the provider name to search within if set.
      * @type {string}
      * @memberof ArtistInfoRemoteSearchQuery
      */
     'SearchProviderName'?: string | null;
-    /**
-     * Gets or sets a value indicating whether disabled providers should be included.
-     * @type {boolean}
-     * @memberof ArtistInfoRemoteSearchQuery
-     */
-    'IncludeDisabledProviders'?: boolean;
 }
 

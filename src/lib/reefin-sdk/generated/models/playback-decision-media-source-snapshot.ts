@@ -29,23 +29,11 @@ import type { PlaybackDecisionVideoStreamSnapshot } from './playback-decision-vi
  */
 export interface PlaybackDecisionMediaSourceSnapshot {
     /**
-     * The identifier of the source within its item.
-     * @type {string}
+     * The audio streams on the source.
+     * @type {Array<PlaybackDecisionAudioStreamSnapshot>}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'MediaSourceId'?: string;
-    /**
-     * The normalized container name (for example `\"mkv\"`).
-     * @type {string}
-     * @memberof PlaybackDecisionMediaSourceSnapshot
-     */
-    'Container'?: string;
-    /**
-     * The normalized delivery protocol (for example `\"http\"`, `\"hls\"`).
-     * @type {string}
-     * @memberof PlaybackDecisionMediaSourceSnapshot
-     */
-    'Protocol'?: string;
+    'AudioStreams'?: Array<PlaybackDecisionAudioStreamSnapshot>;
     /**
      * The overall source bitrate, or null if unknown.
      * @type {number}
@@ -53,23 +41,29 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      */
     'Bitrate'?: number | null;
     /**
+     * The normalized container name (for example `\"mkv\"`).
+     * @type {string}
+     * @memberof PlaybackDecisionMediaSourceSnapshot
+     */
+    'Container'?: string;
+    /**
+     * The identifier of the source within its item.
+     * @type {string}
+     * @memberof PlaybackDecisionMediaSourceSnapshot
+     */
+    'MediaSourceId'?: string;
+    /**
+     * The normalized delivery protocol (for example `\"http\"`, `\"hls\"`).
+     * @type {string}
+     * @memberof PlaybackDecisionMediaSourceSnapshot
+     */
+    'Protocol'?: string;
+    /**
      * The runtime in ticks, or null if unknown.
      * @type {number}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
     'RunTimeTicks'?: number | null;
-    /**
-     * The video streams on the source.
-     * @type {Array<PlaybackDecisionVideoStreamSnapshot>}
-     * @memberof PlaybackDecisionMediaSourceSnapshot
-     */
-    'VideoStreams'?: Array<PlaybackDecisionVideoStreamSnapshot>;
-    /**
-     * The audio streams on the source.
-     * @type {Array<PlaybackDecisionAudioStreamSnapshot>}
-     * @memberof PlaybackDecisionMediaSourceSnapshot
-     */
-    'AudioStreams'?: Array<PlaybackDecisionAudioStreamSnapshot>;
     /**
      * The subtitle streams on the source.
      * @type {Array<PlaybackDecisionSubtitleStreamSnapshot>}
@@ -94,5 +88,11 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
     'SupportsTranscoding'?: boolean;
+    /**
+     * The video streams on the source.
+     * @type {Array<PlaybackDecisionVideoStreamSnapshot>}
+     * @memberof PlaybackDecisionMediaSourceSnapshot
+     */
+    'VideoStreams'?: Array<PlaybackDecisionVideoStreamSnapshot>;
 }
 

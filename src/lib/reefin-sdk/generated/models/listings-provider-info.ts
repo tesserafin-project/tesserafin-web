@@ -24,58 +24,16 @@ import type { NameValuePair } from './name-value-pair';
 export interface ListingsProviderInfo {
     /**
      * 
-     * @type {string}
+     * @type {Array<NameValuePair>}
      * @memberof ListingsProviderInfo
      */
-    'Id'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'Type'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'Username'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'Password'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'ListingsId'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'ZipCode'?: string | null;
+    'ChannelMappings'?: Array<NameValuePair> | null;
     /**
      * 
      * @type {string}
      * @memberof ListingsProviderInfo
      */
     'Country'?: string | null;
-    /**
-     * 
-     * @type {string}
-     * @memberof ListingsProviderInfo
-     */
-    'Path'?: string | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof ListingsProviderInfo
-     */
-    'EnabledTuners'?: Array<string> | null;
     /**
      * 
      * @type {boolean}
@@ -87,13 +45,13 @@ export interface ListingsProviderInfo {
      * @type {Array<string>}
      * @memberof ListingsProviderInfo
      */
-    'NewsCategories'?: Array<string> | null;
+    'EnabledTuners'?: Array<string> | null;
     /**
      * 
-     * @type {Array<string>}
+     * @type {string}
      * @memberof ListingsProviderInfo
      */
-    'SportsCategories'?: Array<string> | null;
+    'Id'?: string | null;
     /**
      * 
      * @type {Array<string>}
@@ -102,16 +60,16 @@ export interface ListingsProviderInfo {
     'KidsCategories'?: Array<string> | null;
     /**
      * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'ListingsId'?: string | null;
+    /**
+     * 
      * @type {Array<string>}
      * @memberof ListingsProviderInfo
      */
     'MovieCategories'?: Array<string> | null;
-    /**
-     * 
-     * @type {Array<NameValuePair>}
-     * @memberof ListingsProviderInfo
-     */
-    'ChannelMappings'?: Array<NameValuePair> | null;
     /**
      * 
      * @type {string}
@@ -120,15 +78,57 @@ export interface ListingsProviderInfo {
     'MoviePrefix'?: string | null;
     /**
      * 
+     * @type {Array<string>}
+     * @memberof ListingsProviderInfo
+     */
+    'NewsCategories'?: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'Password'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'Path'?: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof ListingsProviderInfo
      */
     'PreferredLanguage'?: string | null;
     /**
      * 
+     * @type {Array<string>}
+     * @memberof ListingsProviderInfo
+     */
+    'SportsCategories'?: Array<string> | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'Type'?: string | null;
+    /**
+     * 
      * @type {string}
      * @memberof ListingsProviderInfo
      */
     'UserAgent'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'Username'?: string | null;
+    /**
+     * 
+     * @type {string}
+     * @memberof ListingsProviderInfo
+     */
+    'ZipCode'?: string | null;
 }
 

@@ -20,16 +20,16 @@
  */
 export interface PlaybackDecisionResolution {
     /**
-     * The width, in pixels.
-     * @type {number}
-     * @memberof PlaybackDecisionResolution
-     */
-    'Width'?: number;
-    /**
      * The height, in pixels.
      * @type {number}
      * @memberof PlaybackDecisionResolution
      */
     'Height'?: number;
+    /**
+     * The width, in pixels.
+     * @type {number}
+     * @memberof PlaybackDecisionResolution
+     */
+    'Width'?: number;
 }
 

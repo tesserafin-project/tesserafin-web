@@ -35,53 +35,11 @@ import type { TranscodingProfile } from './transcoding-profile';
  */
 export interface DeviceProfile {
     /**
-     * Gets or sets the name of this device profile. User profiles must have a unique name.
-     * @type {string}
+     * Gets or sets the codec profiles.
+     * @type {Array<CodecProfile>}
      * @memberof DeviceProfile
      */
-    'Name'?: string | null;
-    /**
-     * Gets or sets the unique internal identifier.
-     * @type {string}
-     * @memberof DeviceProfile
-     */
-    'Id'?: string | null;
-    /**
-     * Gets or sets the maximum allowed bitrate for all streamed content.
-     * @type {number}
-     * @memberof DeviceProfile
-     */
-    'MaxStreamingBitrate'?: number | null;
-    /**
-     * Gets or sets the maximum allowed bitrate for statically streamed content (= direct played files).
-     * @type {number}
-     * @memberof DeviceProfile
-     */
-    'MaxStaticBitrate'?: number | null;
-    /**
-     * Gets or sets the maximum allowed bitrate for transcoded music streams.
-     * @type {number}
-     * @memberof DeviceProfile
-     */
-    'MusicStreamingTranscodingBitrate'?: number | null;
-    /**
-     * Gets or sets the maximum allowed bitrate for statically streamed (= direct played) music files.
-     * @type {number}
-     * @memberof DeviceProfile
-     */
-    'MaxStaticMusicBitrate'?: number | null;
-    /**
-     * Gets or sets the direct play profiles.
-     * @type {Array<DirectPlayProfile>}
-     * @memberof DeviceProfile
-     */
-    'DirectPlayProfiles'?: Array<DirectPlayProfile>;
-    /**
-     * Gets or sets the transcoding profiles.
-     * @type {Array<TranscodingProfile>}
-     * @memberof DeviceProfile
-     */
-    'TranscodingProfiles'?: Array<TranscodingProfile>;
+    'CodecProfiles'?: Array<CodecProfile>;
     /**
      * Gets or sets the container profiles. Failing to meet these optional conditions causes transcoding to occur.
      * @type {Array<ContainerProfile>}
@@ -89,16 +47,58 @@ export interface DeviceProfile {
      */
     'ContainerProfiles'?: Array<ContainerProfile>;
     /**
-     * Gets or sets the codec profiles.
-     * @type {Array<CodecProfile>}
+     * Gets or sets the direct play profiles.
+     * @type {Array<DirectPlayProfile>}
      * @memberof DeviceProfile
      */
-    'CodecProfiles'?: Array<CodecProfile>;
+    'DirectPlayProfiles'?: Array<DirectPlayProfile>;
+    /**
+     * Gets or sets the unique internal identifier.
+     * @type {string}
+     * @memberof DeviceProfile
+     */
+    'Id'?: string | null;
+    /**
+     * Gets or sets the maximum allowed bitrate for statically streamed content (= direct played files).
+     * @type {number}
+     * @memberof DeviceProfile
+     */
+    'MaxStaticBitrate'?: number | null;
+    /**
+     * Gets or sets the maximum allowed bitrate for statically streamed (= direct played) music files.
+     * @type {number}
+     * @memberof DeviceProfile
+     */
+    'MaxStaticMusicBitrate'?: number | null;
+    /**
+     * Gets or sets the maximum allowed bitrate for all streamed content.
+     * @type {number}
+     * @memberof DeviceProfile
+     */
+    'MaxStreamingBitrate'?: number | null;
+    /**
+     * Gets or sets the maximum allowed bitrate for transcoded music streams.
+     * @type {number}
+     * @memberof DeviceProfile
+     */
+    'MusicStreamingTranscodingBitrate'?: number | null;
+    /**
+     * Gets or sets the name of this device profile. User profiles must have a unique name.
+     * @type {string}
+     * @memberof DeviceProfile
+     */
+    'Name'?: string | null;
     /**
      * Gets or sets the subtitle profiles.
      * @type {Array<SubtitleProfile>}
      * @memberof DeviceProfile
      */
     'SubtitleProfiles'?: Array<SubtitleProfile>;
+    /**
+     * Gets or sets the transcoding profiles.
+     * @type {Array<TranscodingProfile>}
+     * @memberof DeviceProfile
+     */
+    'TranscodingProfiles'?: Array<TranscodingProfile>;
 }
 

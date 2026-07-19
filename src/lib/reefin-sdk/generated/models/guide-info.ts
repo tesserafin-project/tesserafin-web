@@ -20,16 +20,16 @@
  */
 export interface GuideInfo {
     /**
-     * Gets or sets the start date.
-     * @type {string}
-     * @memberof GuideInfo
-     */
-    'StartDate'?: string;
-    /**
      * Gets or sets the end date.
      * @type {string}
      * @memberof GuideInfo
      */
     'EndDate'?: string;
+    /**
+     * Gets or sets the start date.
+     * @type {string}
+     * @memberof GuideInfo
+     */
+    'StartDate'?: string;
 }
 

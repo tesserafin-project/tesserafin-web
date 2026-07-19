@@ -20,23 +20,11 @@
  */
 export interface AuthenticationInfo {
     /**
-     * Gets or sets the identifier.
-     * @type {number}
-     * @memberof AuthenticationInfo
-     */
-    'Id'?: number;
-    /**
      * Gets or sets the access token.
      * @type {string}
      * @memberof AuthenticationInfo
      */
     'AccessToken'?: string | null;
-    /**
-     * Gets or sets the device identifier.
-     * @type {string}
-     * @memberof AuthenticationInfo
-     */
-    'DeviceId'?: string | null;
     /**
      * Gets or sets the name of the application.
      * @type {string}
@@ -50,29 +38,17 @@ export interface AuthenticationInfo {
      */
     'AppVersion'?: string | null;
     /**
-     * Gets or sets the name of the device.
-     * @type {string}
-     * @memberof AuthenticationInfo
-     */
-    'DeviceName'?: string | null;
-    /**
-     * Gets or sets the user identifier.
-     * @type {string}
-     * @memberof AuthenticationInfo
-     */
-    'UserId'?: string;
-    /**
-     * Gets or sets a value indicating whether this instance is active.
-     * @type {boolean}
-     * @memberof AuthenticationInfo
-     */
-    'IsActive'?: boolean;
-    /**
      * Gets or sets the date created.
      * @type {string}
      * @memberof AuthenticationInfo
      */
     'DateCreated'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof AuthenticationInfo
+     */
+    'DateLastActivity'?: string;
     /**
      * Gets or sets the date revoked.
      * @type {string}
@@ -80,11 +56,35 @@ export interface AuthenticationInfo {
      */
     'DateRevoked'?: string | null;
     /**
-     * 
+     * Gets or sets the device identifier.
      * @type {string}
      * @memberof AuthenticationInfo
      */
-    'DateLastActivity'?: string;
+    'DeviceId'?: string | null;
+    /**
+     * Gets or sets the name of the device.
+     * @type {string}
+     * @memberof AuthenticationInfo
+     */
+    'DeviceName'?: string | null;
+    /**
+     * Gets or sets the identifier.
+     * @type {number}
+     * @memberof AuthenticationInfo
+     */
+    'Id'?: number;
+    /**
+     * Gets or sets a value indicating whether this instance is active.
+     * @type {boolean}
+     * @memberof AuthenticationInfo
+     */
+    'IsActive'?: boolean;
+    /**
+     * Gets or sets the user identifier.
+     * @type {string}
+     * @memberof AuthenticationInfo
+     */
+    'UserId'?: string;
     /**
      * 
      * @type {string}

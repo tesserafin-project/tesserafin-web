@@ -27,27 +27,27 @@ import type { NameValuePair } from './name-value-pair';
 export interface QueryFilters {
     /**
      * 
-     * @type {Array<NameGuidPair>}
-     * @memberof QueryFilters
-     */
-    'Genres'?: Array<NameGuidPair> | null;
-    /**
-     * 
-     * @type {Array<string>}
-     * @memberof QueryFilters
-     */
-    'Tags'?: Array<string> | null;
-    /**
-     * 
      * @type {Array<NameValuePair>}
      * @memberof QueryFilters
      */
     'AudioLanguages'?: Array<NameValuePair> | null;
     /**
      * 
+     * @type {Array<NameGuidPair>}
+     * @memberof QueryFilters
+     */
+    'Genres'?: Array<NameGuidPair> | null;
+    /**
+     * 
      * @type {Array<NameValuePair>}
      * @memberof QueryFilters
      */
     'SubtitleLanguages'?: Array<NameValuePair> | null;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof QueryFilters
+     */
+    'Tags'?: Array<string> | null;
 }
 

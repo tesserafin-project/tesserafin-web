@@ -20,11 +20,11 @@
  */
 export interface LyricLineCue {
     /**
-     * Gets the start character index of the cue.
+     * Gets the end timestamp the lyric is synced to in ticks.
      * @type {number}
      * @memberof LyricLineCue
      */
-    'Position'?: number;
+    'End'?: number | null;
     /**
      * Gets the end character index of the cue.
      * @type {number}
@@ -32,16 +32,16 @@ export interface LyricLineCue {
      */
     'EndPosition'?: number;
     /**
+     * Gets the start character index of the cue.
+     * @type {number}
+     * @memberof LyricLineCue
+     */
+    'Position'?: number;
+    /**
      * Gets the timestamp the lyric is synced to in ticks.
      * @type {number}
      * @memberof LyricLineCue
      */
     'Start'?: number;
-    /**
-     * Gets the end timestamp the lyric is synced to in ticks.
-     * @type {number}
-     * @memberof LyricLineCue
-     */
-    'End'?: number | null;
 }
 

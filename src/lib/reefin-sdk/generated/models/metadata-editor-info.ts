@@ -38,11 +38,17 @@ import type { ParentalRating } from './parental-rating';
  */
 export interface MetadataEditorInfo {
     /**
-     * Gets or sets the parental rating options.
-     * @type {Array<ParentalRating>}
+     * Gets or sets the content type.
+     * @type {CollectionType}
      * @memberof MetadataEditorInfo
      */
-    'ParentalRatingOptions'?: Array<ParentalRating>;
+    'ContentType'?: CollectionType | null;
+    /**
+     * Gets or sets the content type options.
+     * @type {Array<NameValuePair>}
+     * @memberof MetadataEditorInfo
+     */
+    'ContentTypeOptions'?: Array<NameValuePair>;
     /**
      * Gets or sets the countries.
      * @type {Array<CountryInfo>}
@@ -62,17 +68,11 @@ export interface MetadataEditorInfo {
      */
     'ExternalIdInfos'?: Array<ExternalIdInfo>;
     /**
-     * Gets or sets the content type.
-     * @type {CollectionType}
+     * Gets or sets the parental rating options.
+     * @type {Array<ParentalRating>}
      * @memberof MetadataEditorInfo
      */
-    'ContentType'?: CollectionType | null;
-    /**
-     * Gets or sets the content type options.
-     * @type {Array<NameValuePair>}
-     * @memberof MetadataEditorInfo
-     */
-    'ContentTypeOptions'?: Array<NameValuePair>;
+    'ParentalRatingOptions'?: Array<ParentalRating>;
 }
 
 

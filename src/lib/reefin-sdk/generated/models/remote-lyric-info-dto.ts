@@ -29,16 +29,16 @@ export interface RemoteLyricInfoDto {
      */
     'Id': string;
     /**
-     * Gets the provider name.
-     * @type {string}
-     * @memberof RemoteLyricInfoDto
-     */
-    'ProviderName': string;
-    /**
      * Gets the lyrics.
      * @type {LyricDto}
      * @memberof RemoteLyricInfoDto
      */
     'Lyrics': LyricDto;
+    /**
+     * Gets the provider name.
+     * @type {string}
+     * @memberof RemoteLyricInfoDto
+     */
+    'ProviderName': string;
 }
 
