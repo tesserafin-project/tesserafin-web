@@ -30,6 +30,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { toBackdropFilter } from '../web/backdrop-filter.mjs';
 import { assertValid } from './validate-schema.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -155,19 +156,6 @@ function sharedVarLines(tokens) {
         );
     }
     return lines;
-}
-
-/**
- * Derives a ready-to-use `backdrop-filter` value from a raw `blur.<key>` length token.
- *
- * `backdrop-filter: blur(0)` is NOT equivalent to `backdrop-filter: none` — a zero-radius `blur()`
- * still creates a compositing layer and costs GPU work, `none` does not. Consumer CSS
- * (`src/ui/styles/_glass-surface.scss`) must read `--rf-backdrop-filter-<key>` rather than
- * wrapping `--rf-blur-<key>` in `blur()` itself, so Reefin Classic (`blur: "0"` for every key)
- * gets a real no-op and Reefin Glass gets an actual `blur(<length>)`.
- */
-function toBackdropFilter(blurValue) {
-    return blurValue === '0' ? 'none' : `blur(${blurValue})`;
 }
 
 /**
