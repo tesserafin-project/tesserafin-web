@@ -465,13 +465,17 @@ test.describe('library activation', () => {
     });
 
     /**
-     * Access denied. The state is reachable through `GET /Items`, which answers 401 for a library
-     * the user may not see; the item lookup behind the page shell answers 404 for that same case,
-     * so a forbidden library may legitimately present as "not found" instead. Both are terminal,
-     * neither offers a retry, and this asserts exactly that — a terminal state with no retry — so
-     * it holds whichever of the two the server chooses to return.
+     * A second unresolvable id, asserting that the terminal state is stable rather than specific to
+     * one id shape.
+     *
+     * **This does not exercise access-denied, and must not be read as doing so.** Reaching the
+     * access-denied branch needs a library that exists but is invisible to the e2e user, and this
+     * rig has no such fixture — a made-up id simply 404s, landing on the same not-found state as
+     * the test above. Access-denied is proven only at unit level (`utils/libraryAccess.test.ts`,
+     * against synthetic 401/403) plus the grid's classification of `GET /Items`' real 401. Naming
+     * that gap here rather than letting a passing test imply coverage it does not have.
      */
-    test('a library the user may not access ends in a terminal state with no retry', async ({
+    test('a second unresolvable library id lands on the same terminal state', async ({
         page
     }) => {
         await page.goto('/#/library/ffffffffffffffffffffffffffffffff');
