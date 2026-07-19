@@ -45,6 +45,7 @@
 import type { Api } from '@jellyfin/sdk';
 
 import appSettings from './settings/appSettings';
+import { applyPlaybackAttemptId } from './playbackAttemptId';
 import {
     buildClientCapabilities,
     buildPlaybackConstraints
@@ -54,8 +55,20 @@ import {
     PlaybackApi,
     PlaybackDecisionPlaybackMethod,
     PlaybackDecisionStreamingProtocol,
+    type CreatePlaybackSessionRequest,
     type PlaybackSessionResponse
 } from 'lib/reefin-sdk';
+
+/** `reefin` #43 added an optional `PlaybackAttemptId` to `CreatePlaybackSessionRequest`, but the
+ * pinned OpenAPI spec (`src/lib/reefin-sdk/spec/version.json`) predates it, so the generated model
+ * has no such property yet. Hand-extended here rather than regenerating the whole client - the same
+ * precedent this file already sets for `PlaybackSessionStreamDescriptor` (see the file-level doc
+ * comment on the PR117 `GET .../Stream` wrapper). Drop this once
+ * `npm run generate:reefin-sdk` is re-run against a spec that includes #47. */
+type CreatePlaybackSessionRequestWithAttemptId =
+    CreatePlaybackSessionRequest & {
+        PlaybackAttemptId?: string;
+    };
 
 /** Configures a generated `PlaybackApi` from an existing `@jellyfin/sdk` session - see file-level
  * doc comment for why this reuses the session instead of `createReefinApi()`. */
@@ -131,6 +144,13 @@ export interface ResolveV2PlaybackUrlParams {
     userId?: string;
     mediaSourceId?: string | null;
     startTimeTicks: number;
+    /** `reefin` #43: the id of the playback attempt this call belongs to, minted once by
+     * `playbackmanager.js#playInternal()` and threaded down. A REQUEST-scoped value rather than a
+     * module-level read, because two attempts can legitimately overlap (double-click Play, autoplay
+     * landing mid-start) and an ambient read would let this POST carry the other attempt's id - see
+     * `playbackAttemptId.ts`. Optional: absent is a valid request, and the caller passes nothing
+     * when minting produced no usable value. */
+    playbackAttemptId?: string;
 }
 
 /** Injectable seams for tests - production call sites use every default. */
@@ -200,18 +220,31 @@ async function createV2Session(
     playSessionId: string,
     logger: Pick<Console, 'debug'>
 ): Promise<PlaybackSessionResponse | null> {
+    const createPlaybackSessionRequest: CreatePlaybackSessionRequestWithAttemptId =
+        {
+            ItemId: params.itemId,
+            UserId: params.userId,
+            MediaSourceId: params.mediaSourceId ?? undefined,
+            PlaySessionId: playSessionId,
+            Capabilities: resolved.buildCapabilities(),
+            Constraints: resolved.buildConstraints({
+                startTimeTicks: params.startTimeTicks
+            })
+        };
+
+    // reefin #43: the same attempt id the `PlaybackInfo` call of this attempt already sent - carried
+    // in as a parameter, never minted and never read from module state here, so a concurrent second
+    // attempt cannot substitute its own id (see `playbackAttemptId.ts`). The helper omits the key
+    // entirely when there is no usable id: the server accepts an absent `PlaybackAttemptId` and
+    // rejects a blank one with a 400. Nothing below branches on it - diagnostics only.
+    applyPlaybackAttemptId(
+        createPlaybackSessionRequest,
+        params.playbackAttemptId
+    );
+
     const { data: session }: { data: PlaybackSessionResponse } =
         await playbackApiFor(params.api).createPlaybackSession({
-            createPlaybackSessionRequest: {
-                ItemId: params.itemId,
-                UserId: params.userId,
-                MediaSourceId: params.mediaSourceId ?? undefined,
-                PlaySessionId: playSessionId,
-                Capabilities: resolved.buildCapabilities(),
-                Constraints: resolved.buildConstraints({
-                    startTimeTicks: params.startTimeTicks
-                })
-            }
+            createPlaybackSessionRequest
         });
 
     if (!session.Id) {

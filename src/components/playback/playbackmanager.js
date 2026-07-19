@@ -34,6 +34,13 @@ import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
+// Static import is safe for the bundle budget: `playbackAttemptId.ts` has zero imports of its own
+// (see its file-level comment), so it pulls no `lib/reefin-sdk` scope into the main chunk and the
+// v2 path stays behind its lazy trigger.
+import {
+    applyPlaybackAttemptId,
+    beginPlaybackAttempt
+} from '../../scripts/playbackAttemptId.ts';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
 import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
 
@@ -632,6 +639,15 @@ async function getPlaybackInfo(
         appSettings.alwaysBurnInSubtitleWhenTranscoding();
 
     query.DeviceProfile = deviceProfile;
+
+    // reefin #43: stamps THIS attempt's `PlaybackAttemptId` onto the `PlaybackInfoDto`, taken from
+    // the caller's `options` rather than from any ambient state - so two attempts starting at once
+    // cannot stamp each other's id. Diagnostics only: the server treats it as opaque and nothing
+    // here reads it back. Set only when there is a usable id (the helper omits the key otherwise:
+    // absent is valid, blank is a 400). `changeStream()`'s transcoding retry re-enters this function
+    // with the same id recovered from the player's state, so a retry sends the SAME id as the
+    // initial call - which is what makes the retry chain stitchable server-side.
+    applyPlaybackAttemptId(query, options.playbackAttemptId);
 
     const res = await getMediaInfoApi(api).getPostedPlaybackInfo({
         itemId: itemId,
@@ -2078,7 +2094,12 @@ export class PlaybackManager {
                         enableDirectPlay: params.EnableDirectPlay,
                         enableDirectStream: params.EnableDirectStream,
                         allowVideoStreamCopy: params.AllowVideoStreamCopy,
-                        allowAudioStreamCopy: params.AllowAudioStreamCopy
+                        allowAudioStreamCopy: params.AllowAudioStreamCopy,
+                        // reefin #43: a retry belongs to the attempt that started this player, so
+                        // it reuses that attempt's id rather than minting a new one - that identity
+                        // is what stitches the retry chain back to the one user action behind it.
+                        playbackAttemptId:
+                            getPlayerData(player).playbackAttemptId
                     };
 
                     getPlaybackInfo(
@@ -2936,6 +2957,19 @@ export class PlaybackManager {
             // Normalize defaults to simplfy checks throughout the process
             normalizePlayOptions(playOptions);
 
+            // reefin #43: the one mint site. Every request belonging to this attempt - the
+            // `PlaybackInfo` POST, the v2 `POST Playback/Sessions`, and every `changeStream()`
+            // transcoding retry - carries the id minted here, while the next item or the next play
+            // press gets a fresh one. Placed after the `IsPlaceHolder` bail-out above so a rejected
+            // start never burns an id.
+            //
+            // Held on `playOptions` (this call's own object, already threaded down the whole start
+            // path) rather than in module state: `playInternal()` is called fire-and-forget from
+            // `nextTrack()`/`previousTrack()`/`setCurrentPlaylistItem()`, so two attempts can be
+            // starting at once, and a shared slot would let the later one's id overwrite the
+            // earlier one's mid-flight. See `playbackAttemptId.ts`.
+            playOptions.playbackAttemptId = beginPlaybackAttempt();
+
             playOptions.isFirstItem = playOptions.isFirstItem || !prevSource;
 
             // TODO: This should be the media type requested, not the original media type
@@ -3374,7 +3408,9 @@ export class PlaybackManager {
                     enableDirectPlay: null,
                     enableDirectStream: null,
                     allowVideoStreamCopy: null,
-                    allowAudioStreamCopy: null
+                    allowAudioStreamCopy: null,
+                    // reefin #43: carries THIS attempt's id into `getPlaybackInfo()` below.
+                    playbackAttemptId: playOptions.playbackAttemptId
                 };
 
                 if (player && !enableLocalPlaylistManagement(player)) {
@@ -3490,7 +3526,10 @@ export class PlaybackManager {
                             mediaType: item.MediaType,
                             userId: apiClient.getCurrentUserId(),
                             mediaSourceId: mediaSource.Id,
-                            startTimeTicks: startPosition
+                            startTimeTicks: startPosition,
+                            // reefin #43: same attempt id as the `PlaybackInfo` POST above, passed
+                            // explicitly so this POST can never pick up a concurrent attempt's id.
+                            playbackAttemptId: playOptions.playbackAttemptId
                         },
                         apiClient
                     );
@@ -3503,6 +3542,14 @@ export class PlaybackManager {
                     playerData.isChangingStream = false;
                     playerData.maxStreamingBitrate = maxBitrate;
                     playerData.streamInfo = streamInfo;
+                    // reefin #43: the retry path's only way back to this attempt's id.
+                    // `changeStream()` is driven by a player error event, so it has no lexical
+                    // access to the `playInternal()` frame that minted the id and must recover it
+                    // from per-player state. Deliberately NOT on `streamInfo`: `changeStream()`
+                    // replaces that object wholesale, which would drop the id on exactly the retry
+                    // being correlated. `playerData` survives, so the id does too.
+                    playerData.playbackAttemptId =
+                        playOptions.playbackAttemptId;
 
                     return player.play(streamInfo).then(
                         function () {
