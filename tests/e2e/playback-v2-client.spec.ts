@@ -10,13 +10,19 @@ import { expect, request, test } from '@playwright/test';
  *  - The v2 flag (`appSettings.enableV2PlaybackPath()`, plain `localStorage`) is turned ON
  *    in-browser per test via `addInitScript`. The source default (OFF) is never modified.
  *
- * KNOWN BLOCKER (not caused by #26 — see `v2 session creation` below): the client's
- * `reefinPlaybackCapabilities.ts` emits `VideoCodecs: [{Codec}]`, while the server's
- * `Reefin.Playback.Decision/VideoCodecCapability` is a positional record whose `Profiles` and
- * `VideoRangeTypes` members are non-nullable and therefore required by ASP.NET model binding.
- * Every `POST /Playback/Sessions` from the real client is consequently rejected `400`. That file is
- * untouched by #26, so the mismatch is pre-existing; but it means the v2 SUCCESS path (and with it
- * #26's descriptor consumption) cannot execute end-to-end against these pinned SHAs.
+ * There is NO `page.route` request-body rewriting anywhere in this file, by design — the same
+ * discipline `playback-attempt-id-contract.spec.ts` and `playback-capabilities-contract.spec.ts`
+ * document for themselves. The bytes asserted on are the bytes the real, unpatched bundle put on
+ * the wire; a test that rewrites the request it then asserts about proves only its own injection.
+ *
+ * Formerly this file carried a KNOWN BLOCKER: `reefinPlaybackCapabilities.ts` emitted
+ * `VideoCodecs: [{Codec}]` while the server's `Reefin.Playback.Decision/VideoCodecCapability` is a
+ * positional record whose `Profiles`/`VideoRangeTypes` members are non-nullable, so every
+ * `POST /Playback/Sessions` from the real client was rejected `400` and the v2 SUCCESS path was
+ * unreachable without patching the outgoing body. That blocker is GONE: the builder now emits
+ * `Profiles: []` and `VideoRangeTypes: ['SDR']` on every video codec entry
+ * (`src/scripts/reefinPlaybackCapabilities.ts`), so the unmodified client creates a v2 session on
+ * its own and #26's descriptor consumption executes end-to-end with no patching at all.
  */
 
 const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
@@ -111,8 +117,11 @@ async function signInAndPlay(
 /** The v2 EXECUTION engine is kill-switched off by default (`PlaybackLiveStreamResolver` falls back
  * to legacy with `FallbackReason: "KillSwitch"` unless `PlaybackShadow.GetEffectiveMode()` is
  * Canary/V2). Flipped here through the real admin API — server runtime configuration, not a source
- * default, and unrelated to the client's own `enableV2PlaybackPath` flag. */
-async function enableV2Engine() {
+ * default, and unrelated to the client's own `enableV2PlaybackPath` flag.
+ *
+ * This writes PERSISTENT server state, so every test whose outcome depends on the engine mode must
+ * set the mode it needs rather than inheriting whatever an earlier test left behind. */
+async function setV2EngineMode(mode: 'V2' | 'Off') {
     const api = await request.newContext({ baseURL: BASE_URL });
     const auth = await (
         await api.post('/Users/AuthenticateByName', {
@@ -126,16 +135,21 @@ async function enableV2Engine() {
             headers: { Authorization: token }
         })
     ).json();
-    cfg.PlaybackShadow = { ...(cfg.PlaybackShadow ?? {}), Mode: 'V2' };
+    cfg.PlaybackShadow = { ...(cfg.PlaybackShadow ?? {}), Mode: mode };
     const posted = await api.post('/System/Configuration', {
         headers: { Authorization: token },
         data: cfg
     });
     if (!posted.ok()) {
-        throw new Error(`could not enable the v2 engine: ${posted.status()}`);
+        throw new Error(
+            `could not set the v2 engine mode to ${mode}: ${posted.status()}`
+        );
     }
     await api.dispose();
 }
+
+const enableV2Engine = () => setV2EngineMode('V2');
+const disableV2Engine = () => setV2EngineMode('Off');
 
 test.describe('playback v2 — flag ON', () => {
     let itemId = '';
@@ -195,69 +209,18 @@ test.describe('playback v2 — flag ON', () => {
         expect(JSON.parse(post.postData!).PlaySessionId).toBeTruthy();
     });
 
-    test('v2 session creation is rejected 400 by the server capability contract', async ({
-        page
-    }) => {
-        test.setTimeout(120_000);
-        const wire = instrument(page);
-        const bodies: string[] = [];
-        page.on('response', async (r) => {
-            if (V2_SESSIONS.test(r.url())) {
-                try {
-                    bodies.push(await r.text());
-                } catch {
-                    /* body already consumed */
-                }
-            }
-        });
-        await signInAndPlay(page, itemId);
-
-        // The decisive line, pinned here rather than only in a report: the UNMODIFIED client cannot
-        // create a v2 session at all, because `reefinPlaybackCapabilities.ts` emits
-        // `VideoCodecs: [{Codec}]` while the server's `VideoCodecCapability` positional record has
-        // non-nullable `Profiles`/`VideoRangeTypes`. That file is untouched by PR #26.
-        await expect
-            .poll(
-                () =>
-                    wire.responses.filter(
-                        (r) => V2_SESSIONS.test(r.url) && r.status === 400
-                    ).length,
-                { timeout: 30_000 }
-            )
-            .toBeGreaterThan(0);
-
-        expect(bodies.join('\n')).toContain('The Profiles field is required.');
-
-        // …and so the v2-only descriptor endpoint is never reached by the unmodified client.
-        expect(wire.requests.filter((r) => V2_STREAM.test(r.url))).toHaveLength(
-            0
-        );
-    });
-
-    test('PATCHED payload: the descriptor is fetched and its Url is what actually gets played', async ({
+    test('the UNPATCHED client body is accepted 200 and the descriptor is fetched and played', async ({
         page
     }) => {
         test.setTimeout(120_000);
 
-        // ── PATCH CAVEAT, read before trusting this result ────────────────────────────────────
-        // This test rewrites the outgoing POST body to add `Profiles`/`VideoRangeTypes` — the two
-        // fields `reefinPlaybackCapabilities.ts` omits and the server requires (a separate,
-        // pre-existing bug, NOT part of PR #26). Nothing else in the body is changed.
-        // It therefore exercises PR #26's descriptor-consumption code, which is otherwise
-        // unreachable. It does NOT imply the unmodified client works — it demonstrably does not
-        // (see the 400 test above).
-        // ─────────────────────────────────────────────────────────────────────────────────────
+        // NO `page.route`, and that absence is the whole point of this test. The outgoing
+        // `POST /Playback/Sessions` body is exactly what the real bundle produced; it is captured
+        // through `page.on('request')` in `instrument()` — pure observation, never mutation — and
+        // asserted on below. An earlier revision rewrote this body to inject
+        // `Profiles`/`VideoRangeTypes` before letting it through, which made the test prove only
+        // its own injection. The builder now emits both fields itself, so nothing needs patching.
         await enableV2Engine();
-
-        await page.route('**/Playback/Sessions', async (route) => {
-            if (route.request().method() !== 'POST') return route.continue();
-            const body = JSON.parse(route.request().postData() || '{}');
-            for (const vc of body?.Capabilities?.Decode?.VideoCodecs ?? []) {
-                vc.Profiles ??= [];
-                vc.VideoRangeTypes ??= [];
-            }
-            await route.continue({ postData: JSON.stringify(body) });
-        });
 
         const wire = instrument(page);
         let descriptor: Record<string, unknown> | null = null;
@@ -282,15 +245,55 @@ test.describe('playback v2 — flag ON', () => {
             )
             .toBeGreaterThan(0);
 
+        // The body the REAL client produced, read back off the wire and never modified. These two
+        // fields are the ones the server's positional `VideoCodecCapability` record requires; the
+        // assertion is what makes this test a genuine contract check on
+        // `reefinPlaybackCapabilities.ts` rather than on a test-side injection.
+        const post = wire.requests.find(
+            (r) => r.method === 'POST' && V2_SESSIONS.test(r.url)
+        )!;
+        expect(post, 'no POST Playback/Sessions was captured').toBeTruthy();
+        expect(post.postData).toBeTruthy();
+        const videoCodecs = JSON.parse(post.postData!)?.Capabilities?.Decode
+            ?.VideoCodecs as
+            | {
+                  Codec: string;
+                  Profiles?: string[];
+                  VideoRangeTypes?: string[];
+              }[]
+            | undefined;
+        expect(
+            videoCodecs?.length,
+            'client sent no VideoCodecs'
+        ).toBeGreaterThan(0);
+        for (const vc of videoCodecs!) {
+            expect(vc.Profiles, `codec ${vc.Codec} Profiles`).toEqual([]);
+            expect(
+                vc.VideoRangeTypes,
+                `codec ${vc.Codec} VideoRangeTypes`
+            ).toEqual(['SDR']);
+        }
+
+        // EXACTLY 200 — not "not 4xx", not "ok". Every response the collection endpoint produced in
+        // this run must be a 200, so a single stray 400 fails the test instead of being masked by a
+        // later success.
         await expect
             .poll(
                 () =>
-                    wire.responses.filter(
-                        (r) => V2_SESSIONS.test(r.url) && r.status === 200
-                    ).length,
+                    wire.responses.filter((r) => V2_SESSIONS.test(r.url))
+                        .length,
                 { timeout: 30_000 }
             )
             .toBeGreaterThan(0);
+
+        for (const sessionResponse of wire.responses.filter((r) =>
+            V2_SESSIONS.test(r.url)
+        )) {
+            expect(
+                sessionResponse.status,
+                `POST ${sessionResponse.url} status`
+            ).toBe(200);
+        }
 
         await expect.poll(() => descriptor, { timeout: 30_000 }).toBeTruthy();
         const d = descriptor as unknown as Record<string, string>;
@@ -355,10 +358,21 @@ test.describe('playback v2 — flag ON', () => {
         expect(played.url).toContain('PlaySessionId=');
     });
 
-    test('when v2 session creation is rejected, playback falls back to a PURELY legacy stream (no mixed state)', async ({
+    test('when the server engine is kill-switched off, playback falls back to a PURELY legacy stream (no mixed state)', async ({
         page
     }) => {
         test.setTimeout(120_000);
+
+        // The fallback must be FORCED, explicitly. This test used to get its fallback for free from
+        // the capability-contract `400` — the client could not create a session at all, so legacy
+        // was the only outcome. Now that the client emits `Profiles`/`VideoRangeTypes` and the
+        // server accepts the body, that free fallback is gone: without this line the test would
+        // inherit `Mode: 'V2'` from the preceding test and v2 would genuinely serve the media,
+        // failing the `V2_STREAM` assertion below. The server kill switch is the documented
+        // fallback mechanism (`FallbackReason: "KillSwitch"`), and it is exercised through the real
+        // admin API — no request-body rewriting.
+        await disableV2Engine();
+
         const wire = instrument(page);
         await signInAndPlay(page, itemId);
 
