@@ -33,7 +33,7 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      * @type {Array<PlaybackDecisionAudioStreamSnapshot>}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'AudioStreams'?: Array<PlaybackDecisionAudioStreamSnapshot>;
+    'AudioStreams': Array<PlaybackDecisionAudioStreamSnapshot>;
     /**
      * The overall source bitrate, or null if unknown.
      * @type {number}
@@ -45,19 +45,19 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      * @type {string}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'Container'?: string;
+    'Container': string;
     /**
      * The identifier of the source within its item.
      * @type {string}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'MediaSourceId'?: string;
+    'MediaSourceId': string;
     /**
      * The normalized delivery protocol (for example `\"http\"`, `\"hls\"`).
      * @type {string}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'Protocol'?: string;
+    'Protocol': string;
     /**
      * The runtime in ticks, or null if unknown.
      * @type {number}
@@ -69,7 +69,7 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      * @type {Array<PlaybackDecisionSubtitleStreamSnapshot>}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'SubtitleStreams'?: Array<PlaybackDecisionSubtitleStreamSnapshot>;
+    'SubtitleStreams': Array<PlaybackDecisionSubtitleStreamSnapshot>;
     /**
      * Whether the source itself can be direct played, before client capabilities are considered.
      * @type {boolean}
@@ -93,6 +93,6 @@ export interface PlaybackDecisionMediaSourceSnapshot {
      * @type {Array<PlaybackDecisionVideoStreamSnapshot>}
      * @memberof PlaybackDecisionMediaSourceSnapshot
      */
-    'VideoStreams'?: Array<PlaybackDecisionVideoStreamSnapshot>;
+    'VideoStreams': Array<PlaybackDecisionVideoStreamSnapshot>;
 }
 

@@ -36,7 +36,7 @@ export interface PlaybackDecisionVideoStreamSnapshot {
      * @type {string}
      * @memberof PlaybackDecisionVideoStreamSnapshot
      */
-    'Codec'?: string;
+    'Codec': string;
     /**
      * The framerate in frames per second, or null if unknown.
      * @type {number}

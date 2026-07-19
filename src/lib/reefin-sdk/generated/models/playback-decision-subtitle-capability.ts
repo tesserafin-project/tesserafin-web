@@ -27,7 +27,7 @@ export interface PlaybackDecisionSubtitleCapability {
      * @type {string}
      * @memberof PlaybackDecisionSubtitleCapability
      */
-    'Format'?: string;
+    'Format': string;
     /**
      * The delivery method the client supports for this format.
      * @type {PlaybackDecisionSubtitleDeliveryMethod}

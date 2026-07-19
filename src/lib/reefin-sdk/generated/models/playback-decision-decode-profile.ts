@@ -27,13 +27,13 @@ export interface PlaybackDecisionDecodeProfile {
      * @type {Array<string>}
      * @memberof PlaybackDecisionDecodeProfile
      */
-    'AudioCodecs'?: Array<string>;
+    'AudioCodecs': Array<string>;
     /**
      * The containers this profile accepts. An empty list is a wildcard - matches any container - same semantics as the legacy `DirectPlayProfile`, where an empty `Container` string means unrestricted.
      * @type {Array<string>}
      * @memberof PlaybackDecisionDecodeProfile
      */
-    'Containers'?: Array<string>;
+    'Containers': Array<string>;
     /**
      * Whether this profile is for audio-only or video (with or without audio) direct play.
      * @type {PlaybackDecisionMediaKind}
@@ -45,7 +45,7 @@ export interface PlaybackDecisionDecodeProfile {
      * @type {Array<string>}
      * @memberof PlaybackDecisionDecodeProfile
      */
-    'VideoCodecs'?: Array<string>;
+    'VideoCodecs': Array<string>;
 }
 
 

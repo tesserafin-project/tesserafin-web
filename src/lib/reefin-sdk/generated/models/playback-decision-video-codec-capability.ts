@@ -27,7 +27,7 @@ export interface PlaybackDecisionVideoCodecCapability {
      * @type {string}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
-    'Codec'?: string;
+    'Codec': string;
     /**
      * The highest bit depth the client supports, or null if unbounded/unknown.
      * @type {number}
@@ -57,12 +57,12 @@ export interface PlaybackDecisionVideoCodecCapability {
      * @type {Array<string>}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
-    'Profiles'?: Array<string>;
+    'Profiles': Array<string>;
     /**
      * The video range types (for example `\"SDR\"`, `\"HDR10\"`) the client supports for this codec.
      * @type {Array<string>}
      * @memberof PlaybackDecisionVideoCodecCapability
      */
-    'VideoRangeTypes'?: Array<string>;
+    'VideoRangeTypes': Array<string>;
 }
 

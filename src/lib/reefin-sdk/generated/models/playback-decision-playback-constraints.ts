@@ -81,7 +81,7 @@ export interface PlaybackDecisionPlaybackConstraints {
      * @type {Array<string>}
      * @memberof PlaybackDecisionPlaybackConstraints
      */
-    'PreferredSubtitleLanguages'?: Array<string>;
+    'PreferredSubtitleLanguages': Array<string>;
     /**
      * The preferred subtitle stream index, or null for no preference.
      * @type {number}

@@ -42,7 +42,7 @@ export interface PlaybackDecisionAudioStreamSnapshot {
      * @type {string}
      * @memberof PlaybackDecisionAudioStreamSnapshot
      */
-    'Codec'?: string;
+    'Codec': string;
     /**
      * The stream index within the source.
      * @type {number}

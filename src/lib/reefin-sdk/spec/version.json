@@ -9,8 +9,8 @@
     "pathCount": 301,
     "schemaCount": 401,
     "source": "~/Repos/reefin/openapi/openapi.json",
-    "sourceCommit": "4a86c91a63c0b35fa0e6f16312efd2d01918360f",
-    "sourceRef": "4a86c91a63",
-    "specSha256": "2da8bd0a4be76196fd0f033eb9ab9ea54283336abe4bedfc30be7d1ff41ddf29",
-    "generatedAt": "2026-07-19T15:45:30.084Z"
+    "sourceCommit": "f89a7ff3d6fe4b5ae1cdbf1eb920cd1009f64189",
+    "sourceRef": "origin/master",
+    "specSha256": "9446d8ff5661b2891231d35ff6e931481926c88af9a9034ff9e57a6cc7c01c4a",
+    "generatedAt": "2026-07-19T15:53:23.930Z"
 }

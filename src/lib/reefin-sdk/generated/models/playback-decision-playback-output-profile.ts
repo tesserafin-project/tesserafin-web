@@ -30,13 +30,13 @@ export interface PlaybackDecisionPlaybackOutputProfile {
      * @type {Array<string>}
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
-    'AudioCodecs'?: Array<string>;
+    'AudioCodecs': Array<string>;
     /**
      * The target container for this output.
      * @type {string}
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
-    'Container'?: string;
+    'Container': string;
     /**
      * The maximum audio bitrate for this output, or null if unbounded/unknown.
      * @type {number}
@@ -72,7 +72,7 @@ export interface PlaybackDecisionPlaybackOutputProfile {
      * @type {Array<string>}
      * @memberof PlaybackDecisionPlaybackOutputProfile
      */
-    'VideoCodecs'?: Array<string>;
+    'VideoCodecs': Array<string>;
 }
 
 
