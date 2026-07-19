@@ -1,0 +1,64 @@
+/**
+ * GENERATED — do not edit by hand.
+ * Source: reefin-design/themes/glass/{theme,tokens}.json
+ * Regenerate: npm run generate:tokens
+ *
+ * Scoping:
+ *   - [data-rf-theme="official.glass"] — base tier: mode-independent tokens plus the "dark"
+ *     mode color tokens (the app-wide default mode).
+ *   - [data-rf-theme="official.glass"][data-rf-mode="<mode>"] — color token overrides for every other
+ *     mode, layered on top of the base tier via CSS cascade order.
+ */
+
+[data-rf-theme="official.glass"] {
+    --rf-typography-font-family-base: "Noto Sans", sans-serif;
+    --rf-typography-font-family-mono: ui-monospace, monospace;
+    --rf-typography-font-size-xs: 0.75rem;
+    --rf-typography-font-size-sm: 0.875rem;
+    --rf-typography-font-size-md: 1rem;
+    --rf-typography-font-size-lg: 1.17rem;
+    --rf-typography-font-size-xl: 1.5rem;
+    --rf-typography-font-size-xxl: 1.8rem;
+    --rf-typography-font-weight-regular: 400;
+    --rf-typography-font-weight-medium: 500;
+    --rf-typography-font-weight-bold: 700;
+    --rf-shape-radius-sm: 0.15em;
+    --rf-shape-radius-md: 0.2em;
+    --rf-shape-radius-lg: 0.4em;
+    --rf-shape-radius-full: 999px;
+    --rf-spacing-xs: 4px;
+    --rf-spacing-sm: 8px;
+    --rf-spacing-md: 16px;
+    --rf-spacing-lg: 24px;
+    --rf-spacing-xl: 32px;
+    --rf-elevation-level0: none;
+    --rf-elevation-level1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --rf-elevation-level2: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --rf-elevation-level3: 0 12px 40px rgba(0, 0, 0, 0.5);
+    --rf-motion-duration-fast: 150ms;
+    --rf-motion-duration-normal: 300ms;
+    --rf-motion-duration-slow: 375ms;
+    --rf-motion-easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --rf-motion-easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+    --rf-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+    --rf-density: comfortable;
+    --rf-blur-sm: 8px;
+    --rf-backdrop-filter-sm: blur(8px);
+    --rf-blur-md: 16px;
+    --rf-backdrop-filter-md: blur(16px);
+    --rf-blur-lg: 28px;
+    --rf-backdrop-filter-lg: blur(28px);
+    --rf-color-background: #0b0e14;
+    --rf-color-surface: rgba(22, 27, 38, 0.55);
+    --rf-color-surface-variant: rgba(30, 37, 52, 0.6);
+    --rf-color-text: #eaf0ff;
+    --rf-color-text-muted: rgba(234, 240, 255, 0.65);
+    --rf-color-primary: #4fd1ff;
+    --rf-color-on-primary: #03121a;
+    --rf-color-accent: #8a7dff;
+    --rf-color-error: #ff6b6b;
+    --rf-color-warning: #ffb454;
+    --rf-color-success: #5ee6a8;
+    --rf-color-focus: rgba(79, 209, 255, 0.45);
+    --rf-color-divider: rgba(234, 240, 255, 0.12);
+}

@@ -18,8 +18,9 @@
     "properties": {
         "color": {
             "type": "object",
+            "description": "`dark` is always required — it is the base tier every theme falls back to (RFC-0005 §9.1/generate-web-tokens.mjs's baseMode). `light` is optional: a theme declared dark-only in theme.json's `modes` (e.g. Reefin Glass) must not be forced to carry an unused light palette just to satisfy this schema.",
             "additionalProperties": false,
-            "required": ["light", "dark"],
+            "required": ["dark"],
             "properties": {
                 "light": { "$ref": "#/$defs/colorGroup" },
                 "dark": { "$ref": "#/$defs/colorGroup" }

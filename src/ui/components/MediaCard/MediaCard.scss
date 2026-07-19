@@ -3,6 +3,8 @@
  * no historical class name (`.card*`) or id selector, per RFC-0005 §6/§7.3.
  */
 
+@use '../../styles/glass-surface' as glass;
+
 .rf-media-card {
     display: flex;
     flex-direction: column;
@@ -13,7 +15,11 @@
     color: var(--rf-color-text, #fff);
     border: 0;
     border-radius: var(--rf-shape-radius-md, 0.2em);
-    background: var(--rf-color-surface, #202020);
+    // Frosted-glass treatment (RFC-0005 §8.2), shared with `Surface` (`variant="glass"`): sets
+    // `background` plus `backdrop-filter`/opaque fallbacks. Under Reefin Classic
+    // `--rf-backdrop-filter-md` is `none` and `--rf-color-surface` is opaque, so this is
+    // pixel-identical to the previous plain `background: var(--rf-color-surface, #202020);`.
+    @include glass.rf-glass-surface;
     font-family: var(--rf-typography-font-family-base, sans-serif);
     cursor: default;
     transition:

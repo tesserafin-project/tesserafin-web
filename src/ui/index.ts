@@ -28,5 +28,10 @@ export type {
     SortSelectProps
 } from './components/SortSelect/SortSelect';
 export { SortSelect } from './components/SortSelect/SortSelect';
+export type {
+    SurfaceProps,
+    SurfaceVariant
+} from './components/Surface/Surface';
+export { Surface } from './components/Surface/Surface';
 export type { TabItem, TabsProps } from './components/Tabs/Tabs';
 export { Tabs } from './components/Tabs/Tabs';

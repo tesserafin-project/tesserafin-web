@@ -1,0 +1,19 @@
+/**
+ * Surface (RFC-0005 §6), `variant="glass"` being the frosted treatment from §8.2. Only `--rf-*`
+ * custom properties are read here, with static fallbacks — no historical class name or id
+ * selector, per RFC-0005 §6/§7.3.
+ */
+
+@use '../../styles/glass-surface' as glass;
+
+.rf-surface {
+    display: block;
+}
+
+.rf-surface--glass {
+    @include glass.rf-glass-surface;
+}
+
+.rf-surface--opaque {
+    background: var(--rf-color-surface, #202020);
+}

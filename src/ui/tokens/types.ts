@@ -26,7 +26,12 @@ export interface ReefinColorGroup {
 }
 
 export interface ReefinColorTokens {
-    light: ReefinColorGroup;
+    /**
+     * Optional: only present for a theme whose `theme.json#modes` includes `"light"`. A theme
+     * declared dark-only (e.g. Reefin Glass) omits it rather than carrying an unused duplicate
+     * palette — see `reefin-design/schema/tokens.schema.json`'s `color` definition.
+     */
+    light?: ReefinColorGroup;
     dark: ReefinColorGroup;
 }
 

@@ -43,8 +43,11 @@
     --rf-motion-easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
     --rf-density: comfortable;
     --rf-blur-sm: 0;
+    --rf-backdrop-filter-sm: none;
     --rf-blur-md: 0;
+    --rf-backdrop-filter-md: none;
     --rf-blur-lg: 0;
+    --rf-backdrop-filter-lg: none;
     --rf-color-background: #101010;
     --rf-color-surface: #202020;
     --rf-color-surface-variant: #2c2c2c;

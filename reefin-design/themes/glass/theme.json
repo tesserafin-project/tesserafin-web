@@ -1,0 +1,11 @@
+{
+    "id": "official.glass",
+    "version": "1.0.0",
+    "name": "Reefin Glass",
+    "author": "Reefin Team",
+    "license": "GPL-2.0-or-later",
+    "compatibility": {
+        "web": ">=13.0"
+    },
+    "modes": ["dark"]
+}

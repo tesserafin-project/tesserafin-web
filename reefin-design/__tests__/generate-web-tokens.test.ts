@@ -43,6 +43,21 @@ describe('generate-web-tokens.mjs', () => {
         expect(css).toContain('--rf-color-background: #f2f2f2;');
     });
 
+    it('derives --rf-backdrop-filter-* as "none" (not "blur(0)") for Reefin Classic', () => {
+        runGenerator();
+        const css = readFileSync(OUTPUT_CSS, 'utf8');
+
+        // blur(0) still allocates a GPU compositing layer; `none` does not — Classic's zero blur
+        // tokens must resolve to the latter.
+        expect(css).toContain('--rf-blur-sm: 0;');
+        expect(css).toContain('--rf-backdrop-filter-sm: none;');
+        expect(css).toContain('--rf-blur-md: 0;');
+        expect(css).toContain('--rf-backdrop-filter-md: none;');
+        expect(css).toContain('--rf-blur-lg: 0;');
+        expect(css).toContain('--rf-backdrop-filter-lg: none;');
+        expect(css).not.toContain('blur(0)');
+    });
+
     it('emits a typed ReefinTokens object', () => {
         runGenerator();
         const ts = readFileSync(OUTPUT_TS, 'utf8');
