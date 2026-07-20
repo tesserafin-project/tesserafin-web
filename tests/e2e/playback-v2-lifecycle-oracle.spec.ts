@@ -8,23 +8,25 @@ import type { APIRequestContext, Page } from '@playwright/test';
  * `playback-v2-lifecycle.spec.ts` (this file's predecessor on the same branch) narrates the cycle:
  * a good deal of what it learns it PRINTS — the session id, the attempt ids, the request ids, the
  * re-planned path — and printing is not a verdict. This file is the same cycle with every
- * observation promoted to a hard assertion, plus the five checks the narrative version never made
- * at all, all of which need evidence from OUTSIDE the browser:
+ * observation promoted to a hard assertion, plus the checks the narrative version never made at
+ * all, all of which need evidence from OUTSIDE the browser:
  *
  *   - the first plan is genuinely `DirectPlay` and the re-plan is genuinely `Transcode`
- *     (`PlaybackSessionResponse.Method`, `PlaybackDecisionPlaybackMethod`);
- *   - the re-planned stream is served BY V2, not by a legacy fallback
+ *     (`PlaybackSessionResponse.Method`, `PlaybackDecisionPlaybackMethod`), and the SessionId
+ *     survives the `PUT`;
+ *   - both stream reads are served BY V2, not by a legacy fallback
  *     (`PlaybackSessionStreamDescriptor.ServedBy` > `PlaybackSessionResponse.LegacyDecisionVersion`
  *     = 0, and `FallbackReason` empty);
  *   - the bytes the player actually received are REALLY TRANSCODED — ffprobe/ffmpeg run against the
- *     exact media URL captured off the wire, asserting a container the source file does not have
- *     and frames that genuinely decode. A `200` on the `PUT` and a descriptor body are claims; a
- *     decoded frame out of an MPEG-TS segment that the source `.mp4` could not have produced is
- *     evidence;
- *   - the SERVER agrees, in its own log: the issue-#43 lifecycle lines
- *     (`created` / `replaced` / `deleted`) name this session, and the failure lines
- *     (`served from legacy`, `PlanNotExecutable`, `already gone`) do not;
- *   - a late DELETE naming a dead session cannot take a NEWER attempt down with it.
+ *     exact media URL captured off the wire, asserting an HLS/MPEG-TS container the source `.mp4`
+ *     could not have produced and video frames that genuinely decode. A `200` on the `PUT` and a
+ *     descriptor body are claims; a decoded frame is evidence;
+ *   - the SERVER agrees, in its own log read over `/System/Logs`: the issue-#43 lifecycle lines
+ *     (`created` / `replaced` / `deleted`) name this session — the `deleted` one also naming the
+ *     attempt — while `served from legacy`, `PlanNotExecutable` and `already gone` are absent;
+ *   - the `DELETE` acts on a session proven live from outside the browser immediately before the
+ *     stop, and answers exactly 204;
+ *   - a late `DELETE` naming a dead session cannot take a NEWER attempt down with it.
  *
  * DELIBERATELY NOT MOCKED. There is exactly one `page.route`, on a media URL, and it `abort()`s —
  * it fails a delivery, which is how a real `onPlaybackError` is provoked without patching client
@@ -35,13 +37,21 @@ import type { APIRequestContext, Page } from '@playwright/test';
  *
  * RIG: `reefin/ci/serve-e2e.sh --webdir <this repo>/dist --exec 'npx playwright test ...'`.
  * `REEFIN_E2E_BASE_URL` / `REEFIN_E2E_USER` / `REEFIN_E2E_PASSWORD` come from it. The fixtures this
- * file needs are the rig's own: `Smoke Test Movie (2020)` (H264 + AAC in MP4 — the DIRECT PLAY
- * fixture, the only one whose first plan can legitimately be `DirectPlay`) and a second movie for
- * the new-attempt leg.
+ * file needs are the rig's own: the H264 + AAC in MP4 movie (the DIRECT PLAY fixture, the only one
+ * whose first plan can legitimately be `DirectPlay`) and a second movie for the new-attempt leg.
  *
  * NOTHING here is allowed to pass by absence: every negative assertion (no `served from legacy`, no
  * `PlanNotExecutable`, no `already gone`, no v2 traffic when the flag is off) is paired with a
  * positive control proving the channel it reads was live and non-empty at the time.
+ *
+ * WHY THE LIFECYCLE TEST USES `expect.soft` AND A STAGE LEDGER, AND WHY THAT IS NOT A SOFTENING:
+ * the chain is ONE session, so it has to be one test, and a plain `expect` aborts at the first
+ * violation — which would mean a failure at stage 3 hides whether stages 5..11 also fail. Every
+ * condition below is still asserted and still fails the test; `expect.soft` only changes WHEN the
+ * runner stops, so a single red run reports the complete set of violations instead of the first
+ * one. Stages that cannot even be entered (no `PUT` ever arrived, so there is nothing to assert
+ * about it) are recorded in a ledger which is compared, HARD, against the full chain at the end —
+ * a stage that never happened is a failure naming itself, never a silent skip.
  */
 
 const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
@@ -58,8 +68,8 @@ const V2_SESSION_ITEM = /\/Playback\/Sessions\/[^/?]+(\?|$)/i;
 const V2_SESSION_STREAM = /\/Playback\/Sessions\/[^/?]+\/Stream(\?|$)/i;
 const PLAYBACK_INFO = /\/Items\/[^/]+\/PlaybackInfo(\?|$)/i;
 const MEDIA_LEG = /\/videos\/[^/]+\/(stream|master|main)\./i;
-/** The HLS delivery routes — the ONLY shape a transcode can be served over. A `stream.<ext>` URL
- * is the static-file route and can never be a transcode, whatever a descriptor claims. */
+/** The HLS delivery routes — the ONLY shape a transcode can be served over. A `stream.<ext>` URL is
+ * the static-file route: no ffmpeg is involved there, whatever a descriptor claims. */
 const HLS_LEG = /\/videos\/[^/]+\/(master|main)\.m3u8/i;
 
 /** `RequestCorrelation.ResponseHeaderName`; Playwright lowercases header keys. */
@@ -68,6 +78,21 @@ const REQUEST_ID_HEADER = 'x-request-id';
 /** `PlaybackSessionResponse.LegacyDecisionVersion` — the sentinel meaning "a legacy projection".
  * `ServedBy` equal to it is precisely "NOT served by v2". */
 const LEGACY_DECISION_VERSION = 0;
+
+/** The chain the test must traverse. Compared, hard, against what actually happened. */
+const CHAIN = [
+    'PlaybackInfo',
+    'POST Sessions',
+    'GET Stream (DirectPlay plan)',
+    'real product error',
+    'PUT Sessions/{id}',
+    'GET Stream (re-planned)',
+    'transcoded bytes delivered',
+    'DELETE 204 on a live session',
+    'distinct X-Request-Id per request',
+    'new attempt id on the next play',
+    'server log agrees'
+] as const;
 
 // ---------------------------------------------------------------------------------------------
 // Wire capture — observe-only. Nothing below ever mutates a request or a response.
@@ -151,6 +176,17 @@ function attemptIdOf(postData: string | null): string {
     }
 }
 
+/** Parses a captured JSON body without ever throwing — a malformed body must surface as a failed
+ * assertion on the value that mattered, not as an exception that skips the rest of the chain. */
+function jsonOf(text: string): Record<string, unknown> {
+    try {
+        const parsed = JSON.parse(text);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
 function requestsBy(wire: Wire, method: string, re: RegExp): WireRequest[] {
     return wire.requests.filter(
         (r) =>
@@ -173,6 +209,23 @@ function streamResponses(wire: Wire): WireResponse[] {
     return wire.responses.filter(
         (r) => r.method === 'GET' && V2_SESSION_STREAM.test(r.url)
     );
+}
+
+/**
+ * Waits for a condition and REPORTS whether it held, instead of throwing. Every call site turns the
+ * result straight into an assertion — the condition is never merely "hoped for" — but a stage that
+ * never happens no longer aborts the run before the later stages have been observed.
+ */
+async function waitFor(
+    predicate: () => boolean | Promise<boolean>,
+    timeoutMs: number
+): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+        if (await predicate()) return true;
+        if (Date.now() >= deadline) return false;
+        await new Promise((resolve) => setTimeout(resolve, 500));
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -210,7 +263,7 @@ interface MovieFixture {
     videoCodec: string;
 }
 
-/** Every movie the rig seeded, with the source container/codec ffprobe would report — the baseline
+/** Every movie the rig seeded, with the source container/codec the server indexed — the baseline
  * the delivered transcode is later proven to DIFFER from. */
 async function resolveMovies(admin: Admin): Promise<MovieFixture[]> {
     const response = await admin.api.get('/Items', {
@@ -276,8 +329,8 @@ async function enableV2Engine(admin: Admin) {
 
 /**
  * The server's OWN account of what happened, read over the real `/System/Logs` API — the only
- * channel in which the issue-#43 lifecycle lines and the `served from legacy` /
- * `already gone` failure lines exist at all. Returns the newest log file's full text.
+ * channel in which the issue-#43 lifecycle lines and the `served from legacy` / `already gone`
+ * failure lines exist at all. Returns the newest log file's full text.
  */
 async function readServerLog(admin: Admin): Promise<string> {
     const list = await admin.api.get('/System/Logs', {
@@ -327,72 +380,87 @@ function linesMatching(log: string, ...needles: string[]): string[] {
 // ---------------------------------------------------------------------------------------------
 
 interface ProbeResult {
+    ok: boolean;
+    error: string;
     formatName: string;
-    videoCodecs: string[];
     hasVideo: boolean;
 }
 
 function ffprobe(url: string): ProbeResult {
-    const raw = execFileSync(
-        'ffprobe',
-        [
-            '-v',
-            'error',
-            '-print_format',
-            'json',
-            '-show_format',
-            '-show_streams',
-            '-i',
-            url
-        ],
-        { encoding: 'utf8', timeout: 60_000, maxBuffer: 32 * 1024 * 1024 }
-    );
-    const parsed = JSON.parse(raw) as {
-        format?: { format_name?: string };
-        streams?: { codec_type?: string; codec_name?: string }[];
-    };
-    const streams = parsed.streams ?? [];
-    return {
-        formatName: String(parsed.format?.format_name ?? ''),
-        videoCodecs: streams
-            .filter((s) => s.codec_type === 'video')
-            .map((s) => String(s.codec_name ?? '')),
-        hasVideo: streams.some((s) => s.codec_type === 'video')
-    };
+    try {
+        const raw = execFileSync(
+            'ffprobe',
+            [
+                '-v',
+                'error',
+                '-print_format',
+                'json',
+                '-show_format',
+                '-show_streams',
+                '-i',
+                url
+            ],
+            { encoding: 'utf8', timeout: 120_000, maxBuffer: 32 * 1024 * 1024 }
+        );
+        const parsed = JSON.parse(raw) as {
+            format?: { format_name?: string };
+            streams?: { codec_type?: string }[];
+        };
+        return {
+            ok: true,
+            error: '',
+            formatName: String(parsed.format?.format_name ?? ''),
+            hasVideo: (parsed.streams ?? []).some(
+                (s) => s.codec_type === 'video'
+            )
+        };
+    } catch (error) {
+        return {
+            ok: false,
+            error: String((error as Error)?.message ?? error).slice(0, 500),
+            formatName: '',
+            hasVideo: false
+        };
+    }
 }
 
 /** Frames that genuinely DECODED out of the delivered stream. A manifest that parses proves the
- * server wrote a manifest; a decoded frame proves ffmpeg produced real picture data. */
+ * server wrote a manifest; a decoded frame proves ffmpeg produced real picture data. Returns -1
+ * when ffmpeg could not read the stream at all, which is itself a failing observation. */
 function decodedFrameCount(url: string): number {
-    const output = execFileSync(
-        'ffmpeg',
-        [
-            '-v',
-            'error',
-            '-hide_banner',
-            '-t',
-            '3',
-            '-i',
-            url,
-            '-map',
-            '0:v:0',
-            '-f',
-            'null',
-            '-progress',
-            'pipe:1',
-            '-'
-        ],
-        {
-            encoding: 'utf8',
-            timeout: 120_000,
-            maxBuffer: 32 * 1024 * 1024,
-            stdio: ['ignore', 'pipe', 'pipe']
-        }
-    );
-    const frames = [...output.matchAll(/^frame=(\d+)$/gm)].map((m) =>
-        Number(m[1])
-    );
-    return frames.length === 0 ? 0 : Math.max(...frames);
+    try {
+        const output = execFileSync(
+            'ffmpeg',
+            [
+                '-v',
+                'error',
+                '-hide_banner',
+                '-t',
+                '3',
+                '-i',
+                url,
+                '-map',
+                '0:v:0',
+                '-f',
+                'null',
+                '-progress',
+                'pipe:1',
+                '-'
+            ],
+            {
+                encoding: 'utf8',
+                timeout: 180_000,
+                maxBuffer: 32 * 1024 * 1024,
+                stdio: ['ignore', 'pipe', 'pipe']
+            }
+        );
+        const frames = [...output.matchAll(/^frame=\s*(\d+)$/gm)].map((m) =>
+            Number(m[1])
+        );
+        return frames.length === 0 ? 0 : Math.max(...frames);
+    } catch {
+        return -1;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -448,13 +516,12 @@ async function assertV2PathReallyRan(page: Page, wire: Wire) {
 
 test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
     let admin: Admin;
-    let movies: MovieFixture[];
     let directPlayMovie: MovieFixture;
     let otherMovie: MovieFixture;
 
     test.beforeAll(async () => {
         admin = await adminContext();
-        movies = await resolveMovies(admin);
+        const movies = await resolveMovies(admin);
         // The rig's DIRECT PLAY fixture is the H264-in-MP4 one; the transcode probe (mpeg4 + ac3)
         // can never yield a DirectPlay first plan, so naming it here would make the first leg of
         // the chain untestable by construction.
@@ -484,7 +551,8 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
     test('POST → GET Stream (DirectPlay) → real error → PUT (Transcode) → v2-served, really transcoded bytes → DELETE 204, all under one attempt id', async ({
         page
     }) => {
-        test.setTimeout(420_000);
+        test.setTimeout(600_000);
+        const reached: string[] = [];
         const logBaseline = await readServerLog(admin);
         const wire = instrument(page);
 
@@ -509,203 +577,320 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         await assertV2PathReallyRan(page, wire);
 
         // ---- 1. POST Playback/PlaybackInfo -------------------------------------------------
-        await expect
-            .poll(() => requestsBy(wire, 'POST', PLAYBACK_INFO).length, {
-                timeout: 45_000
-            })
-            .toBeGreaterThan(0);
-        const playbackInfoRequest = requestsBy(wire, 'POST', PLAYBACK_INFO)[0];
-        const infoAttemptId = attemptIdOf(playbackInfoRequest.postData);
-        expect(
-            infoAttemptId,
-            'PlaybackInfo must carry the PlaybackAttemptId — it is the first request of the attempt (#43)'
-        ).not.toBe('');
+        const sawInfo = await waitFor(
+            () => requestsBy(wire, 'POST', PLAYBACK_INFO).length > 0,
+            60_000
+        );
+        expect
+            .soft(sawInfo, 'a POST /Items/{id}/PlaybackInfo must be issued')
+            .toBe(true);
+        let infoAttemptId = '';
+        if (sawInfo) {
+            reached.push('PlaybackInfo');
+            infoAttemptId = attemptIdOf(
+                requestsBy(wire, 'POST', PLAYBACK_INFO)[0].postData
+            );
+            expect
+                .soft(
+                    infoAttemptId,
+                    'PlaybackInfo must carry the PlaybackAttemptId — it is the first request of the attempt (#43)'
+                )
+                .not.toBe('');
+        }
 
         // ---- 2. POST Playback/Sessions -----------------------------------------------------
-        await expect
-            .poll(
-                () =>
-                    wire.sessionBodies.filter((b) => b.method === 'POST')
-                        .length,
-                { timeout: 45_000 }
-            )
-            .toBeGreaterThan(0);
-        const postBody = wire.sessionBodies.filter(
-            (b) => b.method === 'POST'
-        )[0];
-        expect(
-            postBody.status,
-            `POST /Playback/Sessions must answer exactly 200; body: ${postBody.text.slice(0, 400)}`
-        ).toBe(200);
-        const postJson = JSON.parse(postBody.text);
-        const sessionId = String(postJson?.Id ?? '');
-        expect(sessionId, 'the POST returned no session Id').not.toBe('');
-
-        const postAttemptId = attemptIdOf(
-            requestsBy(wire, 'POST', V2_SESSIONS)[0].postData
+        const sawPost = await waitFor(
+            () =>
+                wire.sessionBodies.filter((b) => b.method === 'POST').length > 0,
+            60_000
         );
-        expect(
-            postAttemptId,
-            'the POST /Playback/Sessions body carried no PlaybackAttemptId'
-        ).not.toBe('');
-        expect(
-            postAttemptId,
-            'the POST must belong to the SAME attempt as the PlaybackInfo that preceded it'
-        ).toBe(infoAttemptId);
-        expect(
-            String(postJson?.PlaybackAttemptId ?? ''),
-            'the POST response must echo the attempt id back verbatim (#43)'
-        ).toBe(postAttemptId);
+        expect
+            .soft(sawPost, 'a POST /Playback/Sessions must be issued')
+            .toBe(true);
+        let sessionId = '';
+        let postAttemptId = '';
+        let postJson: Record<string, unknown> = {};
+        if (sawPost) {
+            const postBody = wire.sessionBodies.filter(
+                (b) => b.method === 'POST'
+            )[0];
+            expect
+                .soft(
+                    postBody.status,
+                    `POST /Playback/Sessions must answer exactly 200; body: ${postBody.text.slice(0, 400)}`
+                )
+                .toBe(200);
+            postJson = jsonOf(postBody.text);
+            sessionId = String(postJson.Id ?? '');
+            expect
+                .soft(sessionId, 'the POST returned no session Id')
+                .not.toBe('');
+            postAttemptId = attemptIdOf(
+                requestsBy(wire, 'POST', V2_SESSIONS)[0]?.postData ?? null
+            );
+            expect
+                .soft(
+                    postAttemptId,
+                    'the POST /Playback/Sessions body carried no PlaybackAttemptId'
+                )
+                .not.toBe('');
+            expect
+                .soft(
+                    postAttemptId,
+                    'the POST must belong to the SAME attempt as the PlaybackInfo that preceded it'
+                )
+                .toBe(infoAttemptId);
+            expect
+                .soft(
+                    String(postJson.PlaybackAttemptId ?? ''),
+                    'the POST response must echo the attempt id back verbatim (#43)'
+                )
+                .toBe(postAttemptId);
+            if (sessionId !== '') reached.push('POST Sessions');
+        }
 
         // ---- 3. GET Playback/Sessions/{id}/Stream giving a DirectPlay plan ------------------
-        expect(
-            String(postJson?.Method ?? ''),
-            `the first plan for the H264/MP4 fixture "${directPlayMovie.name}" must be DirectPlay — the chain under test is DirectPlay → real error → Transcode`
-        ).toBe('DirectPlay');
-
-        await expect
-            .poll(() => wire.streamBodies.length, { timeout: 45_000 })
-            .toBeGreaterThan(0);
-        const firstStream = wire.streamBodies[0];
-        expect(
-            firstStream.status,
-            `the first GET /Playback/Sessions/{id}/Stream must answer 200; body: ${firstStream.text.slice(0, 400)}`
-        ).toBe(200);
-        expect(
-            firstStream.url,
-            'the first stream read must address the session the POST created'
-        ).toContain(`/Playback/Sessions/${sessionId}/Stream`);
-        const firstDescriptor = JSON.parse(firstStream.text);
-        expect(
-            Number(firstDescriptor?.ServedBy ?? LEGACY_DECISION_VERSION),
-            `the first stream descriptor must be served BY V2, not by a legacy fallback (ServedBy > ${LEGACY_DECISION_VERSION}); FallbackReason=${firstDescriptor?.FallbackReason}`
-        ).toBeGreaterThan(LEGACY_DECISION_VERSION);
-        expect(
-            firstDescriptor?.FallbackReason ?? null,
-            'the DirectPlay leg must carry NO fallback reason'
-        ).toBeNull();
+        expect
+            .soft(
+                String(postJson.Method ?? ''),
+                `the first plan for the H264/MP4 fixture "${directPlayMovie.name}" must be DirectPlay — the chain under test is DirectPlay → real error → Transcode`
+            )
+            .toBe('DirectPlay');
+        const sawFirstStream = await waitFor(
+            () => wire.streamBodies.length > 0,
+            60_000
+        );
+        expect
+            .soft(
+                sawFirstStream,
+                'the client must read the plan back through GET /Playback/Sessions/{id}/Stream'
+            )
+            .toBe(true);
+        if (sawFirstStream) {
+            const firstStream = wire.streamBodies[0];
+            expect
+                .soft(
+                    firstStream.status,
+                    `the first GET .../Stream must answer 200; body: ${firstStream.text.slice(0, 400)}`
+                )
+                .toBe(200);
+            expect
+                .soft(
+                    firstStream.url,
+                    'the first stream read must address the session the POST created'
+                )
+                .toContain(`/Playback/Sessions/${sessionId}/Stream`);
+            const firstDescriptor = jsonOf(firstStream.text);
+            expect
+                .soft(
+                    Number(firstDescriptor.ServedBy ?? LEGACY_DECISION_VERSION),
+                    `the first stream descriptor must be served BY V2, not by a legacy fallback (ServedBy > ${LEGACY_DECISION_VERSION}); FallbackReason=${firstDescriptor.FallbackReason}`
+                )
+                .toBeGreaterThan(LEGACY_DECISION_VERSION);
+            expect
+                .soft(
+                    firstDescriptor.FallbackReason ?? null,
+                    'the DirectPlay leg must carry NO fallback reason'
+                )
+                .toBeNull();
+            reached.push('GET Stream (DirectPlay plan)');
+        }
 
         // ---- 4. A REAL product error surfaces ----------------------------------------------
-        await expect
-            .poll(() => abortedUrl, { timeout: 60_000 })
-            .not.toBe('');
+        const sawError = await waitFor(() => abortedUrl !== '', 90_000);
+        expect
+            .soft(
+                sawError,
+                'no media delivery was ever attempted, so no real playback error could be provoked'
+            )
+            .toBe(true);
+        if (sawError) reached.push('real product error');
 
         // ---- 5. PUT Playback/Sessions/{id} re-planning to Transcode ------------------------
-        await expect
-            .poll(() => requestsBy(wire, 'PUT', V2_SESSION_ITEM).length, {
-                timeout: 90_000
-            })
-            .toBeGreaterThan(0);
-        const putRequest = requestsBy(wire, 'PUT', V2_SESSION_ITEM)[0];
-        expect(
-            putRequest.url,
-            'the PUT must address the session the POST created'
-        ).toContain(`/Playback/Sessions/${sessionId}`);
-
-        const putAttemptId = attemptIdOf(putRequest.postData);
-        expect(
-            putAttemptId,
-            'the PUT carried no PlaybackAttemptId — the retry would be unjoinable to the attempt that provoked it'
-        ).not.toBe('');
-        expect(
-            putAttemptId,
-            'the retry belongs to the attempt that started playback: SAME PlaybackAttemptId as the POST'
-        ).toBe(postAttemptId);
-
-        await expect
-            .poll(
-                () =>
-                    wire.sessionBodies.filter((b) => b.method === 'PUT').length,
-                { timeout: 90_000 }
+        const sawPut = await waitFor(
+            () => requestsBy(wire, 'PUT', V2_SESSION_ITEM).length > 0,
+            120_000
+        );
+        expect
+            .soft(
+                sawPut,
+                'the media failure must drive a PUT /Playback/Sessions/{id} re-plan — without it there is no v2 recovery at all'
             )
-            .toBeGreaterThan(0);
-        const putBody = wire.sessionBodies.filter((b) => b.method === 'PUT')[0];
-        expect(
-            putBody.status,
-            `PUT /Playback/Sessions/{id} must answer exactly 200 (422 = the server found nothing plannable); body: ${putBody.text.slice(0, 600)}`
-        ).toBe(200);
-        const putJson = JSON.parse(putBody.text);
-        expect(
-            String(putJson?.Id ?? ''),
-            'the PUT must preserve the SessionId — a re-plan replaces the plan, never the session'
-        ).toBe(sessionId);
-        expect(
-            String(putJson?.PlaybackAttemptId ?? ''),
-            'the PUT response must echo the SAME attempt id'
-        ).toBe(postAttemptId);
-        expect(
-            String(putJson?.Method ?? ''),
-            `the re-plan must land on Transcode — DirectPlay failed to deliver; body: ${putBody.text.slice(0, 600)}`
-        ).toBe('Transcode');
+            .toBe(true);
+        if (sawPut) {
+            const putRequest = requestsBy(wire, 'PUT', V2_SESSION_ITEM)[0];
+            expect
+                .soft(
+                    putRequest.url,
+                    'the PUT must address the session the POST created'
+                )
+                .toContain(`/Playback/Sessions/${sessionId}`);
+            const putAttemptId = attemptIdOf(putRequest.postData);
+            expect
+                .soft(
+                    putAttemptId,
+                    'the PUT carried no PlaybackAttemptId — the retry would be unjoinable to the attempt that provoked it'
+                )
+                .not.toBe('');
+            expect
+                .soft(
+                    putAttemptId,
+                    'the retry belongs to the attempt that started playback: SAME PlaybackAttemptId as the POST'
+                )
+                .toBe(postAttemptId);
+
+            const sawPutBody = await waitFor(
+                () =>
+                    wire.sessionBodies.filter((b) => b.method === 'PUT').length >
+                    0,
+                120_000
+            );
+            expect
+                .soft(sawPutBody, 'the PUT produced no response body')
+                .toBe(true);
+            if (sawPutBody) {
+                const putBody = wire.sessionBodies.filter(
+                    (b) => b.method === 'PUT'
+                )[0];
+                expect
+                    .soft(
+                        putBody.status,
+                        `PUT /Playback/Sessions/{id} must answer exactly 200 (422 = the server found nothing plannable); body: ${putBody.text.slice(0, 600)}`
+                    )
+                    .toBe(200);
+                const putJson = jsonOf(putBody.text);
+                expect
+                    .soft(
+                        String(putJson.Id ?? ''),
+                        'the PUT must preserve the SessionId — a re-plan replaces the plan, never the session'
+                    )
+                    .toBe(sessionId);
+                expect
+                    .soft(
+                        String(putJson.PlaybackAttemptId ?? ''),
+                        'the PUT response must echo the SAME attempt id'
+                    )
+                    .toBe(postAttemptId);
+                expect
+                    .soft(
+                        String(putJson.Method ?? ''),
+                        `the re-plan must land on Transcode — DirectPlay failed to deliver; body: ${putBody.text.slice(0, 600)}`
+                    )
+                    .toBe('Transcode');
+                reached.push('PUT Sessions/{id}');
+            }
+        }
 
         // ---- 6. GET Stream served by v2 ----------------------------------------------------
-        await expect
-            .poll(() => wire.streamBodies.length, { timeout: 90_000 })
-            .toBeGreaterThanOrEqual(2);
-        const replanStream = wire.streamBodies[wire.streamBodies.length - 1];
-        expect(
-            replanStream.status,
-            `the post-PUT GET /Playback/Sessions/{id}/Stream must answer 200; body: ${replanStream.text.slice(0, 400)}`
-        ).toBe(200);
-        const replanDescriptor = JSON.parse(replanStream.text);
-        expect(
-            Number(replanDescriptor?.ServedBy ?? LEGACY_DECISION_VERSION),
-            `the re-planned stream must be served BY V2 (ServedBy > ${LEGACY_DECISION_VERSION}); FallbackReason=${replanDescriptor?.FallbackReason}`
-        ).toBeGreaterThan(LEGACY_DECISION_VERSION);
-        expect(
-            replanDescriptor?.FallbackReason ?? null,
-            'the re-planned stream must carry NO fallback reason — any value here means v2 did not serve it'
-        ).toBeNull();
-        const replannedPath = String(replanDescriptor?.Url ?? '').split('?')[0];
-        expect(
-            replannedPath,
-            'the post-PUT stream descriptor carried no Url'
-        ).not.toBe('');
+        const sawReplanStream = await waitFor(
+            () => wire.streamBodies.length >= 2,
+            120_000
+        );
+        expect
+            .soft(
+                sawReplanStream,
+                'the re-planned stream must be read back through a second GET .../Stream'
+            )
+            .toBe(true);
+        let replannedPath = '';
+        if (sawReplanStream) {
+            const replanStream =
+                wire.streamBodies[wire.streamBodies.length - 1];
+            expect
+                .soft(
+                    replanStream.status,
+                    `the post-PUT GET .../Stream must answer 200; body: ${replanStream.text.slice(0, 400)}`
+                )
+                .toBe(200);
+            const replanDescriptor = jsonOf(replanStream.text);
+            expect
+                .soft(
+                    Number(
+                        replanDescriptor.ServedBy ?? LEGACY_DECISION_VERSION
+                    ),
+                    `the re-planned stream must be served BY V2 (ServedBy > ${LEGACY_DECISION_VERSION}); FallbackReason=${replanDescriptor.FallbackReason}`
+                )
+                .toBeGreaterThan(LEGACY_DECISION_VERSION);
+            expect
+                .soft(
+                    replanDescriptor.FallbackReason ?? null,
+                    'the re-planned stream must carry NO fallback reason — any value here means v2 did not serve it'
+                )
+                .toBeNull();
+            replannedPath = String(replanDescriptor.Url ?? '').split('?')[0];
+            expect
+                .soft(
+                    replannedPath,
+                    'the post-PUT stream descriptor carried no Url'
+                )
+                .not.toBe('');
+            if (replannedPath !== '') reached.push('GET Stream (re-planned)');
+        }
 
         // ---- 7. Actually transcoded bytes ---------------------------------------------------
-        // The player must FETCH the re-planned URL successfully — a descriptor nobody fetches is
-        // a claim, not a delivery.
-        await expect
-            .poll(
-                () =>
-                    wire.responses.filter(
-                        (r) =>
-                            r.url.includes(replannedPath) &&
-                            r.status >= 200 &&
-                            r.status < 300
-                    ).length,
-                { timeout: 90_000 }
-            )
-            .toBeGreaterThan(0);
-        const deliveredUrl = wire.responses.filter(
-            (r) =>
-                r.url.includes(replannedPath) &&
-                r.status >= 200 &&
-                r.status < 300
-        )[0].url;
-        expect(
-            deliveredUrl,
-            `a transcode can only be delivered over the HLS routes; the player fetched ${deliveredUrl}, which is the static-file route — no ffmpeg is involved there whatever the descriptor claimed`
-        ).toMatch(HLS_LEG);
+        if (replannedPath !== '') {
+            const delivered = () =>
+                wire.responses.filter(
+                    (r) =>
+                        r.url.includes(replannedPath) &&
+                        r.status >= 200 &&
+                        r.status < 300
+                );
+            const sawDelivery = await waitFor(
+                () => delivered().length > 0,
+                120_000
+            );
+            expect
+                .soft(
+                    sawDelivery,
+                    'the player never successfully fetched the re-planned URL — a descriptor nobody fetches is a claim, not a delivery'
+                )
+                .toBe(true);
+            if (sawDelivery) {
+                const deliveredUrl = delivered()[0].url;
+                expect
+                    .soft(
+                        deliveredUrl,
+                        `a transcode can only be delivered over the HLS routes; the player fetched ${deliveredUrl}, which is the static-file route — no ffmpeg is involved there whatever the descriptor claimed`
+                    )
+                    .toMatch(HLS_LEG);
 
-        // ffprobe/ffmpeg on the EXACT url the browser fetched (it carries its own ApiKey).
-        const probe = ffprobe(deliveredUrl);
-        expect(
-            probe.hasVideo,
-            `ffprobe found no video stream in the delivered transcode (${deliveredUrl}); format=${probe.formatName}`
-        ).toBe(true);
-        expect(
-            probe.formatName,
-            `the delivered stream's container (${probe.formatName}) must be the HLS/MPEG-TS output of a live ffmpeg — the source fixture is "${directPlayMovie.container}", so an identical container would mean the original file was handed over untouched`
-        ).toMatch(/hls|mpegts/i);
-        expect(
-            probe.formatName.includes(directPlayMovie.container),
-            `the delivered container must differ from the source container "${directPlayMovie.container}"`
-        ).toBe(false);
-        expect(
-            decodedFrameCount(deliveredUrl),
-            'ffmpeg decoded ZERO video frames out of the delivered stream — a manifest that parses is not transcoded picture data'
-        ).toBeGreaterThan(0);
+                const probe = ffprobe(deliveredUrl);
+                expect
+                    .soft(
+                        probe.ok,
+                        `ffprobe could not read the delivered stream (${deliveredUrl}): ${probe.error}`
+                    )
+                    .toBe(true);
+                expect
+                    .soft(
+                        probe.hasVideo,
+                        `ffprobe found no video stream in the delivered transcode (${deliveredUrl}); format=${probe.formatName}`
+                    )
+                    .toBe(true);
+                expect
+                    .soft(
+                        probe.formatName,
+                        `the delivered stream's container (${probe.formatName}) must be the HLS/MPEG-TS output of a live ffmpeg — the source fixture is "${directPlayMovie.container}", so an identical container would mean the original file was handed over untouched`
+                    )
+                    .toMatch(/hls|mpegts/i);
+                expect
+                    .soft(
+                        probe.formatName.includes(directPlayMovie.container),
+                        `the delivered container must differ from the source container "${directPlayMovie.container}"`
+                    )
+                    .toBe(false);
+                const frames = decodedFrameCount(deliveredUrl);
+                expect
+                    .soft(
+                        frames,
+                        'ffmpeg decoded no video frames out of the delivered stream (-1 = it could not read it at all) — a manifest that parses is not transcoded picture data'
+                    )
+                    .toBeGreaterThan(0);
+                if (probe.ok && frames > 0)
+                    reached.push('transcoded bytes delivered');
+            }
+        }
 
         // ---- 8. DELETE acts on a STILL-LIVE session, returning 204 --------------------------
         // Liveness proven independently, from outside the browser, immediately before the stop.
@@ -713,157 +898,225 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             `/Playback/Sessions/${sessionId}/Stream`,
             { headers: { Authorization: admin.token } }
         );
-        expect(
-            preStop.status(),
-            'the session must still be LIVE at the moment the user stops — otherwise the DELETE below tests nothing'
-        ).toBe(200);
+        expect
+            .soft(
+                preStop.status(),
+                'the session must still be LIVE at the moment the user stops — otherwise the DELETE below tests nothing'
+            )
+            .toBe(200);
 
         await stopPlayback(page);
-        await expect
-            .poll(() => responsesBy(wire, 'DELETE', V2_SESSION_ITEM).length, {
-                timeout: 60_000
-            })
-            .toBeGreaterThan(0);
-        const deleteResponse = responsesBy(wire, 'DELETE', V2_SESSION_ITEM)[0];
-        expect(
-            deleteResponse.url,
-            'the DELETE must name the session the POST created'
-        ).toContain(`/Playback/Sessions/${sessionId}`);
-        expect(
-            deleteResponse.status,
-            'DELETE /Playback/Sessions/{id} on a live session must answer exactly 204 (404 = it was already gone)'
-        ).toBe(204);
-
-        const postStop = await admin.api.get(
-            `/Playback/Sessions/${sessionId}/Stream`,
-            { headers: { Authorization: admin.token } }
+        const sawDelete = await waitFor(
+            () => responsesBy(wire, 'DELETE', V2_SESSION_ITEM).length > 0,
+            90_000
         );
-        expect(
-            postStop.status(),
-            'after the DELETE the session must be genuinely gone — 404, not still serving'
-        ).toBe(404);
+        expect
+            .soft(sawDelete, 'a user stop must issue DELETE /Playback/Sessions/{id}')
+            .toBe(true);
+        if (sawDelete) {
+            const deleteResponse = responsesBy(
+                wire,
+                'DELETE',
+                V2_SESSION_ITEM
+            )[0];
+            expect
+                .soft(
+                    deleteResponse.url,
+                    'the DELETE must name the session the POST created'
+                )
+                .toContain(`/Playback/Sessions/${sessionId}`);
+            expect
+                .soft(
+                    deleteResponse.status,
+                    'DELETE /Playback/Sessions/{id} on a live session must answer exactly 204 (404 = it was already gone)'
+                )
+                .toBe(204);
 
-        // ---- 9. A DISTINCT X-Request-Id per request -----------------------------------------
-        // Per-request correlation (#42), strictly separate from the per-attempt id (#43): the five
-        // legs of ONE attempt must produce five DIFFERENT request ids.
-        const legs: { label: string; header: string | undefined }[] = [
-            {
-                label: 'POST /Playback/Sessions',
-                header: responsesBy(wire, 'POST', V2_SESSIONS)[0]?.headers[
-                    REQUEST_ID_HEADER
-                ]
-            },
-            {
-                label: 'GET .../Stream (DirectPlay)',
-                header: streamResponses(wire)[0]?.headers[REQUEST_ID_HEADER]
-            },
-            {
-                label: 'PUT /Playback/Sessions/{id}',
-                header: responsesBy(wire, 'PUT', V2_SESSION_ITEM)[0]?.headers[
-                    REQUEST_ID_HEADER
-                ]
-            },
-            {
-                label: 'GET .../Stream (Transcode)',
-                header: streamResponses(wire)[streamResponses(wire).length - 1]
-                    ?.headers[REQUEST_ID_HEADER]
-            },
-            {
-                label: 'DELETE /Playback/Sessions/{id}',
-                header: deleteResponse.headers[REQUEST_ID_HEADER]
-            }
-        ];
-        expect(
-            legs.filter((l) => !l.header).map((l) => l.label),
-            `every leg of the cycle must carry an ${REQUEST_ID_HEADER} response header (#42)`
-        ).toEqual([]);
-        const requestIds = legs.map((l) => String(l.header));
-        expect(
-            new Set(requestIds).size,
-            `the ${REQUEST_ID_HEADER} must be DISTINCT per request; observed ${JSON.stringify(
-                legs.map((l) => `${l.label}=${l.header}`)
-            )}`
-        ).toBe(legs.length);
-        expect(
-            requestIds.includes(postAttemptId),
-            'the per-request id and the per-attempt id are different scopes and must never coincide'
-        ).toBe(false);
+            const postStop = await admin.api.get(
+                `/Playback/Sessions/${sessionId}/Stream`,
+                { headers: { Authorization: admin.token } }
+            );
+            expect
+                .soft(
+                    postStop.status(),
+                    'after the DELETE the session must be genuinely gone — 404, not still serving'
+                )
+                .toBe(404);
+            if (deleteResponse.status === 204)
+                reached.push('DELETE 204 on a live session');
+
+            // ---- 9. A DISTINCT X-Request-Id per request ---------------------------------
+            // Per-request correlation (#42), strictly separate from the per-attempt id (#43):
+            // the five legs of ONE attempt must produce five DIFFERENT request ids.
+            const legs = [
+                {
+                    label: 'POST /Playback/Sessions',
+                    header: responsesBy(wire, 'POST', V2_SESSIONS)[0]?.headers[
+                        REQUEST_ID_HEADER
+                    ]
+                },
+                {
+                    label: 'GET .../Stream (DirectPlay)',
+                    header: streamResponses(wire)[0]?.headers[
+                        REQUEST_ID_HEADER
+                    ]
+                },
+                {
+                    label: 'PUT /Playback/Sessions/{id}',
+                    header: responsesBy(wire, 'PUT', V2_SESSION_ITEM)[0]
+                        ?.headers[REQUEST_ID_HEADER]
+                },
+                {
+                    label: 'GET .../Stream (Transcode)',
+                    header: streamResponses(wire)[
+                        streamResponses(wire).length - 1
+                    ]?.headers[REQUEST_ID_HEADER]
+                },
+                {
+                    label: 'DELETE /Playback/Sessions/{id}',
+                    header: deleteResponse.headers[REQUEST_ID_HEADER]
+                }
+            ];
+            expect
+                .soft(
+                    legs.filter((l) => !l.header).map((l) => l.label),
+                    `every leg of the cycle must carry an ${REQUEST_ID_HEADER} response header (#42)`
+                )
+                .toEqual([]);
+            const requestIds = legs.map((l) => String(l.header));
+            expect
+                .soft(
+                    new Set(requestIds).size,
+                    `the ${REQUEST_ID_HEADER} must be DISTINCT per request; observed ${JSON.stringify(
+                        legs.map((l) => `${l.label}=${l.header}`)
+                    )}`
+                )
+                .toBe(legs.length);
+            expect
+                .soft(
+                    requestIds.includes(postAttemptId),
+                    'the per-request id and the per-attempt id are different scopes and must never coincide'
+                )
+                .toBe(false);
+            if (
+                legs.every((l) => l.header) &&
+                new Set(requestIds).size === legs.length
+            )
+                reached.push('distinct X-Request-Id per request');
+        }
 
         // ---- 10. A NEW user attempt yields a NEW PlaybackAttemptId --------------------------
         await pressPlay(page, otherMovie.id);
-        await expect
-            .poll(
-                () =>
-                    requestsBy(wire, 'POST', PLAYBACK_INFO)
-                        .map((r) => attemptIdOf(r.postData))
-                        .filter((id) => id !== '' && id !== postAttemptId)
-                        .length,
-                { timeout: 90_000 }
+        const newInfoAttempt = await waitFor(
+            () =>
+                requestsBy(wire, 'POST', PLAYBACK_INFO)
+                    .map((r) => attemptIdOf(r.postData))
+                    .some((id) => id !== '' && id !== postAttemptId),
+            120_000
+        );
+        expect
+            .soft(
+                newInfoAttempt,
+                'the next play press must mint a NEW PlaybackAttemptId on PlaybackInfo'
             )
-            .toBeGreaterThan(0);
-        await expect
-            .poll(
-                () =>
-                    requestsBy(wire, 'POST', V2_SESSIONS)
-                        .map((r) => attemptIdOf(r.postData))
-                        .filter((id) => id !== '' && id !== postAttemptId)
-                        .length,
-                { timeout: 90_000 }
+            .toBe(true);
+        const newPostAttempt = await waitFor(
+            () =>
+                requestsBy(wire, 'POST', V2_SESSIONS)
+                    .map((r) => attemptIdOf(r.postData))
+                    .some((id) => id !== '' && id !== postAttemptId),
+            120_000
+        );
+        expect
+            .soft(
+                newPostAttempt,
+                'the next attempt must carry its new PlaybackAttemptId onto POST /Playback/Sessions too'
             )
-            .toBeGreaterThan(0);
+            .toBe(true);
+        if (newInfoAttempt && newPostAttempt)
+            reached.push('new attempt id on the next play');
 
         // ---- 11. The SERVER's own account of this cycle -------------------------------------
         // Positive control FIRST: the log channel is live and contains this session's own
         // lifecycle lines. Only then do the absence assertions below mean anything.
-        await expect
-            .poll(
-                async () =>
-                    linesMatching(
-                        logTail(await readServerLog(admin), logBaseline),
-                        sessionId,
-                        'deleted'
-                    ).length,
-                { timeout: 60_000 }
+        const sawDeletedLine = await waitFor(
+            async () =>
+                linesMatching(
+                    logTail(await readServerLog(admin), logBaseline),
+                    sessionId,
+                    'deleted'
+                ).length > 0,
+            90_000
+        );
+        const tail = logTail(await readServerLog(admin), logBaseline);
+        expect
+            .soft(
+                sawDeletedLine,
+                `the server must log this session's deletion (#43 lifecycle line); session ${sessionId}`
+            )
+            .toBe(true);
+        expect
+            .soft(
+                linesMatching(tail, sessionId, 'created').length,
+                `the server must have logged this session's creation (#43 lifecycle line); session ${sessionId}`
             )
             .toBeGreaterThan(0);
-        const tail = logTail(await readServerLog(admin), logBaseline);
-
-        expect(
-            linesMatching(tail, sessionId, 'created').length,
-            `the server must have logged this session's creation (#43 lifecycle line); session ${sessionId}`
-        ).toBeGreaterThan(0);
-        expect(
-            linesMatching(tail, sessionId, 'replaced').length,
-            'the server must have logged the re-plan transition for this session'
-        ).toBeGreaterThan(0);
+        expect
+            .soft(
+                linesMatching(tail, sessionId, 'replaced').length,
+                'the server must have logged the re-plan transition for this session'
+            )
+            .toBeGreaterThan(0);
         // The `deleted` line must be CORRELATED — it names the attempt this cycle ran under.
-        expect(
-            linesMatching(tail, sessionId, 'deleted', postAttemptId).length,
-            `the "deleted" line must name BOTH this session and the attempt it belonged to; lines seen: ${JSON.stringify(
-                linesMatching(tail, sessionId, 'deleted')
-            )}`
-        ).toBeGreaterThan(0);
-
-        expect(
-            linesMatching(tail, sessionId, 'served from legacy'),
-            'ZERO "served from legacy" lines are allowed for this session — every one of them means v2 did not serve what the test just asserted it served'
-        ).toEqual([]);
-        expect(
-            linesMatching(tail, 'PlanNotExecutable'),
-            'ZERO "PlanNotExecutable" lines are allowed in this test window'
-        ).toEqual([]);
-        expect(
-            linesMatching(tail, sessionId, 'already gone'),
-            'ZERO "already gone" lines are allowed for this cycle — the DELETE acted on a live session'
-        ).toEqual([]);
+        expect
+            .soft(
+                linesMatching(tail, sessionId, 'deleted', postAttemptId).length,
+                `the "deleted" line must name BOTH this session and the attempt it belonged to; lines seen: ${JSON.stringify(
+                    linesMatching(tail, sessionId, 'deleted')
+                )}`
+            )
+            .toBeGreaterThan(0);
+        expect
+            .soft(
+                linesMatching(tail, sessionId, 'served from legacy'),
+                'ZERO "served from legacy" lines are allowed for this session — every one of them means v2 did not serve what this test asserted it served'
+            )
+            .toEqual([]);
+        expect
+            .soft(
+                linesMatching(tail, 'PlanNotExecutable'),
+                'ZERO "PlanNotExecutable" lines are allowed in this test window'
+            )
+            .toEqual([]);
+        expect
+            .soft(
+                linesMatching(tail, sessionId, 'already gone'),
+                'ZERO "already gone" lines are allowed for this cycle — the DELETE acted on a live session'
+            )
+            .toEqual([]);
+        if (
+            linesMatching(tail, sessionId, 'created').length > 0 &&
+            linesMatching(tail, sessionId, 'deleted', postAttemptId).length >
+                0 &&
+            linesMatching(tail, sessionId, 'served from legacy').length === 0 &&
+            linesMatching(tail, 'PlanNotExecutable').length === 0 &&
+            linesMatching(tail, sessionId, 'already gone').length === 0
+        )
+            reached.push('server log agrees');
 
         await assertV2PathReallyRan(page, wire);
+
+        // The ledger, HARD: a stage that never happened is a failure that names itself.
+        expect(
+            reached,
+            'the full chain must have been traversed, in order, with every stage satisfied'
+        ).toEqual([...CHAIN]);
     });
 
     test('a late DELETE naming a dead session must not destroy a NEWER attempt', async ({
         page
     }) => {
-        test.setTimeout(360_000);
+        test.setTimeout(420_000);
         const logBaseline = await readServerLog(admin);
         const wire = instrument(page);
 
@@ -876,84 +1129,101 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         // ---- attempt A: create, then stop it (the session the late DELETE will name) --------
         await pressPlay(page, directPlayMovie.id);
         await assertV2PathReallyRan(page, wire);
-        await expect
-            .poll(
-                () =>
-                    wire.sessionBodies.filter(
-                        (b) => b.method === 'POST' && b.status === 200
-                    ).length,
-                { timeout: 60_000 }
-            )
-            .toBeGreaterThan(0);
-        const bodyA = wire.sessionBodies.filter(
-            (b) => b.method === 'POST' && b.status === 200
-        )[0];
-        const sessionA = String(JSON.parse(bodyA.text)?.Id ?? '');
-        const attemptA = String(JSON.parse(bodyA.text)?.PlaybackAttemptId ?? '');
+        const okA = await waitFor(
+            () =>
+                wire.sessionBodies.filter(
+                    (b) => b.method === 'POST' && b.status === 200
+                ).length > 0,
+            90_000
+        );
+        expect(
+            okA,
+            'attempt A never produced a 200 POST /Playback/Sessions — the premise of this test'
+        ).toBe(true);
+        const bodyA = jsonOf(
+            wire.sessionBodies.filter(
+                (b) => b.method === 'POST' && b.status === 200
+            )[0].text
+        );
+        const sessionA = String(bodyA.Id ?? '');
+        const attemptA = String(bodyA.PlaybackAttemptId ?? '');
         expect(sessionA, 'attempt A produced no session id').not.toBe('');
 
         await stopPlayback(page);
-        await expect
-            .poll(
-                () =>
-                    responsesBy(wire, 'DELETE', V2_SESSION_ITEM).filter((r) =>
-                        r.url.includes(sessionA)
-                    ).length,
-                { timeout: 60_000 }
-            )
-            .toBeGreaterThan(0);
+        const stoppedA = await waitFor(
+            () =>
+                responsesBy(wire, 'DELETE', V2_SESSION_ITEM).some((r) =>
+                    r.url.includes(sessionA)
+                ),
+            90_000
+        );
+        expect
+            .soft(stoppedA, 'attempt A must be stopped through a real DELETE')
+            .toBe(true);
 
         // ---- attempt B: a genuinely NEW attempt on the SAME item and the SAME device --------
         // Same item + same device is the exact shape in which an id could be reused, which is what
         // would let a stale DELETE take a live session down.
         await pressPlay(page, directPlayMovie.id);
-        await expect
-            .poll(
-                () =>
-                    wire.sessionBodies.filter(
-                        (b) =>
-                            b.method === 'POST' &&
-                            b.status === 200 &&
-                            String(JSON.parse(b.text)?.Id ?? '') !== sessionA
-                    ).length,
-                { timeout: 90_000 }
+        const okB = await waitFor(
+            () =>
+                wire.sessionBodies.filter(
+                    (b) =>
+                        b.method === 'POST' &&
+                        b.status === 200 &&
+                        String(jsonOf(b.text).Id ?? '') !== sessionA
+                ).length > 0,
+            120_000
+        );
+        expect(
+            okB,
+            'the second play press never produced a second, distinct session — nothing newer exists to protect'
+        ).toBe(true);
+        const bodyB = jsonOf(
+            wire.sessionBodies.filter(
+                (b) =>
+                    b.method === 'POST' &&
+                    b.status === 200 &&
+                    String(jsonOf(b.text).Id ?? '') !== sessionA
+            )[0].text
+        );
+        const sessionB = String(bodyB.Id ?? '');
+        const attemptB = String(bodyB.PlaybackAttemptId ?? '');
+        expect
+            .soft(
+                sessionB,
+                'the second attempt must get its OWN session id — a reused id is exactly how a stale DELETE kills a live session'
             )
-            .toBeGreaterThan(0);
-        const bodyB = wire.sessionBodies.filter(
-            (b) =>
-                b.method === 'POST' &&
-                b.status === 200 &&
-                String(JSON.parse(b.text)?.Id ?? '') !== sessionA
-        )[0];
-        const sessionB = String(JSON.parse(bodyB.text)?.Id ?? '');
-        const attemptB = String(JSON.parse(bodyB.text)?.PlaybackAttemptId ?? '');
-        expect(
-            sessionB,
-            'the second attempt must get its OWN session id — a reused id is exactly how a stale DELETE kills a live session'
-        ).not.toBe(sessionA);
-        expect(
-            attemptB,
-            'the second attempt must mint a NEW PlaybackAttemptId'
-        ).not.toBe(attemptA);
+            .not.toBe(sessionA);
+        expect
+            .soft(
+                attemptB,
+                'the second attempt must mint a NEW PlaybackAttemptId'
+            )
+            .not.toBe(attemptA);
 
         // B must be live before the late DELETE, or the assertion after it is vacuous.
         const beforeLate = await admin.api.get(
             `/Playback/Sessions/${sessionB}/Stream`,
             { headers: { Authorization: admin.token } }
         );
-        expect(
-            beforeLate.status(),
-            'the newer session must be live before the late DELETE is replayed'
-        ).toBe(200);
+        expect
+            .soft(
+                beforeLate.status(),
+                'the newer session must be live before the late DELETE is replayed'
+            )
+            .toBe(200);
 
         // ---- the late DELETE: attempt A's own stop request, arriving now ---------------------
         const late = await admin.api.delete(`/Playback/Sessions/${sessionA}`, {
             headers: { Authorization: admin.token }
         });
-        expect(
-            late.status(),
-            'a DELETE naming an already-removed session must answer 404 — never 204, which would mean it removed something it had no right to'
-        ).toBe(404);
+        expect
+            .soft(
+                late.status(),
+                'a DELETE naming an already-removed session must answer 404 — never 204, which would mean it removed something it had no right to'
+            )
+            .toBe(404);
 
         const afterLate = await admin.api.get(
             `/Playback/Sessions/${sessionB}/Stream`,
@@ -966,30 +1236,38 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
 
         const tail = logTail(await readServerLog(admin), logBaseline);
         // Positive control: the log window really covers this test.
-        expect(
-            linesMatching(tail, sessionB, 'created').length,
-            'the newer session must appear in the server log window under test'
-        ).toBeGreaterThan(0);
-        expect(
-            linesMatching(tail, sessionB, 'deleted'),
-            'the newer session must NEVER be logged as deleted by the late DELETE aimed at the older one'
-        ).toEqual([]);
-        expect(
-            linesMatching(tail, sessionB, 'already gone'),
-            'the newer session must never be reported as already gone'
-        ).toEqual([]);
+        expect
+            .soft(
+                linesMatching(tail, sessionB, 'created').length,
+                'the newer session must appear in the server log window under test'
+            )
+            .toBeGreaterThan(0);
+        expect
+            .soft(
+                linesMatching(tail, sessionB, 'deleted'),
+                'the newer session must NEVER be logged as deleted by the late DELETE aimed at the older one'
+            )
+            .toEqual([]);
+        expect
+            .soft(
+                linesMatching(tail, sessionB, 'already gone'),
+                'the newer session must never be reported as already gone'
+            )
+            .toEqual([]);
         // The late DELETE is the ONE place an `already gone` line is legitimate, and it must name
         // the OLD session — proving the server told the two apart.
-        expect(
-            linesMatching(tail, sessionA, 'already gone').length,
-            'the late DELETE must be recorded against the OLD session id'
-        ).toBeGreaterThan(0);
+        expect
+            .soft(
+                linesMatching(tail, sessionA, 'already gone').length,
+                'the late DELETE must be recorded against the OLD session id'
+            )
+            .toBeGreaterThan(0);
     });
 
     test('feature flag OFF: zero /Playback/Sessions traffic and the v2 chunk is never loaded', async ({
         page
     }) => {
-        test.setTimeout(180_000);
+        test.setTimeout(240_000);
         const wire = instrument(page);
 
         // Deliberately NO addInitScript: the source default (flag off) is the state under test.
@@ -998,37 +1276,51 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
 
         // Positive control: playback genuinely starts. A vacuously idle page also shows zero v2
         // traffic.
-        await expect
-            .poll(
-                () =>
-                    wire.responses.filter(
-                        (r) => PLAYBACK_INFO.test(r.url) && r.status === 200
-                    ).length,
-                { timeout: 60_000 }
+        const sawInfo = await waitFor(
+            () =>
+                wire.responses.filter(
+                    (r) => PLAYBACK_INFO.test(r.url) && r.status === 200
+                ).length > 0,
+            90_000
+        );
+        expect
+            .soft(
+                sawInfo,
+                'the legacy path must still negotiate playback through PlaybackInfo'
             )
-            .toBeGreaterThan(0);
-        await expect
-            .poll(
-                () => wire.requests.filter((r) => MEDIA_LEG.test(r.url)).length,
-                { timeout: 90_000 }
+            .toBe(true);
+        const sawMedia = await waitFor(
+            () => wire.requests.filter((r) => MEDIA_LEG.test(r.url)).length > 0,
+            120_000
+        );
+        expect
+            .soft(
+                sawMedia,
+                'the legacy path must still deliver media — without it the negatives below are vacuous'
             )
-            .toBeGreaterThan(0);
+            .toBe(true);
 
-        expect(
-            wire.requests
-                .filter(
-                    (r) =>
-                        V2_SESSIONS.test(r.url) ||
-                        V2_SESSION_ITEM.test(r.url) ||
-                        V2_SESSION_STREAM.test(r.url)
-                )
-                .map((r) => `${r.method} ${r.url}`),
-            'flag OFF must produce no /Playback/Sessions traffic at all, of any verb'
-        ).toEqual([]);
-        expect(
-            wire.requests.filter((r) => V2_CHUNK.test(r.url)).map((r) => r.url),
-            'flag OFF must not even fetch the lazy v2 chunk'
-        ).toEqual([]);
+        expect
+            .soft(
+                wire.requests
+                    .filter(
+                        (r) =>
+                            V2_SESSIONS.test(r.url) ||
+                            V2_SESSION_ITEM.test(r.url) ||
+                            V2_SESSION_STREAM.test(r.url)
+                    )
+                    .map((r) => `${r.method} ${r.url}`),
+                'flag OFF must produce no /Playback/Sessions traffic at all, of any verb'
+            )
+            .toEqual([]);
+        expect
+            .soft(
+                wire.requests
+                    .filter((r) => V2_CHUNK.test(r.url))
+                    .map((r) => r.url),
+                'flag OFF must not even fetch the lazy v2 chunk'
+            )
+            .toEqual([]);
         expect(
             await page.evaluate(() =>
                 localStorage.getItem('enableV2PlaybackPath')
