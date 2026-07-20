@@ -632,7 +632,8 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         // ---- 2. POST Playback/Sessions -----------------------------------------------------
         const sawPost = await waitFor(
             () =>
-                wire.sessionBodies.filter((b) => b.method === 'POST').length > 0,
+                wire.sessionBodies.filter((b) => b.method === 'POST').length >
+                0,
             60_000
         );
         expect
@@ -772,8 +773,8 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
 
             const sawPutBody = await waitFor(
                 () =>
-                    wire.sessionBodies.filter((b) => b.method === 'PUT').length >
-                    0,
+                    wire.sessionBodies.filter((b) => b.method === 'PUT')
+                        .length > 0,
                 30_000
             );
             expect
