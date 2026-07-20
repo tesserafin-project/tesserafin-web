@@ -62,3 +62,19 @@
     --rf-color-focus: rgba(79, 209, 255, 0.45);
     --rf-color-divider: rgba(234, 240, 255, 0.12);
 }
+
+[data-rf-theme="official.glass"][data-rf-mode="light"] {
+    --rf-color-background: #eef2f8;
+    --rf-color-surface: rgba(255, 255, 255, 0.55);
+    --rf-color-surface-variant: rgba(214, 224, 240, 0.6);
+    --rf-color-text: #0b1220;
+    --rf-color-text-muted: rgba(11, 18, 32, 0.68);
+    --rf-color-primary: #0a6689;
+    --rf-color-on-primary: #fff;
+    --rf-color-accent: #4b3fd0;
+    --rf-color-error: #b3261e;
+    --rf-color-warning: #8a5a00;
+    --rf-color-success: #0d6e45;
+    --rf-color-focus: rgba(10, 102, 137, 0.45);
+    --rf-color-divider: rgba(11, 18, 32, 0.14);
+}

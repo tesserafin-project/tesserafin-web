@@ -73,16 +73,21 @@ export const PROJECTOR_GLOBAL = 'RfProfiles';
 /** The element the spec measures: the real `Surface` glass variant. */
 export const PROBE_SELECTOR = '#probe';
 
+/** The real `FloatingSidebar` rail, for the specs that measure the sidebar's own surface. */
+export const SIDEBAR_SELECTOR = '.rf-floating-sidebar';
+
+/** A `FloatingSidebar` entry button, for focus-ring and target-size measurements. */
+export const SIDEBAR_ITEM_SELECTOR = '.rf-floating-sidebar__button';
+
 /**
- * Compiles `src/ui/components/Surface/Surface.scss` — the production consumer of the
- * `rf-glass-surface` mixin — with the project's own sass compiler.
+ * Compiles a production stylesheet with the project's own sass compiler.
  *
  * Autoprefixer is not run. It would only add `-webkit-backdrop-filter`, which Chromium neither
  * needs nor reports through `getComputedStyle().backdropFilter`, so its absence cannot mask a
  * difference the spec is looking for.
  */
-const compileSurfaceCss = (): string =>
-    sass.compile(resolve(REPO_ROOT, 'src/ui/components/Surface/Surface.scss'), {
+const compileCss = (relativePath: string): string =>
+    sass.compile(resolve(REPO_ROOT, relativePath), {
         loadPaths: [resolve(REPO_ROOT, 'src')]
     }).css;
 
@@ -105,28 +110,40 @@ const bundleProjector = async (): Promise<string> => {
 };
 
 /**
- * The fixture page: both themes' generated tokens, the real compiled Surface rule, the real
- * projector, and one probe element.
+ * The fixture page: both themes' generated tokens, the real compiled `Surface` and
+ * `FloatingSidebar` rules, the real projector, and the probe elements.
  *
  * `<html>` carries `data-rf-theme`/`data-rf-mode` exactly as `useAppTheme` sets them, so the
- * generated stylesheets' `[data-rf-theme="…"]` tier resolves the same way it does in the app — and
- * so the spec can flip to Classic and re-run the identical assertions.
+ * generated stylesheets' `[data-rf-theme="…"]`/`[data-rf-mode="…"]` tiers resolve the same way they
+ * do in the app — and so a spec can flip to Classic, or to Glass's light mode, and re-run the
+ * identical assertions.
+ *
+ * @param themeId The *token* theme id, i.e. what `useAppTheme` writes to `data-rf-theme`. Note that
+ * `official.glass.light` is a registry entry, not a token theme: it renders `official.glass` with
+ * `mode: 'light'` (see `src/themes/registry.ts#tokenThemeId`), which is exactly the pair this
+ * fixture takes.
+ * @param mode The palette mode, i.e. `data-rf-mode`.
  */
 export const buildFixtureHtml = async (
-    themeId: 'official.glass' | 'official.classic'
+    themeId: 'official.glass' | 'official.classic',
+    mode: 'dark' | 'light' = 'dark'
 ): Promise<string> => {
-    const [surfaceCss, projectorJs] = await Promise.all([
-        Promise.resolve(compileSurfaceCss()),
+    const [surfaceCss, sidebarCss, projectorJs] = await Promise.all([
+        Promise.resolve(compileCss('src/ui/components/Surface/Surface.scss')),
+        Promise.resolve(
+            compileCss('src/ui/components/FloatingSidebar/FloatingSidebar.scss')
+        ),
         bundleProjector()
     ]);
 
     return `<!doctype html>
-<html data-rf-theme="${themeId}" data-rf-mode="dark">
+<html data-rf-theme="${themeId}" data-rf-mode="${mode}">
 <head>
 <meta charset="utf-8">
 <style>${readRepoFile('src/ui/tokens/official.classic.css')}</style>
 <style>${readRepoFile('src/ui/tokens/official.glass.css')}</style>
 <style>${surfaceCss}</style>
+<style>${sidebarCss}</style>
 <style>
   /* Fixture-only geometry. The probe needs a size and something behind it for a backdrop filter to
      have anything to filter; neither influences the property values under assertion. */
@@ -138,6 +155,20 @@ export const buildFixtureHtml = async (
 <body>
 <div id="backdrop"></div>
 <div id="probe" class="rf-surface rf-surface--glass"></div>
+<nav class="rf-floating-sidebar" aria-label="Primary">
+  <ul class="rf-floating-sidebar__list">
+    <li class="rf-floating-sidebar__item">
+      <button type="button" class="rf-floating-sidebar__button" aria-current="page">
+        <span class="rf-floating-sidebar__label">Home</span>
+      </button>
+    </li>
+    <li class="rf-floating-sidebar__item">
+      <button type="button" class="rf-floating-sidebar__button">
+        <span class="rf-floating-sidebar__label">Library</span>
+      </button>
+    </li>
+  </ul>
+</nav>
 <script>${projectorJs}</script>
 </body>
 </html>`;

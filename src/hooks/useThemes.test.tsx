@@ -66,13 +66,16 @@ describe('useThemes()', () => {
         expect(glass?.name).toBe('Reefin Glass');
     });
 
-    it('badges only Glass, leaving every other offered theme unmarked', () => {
+    it('badges only the two Glass modes, leaving every other offered theme unmarked', () => {
         const { themes } = renderThemes();
         const experimentalIds = themes
             .filter((theme) => theme.experimental)
             .map((theme) => theme.id);
 
-        expect(experimentalIds).toEqual(['official.glass']);
+        expect(experimentalIds).toEqual([
+            'official.glass',
+            'official.glass.light'
+        ]);
     });
 
     it('keeps Reefin Classic the default, so Glass is opt-in only', () => {

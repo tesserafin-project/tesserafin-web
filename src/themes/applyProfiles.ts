@@ -26,6 +26,11 @@ import {
  * redesign of it. The profile partials are not no-ops against Reefin Classic
  * (`reducedTransparency` would repaint its opaque `#202020` surface, `remote` would give it a blur
  * it deliberately does not have), so this constant guards correctness, not merely scope.
+ *
+ * It is the *token* theme id (`registry.ts#tokenThemeId`), not the registry entry id, so both Glass
+ * entries — `official.glass` and `official.glass.light` — are covered by one predicate while every
+ * non-Glass theme, including the legacy `light` preset, provably is not. Keying on the entry id
+ * would silently drop profiles for Glass Light, whose frosted surface needs them exactly as much.
  */
 export const PROFILE_THEME_ID = 'official.glass';
 

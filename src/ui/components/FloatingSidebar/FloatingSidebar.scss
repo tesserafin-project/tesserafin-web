@@ -1,0 +1,111 @@
+/**
+ * Floating sidebar (RFC-0005 §8.2 "sidebar flottante"). Only `--rf-*` custom properties are read
+ * here, with static fallbacks — no historical class name or id selector, and no theme selector, per
+ * RFC-0005 §6/§7.3.
+ *
+ * "Floating" is expressed as detachment from the viewport edge (an inset margin, a radius and an
+ * elevation) rather than as a Glass-only rule: under Classic the same geometry reads as a plain
+ * inset panel, which is a coherent Classic presentation rather than a broken Glass one.
+ */
+
+@use '../../styles/glass-surface' as glass;
+
+.rf-floating-sidebar {
+    position: fixed;
+    inset-block: var(--rf-spacing-lg, 24px);
+    inset-inline-start: var(--rf-spacing-lg, 24px);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: var(--rf-spacing-sm, 8px);
+    border-radius: var(--rf-shape-radius-lg, 0.4em);
+    box-shadow: var(--rf-elevation-level3, 0 12px 40px rgba(0, 0, 0, 0.5));
+
+    // The frosted treatment, taken from the shared mixin so this surface degrades exactly as
+    // `Surface` and `MediaCard` do — including the mandatory opaque fallback for browsers without
+    // `backdrop-filter` (RFC-0005 §8.2).
+    @include glass.rf-glass-surface;
+}
+
+.rf-floating-sidebar__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-xs, 4px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rf-floating-sidebar__item {
+    display: block;
+}
+
+.rf-floating-sidebar__button {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-spacing-sm, 8px);
+    width: 100%;
+    padding: var(--rf-spacing-sm, 8px) var(--rf-spacing-md, 16px);
+    cursor: pointer;
+    color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
+    background: transparent;
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    // Reads the token the `remote` profile raises, so a TV rail grows its type without this
+    // stylesheet knowing what a TV is.
+    font-size: var(--rf-typography-font-size-md, 1rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+    line-height: 1.5;
+    text-align: start;
+    border: 0;
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    // The only duration named here, and it is the one the `reducedMotion` axis zeroes.
+    transition:
+        color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease),
+        background-color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease);
+
+    &:hover {
+        color: var(--rf-color-text, #fff);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    &[aria-current='page'] {
+        color: var(--rf-color-on-primary, #fff);
+        background: var(--rf-color-primary, #00a4dc);
+    }
+}
+
+.rf-floating-sidebar__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+// Rail mode. The label leaves the visual layout but stays in the accessibility tree, so the
+// button keeps its accessible name — `display: none` would remove it from both.
+.rf-floating-sidebar--collapsed {
+    .rf-floating-sidebar__label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .rf-floating-sidebar__button {
+        justify-content: center;
+        padding: var(--rf-spacing-sm, 8px);
+    }
+}

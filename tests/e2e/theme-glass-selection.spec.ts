@@ -151,9 +151,11 @@ test.describe('theme: selecting Reefin Glass', () => {
      * Deliberately no `localStorage` writes — that the *product's* selection path reaches the
      * theme runtime is the claim under test.
      */
-    const selectThemeFromUi = async (page: Page, themeName: string) => {
+    const selectThemeFromUi = async (page: Page, themeId: string) => {
         await page.locator(THEME_SELECT).click();
-        await page.getByRole('option', { name: new RegExp(themeName) }).click();
+        // By stable id, not display name: since G18b-2 the picker offers BOTH Glass modes and
+        // "Reefin Glass" is a prefix of "Reefin Glass Light", so a name regex is ambiguous.
+        await page.locator(`[role="option"][data-value="${themeId}"]`).click();
         await page.locator(SAVE_BUTTON).click();
     };
 
@@ -178,7 +180,9 @@ test.describe('theme: selecting Reefin Glass', () => {
 
         await page.locator(THEME_SELECT).click();
 
-        const glassOption = page.getByRole('option', { name: /Reefin Glass/ });
+        const glassOption = page.locator(
+            '[role="option"][data-value="official.glass"]'
+        );
         await expect(glassOption).toBeVisible();
         // The badge is a real element, not a naming convention: assert the marker the component
         // sets, so a translated build still satisfies this.
@@ -215,7 +219,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         await gotoPreferences(page);
         await expectBlur(page, '0', 'none');
 
-        await selectThemeFromUi(page, 'Reefin Glass');
+        await selectThemeFromUi(page, 'official.glass');
 
         // Selection alone must reach the runtime — no reload, no navigation.
         await expectBlur(page, '16px', 'blur(16px)');
@@ -241,10 +245,10 @@ test.describe('theme: selecting Reefin Glass', () => {
     }) => {
         await signIn(page);
         await gotoPreferences(page);
-        await selectThemeFromUi(page, 'Reefin Glass');
+        await selectThemeFromUi(page, 'official.glass');
         await expectBlur(page, '16px', 'blur(16px)');
 
-        await selectThemeFromUi(page, 'Reefin Classic');
+        await selectThemeFromUi(page, 'official.classic');
 
         await expectBlur(page, '0', 'none');
         await expect(page.locator('html')).toHaveAttribute(
@@ -268,7 +272,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         }) => {
             await signIn(page);
             await gotoPreferences(page);
-            await selectThemeFromUi(page, 'Reefin Glass');
+            await selectThemeFromUi(page, 'official.glass');
             await expectBlur(page, '16px', 'blur(16px)');
 
             const client = await page.context().newCDPSession(page);
@@ -299,7 +303,7 @@ test.describe('theme: selecting Reefin Glass', () => {
         }) => {
             await signIn(page);
             await gotoPreferences(page);
-            await selectThemeFromUi(page, 'Reefin Glass');
+            await selectThemeFromUi(page, 'official.glass');
 
             await page.emulateMedia({ reducedMotion: 'reduce' });
 
@@ -367,7 +371,7 @@ test.describe('theme: selecting Reefin Glass', () => {
             await installFakeBattery(page);
             await signIn(page);
             await gotoPreferences(page);
-            await selectThemeFromUi(page, 'Reefin Glass');
+            await selectThemeFromUi(page, 'official.glass');
 
             // Discharging at 10%: below the 20% threshold, so lowPower is active.
             await expect(page.locator('html')).toHaveAttribute(
@@ -414,7 +418,7 @@ test.describe('theme: selecting Reefin Glass', () => {
             await signIn(page);
             await gotoPreferences(page);
             // Explicitly Classic, so this is a guard test and not an unset-preference test.
-            await selectThemeFromUi(page, 'Reefin Classic');
+            await selectThemeFromUi(page, 'official.classic');
             await expectBlur(page, '0', 'none');
 
             const client = await page.context().newCDPSession(page);
@@ -461,7 +465,9 @@ test.describe('theme: selecting Reefin Glass', () => {
 
         // D-pad navigation is arrow keys: walk to Glass and commit with Enter. MUI moves DOM focus
         // onto the active option, so the focused option is a real, assertable thing.
-        const glassOption = page.getByRole('option', { name: /Reefin Glass/ });
+        const glassOption = page.locator(
+            '[role="option"][data-value="official.glass"]'
+        );
         for (let i = 0; i < 12; i++) {
             // eslint-disable-next-line no-await-in-loop
             if (

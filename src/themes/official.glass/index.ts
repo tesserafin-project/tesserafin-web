@@ -20,8 +20,12 @@ import 'ui/tokens/official.glass.css';
  * illegible. Glass's visual identity is delivered on the `src/ui/` component surface; MUI here
  * only needs to stay coherent and legible standing on its own (RFC-0005 §8.2).
  *
- * v1 is dark-only (`modes: ["dark"]` in theme.json) — a light frosted mode is a documented
- * follow-up, not part of this tranche.
+ * Glass ships **two** color schemes, `default` (dark) and {@link light}. Both live in this one
+ * lazily-imported module on purpose: they share the single
+ * `theme-colorscheme-official-glass` chunk with the token stylesheet above, so adding the light
+ * mode adds no second chunk and puts no Glass palette literal into the main bundle. See
+ * `../registry.ts`, where the `official.glass.light` entry reaches this module's `light` export
+ * through the same dynamic `import()`.
  *
  * Built with `buildCustomColorScheme` (like every other custom lazy theme: appletv, blueradiance,
  * purplehaze, wmc), NOT the raw `merge(DEFAULT_COLOR_SCHEME, …)` shape that `dark`/`light` use.
@@ -46,6 +50,44 @@ const theme = buildCustomColorScheme({
         },
         AppBar: {
             defaultBg: '#161b26'
+        }
+    }
+});
+
+/**
+ * Reefin Glass — light frosted mode (issue #18, W13.8b).
+ *
+ * The frost is *not* mode-specific: `blur.md` stays `16px` for both modes in
+ * `reefin-design/themes/glass/tokens.json`, and only the `color.light` group differs. So this
+ * scheme is a light mode that is still Glass, rather than a flat light theme wearing Glass's name
+ * — the translucency and the `backdrop-filter` reach the page identically, from the same
+ * `[data-rf-theme="official.glass"]` tier, with the `[data-rf-mode="light"]` block overriding
+ * colors only.
+ *
+ * `background.paper` stays OPAQUE for exactly the reason the dark scheme's does (see above): MUI
+ * legacy surfaces have no backdrop to blur. Glass Light's translucency is delivered on the
+ * `src/ui/` component surface, whose tokens carry it.
+ *
+ * The palette is authored against WCAG AA over Glass Light's *composited* frosted surface — every
+ * foreground/background pair in `reefin-design/themes/glass/tokens.json#color.light` resolves at
+ * 4.5:1 or better once the translucent surface is composited over the background, which
+ * `src/ui/tokens/profiles.test.ts` pins numerically rather than leaving to inspection.
+ */
+export const light = buildCustomColorScheme({
+    palette: {
+        mode: 'light',
+        primary: {
+            main: '#0a6689'
+        },
+        secondary: {
+            main: '#4b3fd0'
+        },
+        background: {
+            default: '#eef2f8',
+            paper: '#fff'
+        },
+        AppBar: {
+            defaultBg: '#fff'
         }
     }
 });

@@ -33,9 +33,10 @@
  *
  * Since issue #18's G18b-1 slice Glass is selectable from the theme pickers (opt-in and badged,
  * never the default), so this hook engages for ordinary users rather than only for someone who
- * applied Glass by id. Note it is keyed on the theme `useAppTheme` resolved as *active*, not on the
- * one requested — so a Glass preference whose chunk failed to load falls back to Classic and
- * projects nothing, rather than projecting for a theme that never rendered.
+ * applied Glass by id — and for BOTH Glass modes, which is why the guard below keys on the token
+ * theme id rather than the registry entry id. Note it is keyed on the theme `useAppTheme` resolved
+ * as *active*, not on the one requested — so a Glass preference whose chunk failed to load falls
+ * back to Classic and projects nothing, rather than projecting for a theme that never rendered.
  */
 
 import { useEffect } from 'react';
@@ -52,12 +53,20 @@ import { getThemeEntry } from './registry';
  */
 export function useInteractionProfiles(activeThemeId: string): void {
     useEffect(() => {
-        if (activeThemeId !== PROFILE_THEME_ID) {
+        const entry = getThemeEntry(activeThemeId);
+
+        // Keyed on the *token* theme id, so both Glass entries (dark and light) engage and every
+        // other theme provably does not — see `applyProfiles.ts#PROFILE_THEME_ID`.
+        if ((entry?.tokenThemeId ?? activeThemeId) !== PROFILE_THEME_ID) {
             return undefined;
         }
 
         const root = document.documentElement;
-        const mode = getThemeEntry(activeThemeId)?.defaultMode ?? 'dark';
+        // Selects which `color.<mode>` group of the override is projected. Glass Light resolves
+        // 'light' here, which is why `REDUCED_TRANSPARENCY_OVERRIDE` carries a concrete
+        // `color.light` partial — without it, light mode would zero the blur and keep a
+        // translucent surface.
+        const mode = entry?.defaultMode ?? 'dark';
 
         // Holds the undo for whatever is currently projected. Each signal change fully reverts the
         // previous projection before applying the next, so custom properties never accumulate:

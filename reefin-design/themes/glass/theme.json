@@ -7,5 +7,5 @@
     "compatibility": {
         "web": ">=13.0"
     },
-    "modes": ["dark"]
+    "modes": ["dark", "light"]
 }
