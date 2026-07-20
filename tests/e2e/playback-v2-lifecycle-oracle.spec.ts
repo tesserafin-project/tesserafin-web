@@ -481,13 +481,19 @@ async function signIn(page: Page) {
 }
 
 /** ONE user-initiated playback start — a separate `playInternal()`, i.e. a separate ATTEMPT by
- * `playbackAttemptId.ts`'s definition. */
+ * `playbackAttemptId.ts`'s definition.
+ *
+ * The 60 s budget on the play button is a READINESS WAIT, not an assertion about the product: the
+ * first details view of a run pays for the SPA's cold chunk load against a freshly booted server,
+ * and a measured run aborted here at 20 s while the identical navigation later in the same run
+ * rendered in under two seconds. Waiting longer changes nothing about what is asserted — the button
+ * must still appear, and the chain assertions downstream are untouched. */
 async function pressPlay(page: Page, itemId: string) {
     await page.goto(`/#/details?id=${itemId}`);
     const play = page
         .locator('button.btnPlay:visible, button[title*="Play" i]:visible')
         .first();
-    await expect(play).toBeVisible({ timeout: 20_000 });
+    await expect(play).toBeVisible({ timeout: 60_000 });
     await play.click();
 }
 
