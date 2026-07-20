@@ -1,0 +1,494 @@
+{
+    "label": "chromium-149-headless",
+    "mode": "headless",
+    "binary": "/home/alex/.cache/ms-playwright/chromium-1228/chrome-linux64/chrome",
+    "browserFromCDP": "Chrome/149.0.7827.55",
+    "cdpProtocolVersion": "1.3",
+    "env": {
+        "DISPLAY": ":0.0",
+        "WAYLAND_DISPLAY": null,
+        "XDG_SESSION_TYPE": "x11"
+    },
+    "probe": {
+        "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/149.0.0.0 Safari/537.36",
+        "uaData": null,
+        "screen": {
+            "width": 800,
+            "height": 600,
+            "colorDepth": 24,
+            "pixelDepth": 24,
+            "devicePixelRatio": 1
+        },
+        "media": {
+            "(dynamic-range: high)": {
+                "query": "(dynamic-range: high)",
+                "serialised": "(dynamic-range: high)",
+                "matches": false
+            },
+            "(dynamic-range: standard)": {
+                "query": "(dynamic-range: standard)",
+                "serialised": "(dynamic-range: standard)",
+                "matches": true
+            },
+            "(video-dynamic-range: high)": {
+                "query": "(video-dynamic-range: high)",
+                "serialised": "(video-dynamic-range: high)",
+                "matches": false
+            },
+            "(video-dynamic-range: standard)": {
+                "query": "(video-dynamic-range: standard)",
+                "serialised": "(video-dynamic-range: standard)",
+                "matches": false
+            },
+            "(color-gamut: srgb)": {
+                "query": "(color-gamut: srgb)",
+                "serialised": "(color-gamut: srgb)",
+                "matches": true
+            },
+            "(color-gamut: p3)": {
+                "query": "(color-gamut: p3)",
+                "serialised": "(color-gamut: p3)",
+                "matches": false
+            },
+            "(color-gamut: rec2020)": {
+                "query": "(color-gamut: rec2020)",
+                "serialised": "(color-gamut: rec2020)",
+                "matches": false
+            },
+            "(prefers-color-scheme: dark)": {
+                "query": "(prefers-color-scheme: dark)",
+                "serialised": "(prefers-color-scheme: dark)",
+                "matches": false
+            },
+            "(totally-bogus-feature: high)": {
+                "query": "(totally-bogus-feature: high)",
+                "serialised": "(totally-bogus-feature: high)",
+                "matches": false
+            },
+            "(dynamic-range: bogusvalue)": {
+                "query": "(dynamic-range: bogusvalue)",
+                "serialised": "(dynamic-range: bogusvalue)",
+                "matches": false
+            }
+        },
+        "decode": [
+            {
+                "id": "h264-high-sdr",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"avc1.640028\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "hevc-main-sdr",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"hvc1.1.6.L153.90\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "hevc-main10-hdr10",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"hvc1.2.4.L153.90\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2086"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "hevc-main10-hlg",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"hvc1.2.4.L153.90\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "hlg",
+                        "colorGamut": "rec2020"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "hevc-main10-nohdrfields",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"hvc1.2.4.L153.90\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "vp9-p0-sdr",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.00.10.08\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-hdr10",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2086"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-sdrfields",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-nofields",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-hdr10plus",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2094-40"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-dovi-meta",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2094-10"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "av1-10bit-sdrfields",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"av01.0.09M.10.0.110.09.16.09.0\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "av1-8bit-sdr",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"av01.0.09M.08\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "av1-10bit-hdr10",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"av01.0.09M.10.0.110.09.16.09.0\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2086"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "hevc-main10-hdr10-mse",
+                "config": {
+                    "type": "media-source",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"hvc1.2.4.L153.90\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2086"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "vp9-p2-hdr10-mse",
+                "config": {
+                    "type": "media-source",
+                    "video": {
+                        "contentType": "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "pq",
+                        "colorGamut": "rec2020",
+                        "hdrMetadataType": "smpteSt2086"
+                    }
+                },
+                "result": {
+                    "supported": true,
+                    "smooth": true,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "SUPPORTED"
+            },
+            {
+                "id": "CONTROL-bogus-codec",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"bogus.9.9.9\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "srgb",
+                        "colorGamut": "srgb"
+                    }
+                },
+                "result": {
+                    "supported": false,
+                    "smooth": false,
+                    "powerEfficient": false,
+                    "keySystemAccess": null
+                },
+                "verdict": "NOT-SUPPORTED"
+            },
+            {
+                "id": "CONTROL-bogus-tf",
+                "config": {
+                    "type": "file",
+                    "video": {
+                        "contentType": "video/mp4; codecs=\"avc1.640028\"",
+                        "width": 1920,
+                        "height": 1080,
+                        "bitrate": 12000000,
+                        "framerate": 24,
+                        "transferFunction": "definitely-not-a-transfer-function"
+                    }
+                },
+                "verdict": "THREW",
+                "detail": "TypeError: Failed to execute 'decodingInfo' on 'MediaCapabilities': Failed to read the 'video' property from 'MediaConfiguration': Failed to read the 'transferFunction' property from 'VideoConfiguration': The provided value 'definitely-not-a-transfer-function' is not a valid enum value of type TransferFunction."
+            }
+        ],
+        "errors": [],
+        "partition": {
+            "dynamic-range": {
+                "high": false,
+                "standard": true,
+                "verdict": "NEGATIVE (SDR display chain, feature implemented)"
+            },
+            "video-dynamic-range": {
+                "high": false,
+                "standard": false,
+                "verdict": "ABSENT (feature not implemented - matches neither value)"
+            }
+        },
+        "canPlayType": {
+            "video/mp4; codecs=\"avc1.640028\"": "probably",
+            "video/mp4; codecs=\"hvc1.1.6.L153.90\"": "",
+            "video/mp4; codecs=\"hvc1.2.4.L153.90\"": "",
+            "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"": "probably",
+            "video/mp4; codecs=\"av01.0.09M.10.0.110.09.16.09.0\"": "probably"
+        },
+        "mseIsTypeSupported": {
+            "video/mp4; codecs=\"hvc1.2.4.L153.90\"": false,
+            "video/webm; codecs=\"vp09.02.10.10.01.09.16.09.01\"": true
+        }
+    }
+}
