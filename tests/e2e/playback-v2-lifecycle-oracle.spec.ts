@@ -1251,19 +1251,51 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             )
             .not.toBe(attemptA);
 
-        // B must be live before the late DELETE, or the assertion after it is vacuous.
-        const beforeLate = await admin.api.get(
-            `/Playback/Sessions/${sessionB}/Stream`,
-            { headers: { Authorization: admin.token } }
-        );
-        expect
-            .soft(
-                beforeLate.status(),
-                'the newer session must be live before the late DELETE is replayed'
-            )
-            .toBe(200);
-
         // ---- the late DELETE: attempt A's own stop request, arriving now ---------------------
+        //
+        // RE-ANCHORED — issue #71 ("Classification du bloquant B", ARTEFACT DE RIG).
+        //
+        // WHAT THE OLD ASSERTIONS CHECKED, AND WHY THAT WAS WRONG.
+        // The invariant this test exists to defend is causal: *A's DELETE must not touch B*. The
+        // assertions that stood here were not:
+        //   - `expect(afterLate.status()).toBe(200)` checked B's liveness at whatever wall-clock
+        //     moment the test happened to fire a GET. ANY cause of B's death in that stretch failed
+        //     it, with a message blaming A's DELETE. And there IS another cause: the SPA page tears
+        //     its own session down 0.2-0.6 s after creating it, with a DELETE carrying B's OWN
+        //     session id and B's OWN attempt id. Measured margins between the late DELETE and that
+        //     self-teardown ran +103 ms down to −75 ms across runs, on `origin/master` with none of
+        //     the server fixes applied — the green runs were coin flips, not evidence.
+        //   - the same defect applied to the pre-DELETE liveness probe (dropped below: it asserted
+        //     the identical contaminated thing, and a GET /Stream can itself emit lines naming B,
+        //     which would poison the very log window this block now reads).
+        //   - `linesMatching(tail, sessionB, 'deleted')` was a plain substring filter over the
+        //     WHOLE log since the test started: no time bound, no attempt-id bound, no causal
+        //     bound. Its message said "by the late DELETE"; its predicate said "by anything, ever".
+        //
+        // WHAT IS ASSERTED INSTEAD. The server log is snapshotted immediately BEFORE the late
+        // DELETE is issued and again immediately AFTER it returns, and the invariant is asserted
+        // over THAT window only — a few milliseconds wide, causally bounded, timing-independent:
+        //   (i)  exactly ONE `already gone` line, naming A. The server acted on the route id it
+        //        was handed, once.
+        //   (ii) every line in that window that names B belongs to B's OWN client-routed teardown,
+        //        and nothing else names B.
+        //
+        // (ii) is not "zero lines naming B", and that is a measured fact, not a softening: the
+        // SPA's teardown DELETE for B lands INSIDE this window (observed at B age 0.363 s, 10 ms
+        // after A's `already gone` line, on a separate request), so a literal zero would be
+        // permanently red for a reason that is not the invariant. What separates the two cases is
+        // that a client-routed DELETE for B produces BOTH the manager's `removed (… attempt B,
+        // reason HttpDelete …)` line AND the controller's `deleted (attempt B)` line, because the
+        // controller only logs `deleted` for the id in its own route. Collateral damage from A's
+        // DELETE cannot produce that second line: A's request logs `already gone` and returns
+        // NotFound. So an unpaired removal of B — a `removed` line with no route-B `deleted` line
+        // beside it — is exactly the shape of "A's DELETE reached B", and it fails here. Any B line
+        // of any other shape fails here too.
+        //
+        // B's teardown is then IDENTIFIED rather than forbidden over the whole test (further
+        // below): every removal of B must carry B's OWN attempt id and `reason HttpDelete`.
+        const beforeLateLog = await readServerLog(admin);
+
         const late = await admin.api.delete(`/Playback/Sessions/${sessionA}`, {
             headers: { Authorization: admin.token }
         });
@@ -1274,16 +1306,74 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             )
             .toBe(404);
 
+        // The file sink is Serilog's Async wrapper, so the line can trail the HTTP response by a
+        // few milliseconds. Re-read until it lands; the window is the tail as of the first read
+        // that shows it, and nothing widens it afterwards.
+        let deleteWindow = '';
+        const windowClosed = await waitFor(async () => {
+            deleteWindow = logTail(await readServerLog(admin), beforeLateLog);
+            return (
+                linesMatching(deleteWindow, sessionA, 'already gone').length > 0
+            );
+        }, 30_000);
+        expect(
+            windowClosed,
+            "the late DELETE must be recorded in the server log window bracketing it — without that line this block's window is vacuous"
+        ).toBe(true);
+        expect(
+            linesMatching(deleteWindow, sessionA, 'already gone').length,
+            'the late DELETE must produce exactly ONE `already gone` line, and it must name the OLD session — proving the server acted on the route id it was given'
+        ).toBe(1);
+        // B's own teardown, as the server writes it: the manager's removal line, and the
+        // controller's `deleted` line which ONLY a DELETE routed at B's own id can produce.
+        const removedB = linesMatching(
+            deleteWindow,
+            sessionB,
+            'removed',
+            attemptB,
+            'reason HttpDelete'
+        );
+        const routedDeleteOfB = linesMatching(
+            deleteWindow,
+            sessionB,
+            'deleted (attempt',
+            attemptB
+        );
+        expect(
+            linesMatching(deleteWindow, sessionB).filter(
+                (line) =>
+                    !removedB.includes(line) && !routedDeleteOfB.includes(line)
+            ),
+            "the late DELETE's OWN log window may name the NEWER session only as its own client-routed teardown — any other line naming it is a DELETE aimed at the older attempt reaching a session it had no right to touch"
+        ).toEqual([]);
+        expect(
+            removedB.length,
+            "every removal of the NEWER session inside the late DELETE's own window must be paired with a DELETE routed at the NEWER session's own id — an unpaired removal is A's DELETE taking B down, which is exactly what this test forbids"
+        ).toBe(routedDeleteOfB.length);
+
+        // The liveness probe is KEPT but is no longer the survival oracle, and no longer asserts a
+        // bare 200: the SPA tears its own session down inside this same stretch (#71), so a bare
+        // 200 is a coin flip on a fact that is not the invariant. What IS asserted, below and
+        // hard, is the causal disjunction it can actually support: B is either still live right
+        // after the late DELETE returned, or it was taken down by a DELETE routed at B's OWN id.
+        // Any third outcome — B gone with no route-B DELETE in the log — is A's DELETE reaching B.
         const afterLate = await admin.api.get(
             `/Playback/Sessions/${sessionB}/Stream`,
             { headers: { Authorization: admin.token } }
         );
-        expect(
-            afterLate.status(),
-            'the NEWER attempt must survive a late DELETE aimed at the older one'
-        ).toBe(200);
+        test.info().annotations.push({
+            type: 'B liveness immediately after the late DELETE',
+            description: `GET /Playback/Sessions/${sessionB}/Stream -> ${afterLate.status()}`
+        });
 
         const tail = logTail(await readServerLog(admin), logBaseline);
+        if (afterLate.status() !== 200) {
+            expect(
+                linesMatching(tail, sessionB, 'deleted (attempt', attemptB)
+                    .length,
+                'the NEWER attempt was gone right after the late DELETE, so the server log must show it being deleted by a DELETE routed at its OWN id and carrying its OWN attempt id — without that line, the only thing that reached it is the late DELETE aimed at the older attempt'
+            ).toBeGreaterThan(0);
+        }
         // Positive control: the log window really covers this test.
         expect
             .soft(
@@ -1291,12 +1381,19 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 'the newer session must appear in the server log window under test'
             )
             .toBeGreaterThan(0);
-        expect
-            .soft(
-                linesMatching(tail, sessionB, 'deleted'),
-                'the newer session must NEVER be logged as deleted by the late DELETE aimed at the older one'
-            )
-            .toEqual([]);
+        // Issue #71, step 4: identify B's teardown instead of forbidding it. A removal of B that
+        // carries B's own attempt id and `reason HttpDelete` is B's client asking for it; anything
+        // else — another attempt's id, or any other reason — is B being taken down by something
+        // that was not B's own DELETE, which is the failure this test is about.
+        const removalsOfB = linesMatching(tail, sessionB, 'removed');
+        expect(
+            removalsOfB.filter(
+                (line) =>
+                    line.includes(attemptB) &&
+                    line.includes('reason HttpDelete')
+            ),
+            "every removal of the NEWER session must carry the NEWER session's OWN attempt id and `reason HttpDelete` — that is self-teardown; anything else is collateral damage from another attempt's DELETE"
+        ).toEqual(removalsOfB);
         expect
             .soft(
                 linesMatching(tail, sessionB, 'already gone'),
