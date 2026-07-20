@@ -50,6 +50,40 @@ function v2SessionIdOf(
 }
 
 /**
+ * Names the v2 session the player CURRENTLY holds, for the retry path's re-plan fork
+ * (`playbackSessionV2ReplanTrigger.ts`), or `undefined` when there is nothing to re-plan.
+ *
+ * Two conditions, both required, because each can be true without the other:
+ *
+ * - The current `streamInfo`'s decision must be a v2 one carrying a `playbackSessionId` - the same
+ *   `v2SessionIdOf()` read the stop path uses. A player that fell back to legacy at start (or
+ *   whose previous item was v2 but whose current one is not) has no session its retry could
+ *   re-plan.
+ * - The tracker must still hold that same id LIVE (`liveSessionId`, not `ownedSessionId`, which
+ *   keeps reporting an already-released record). A session the tracker has released (or never
+ *   adopted) is one whose `DELETE` is at least in flight and which the server may already have
+ *   reaped; issuing a `PUT` against it would at best 404 and at worst re-animate a session the
+ *   stop path will never tear down again.
+ *
+ * Deliberately in THIS module rather than the re-plan trigger: the fork's question is "what does
+ * the teardown owner think this player holds?", and answering it here keeps `v2SessionIdOf()`'s
+ * source-of-truth reading in one place.
+ */
+export function adoptedV2PlaybackSessionId(
+    playerData: TeardownPlayerData
+): string | undefined {
+    const sessionId = v2SessionIdOf(playerData.streamInfo);
+
+    if (!sessionId) {
+        return undefined;
+    }
+
+    return playerData.playbackSessionTracker?.liveSessionId === sessionId
+        ? sessionId
+        : undefined;
+}
+
+/**
  * Called right after the manager parks a new `streamInfo` on `playerData`. Takes ownership of
  * the v2 session that `streamInfo` was built from, releasing whatever the player previously
  * held - a replacement IS a teardown of the outgoing session.

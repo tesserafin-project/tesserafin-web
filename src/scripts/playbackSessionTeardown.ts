@@ -111,9 +111,23 @@ export class PlaybackSessionTracker {
         };
     }
 
-    /** The session id currently owned, for tests and diagnostics. */
+    /** The session id currently owned, for tests and diagnostics. Note this still reports a
+     * session whose `DELETE` has already been issued - `release()` marks the record rather than
+     * dropping it, precisely so a second trigger stays a no-op. Callers that need "may I still
+     * address this session on the server?" must use {@link liveSessionId} instead. */
     get ownedSessionId(): string | null {
         return this.current?.sessionId ?? null;
+    }
+
+    /** The session id currently owned AND not yet released - i.e. one the server should still be
+     * holding on this client's behalf, which is the only kind a `PUT` re-plan
+     * (`playbackSessionV2ReplanTrigger.ts`) may address. `null` once `release()` has run: the
+     * `DELETE` is (at least) in flight by then, and re-planning a session being torn down would
+     * race the teardown it can no longer win. */
+    get liveSessionId(): string | null {
+        return this.current && !this.current.released
+            ? this.current.sessionId
+            : null;
     }
 
     /**

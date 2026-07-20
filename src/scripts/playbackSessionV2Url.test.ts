@@ -7,7 +7,9 @@ import type {
     ResolveV2PlaybackUrlParams,
     V2PatchableStreamInfo
 } from './playbackSessionV2Url';
+import type { ReplanV2PlaybackUrlParams } from './playbackSessionV2Url';
 import {
+    applyV2PlaybackReplanToStreamInfo,
     applyV2PlaybackUrlToStreamInfo,
     resolveV2PlaybackUrl
 } from './playbackSessionV2Url';
@@ -1120,5 +1122,293 @@ describe('applyV2PlaybackUrlToStreamInfo() - reefin #46 descriptor', () => {
         // cannot pass silently.
         expect(result?.container).toBe('mkv');
         expect(result?.mimeType).toBe('video/x-matroska');
+    });
+});
+
+describe('applyV2PlaybackReplanToStreamInfo()', () => {
+    let logger: {
+        debug: ReturnType<typeof vi.fn>;
+        warn: ReturnType<typeof vi.fn>;
+    };
+
+    beforeEach(() => {
+        logger = { debug: vi.fn(), warn: vi.fn() };
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    const replanApiClient = { getUrl: (url: string) => `https://server${url}` };
+
+    const replanParams = (
+        api: Api,
+        overrides: Partial<ReplanV2PlaybackUrlParams> = {}
+    ): ReplanV2PlaybackUrlParams => ({
+        ...baseParams(api),
+        playbackAttemptId: 'attempt-1',
+        sessionId: 'server-session-1',
+        playSessionId: 'play-session-1',
+        ...overrides
+    });
+
+    /** A legacy `streamInfo` as the retry's `createStreamInfo()` would have produced it. */
+    const legacyRetryStreamInfo = (): V2PatchableStreamInfo => ({
+        url: 'https://server/legacy/retry.m3u8',
+        mimeType: 'video/mp4',
+        playMethod: 'Transcode',
+        playSessionId: 'legacy-session'
+    });
+
+    /** Queues the PUT response then the GET .../Stream response on the same seam, mirroring
+     * `mockPostThenGet` for the two sequential calls the re-plan makes. */
+    function mockPutThenGet(
+        putResponse: unknown,
+        getResponse: unknown
+    ): ReturnType<typeof vi.fn> {
+        const request = vi.fn();
+        request.mockImplementationOnce(() => Promise.resolve(putResponse));
+        request.mockImplementationOnce(() => Promise.resolve(getResponse));
+        return request;
+    }
+
+    it('happy path: PUTs Playback/Sessions/{id} then GETs .../Stream and patches streamInfo whole', async () => {
+        const request = mockPutThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/videos/item-1/master.m3u8?PlaySessionId=play-session-1',
+                    Protocol: 'Hls',
+                    ServedBy: 2,
+                    FallbackReason: null,
+                    MimeType: 'application/x-mpegURL',
+                    Container: 'ts'
+                }
+            }
+        );
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api),
+            replanApiClient,
+            { requestOptions: { allowVideoStreamCopy: false } },
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(true);
+
+        expect(request).toHaveBeenCalledTimes(2);
+        const [[putArgs], [getArgs]] = request.mock.calls;
+        expect(putArgs).toEqual(
+            expect.objectContaining({
+                url: 'https://example.com/Playback/Sessions/server-session-1',
+                method: 'PUT'
+            })
+        );
+        const putBody = JSON.parse(putArgs.data);
+        expect(putBody).toEqual({
+            ItemId: 'item-1',
+            UserId: 'user-1',
+            MediaSourceId: 'media-source-1',
+            Capabilities: NATIVE_CAPABILITIES,
+            Constraints: NATIVE_CONSTRAINTS,
+            // The SAME attempt id the retry's PlaybackInfo POST carried - never re-minted.
+            PlaybackAttemptId: 'attempt-1'
+        });
+        // Route-addressed: `ReplacePlaybackSessionRequest` has no PlaySessionId field, and one
+        // sneaking into the body would be the server contract's misuse case.
+        expect(putBody).not.toHaveProperty('PlaySessionId');
+        expect(getArgs).toEqual(
+            expect.objectContaining({
+                url: 'https://example.com/Playback/Sessions/server-session-1/Stream',
+                method: 'GET'
+            })
+        );
+
+        // The whole execution state moved together (issue #41's all-or-nothing contract).
+        expect(streamInfo.url).toBe(
+            'https://server/videos/item-1/master.m3u8?PlaySessionId=play-session-1'
+        );
+        expect(streamInfo.playMethod).toBe('Transcode');
+        // A re-plan keeps the session's ORIGINAL PlaySessionId - never a fresh one.
+        expect(streamInfo.playSessionId).toBe('play-session-1');
+        expect(streamInfo.mimeType).toBe('application/x-mpegURL');
+        expect(streamInfo.transcodingOffsetTicks).toBe(0);
+        expect(streamInfo.executionDecision).toEqual(
+            expect.objectContaining({
+                source: 'v2',
+                playbackSessionId: 'server-session-1',
+                playSessionId: 'play-session-1',
+                retry: expect.objectContaining({
+                    isAlreadyFallbacking: true,
+                    preventsVideoStreamCopy: true
+                })
+            })
+        );
+        expect(logger.warn).not.toHaveBeenCalled();
+    });
+
+    it('threads the retry constraint overrides into buildConstraints alongside startTimeTicks', async () => {
+        const buildConstraints = vi.fn(() => NATIVE_CONSTRAINTS);
+        const request = mockPutThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            {
+                data: {
+                    Url: '/videos/item-1/master.m3u8',
+                    Protocol: 'Hls',
+                    MimeType: 'application/x-mpegURL'
+                }
+            }
+        );
+        const api = createMockApi(request);
+
+        await applyV2PlaybackReplanToStreamInfo(
+            legacyRetryStreamInfo(),
+            replanParams(api, {
+                constraintOverrides: {
+                    allowDirectPlay: false,
+                    allowDirectStream: true,
+                    allowVideoStreamCopy: true,
+                    allowAudioStreamCopy: false
+                }
+            }),
+            replanApiClient,
+            {},
+            { ...baseDeps(), buildConstraints, logger }
+        );
+
+        // The ladder's prohibitions must reach the wire, or the server would re-plan the exact
+        // decision that just failed.
+        expect(buildConstraints).toHaveBeenCalledWith({
+            startTimeTicks: 30000000,
+            allowDirectPlay: false,
+            allowDirectStream: true,
+            allowVideoStreamCopy: true,
+            allowAudioStreamCopy: false
+        });
+    });
+
+    it('does not call the API and warns for a mediaType other than Video/Audio', async () => {
+        const request = vi.fn();
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api, { mediaType: 'Book' }),
+            replanApiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(request).not.toHaveBeenCalled();
+        expect(streamInfo).toEqual(legacyRetryStreamInfo());
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('unsupported mediaType')
+        );
+    });
+
+    it('falls back EXPLICITLY on a PUT 4xx/5xx: warns with the status, streamInfo untouched', async () => {
+        // The server contract's 422 "nothing plannable" case - the session keeps serving its old
+        // plan, and this client keeps its legacy retry URL.
+        const request = vi.fn(() =>
+            Promise.reject(
+                Object.assign(new Error('Unprocessable Entity'), {
+                    response: { status: 422 }
+                })
+            )
+        );
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api),
+            replanApiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(streamInfo).toEqual(legacyRetryStreamInfo());
+        // Exactly one PUT was attempted - no GET follows a failed re-plan.
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('HTTP 422'),
+            expect.any(Error)
+        );
+    });
+
+    it('falls back EXPLICITLY on a network failure: warns naming it, streamInfo untouched', async () => {
+        const request = vi.fn(() => Promise.reject(new Error('Network Error')));
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api),
+            replanApiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(streamInfo).toEqual(legacyRetryStreamInfo());
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('network or client error'),
+            expect.any(Error)
+        );
+    });
+
+    it('falls back EXPLICITLY when the re-planned GET .../Stream supplies no Url', async () => {
+        const request = mockPutThenGet(
+            { data: { Id: 'server-session-1', Method: 'Transcode' } },
+            { data: { Url: null, Protocol: 'Hls' } }
+        );
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api),
+            replanApiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(streamInfo).toEqual(legacyRetryStreamInfo());
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('supplied no Url')
+        );
+    });
+
+    it('falls back EXPLICITLY when the responses cannot supply a complete execution state', async () => {
+        // Remux over plain HTTP against a pre-#46 server (no MimeType reported) and no caller
+        // fallback: nothing can name the output type, so the legacy decision stays whole - and
+        // on the re-plan path that decline must be WARNED, not silent.
+        const request = mockPutThenGet(
+            { data: { Id: 'server-session-1', Method: 'Remux' } },
+            { data: { Url: '/videos/item-1/stream.mkv', Protocol: 'Http' } }
+        );
+        const api = createMockApi(request);
+        const streamInfo = legacyRetryStreamInfo();
+
+        const applied = await applyV2PlaybackReplanToStreamInfo(
+            streamInfo,
+            replanParams(api),
+            replanApiClient,
+            {},
+            { ...baseDeps(), logger }
+        );
+
+        expect(applied).toBe(false);
+        expect(streamInfo).toEqual(legacyRetryStreamInfo());
+        expect(logger.warn).toHaveBeenCalledWith(
+            expect.stringContaining('complete execution state')
+        );
     });
 });
