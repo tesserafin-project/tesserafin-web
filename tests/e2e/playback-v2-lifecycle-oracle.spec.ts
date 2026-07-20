@@ -400,7 +400,7 @@ function ffprobe(url: string): ProbeResult {
                 '-i',
                 url
             ],
-            { encoding: 'utf8', timeout: 120_000, maxBuffer: 32 * 1024 * 1024 }
+            { encoding: 'utf8', timeout: 30_000, maxBuffer: 32 * 1024 * 1024 }
         );
         const parsed = JSON.parse(raw) as {
             format?: { format_name?: string };
@@ -467,6 +467,17 @@ function decodedFrameCount(url: string): number {
 // Browser driving — a real user, a real play button, a real stop.
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * Signs in AND waits for the access token to be persisted.
+ *
+ * Landing on `#/home` is not the same as having credentials on disk: `jellyfin-apiclient` writes
+ * `jellyfin_credentials` asynchronously after the route has already changed. `pressPlay` does a
+ * full `page.goto`, which re-bootstraps the app from `localStorage` — so a `goto` that wins that
+ * race boots an unauthenticated app and bounces to the login form, where no play button exists and
+ * none ever will. A measured run failed exactly that way, twice, on the first test of the run
+ * (screenshot: the login screen, after a successful sign-in). Waiting on the token is a readiness
+ * wait; it asserts nothing about the product.
+ */
 async function signIn(page: Page) {
     await page.goto('/');
     await expect
@@ -478,6 +489,18 @@ async function signIn(page: Page) {
         await page.locator('button[type="submit"]:visible').first().click();
         await page.waitForURL('**/#/home**', { timeout: 20_000 });
     }
+    await expect
+        .poll(
+            () =>
+                page.evaluate(() =>
+                    String(
+                        window.localStorage.getItem('jellyfin_credentials') ??
+                            ''
+                    ).includes('AccessToken')
+                ),
+            { timeout: 30_000 }
+        )
+        .toBe(true);
 }
 
 /** ONE user-initiated playback start — a separate `playInternal()`, i.e. a separate ATTEMPT by
@@ -703,7 +726,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         }
 
         // ---- 4. A REAL product error surfaces ----------------------------------------------
-        const sawError = await waitFor(() => abortedUrl !== '', 90_000);
+        const sawError = await waitFor(() => abortedUrl !== '', 30_000);
         expect
             .soft(
                 sawError,
@@ -715,7 +738,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         // ---- 5. PUT Playback/Sessions/{id} re-planning to Transcode ------------------------
         const sawPut = await waitFor(
             () => requestsBy(wire, 'PUT', V2_SESSION_ITEM).length > 0,
-            120_000
+            30_000
         );
         expect
             .soft(
@@ -749,7 +772,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 () =>
                     wire.sessionBodies.filter((b) => b.method === 'PUT').length >
                     0,
-                120_000
+                30_000
             );
             expect
                 .soft(sawPutBody, 'the PUT produced no response body')
@@ -790,7 +813,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         // ---- 6. GET Stream served by v2 ----------------------------------------------------
         const sawReplanStream = await waitFor(
             () => wire.streamBodies.length >= 2,
-            120_000
+            30_000
         );
         expect
             .soft(
@@ -844,7 +867,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 );
             const sawDelivery = await waitFor(
                 () => delivered().length > 0,
-                120_000
+                30_000
             );
             expect
                 .soft(
@@ -912,104 +935,117 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             .toBe(200);
 
         await stopPlayback(page);
-        const sawDelete = await waitFor(
-            () => responsesBy(wire, 'DELETE', V2_SESSION_ITEM).length > 0,
-            90_000
+
+        // The teardown DELETE is issued by `playbackSessionTeardown.ts` as a `keepalive` `fetch`,
+        // which Playwright's page instrumentation does not surface: a measured run in which the
+        // server logged the DELETE 180 ms after the POST recorded NO DELETE at all on the wire, and
+        // the trace confirmed only this file's own admin-context DELETE. So the DELETE is asserted
+        // where it is genuinely observable — the server's own log, whose two outcomes are exactly
+        // the controller's two return paths: a `deleted` line IS the 204, an `already gone` line IS
+        // the 404. That is stronger evidence than the status line, not weaker: it is the server
+        // stating which branch it took.
+        const sawDeleteLine = await waitFor(
+            async () =>
+                linesMatching(
+                    logTail(await readServerLog(admin), logBaseline),
+                    sessionId,
+                    'deleted'
+                ).length > 0,
+            60_000
         );
         expect
-            .soft(sawDelete, 'a user stop must issue DELETE /Playback/Sessions/{id}')
+            .soft(
+                sawDeleteLine,
+                'a user stop must DELETE /Playback/Sessions/{id} and the server must record it as deleted — the 204 branch of the controller'
+            )
             .toBe(true);
-        if (sawDelete) {
-            const deleteResponse = responsesBy(
-                wire,
-                'DELETE',
-                V2_SESSION_ITEM
-            )[0];
+
+        // When the DELETE IS visible on the wire (it is not, through a keepalive fetch), its status
+        // must be 204. Conditional on observability, never on the outcome.
+        const wireDeletes = responsesBy(wire, 'DELETE', V2_SESSION_ITEM);
+        if (wireDeletes.length > 0) {
             expect
                 .soft(
-                    deleteResponse.url,
+                    wireDeletes[0].url,
                     'the DELETE must name the session the POST created'
                 )
                 .toContain(`/Playback/Sessions/${sessionId}`);
             expect
                 .soft(
-                    deleteResponse.status,
+                    wireDeletes[0].status,
                     'DELETE /Playback/Sessions/{id} on a live session must answer exactly 204 (404 = it was already gone)'
                 )
                 .toBe(204);
-
-            const postStop = await admin.api.get(
-                `/Playback/Sessions/${sessionId}/Stream`,
-                { headers: { Authorization: admin.token } }
-            );
-            expect
-                .soft(
-                    postStop.status(),
-                    'after the DELETE the session must be genuinely gone — 404, not still serving'
-                )
-                .toBe(404);
-            if (deleteResponse.status === 204)
-                reached.push('DELETE 204 on a live session');
-
-            // ---- 9. A DISTINCT X-Request-Id per request ---------------------------------
-            // Per-request correlation (#42), strictly separate from the per-attempt id (#43):
-            // the five legs of ONE attempt must produce five DIFFERENT request ids.
-            const legs = [
-                {
-                    label: 'POST /Playback/Sessions',
-                    header: responsesBy(wire, 'POST', V2_SESSIONS)[0]?.headers[
-                        REQUEST_ID_HEADER
-                    ]
-                },
-                {
-                    label: 'GET .../Stream (DirectPlay)',
-                    header: streamResponses(wire)[0]?.headers[
-                        REQUEST_ID_HEADER
-                    ]
-                },
-                {
-                    label: 'PUT /Playback/Sessions/{id}',
-                    header: responsesBy(wire, 'PUT', V2_SESSION_ITEM)[0]
-                        ?.headers[REQUEST_ID_HEADER]
-                },
-                {
-                    label: 'GET .../Stream (Transcode)',
-                    header: streamResponses(wire)[
-                        streamResponses(wire).length - 1
-                    ]?.headers[REQUEST_ID_HEADER]
-                },
-                {
-                    label: 'DELETE /Playback/Sessions/{id}',
-                    header: deleteResponse.headers[REQUEST_ID_HEADER]
-                }
-            ];
-            expect
-                .soft(
-                    legs.filter((l) => !l.header).map((l) => l.label),
-                    `every leg of the cycle must carry an ${REQUEST_ID_HEADER} response header (#42)`
-                )
-                .toEqual([]);
-            const requestIds = legs.map((l) => String(l.header));
-            expect
-                .soft(
-                    new Set(requestIds).size,
-                    `the ${REQUEST_ID_HEADER} must be DISTINCT per request; observed ${JSON.stringify(
-                        legs.map((l) => `${l.label}=${l.header}`)
-                    )}`
-                )
-                .toBe(legs.length);
-            expect
-                .soft(
-                    requestIds.includes(postAttemptId),
-                    'the per-request id and the per-attempt id are different scopes and must never coincide'
-                )
-                .toBe(false);
-            if (
-                legs.every((l) => l.header) &&
-                new Set(requestIds).size === legs.length
-            )
-                reached.push('distinct X-Request-Id per request');
         }
+
+        const postStop = await admin.api.get(
+            `/Playback/Sessions/${sessionId}/Stream`,
+            { headers: { Authorization: admin.token } }
+        );
+        expect
+            .soft(
+                postStop.status(),
+                'after the DELETE the session must be genuinely gone — 404, not still serving'
+            )
+            .toBe(404);
+        if (sawDeleteLine && postStop.status() === 404)
+            reached.push('DELETE 204 on a live session');
+
+        // ---- 9. A DISTINCT X-Request-Id per request -----------------------------------------
+        // Per-request correlation (#42), strictly separate from the per-attempt id (#43): the legs
+        // of ONE attempt must produce DIFFERENT request ids. The DELETE leg is absent from this
+        // list for the observability reason above — its response never reaches the browser context
+        // this file can read, and the server's log template carries no RequestId to join on. That
+        // gap is reported, never papered over.
+        const legs = [
+            {
+                label: 'POST /Playback/Sessions',
+                header: responsesBy(wire, 'POST', V2_SESSIONS)[0]?.headers[
+                    REQUEST_ID_HEADER
+                ]
+            },
+            {
+                label: 'GET .../Stream (DirectPlay)',
+                header: streamResponses(wire)[0]?.headers[REQUEST_ID_HEADER]
+            },
+            {
+                label: 'PUT /Playback/Sessions/{id}',
+                header: responsesBy(wire, 'PUT', V2_SESSION_ITEM)[0]?.headers[
+                    REQUEST_ID_HEADER
+                ]
+            },
+            {
+                label: 'GET .../Stream (Transcode)',
+                header: streamResponses(wire)[streamResponses(wire).length - 1]
+                    ?.headers[REQUEST_ID_HEADER]
+            }
+        ];
+        expect
+            .soft(
+                legs.filter((l) => !l.header).map((l) => l.label),
+                `every leg of the cycle must carry an ${REQUEST_ID_HEADER} response header (#42)`
+            )
+            .toEqual([]);
+        const requestIds = legs.map((l) => String(l.header));
+        expect
+            .soft(
+                new Set(requestIds).size,
+                `the ${REQUEST_ID_HEADER} must be DISTINCT per request; observed ${JSON.stringify(
+                    legs.map((l) => `${l.label}=${l.header}`)
+                )}`
+            )
+            .toBe(legs.length);
+        expect
+            .soft(
+                requestIds.includes(postAttemptId),
+                'the per-request id and the per-attempt id are different scopes and must never coincide'
+            )
+            .toBe(false);
+        if (
+            legs.every((l) => l.header) &&
+            new Set(requestIds).size === legs.length
+        )
+            reached.push('distinct X-Request-Id per request');
 
         // ---- 10. A NEW user attempt yields a NEW PlaybackAttemptId --------------------------
         await pressPlay(page, otherMovie.id);
@@ -1018,7 +1054,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 requestsBy(wire, 'POST', PLAYBACK_INFO)
                     .map((r) => attemptIdOf(r.postData))
                     .some((id) => id !== '' && id !== postAttemptId),
-            120_000
+            30_000
         );
         expect
             .soft(
@@ -1031,7 +1067,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 requestsBy(wire, 'POST', V2_SESSIONS)
                     .map((r) => attemptIdOf(r.postData))
                     .some((id) => id !== '' && id !== postAttemptId),
-            120_000
+            30_000
         );
         expect
             .soft(
@@ -1052,7 +1088,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                     sessionId,
                     'deleted'
                 ).length > 0,
-            90_000
+            30_000
         );
         const tail = logTail(await readServerLog(admin), logBaseline);
         expect
@@ -1140,7 +1176,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 wire.sessionBodies.filter(
                     (b) => b.method === 'POST' && b.status === 200
                 ).length > 0,
-            90_000
+            30_000
         );
         expect(
             okA,
@@ -1156,12 +1192,17 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
         expect(sessionA, 'attempt A produced no session id').not.toBe('');
 
         await stopPlayback(page);
+        // Same observability point as the lifecycle test: the teardown DELETE is a keepalive fetch
+        // Playwright cannot see, so the server's own `deleted` line is the evidence that attempt A
+        // really was torn down before the late DELETE is replayed below.
         const stoppedA = await waitFor(
-            () =>
-                responsesBy(wire, 'DELETE', V2_SESSION_ITEM).some((r) =>
-                    r.url.includes(sessionA)
-                ),
-            90_000
+            async () =>
+                linesMatching(
+                    logTail(await readServerLog(admin), logBaseline),
+                    sessionA,
+                    'deleted'
+                ).length > 0,
+            60_000
         );
         expect
             .soft(stoppedA, 'attempt A must be stopped through a real DELETE')
@@ -1179,7 +1220,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                         b.status === 200 &&
                         String(jsonOf(b.text).Id ?? '') !== sessionA
                 ).length > 0,
-            120_000
+            30_000
         );
         expect(
             okB,
@@ -1287,7 +1328,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
                 wire.responses.filter(
                     (r) => PLAYBACK_INFO.test(r.url) && r.status === 200
                 ).length > 0,
-            90_000
+            30_000
         );
         expect
             .soft(
@@ -1297,7 +1338,7 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             .toBe(true);
         const sawMedia = await waitFor(
             () => wire.requests.filter((r) => MEDIA_LEG.test(r.url)).length > 0,
-            120_000
+            30_000
         );
         expect
             .soft(
