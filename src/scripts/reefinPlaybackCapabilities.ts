@@ -55,9 +55,13 @@
  *   (b) VALUE SEMANTICS - being obliged to send a field is not the same as knowing a restriction.
  *       Since this module ports none of the `Conditions` machinery, it has detected no restriction
  *       to express, and each value below says exactly that and no more:
- *         - `Profiles: []` - an EMPTY collection meaning "no profile restriction is expressed", the
- *           reading the server's own member doc assigns to it. Not a guess at "high"/"main"/
- *           "baseline"; naming a profile would claim detection that never happened.
+ *         - `Profiles` - SUPERSEDED by issue #29's `Profiles` half, see `./videoCodecProfiles.ts`.
+ *           It is no longer a hardcoded `[]`: each entry now names the profiles the browser's own
+ *           `canPlayType` answered `'probably'` to, for a closed table of exact `codecs=` strings
+ *           whose spellings are the ones the legacy DLNA path already proved the server matches.
+ *           The old reasoning still holds for everything the probes cannot settle - `'maybe'` and
+ *           `''` yield nothing, an untabled codec yields nothing, and the resulting `[]` still
+ *           means "no profile restriction is expressed", never "no profile supported".
  *         - `VideoRangeTypes: ['SDR']` - the conservative floor, and precisely the server's own
  *           legacy-adapter fallback when a client expresses nothing
  *           (`Reefin.Playback.Dlna/ClientCapabilitiesMapper.cs`: `videoRangeTypes = ["SDR"]`;
@@ -78,6 +82,7 @@
  */
 
 import { detectBrowser } from './browser';
+import { deriveCodecProfiles } from './videoCodecProfiles';
 
 import type {
     PlaybackDecisionAudioCodecCapability as AudioCodecCapability,
@@ -107,6 +112,9 @@ export interface BrowserSignals {
     safari?: boolean;
     firefox?: boolean;
     edgeChromium?: boolean;
+    /** Legacy (non-Chromium) Edge. Read only by `videoCodecProfiles.ts`'s High-10 veto, which
+     * ports `browserDeviceProfile.js:1158`'s `!browser.edge` guard verbatim. */
+    edge?: boolean;
     opera?: boolean;
     osx?: boolean;
     windows?: boolean;
@@ -316,9 +324,29 @@ function canPlayMkv(
 
 /** `Profiles`/`VideoRangeTypes` are emitted on EVERY entry because the server record requires them
  * structurally (see the file-level doc comment's "REQUIRED ON THE WIRE vs UNEXPRESSED RESTRICTION"
- * section for why that is a separate claim from what the values mean). */
-function videoCodecCapability(codec: string): VideoCodecCapability {
-    return { Codec: codec, Profiles: [], VideoRangeTypes: ['SDR'] };
+ * section for why that is a separate claim from what the values mean).
+ *
+ * ISSUE #29, `Profiles` HALF: `Profiles` is no longer the hardcoded `[]` - it now carries whatever
+ * `videoCodecProfiles.ts` could PROVE from the browser's own `canPlayType` answers, and still `[]`
+ * when it could prove nothing. `VideoRangeTypes` is deliberately untouched and stays `['SDR']`:
+ * that is the other half of issue #29 and needs display-chain detection this change does not do.
+ *
+ * `codec` is the caller's normalized name and doubles as the profile table's key - the two must not
+ * drift, which is why the table is keyed on the exact same `'h264'`/`'hevc'`/`'av1'` strings passed
+ * in below rather than on a parallel enum. */
+function videoCodecCapability(
+    codec: string,
+    resolved: ResolvedInputs
+): VideoCodecCapability {
+    return {
+        Codec: codec,
+        Profiles: deriveCodecProfiles(
+            codec,
+            (type) => resolved.videoProbe.canPlayType(type),
+            resolved.browser
+        ),
+        VideoRangeTypes: ['SDR']
+    };
 }
 
 function audioCodecCapability(codec: string): AudioCodecCapability {
@@ -382,13 +410,18 @@ function detectCodecFlags(resolved: ResolvedInputs): CodecFlags {
 // Container-agnostic codec capability - the domain's DecodeCapabilities.VideoCodecs/AudioCodecs
 // describe per-codec decode limits regardless of container (see the generated model's own doc
 // comment), distinct from the direct-play container combinations built below.
-function buildVideoCodecList(flags: CodecFlags): VideoCodecCapability[] {
+function buildVideoCodecList(
+    flags: CodecFlags,
+    resolved: ResolvedInputs
+): VideoCodecCapability[] {
     const codecs: VideoCodecCapability[] = [];
-    if (flags.hasH264) codecs.push(videoCodecCapability('h264'));
-    if (flags.hasHevc) codecs.push(videoCodecCapability('hevc'));
-    if (flags.hasAv1) codecs.push(videoCodecCapability('av1'));
-    if (flags.hasVp8) codecs.push(videoCodecCapability('vp8'));
-    if (flags.hasVp9) codecs.push(videoCodecCapability('vp9'));
+    if (flags.hasH264) codecs.push(videoCodecCapability('h264', resolved));
+    if (flags.hasHevc) codecs.push(videoCodecCapability('hevc', resolved));
+    if (flags.hasAv1) codecs.push(videoCodecCapability('av1', resolved));
+    // vp8/vp9 are absent from the profile table on purpose (see videoCodecProfiles.ts), so these
+    // two always come out with `Profiles: []` - unchanged, unrestricted, unclaimed.
+    if (flags.hasVp8) codecs.push(videoCodecCapability('vp8', resolved));
+    if (flags.hasVp9) codecs.push(videoCodecCapability('vp9', resolved));
     return codecs;
 }
 
@@ -557,7 +590,7 @@ export function buildDecodeCapabilities(
     const resolved = resolveInputs(inputs);
     const flags = detectCodecFlags(resolved);
 
-    const videoCodecs = buildVideoCodecList(flags);
+    const videoCodecs = buildVideoCodecList(flags, resolved);
     const audioCodecs = buildAudioCodecList(flags);
     const videoAudioCodecs = audioCodecs.map((c) => c.Codec as string);
 

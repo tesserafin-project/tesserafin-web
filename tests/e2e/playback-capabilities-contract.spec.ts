@@ -1,5 +1,10 @@
 import { expect, request, test } from '@playwright/test';
 
+import {
+    VIDEO_CODEC_PROFILE_PROBES,
+    deriveCodecProfiles
+} from '../../src/scripts/videoCodecProfiles';
+
 /**
  * `POST /Playback/Sessions` CAPABILITY CONTRACT — REAL browser E2E, real server.
  *
@@ -17,10 +22,18 @@ import { expect, request, test } from '@playwright/test';
  * SCOPE — this file asserts on ACTUAL captured network traffic, never on client source:
  *   1. The real, UNPATCHED client POSTs `/Playback/Sessions` and the server answers `200`
  *      (asserted as exactly 200 — a 422/500 is still a failure, not "no longer 400").
- *   2. The body that reaches the wire carries `Profiles: []` and `VideoRangeTypes: ['SDR']` on
- *      EVERY `Capabilities.Decode.VideoCodecs[]` entry. This is the load-bearing check: the fix
- *      depends on an EMPTY array surviving serialization, which a builder-level unit test cannot
- *      prove. There is no `page.route` body rewriting anywhere in this file, by design.
+ *   2. The body that reaches the wire carries `Profiles` and `VideoRangeTypes` on EVERY
+ *      `Capabilities.Decode.VideoCodecs[]` entry. This is the load-bearing check: the fix depends
+ *      on the arrays - INCLUDING empty ones - surviving serialization, which a builder-level unit
+ *      test cannot prove. There is no `page.route` body rewriting anywhere in this file, by design.
+ *
+ * ISSUE #29, `Profiles` HALF. `Profiles` is no longer the constant `[]` this file originally pinned:
+ * `src/scripts/videoCodecProfiles.ts` now derives it from the browser's own `canPlayType`. So the
+ * assertion below no longer compares against a literal - it re-runs the SAME derivation against the
+ * SAME live page's `canPlayType` and requires the wire body to match. That is a genuine cross-check
+ * (client behaviour vs. the browser it is actually running in) rather than a restated constant, and
+ * it stays honest on a machine whose Chromium decodes a different codec set than the author's.
+ * `VideoRangeTypes` is still asserted as the literal `['SDR']`: that half of #29 is untouched.
  *
  * The v2 flag (`appSettings.enableV2PlaybackPath()`, plain `localStorage`) is turned ON in-browser
  * via `addInitScript`. The source default (OFF) is never modified.
@@ -221,7 +234,7 @@ test.describe('POST /Playback/Sessions capability contract', () => {
         );
     });
 
-    test('the server RECEIVES Profiles: [] and VideoRangeTypes: ["SDR"] on every video codec', async ({
+    test('the server RECEIVES probe-derived Profiles and VideoRangeTypes: ["SDR"] on every video codec', async ({
         page
     }) => {
         test.setTimeout(120_000);
@@ -263,6 +276,23 @@ test.describe('POST /Playback/Sessions capability contract', () => {
             `no VideoCodecs on the wire; body: ${post.postData!.slice(0, 500)}`
         ).toBeGreaterThan(0);
 
+        // Ask the very page that produced the payload what it can actually decode, then re-derive.
+        // Not a fixture and not a copy of the client's own result: the raw canPlayType answers of a
+        // live browser, run back through the shared table.
+        const tableMimeTypes = Object.values(
+            VIDEO_CODEC_PROFILE_PROBES
+        ).flatMap((specs) => specs.flatMap((spec) => [...spec.mimeTypes]));
+        const answers = await page.evaluate((types: string[]) => {
+            const element = document.createElement('video');
+            const out: Record<string, string> = {};
+            for (const type of types) out[type] = element.canPlayType(type);
+            return out;
+        }, tableMimeTypes);
+        console.log(`[wire] live canPlayType=${JSON.stringify(answers)}`);
+
+        const expectedProfiles = (codec: string) =>
+            deriveCodecProfiles(codec, (type) => answers[type] ?? '', {});
+
         // Structural assertion over the WHOLE emitted list, not one hand-picked entry.
         expect(
             codecs.map((c: Record<string, unknown>) => ({
@@ -273,9 +303,21 @@ test.describe('POST /Playback/Sessions capability contract', () => {
         ).toEqual(
             codecs.map((c: Record<string, unknown>) => ({
                 Codec: c.Codec,
-                Profiles: [],
+                Profiles: expectedProfiles(String(c.Codec)),
                 VideoRangeTypes: ['SDR']
             }))
         );
+
+        // Anti-vacuity for the derivation itself: if every entry came out empty, the check above
+        // would be satisfied by a builder that still hardcodes `[]`. H.264 is decodable by every
+        // browser this suite runs in, so at least one non-empty list must have reached the server.
+        const h264 = codecs.find(
+            (c: Record<string, unknown>) => c.Codec === 'h264'
+        );
+        expect(h264, 'no h264 entry on the wire').toBeTruthy();
+        expect(
+            (h264!.Profiles as string[]).length,
+            `h264 reached the server with no profiles; live answers: ${JSON.stringify(answers)}`
+        ).toBeGreaterThan(0);
     });
 });

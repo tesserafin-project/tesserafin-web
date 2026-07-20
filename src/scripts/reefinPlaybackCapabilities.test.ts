@@ -299,38 +299,96 @@ describe('buildDecodeCapabilities()', () => {
             }
         );
 
-        it('emits exactly Profiles: [] and VideoRangeTypes: ["SDR"] for the current builder', () => {
+        it('emits probe-derived Profiles per codec, and VideoRangeTypes: ["SDR"] on all of them', () => {
             const decode = buildDecodeCapabilities(chromeDesktop().inputs);
             const codecs = decode.VideoCodecs ?? [];
             expect(codecs.length).toBeGreaterThan(0);
 
+            // ISSUE #29, `Profiles` HALF. This fixture's `probe()` answers 'probably' only for the
+            // exact substrings it was given, so the expectation below is precisely "what the fake
+            // browser could prove", codec by codec:
+            //   h264 - only `avc1.42E01E` is in the fixture, and that string names Constrained
+            //          Baseline and nothing else. `main`/`high`/`high 10` are NOT inferred from it.
+            //   hevc - the fixture answers for `hvc1.1.L120`, the generic "can you HEVC at all"
+            //          gate, which is in NO profile row. Proving the codec proves no profile: [].
+            //   av1  - `av01.0.15M.08` is literally the `main` row's second string.
+            //   vp8/vp9 - absent from the closed table by design, so always [].
+            expect(
+                Object.fromEntries(codecs.map((c) => [c.Codec, c.Profiles]))
+            ).toEqual({
+                h264: ['constrained baseline'],
+                hevc: [],
+                av1: ['main'],
+                vp8: [],
+                vp9: []
+            });
+
             for (const codec of codecs) {
-                // `[]` = "no profile restriction is expressed" (the server member doc's own reading),
-                // NOT a guess at high/main/baseline. `['SDR']` mirrors the server's legacy-adapter
-                // fallback (ClientCapabilitiesMapper: `videoRangeTypes = ["SDR"]`) - never an
-                // undetected HDR10/HLG/Dolby Vision claim.
-                expect(codec.Profiles, `codec ${codec.Codec}`).toEqual([]);
+                // `['SDR']` mirrors the server's legacy-adapter fallback
+                // (ClientCapabilitiesMapper: `videoRangeTypes = ["SDR"]`) - never an undetected
+                // HDR10/HLG/Dolby Vision claim. That half of issue #29 is deliberately untouched.
                 expect(codec.VideoRangeTypes, `codec ${codec.Codec}`).toEqual([
                     'SDR'
                 ]);
             }
         });
 
+        it('an EMPTY Profiles list still means "no restriction", never "nothing supported"', () => {
+            // The distinction issue #29 §3 insists on. HEVC below IS declared as a decodable codec
+            // (it is in VideoCodecs at all), yet carries `Profiles: []` because no profile-specific
+            // string probed. The server reads that as full latitude, not as a rejection.
+            const decode = buildDecodeCapabilities(chromeDesktop().inputs);
+            const hevc = decode.VideoCodecs?.find((c) => c.Codec === 'hevc');
+            expect(hevc, 'hevc must still be declared decodable').toBeDefined();
+            expect(hevc?.Profiles).toEqual([]);
+        });
+
         it('both fields survive JSON serialization on the full ClientCapabilities payload', () => {
-            // The whole fix hinges on an EMPTY array reaching the wire. A builder-level assertion
+            // The 400-fix hinges on an EMPTY array reaching the wire (a builder-level assertion
             // would still pass if serialization dropped empty collections, and the server would go
-            // back to 400 - so round-trip the real payload the client POSTs.
+            // back to 400) - so round-trip the real payload the client POSTs. Now that some entries
+            // are non-empty, BOTH shapes must survive, which is why the anti-vacuity checks below
+            // demand at least one of each.
             const caps = buildClientCapabilities(chromeDesktop().inputs);
             const wire = JSON.parse(JSON.stringify(caps));
             const codecs = wire?.Decode?.VideoCodecs ?? [];
 
             expect(codecs.length).toBeGreaterThan(0);
+            expect(
+                codecs.some(
+                    (c: { Profiles: string[] }) => c.Profiles.length === 0
+                ),
+                'no empty Profiles left to prove empty arrays survive'
+            ).toBe(true);
+            expect(
+                codecs.some(
+                    (c: { Profiles: string[] }) => c.Profiles.length > 0
+                ),
+                'no populated Profiles left to prove derived values survive'
+            ).toBe(true);
+
             for (const codec of codecs) {
-                expect(codec.Profiles, `codec ${codec.Codec}`).toEqual([]);
+                expect(codec.Profiles, `codec ${codec.Codec}`).toBeInstanceOf(
+                    Array
+                );
                 expect(codec.VideoRangeTypes, `codec ${codec.Codec}`).toEqual([
                     'SDR'
                 ]);
             }
+            expect(
+                Object.fromEntries(
+                    codecs.map((c: { Codec: string; Profiles: string[] }) => [
+                        c.Codec,
+                        c.Profiles
+                    ])
+                )
+            ).toEqual({
+                h264: ['constrained baseline'],
+                hevc: [],
+                av1: ['main'],
+                vp8: [],
+                vp9: []
+            });
         });
     });
 
