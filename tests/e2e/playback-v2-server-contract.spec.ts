@@ -412,14 +412,32 @@ test('409 when the session has no PlaySessionId', async () => {
     expect(res.status()).toBe(409);
 });
 
-/** A WELL-FORMED request that nevertheless admits no plan: direct play is the only method left
- * enabled, and the declared capabilities cannot direct-play this h264/mp4 fixture (webm/vp8 only).
+/** A WELL-FORMED request whose ONLY possible plan is a re-encode — so with `AllowTranscoding: false`
+ * it admits no plan at all, and with `AllowTranscoding: true` it plans a `Transcode`. That one-flag
+ * difference is the whole point: it is what makes a `422` attributable to the CONSTRAINT rather than
+ * to some unrelated defect in the request.
  *
- * Note this is deliberately NOT "deny every method" — `PlaybackSessionRequestValidator` rejects
- * that with `400` ("at least one of AllowDirectPlay/AllowDirectStream/AllowTranscoding"), which is
- * a malformed request, a different thing from an unplannable one. */
-function unplannableRequest() {
-    const base = baseRequest();
+ * The shape mirrors the preset the server's own issue-#59 matrix uses
+ * (`EndToEndCapabilityPresets.IncompatibleCodecsTranscodingForbidden`), and each detail is load-bearing:
+ *
+ *   * the declared codecs (vp9/opus) cannot decode this h264/aac mp4 fixture, so DirectPlay is out;
+ *   * `AllowDirectStream: true` is DELIBERATE. A vp9/opus client cannot stream-COPY an h264/aac
+ *     source either, so no remux is viable — but leaving direct-stream PERMITTED is what routes this
+ *     through the guard issue #59 actually fixed (`StreamBuilder.GetVideoTranscodeProfile` keying the
+ *     permission on the method the chosen profile really requires). With `AllowDirectStream: false`
+ *     the request would instead trip the older, pre-existing "no method permitted at all" guard, and
+ *     the test would stay green even if the #59 fix were reverted;
+ *   * an HLS OutputProfile is declared so a transcode is genuinely REACHABLE. Without an output
+ *     target the request would be unservable for want of somewhere to send the re-encode, and a 422
+ *     would prove nothing about `AllowTranscoding`.
+ *
+ * Deliberately NOT "deny every method": `PlaybackSessionRequestValidator` rejects that with `400`
+ * ("at least one of AllowDirectPlay/AllowDirectStream/AllowTranscoding"), the malformed-request
+ * branch — a different contract from "well-formed but unplannable". */
+function reEncodeOnlyRequest(allowTranscoding: boolean, itemId?: string) {
+    const base = baseRequest(
+        itemId ? { ItemId: itemId, MediaSourceId: itemId } : {}
+    );
     return {
         ...base,
         Capabilities: {
@@ -427,53 +445,73 @@ function unplannableRequest() {
                 DirectPlayProfiles: [
                     {
                         Type: 'Video',
-                        Containers: ['webm'],
-                        VideoCodecs: ['vp8'],
-                        AudioCodecs: ['vorbis']
+                        Containers: ['mp4'],
+                        VideoCodecs: ['vp9'],
+                        AudioCodecs: ['opus']
                     }
                 ],
                 VideoCodecs: [
-                    { Codec: 'vp8', Profiles: [], VideoRangeTypes: [] }
+                    { Codec: 'vp9', Profiles: [], VideoRangeTypes: [] }
                 ],
-                AudioCodecs: [{ Codec: 'vorbis' }],
+                AudioCodecs: [{ Codec: 'opus' }],
                 SubtitleDelivery: [],
-                SupportsHls: false,
+                SupportsHls: true,
                 SupportsDash: false
             },
-            OutputProfiles: []
+            OutputProfiles: [
+                {
+                    Type: 'Video',
+                    Protocol: 'Hls',
+                    Container: 'ts',
+                    VideoCodecs: ['vp9'],
+                    AudioCodecs: ['opus'],
+                    MaxVideoBitrate: null,
+                    MaxAudioBitrate: null,
+                    MaxAudioChannels: null
+                }
+            ]
         },
         Constraints: {
             ...(base.Constraints as Record<string, unknown>),
             AllowDirectPlay: true,
-            AllowDirectStream: false,
-            AllowTranscoding: false
+            AllowDirectStream: true,
+            AllowTranscoding: allowTranscoding
         }
     };
 }
 
 test('422 on POST when nothing is plannable', async () => {
-    // NOT REACHABLE with these fixtures - recorded as a skip, never weakened into a passing
-    // assertion, and RE-VERIFIED directly against this rig rather than inherited on trust:
+    // PREVIOUSLY SKIPPED AS UNREACHABLE, NOW REACHABLE — the skip was honest when written and is no
+    // longer true, so it is lifted rather than left to rot. What changed is server-side, not here:
+    // the legacy `StreamBuilder` branch used to ignore `AllowTranscoding: false` and serve a real
+    // re-encode (issue #59), so this request came back `200 Method='Transcode'` and 422 could not be
+    // reached. `reefin@93a9d1e2` ("fix(dlna): honor AllowTranscoding:false on the legacy branch")
+    // keys the permission on the method the chosen profile actually requires, so a request that only
+    // a re-encode could satisfy now yields no viable plan at all.
     //
-    //   * webm/vp8/vorbis-only capabilities + `AllowDirectPlay: true, AllowDirectStream: false,
-    //     AllowTranscoding: false` -> `200` with `Method: 'Transcode'` and
-    //     `Reasons: ['ContainerNotSupported','VideoCodecNotSupported','AudioCodecNotSupported',
-    //     'SubtitleCodecNotSupported']`. The server transcodes despite `AllowTranscoding: false`,
-    //     so the request is plannable and 422 is unreachable this way. (Its DESCRIPTOR then reports
-    //     `ServedBy: 0` / `FallbackReason: 'PlanNotExecutable'` - the v2 engine declines, legacy
-    //     serves - which is a fallback, still not a 422.)
-    //   * Denying all three methods -> `400` from PlaybackSessionRequestValidator ("at least one of
-    //     AllowDirectPlay/AllowDirectStream/AllowTranscoding"), the malformed-request branch, which
-    //     is a different contract than "well-formed but unplannable".
-    //
-    // Skipped rather than test.fail(): asserting a 422 here would assert the server is wrong, a
-    // server-side question outside PR #26's diff. A follow-up issue is warranted to decide whether
-    // the 422 branch is reachable at all or should be removed from the documented contract.
-    test.skip(
-        true,
-        'no well-formed-but-unplannable request constructible with these fixtures: AllowTranscoding:false still yields 200 Method=Transcode; denying all three methods is 400 (malformed)'
-    );
-    const created = await createSession(unplannableRequest());
+    // The other half of the old comment still holds and is still deliberately avoided: denying all
+    // three methods is `400` from PlaybackSessionRequestValidator (malformed), a different branch
+    // from "well-formed but unplannable". See `reEncodeOnlyRequest`.
+
+    // POSITIVE CONTROL FIRST — the identical request with the single flag flipped. This pins WHY the
+    // refusal below happens: the request is perfectly plannable, and the plan it admits is a real
+    // re-encode. Without this, a 422 could equally mean the payload was quietly unservable for some
+    // unrelated reason, which is exactly the vacuity that let #59 hide behind a status-code-only
+    // assertion. (Descriptor/bytes are deliberately NOT fetched here: a POST only decides, whereas
+    // fetching a transcode's stream would start a real re-encode for no added proof.)
+    const permitted = await createSession(reEncodeOnlyRequest(true));
+    expect(
+        permitted.status(),
+        `positive control should be plannable; body: ${(await permitted.text()).slice(0, 400)}`
+    ).toBe(200);
+    const decision = await permitted.json();
+    expect(
+        decision.Method,
+        `[422-control] Method=${decision.Method} Reasons=${JSON.stringify(decision.Reasons)}`
+    ).toBe('Transcode');
+
+    // …and now the same request with transcoding forbidden: the only plan is one it may not use.
+    const created = await createSession(reEncodeOnlyRequest(false));
     // Guard against passing for the wrong reason: 400 would mean the request was malformed, which
     // is a different contract branch than "well-formed but unplannable".
     expect(
@@ -483,23 +521,123 @@ test('422 on POST when nothing is plannable', async () => {
 });
 
 test('422 on PUT when the session exists but no plan is viable', async () => {
-    // Same non-reachability as the POST case above - see its comment.
-    test.skip(
-        true,
-        'same non-reachability as the POST case: no well-formed-but-unplannable request constructible with these fixtures'
+    // Reachable for the same reason as the POST case above - see its comment. This closes the RE-PLAN
+    // verb, which re-enters planning by a different path than POST.
+    //
+    // Seed a session that is genuinely DIRECT-PLAY first, exactly as the server's own #59 PUT test
+    // does. This is why it targets `Smoke Test Movie` (h264/aac/mp4) by NAME rather than the file's
+    // positional `ctx.itemId`: that id happens to bind to `Transcode Probe` (mpeg4/ac3), which
+    // `baseRequest()` can only TRANSCODE - and a seed that is already a transcode would make the
+    // post-refusal byte check below vacuous ("did not convert to transcode" proves nothing when it
+    // was a transcode to begin with).
+    const directPlayId = await resolveItemIdByName('Smoke Test Movie (2020)');
+    // The seed MUST declare EXTERNAL vtt subtitle delivery. `Smoke Test Movie` carries an external
+    // subrip subtitle stream; a client that declares no subtitle delivery makes the server conclude
+    // the subtitle must be burned in (`SubtitleBurnInRequired`), which forces a Transcode even though
+    // the h264/aac video is otherwise directly playable. Declaring external vtt delivery lets the
+    // subtitle ride along as a sidecar and the video DirectPlays. (`VideoRangeTypes: ['SDR']` matches
+    // the real client and the SDR source; verified empirically it is the subtitle, not the range,
+    // that gates this.) Without a genuine DirectPlay seed the post-refusal byte check below is vacuous.
+    const created = await createSession(
+        baseRequest({
+            ItemId: directPlayId,
+            MediaSourceId: directPlayId,
+            Capabilities: {
+                Decode: {
+                    DirectPlayProfiles: [
+                        {
+                            Type: 'Video',
+                            Containers: ['mp4', 'm4v'],
+                            VideoCodecs: ['h264'],
+                            AudioCodecs: ['aac']
+                        }
+                    ],
+                    VideoCodecs: [
+                        {
+                            Codec: 'h264',
+                            Profiles: [],
+                            VideoRangeTypes: ['SDR']
+                        }
+                    ],
+                    AudioCodecs: [{ Codec: 'aac' }],
+                    SubtitleDelivery: [{ Format: 'vtt', Method: 'External' }],
+                    SupportsHls: true,
+                    SupportsDash: false
+                },
+                OutputProfiles: []
+            }
+        })
     );
-    const created = await createSession(baseRequest());
-    expect(created.status()).toBe(200);
+    expect(
+        created.status(),
+        `seed session should be viable; body: ${(await created.text()).slice(0, 300)}`
+    ).toBe(200);
     const session = await created.json();
+    expect(
+        session.Method,
+        `[422-put] seed Method=${session.Method} (expected DirectPlay so the refusal below has a non-transcode plan to preserve)`
+    ).toBe('DirectPlay');
 
+    // Re-plan the SAME item to capabilities whose only plan is a re-encode, with transcoding
+    // forbidden. The item MUST match the seed's - the session is bound to it, and re-planning it with
+    // a different item's payload would be a mismatch, not the contract under test.
     const replaced = await ctx.api.put(`/Playback/Sessions/${session.Id}`, {
         headers: { Authorization: ctx.token },
-        data: unplannableRequest() as Record<string, unknown>
+        data: reEncodeOnlyRequest(false, directPlayId) as Record<
+            string,
+            unknown
+        >
     });
     expect(
         replaced.status(),
         `expected 422; body: ${(await replaced.text()).slice(0, 400)}`
     ).toBe(422);
+
+    // The refusal must not have quietly converted the session into the transcode it just refused.
+    // Asserting the status alone would not catch that - a 422 response and a session mutated into a
+    // re-encode are perfectly compatible - so this inspects the plan the session STILL serves and the
+    // bytes it produces. (The decided method itself is pinned where it actually lives: the seed's
+    // Method='DirectPlay' above and the refused PUT's 422. The GET /Stream descriptor deliberately
+    // does not carry a Method field - it is `null` for a healthy DirectPlay too, verified against this
+    // rig - so the intactness proof is the static-mp4 delivery below, not a descriptor Method.)
+    const after = await getDescriptor(session.Id);
+    const afterBody = after.status() === 200 ? await after.json() : null;
+    // eslint-disable-next-line no-console
+    console.log(
+        `[422-put] post-refusal descriptor status=${after.status()} Protocol=${afterBody?.Protocol} ` +
+            `Container=${afterBody?.Container} ServedBy=${afterBody?.ServedBy} ` +
+            `FallbackReason=${afterBody?.FallbackReason} Url=${String(afterBody?.Url).slice(0, 80)}`
+    );
+    expect(
+        after.status(),
+        `session should still resolve after a refused re-plan; body: ${JSON.stringify(afterBody).slice(0, 300)}`
+    ).toBe(200);
+    // The surviving plan is the original direct file passthrough, not the refused HLS transcode.
+    expect(afterBody.Protocol).toBe('Http');
+    expect(afterBody.Container).toBe('mp4');
+    expect(
+        afterBody.FallbackReason,
+        `refused re-plan pushed the session onto the legacy fallback (${afterBody.FallbackReason})`
+    ).toBeFalsy();
+    expect(
+        String(afterBody.Url),
+        `expected a static direct-play URL, got ${afterBody.Url}`
+    ).toContain('Static=true');
+    expect(String(afterBody.Url)).not.toContain('.m3u8');
+
+    const served = await ctx.api.get(afterBody.Url);
+    expect(
+        served.status(),
+        `post-refusal Url not fetchable: ${afterBody.Url}`
+    ).toBeLessThan(300);
+    const body = await served.body();
+    const head = body.subarray(0, 12).toString('latin1');
+    expect(
+        head,
+        `expected the original mp4 plan to survive the refused re-plan, got ${head.length} bytes starting ${body.subarray(0, 8).toString('hex')}`
+    ).toContain('ftyp');
+    // …and specifically not the HLS transcode the refused request asked for.
+    expect(body.subarray(0, 7).toString('latin1')).not.toBe('#EXTM3U');
 });
 
 test('no orphaned session after teardown: DELETE makes it unresolvable', async () => {
