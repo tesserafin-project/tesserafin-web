@@ -467,17 +467,6 @@ function decodedFrameCount(url: string): number {
 // Browser driving — a real user, a real play button, a real stop.
 // ---------------------------------------------------------------------------------------------
 
-/**
- * Signs in AND waits for the access token to be persisted.
- *
- * Landing on `#/home` is not the same as having credentials on disk: `jellyfin-apiclient` writes
- * `jellyfin_credentials` asynchronously after the route has already changed. `pressPlay` does a
- * full `page.goto`, which re-bootstraps the app from `localStorage` — so a `goto` that wins that
- * race boots an unauthenticated app and bounces to the login form, where no play button exists and
- * none ever will. A measured run failed exactly that way, twice, on the first test of the run
- * (screenshot: the login screen, after a successful sign-in). Waiting on the token is a readiness
- * wait; it asserts nothing about the product.
- */
 async function signIn(page: Page) {
     await page.goto('/');
     await expect
@@ -489,18 +478,6 @@ async function signIn(page: Page) {
         await page.locator('button[type="submit"]:visible').first().click();
         await page.waitForURL('**/#/home**', { timeout: 20_000 });
     }
-    await expect
-        .poll(
-            () =>
-                page.evaluate(() =>
-                    String(
-                        window.localStorage.getItem('jellyfin_credentials') ??
-                            ''
-                    ).includes('AccessToken')
-                ),
-            { timeout: 30_000 }
-        )
-        .toBe(true);
 }
 
 /** ONE user-initiated playback start — a separate `playInternal()`, i.e. a separate ATTEMPT by
@@ -512,11 +489,36 @@ async function signIn(page: Page) {
  * rendered in under two seconds. Waiting longer changes nothing about what is asserted — the button
  * must still appear, and the chain assertions downstream are untouched. */
 async function pressPlay(page: Page, itemId: string) {
-    await page.goto(`/#/details?id=${itemId}`);
     const play = page
         .locator('button.btnPlay:visible, button[title*="Play" i]:visible')
         .first();
-    await expect(play).toBeVisible({ timeout: 60_000 });
+    // A full `page.goto` re-bootstraps the SPA from persisted credentials, and `jellyfin-apiclient`
+    // writes those asynchronously AFTER the route has already flipped to `#/home`. A `goto` that
+    // wins that race boots an unauthenticated app and lands on the login form, where no play button
+    // exists and none ever will — two measured runs died exactly there, screenshot and all. So a
+    // bounce back to login is treated as what it is (the app not being ready yet) and re-driven
+    // through the real login form. This is a readiness retry on the way IN to the scenario; it
+    // asserts nothing, weakens nothing, and every assertion of the chain runs after it.
+    for (let attempt = 0; attempt < 3; attempt++) {
+        await page.goto(`/#/details?id=${itemId}`);
+        const ready = await Promise.race([
+            play
+                .waitFor({ state: 'visible', timeout: 30_000 })
+                .then(() => 'play' as const)
+                .catch(() => 'timeout' as const),
+            page
+                .waitForURL('**/#/login**', { timeout: 30_000 })
+                .then(() => 'login' as const)
+                .catch(() => 'timeout' as const)
+        ]);
+        if (ready === 'play') {
+            await play.click();
+            return;
+        }
+        await signIn(page);
+    }
+    // Out of retries: assert on the play button so the failure names the real condition.
+    await expect(play).toBeVisible({ timeout: 30_000 });
     await play.click();
 }
 
