@@ -654,3 +654,198 @@ test.describe('library activation (mobile)', () => {
         expect(overflows).toBe(false);
     });
 });
+
+/**
+ * The four deliberate `null` cells of `utils/legacyLibraryRedirect.ts` — the tabs whose PRODUCT
+ * DECISION is to stay on their legacy pages (issue #15, design §3.2):
+ *
+ *   - bare Studios URLs (movies tab 5, tvshows tab 4): a bare Studios URL names no studio id, so
+ *     redirecting it to Browse as `?studio=<id>` would lose its meaning;
+ *   - Playlists (movies tab 6, tvshows tab 7): a playlist crosses libraries, out of library scope.
+ *
+ * These tests pin the movies pair against the real router. The tvshows pair rides the same
+ * `UNREDIRECTED_LEGACY_TABS` table and the same `getLegacyLibraryRedirect` early-return — covered
+ * at unit level (`legacyLibraryRedirect.test.ts`) — and this rig seeds no tvshows library to drive
+ * a browser through.
+ *
+ * The settle-check mirrors the file's other no-bounce proofs (`a legacy #/movies URL redirects to
+ * the canonical route without bouncing`): read the URL, give any would-be redirect ample time to
+ * fire, read again. NOT a wait for readiness — a proof of absence.
+ */
+test.describe('library legacy holdouts (Studios/Playlists)', () => {
+    let libraryId = '';
+
+    test.beforeAll(async () => {
+        const api = await request.newContext({ baseURL: BASE_URL });
+        const auth = await (
+            await api.post('/Users/AuthenticateByName', {
+                headers: { Authorization: E2E_AUTH_HEADER },
+                data: { Username: USER, Pw: PASSWORD }
+            })
+        ).json();
+        const views = await (
+            await api.get('/UserViews', {
+                params: { userId: auth.User.Id },
+                headers: {
+                    Authorization: `${E2E_AUTH_HEADER}, Token="${auth.AccessToken}"`
+                }
+            })
+        ).json();
+        libraryId = String(
+            (views.Items as Array<Record<string, unknown>>).find(
+                (i) => i.CollectionType === 'movies'
+            )?.Id
+        );
+        await api.dispose();
+    });
+
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+        if (page.url().includes('/login')) {
+            await page.locator('#txtManualName:visible').fill(USER);
+            await page.locator('#txtManualPassword:visible').fill(PASSWORD);
+            await page.locator('button[type="submit"]:visible').first().click();
+            await page.waitForURL('**/#/home**', { timeout: 20_000 });
+        }
+        await page.waitForLoadState('networkidle');
+    });
+
+    for (const [tab, name] of [
+        ['5', 'Studios'],
+        ['6', 'Playlists']
+    ] as const) {
+        test(`a legacy ${name} URL (tab=${tab}) stays on the legacy page — no redirect to /library`, async ({
+            page
+        }) => {
+            await page.goto(`/#/movies?topParentId=${libraryId}&tab=${tab}`);
+            await page.waitForLoadState('networkidle');
+
+            const settled = page.url();
+            await page.waitForTimeout(1500);
+            expect(page.url()).toBe(settled);
+            expect(page.url()).toContain('#/movies');
+            expect(page.url()).toContain(`tab=${tab}`);
+            expect(page.url()).not.toContain('#/library/');
+        });
+    }
+});
+
+/**
+ * The access-restriction case `a library this route cannot render...` explicitly disclaims — now
+ * exercisable because `ci/serve-e2e.sh` (reefin PR #68) seeds `smokerestricted`, a NON-admin user
+ * granted the Movies library only, with "Codec Probes" existing but withheld.
+ *
+ * The server's REAL semantics, observed against this fixture and pinned here, are LAYERED:
+ *
+ *   - `GET /Items/{itemId}` — the info fetch this route makes FIRST — answers **404** for a
+ *     withheld library, exactly as the not-found test's own header records ("404 for both 'gone'
+ *     and 'not visible to you'"). The server deliberately masks EXISTENCE: a restricted user
+ *     cannot distinguish a library they may not see from one that does not exist. That is a
+ *     privacy semantics, and it is what the product reaches — so THAT is what this pins.
+ *   - `GET /Items?parentId=...` — the grid listing — answers **401** ("is not permitted to
+ *     access", `BaseItem.IsVisible`), observed on the rig's first green boot. The route never
+ *     reaches it here (the 404 info fetch wins), so `classifyLibraryFailure`'s access-denied
+ *     mapping of that layer stays covered at unit level (`libraryAccess.test.ts`), not invented
+ *     into a screen the product never shows for this journey.
+ */
+test.describe('library access restriction (restricted user)', () => {
+    const RESTRICTED_USER =
+        process.env.REEFIN_E2E_RESTRICTED_USER ?? 'smokerestricted';
+    const RESTRICTED_PASSWORD =
+        process.env.REEFIN_E2E_RESTRICTED_PASSWORD ?? 'restrictedpass123';
+
+    let withheldId = '';
+
+    test.beforeAll(async () => {
+        // The withheld library's id comes from the rig; re-derived and re-checked here through the
+        // real API so a drifted fixture fails THIS suite loudly instead of producing vacuous green.
+        const api = await request.newContext({ baseURL: BASE_URL });
+        const auth = await (
+            await api.post('/Users/AuthenticateByName', {
+                headers: { Authorization: E2E_AUTH_HEADER },
+                data: { Username: RESTRICTED_USER, Pw: RESTRICTED_PASSWORD }
+            })
+        ).json();
+        expect(
+            auth.AccessToken,
+            'the restricted fixture user must authenticate — is the rig running reefin PR #68?'
+        ).toBeTruthy();
+
+        const views = await (
+            await api.get('/UserViews', {
+                params: { userId: auth.User.Id },
+                headers: {
+                    Authorization: `${E2E_AUTH_HEADER}, Token="${auth.AccessToken}"`
+                }
+            })
+        ).json();
+        const types = (views.Items as Array<Record<string, unknown>>).map(
+            (i) => i.CollectionType
+        );
+        // The fixture's contract, re-asserted from the client side.
+        expect(types).toContain('movies');
+        expect(types).not.toContain('homevideos');
+
+        withheldId = process.env.REEFIN_E2E_RESTRICTED_LIBRARY_ID ?? '';
+        expect(
+            withheldId,
+            'REEFIN_E2E_RESTRICTED_LIBRARY_ID must name the withheld library — exported by ci/serve-e2e.sh'
+        ).toBeTruthy();
+        await api.dispose();
+    });
+
+    test.beforeEach(async ({ page }) => {
+        await page.goto('/');
+        await page.waitForLoadState('networkidle');
+        if (page.url().includes('/login')) {
+            await page.locator('#txtManualName:visible').fill(RESTRICTED_USER);
+            await page
+                .locator('#txtManualPassword:visible')
+                .fill(RESTRICTED_PASSWORD);
+            await page.locator('button[type="submit"]:visible').first().click();
+            await page.waitForURL('**/#/home**', { timeout: 20_000 });
+        }
+        await page.waitForLoadState('networkidle');
+    });
+
+    test("the withheld library is absent from the restricted user's home", async ({
+        page
+    }) => {
+        await page.goto('/#/home');
+        // Home is ready when the granted library's card is VISIBLE — a bare text match is not
+        // enough, because the (closed) nav drawer also contains a hidden "Movies" entry.
+        await expect(
+            page.getByText('Movies').filter({ visible: true }).first()
+        ).toBeVisible({ timeout: 20_000 });
+        // The withheld library appears NOWHERE — not even hidden markup mentions it, because
+        // /UserViews (which feeds home and the drawer alike) already excluded it server-side.
+        await expect(page.getByText('Codec Probes')).toHaveCount(0);
+    });
+
+    test("directly addressing the withheld library shows the not-found state — the server's real privacy-preserving 404, no retry, no bounce", async ({
+        page
+    }) => {
+        await page.goto(`/#/library/${withheldId}`);
+
+        // The not-found EmptyState, selected by the REAL 404 the server answers on the info
+        // fetch: existence is masked, so a withheld library is indistinguishable from a deleted
+        // one. Asserting an "Access denied" screen here would test a state the product cannot
+        // reach on this journey — see the describe header.
+        const state = page.locator('[data-rf-slot="state-empty"]');
+        await expect(state).toBeVisible({ timeout: 15_000 });
+        await expect(page.getByText('Library not found')).toBeVisible();
+
+        // Not retryable — retrying cannot succeed whether the library is gone or withheld.
+        await expect(
+            page.getByRole('button', { name: /retry|réessayer/i })
+        ).toHaveCount(0);
+
+        // And no bounce: the URL asked for is the URL kept (same settle proof as the
+        // not-found case above).
+        const settled = page.url();
+        await page.waitForTimeout(1500);
+        expect(page.url()).toBe(settled);
+        expect(page.url()).toContain(`#/library/${withheldId}`);
+    });
+});

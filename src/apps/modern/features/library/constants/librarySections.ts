@@ -3,16 +3,17 @@
  * tabs, specified in `docs/reefin/design-library-navigation.md` (issue #15, arbitrage §8-C of
  * reefin#44).
  *
- * **NOT ROUTED.** `api/useLibraryItems.ts` now imports this module, so it is no longer test-only —
- * but it still costs 0 bytes on the main bundle, for a sturdier reason: `library/:libraryId` is
- * declared in `apps/modern/routes/asyncRoutes/user.ts` and loaded by `AsyncRoute.tsx` via
- * `lazy: () => import(...)`, so this whole slice lives in an async chunk outside
- * `main.jellyfin.bundle.js`.
+ * **ROUTED AND ACTIVATED (L15b).** The destinations are mounted, `appRouter.getRouteUrl()` points
+ * movies/tvshows libraries at the canonical route, and the legacy tab redirects are live in
+ * `utils/legacyLibraryRedirect.ts` — including its four deliberate `null` cells: bare Studios URLs
+ * (movies tab 5, tvshows tab 4) and Playlists (movies tab 6, tvshows tab 7) STAY on their legacy
+ * pages, per `LEGACY_TAB_FATE` below and `UNREDIRECTED_LEGACY_TABS`' recorded reasons. A bare
+ * Studios URL names no studio, so it cannot become `?studio=<id>` on Browse without losing its
+ * meaning; a playlist crosses libraries, so it is out of library scope.
  *
- * Both activation gates are now **available**: LANE B (bundle margin) is acquired with wide room,
- * and LANE E2E's cross rig exists since reefin#39 merged. Availability is not activation — mounting
- * the destinations, repointing `appRouter.getRouteUrl()` and adding legacy redirects is L15b, and it
- * still owes the e2e spec that #39 made writable. See §7 of the design doc.
+ * The slice still costs 0 bytes on the main bundle: `library/:libraryId` is declared in
+ * `apps/modern/routes/asyncRoutes/user.ts` and loaded by `AsyncRoute.tsx` via
+ * `lazy: () => import(...)`, so it lives in an async chunk outside `main.jellyfin.bundle.js`.
  *
  * Deliberately free of `@jellyfin/sdk` / `reefin-sdk` imports: this is the navigation vocabulary,
  * not a query builder, and it must not pre-empt the SDK migration that PR #22 carries.
