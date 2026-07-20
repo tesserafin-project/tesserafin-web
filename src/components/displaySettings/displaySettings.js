@@ -25,12 +25,20 @@ import '../../elements/emby-button/emby-button';
 import '../../elements/emby-textarea/emby-textarea';
 
 function fillThemes(select, selectedTheme) {
-    // Picker-safe subset (excludes `experimental` themes, e.g. Reefin Glass pending issue #18) —
-    // not `skinManager.getThemes()`, which still resolves those by id for `setTheme()`.
+    // What a picker may offer, per `themes/registry.ts#getSelectableThemeEntries` — not
+    // `skinManager.getThemes()`, which is the wider catalog `setTheme()` resolves a stored id
+    // through.
     skinManager.getSelectableThemes().then((themes) => {
         select.innerHTML = themes
             .map((t) => {
-                return `<option value="${t.id}">${escapeHtml(t.name)}</option>`;
+                // An `<option>` can carry no markup, so `experimental` entries (Reefin Glass —
+                // opt-in and badged since issue #18's G18b-1 slice) are marked by suffixing the
+                // label. The modern picker renders a real badge instead; see
+                // `apps/modern/features/preferences/components/DisplayPreferences.tsx`.
+                const label = t.experimental
+                    ? `${t.name} (${globalize.translate('LabelExperimentalTheme')})`
+                    : t.name;
+                return `<option value="${t.id}">${escapeHtml(label)}</option>`;
             })
             .join('');
 

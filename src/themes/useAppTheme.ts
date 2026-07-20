@@ -39,6 +39,18 @@ export interface AppTheme {
  * `data-rf-profile`, `data-rf-reduced-motion` and the profile's `--rf-*` overrides onto `<html>`,
  * and which no-ops entirely for every theme other than `official.glass` (RFC-0005 §7.2).
  *
+ * ## Falling back to the default theme
+ *
+ * A requested theme can turn out to be unrenderable: its id may not be in the registry (a stale
+ * manifest, or a preference written by an older build), or its lazily-imported chunk may fail to
+ * arrive. Since issue #18's G18b-1 slice made Reefin Glass — a lazy theme — user-selectable, that
+ * is a reachable state for a saved preference and not merely a theoretical one. Either way this
+ * hook resolves `activeThemeId` to `getDefaultThemeEntry()` (Reefin Classic, whose scheme is
+ * bundled synchronously and so is always renderable), so the app lands on a coherent theme rather
+ * than tagging `<html>` with one whose palette never loaded. Because `activeThemeId` — not the
+ * requested id — is what drives `data-rf-theme` and `useInteractionProfiles`, the fallback also
+ * keeps Glass's profiles off when Glass itself failed to load.
+ *
  * @param explicitThemeId When provided, the hook applies exactly this theme id and reacts only to
  * it changing — this is the `utils/reactUtils.tsx` legacy-view mount path, which already resolves
  * the desired id itself via `useUserTheme()` and must not also react to the imperative
@@ -67,15 +79,34 @@ export function useAppTheme(explicitThemeId?: string): AppTheme {
         return () => Events.off(document, EventType.THEME_CHANGE, handler);
     }, [explicitThemeId]);
 
-    const activeThemeId =
+    // Theme ids proven unrenderable: not in the registry, or their lazy chunk failed to load
+    // (`ensureColorSchemeLoaded` resolving `false`). Requests for these resolve to the default
+    // theme instead of leaving the app tagged with a palette that never arrived. The set only ever
+    // grows, and the default theme's own scheme is bundled synchronously and so can never enter
+    // it, which is what stops the fallback below from being able to loop.
+    const [unavailableThemeIds, setUnavailableThemeIds] = useState<
+        ReadonlySet<string>
+    >(() => new Set());
+
+    const requestedThemeId =
         explicitThemeId ?? eventThemeId ?? getDefaultThemeEntry().id;
+    const activeThemeId = unavailableThemeIds.has(requestedThemeId)
+        ? getDefaultThemeEntry().id
+        : requestedThemeId;
 
     useEffect(() => {
         let cancelled = false;
-        void ensureColorSchemeLoaded(activeThemeId).then(() => {
-            if (!cancelled) {
-                setLoadedTick((tick) => tick + 1);
+        void ensureColorSchemeLoaded(activeThemeId).then((available) => {
+            if (cancelled) {
+                return;
             }
+            if (!available) {
+                setUnavailableThemeIds((ids) =>
+                    new Set(ids).add(activeThemeId)
+                );
+                return;
+            }
+            setLoadedTick((tick) => tick + 1);
         });
         return () => {
             cancelled = true;

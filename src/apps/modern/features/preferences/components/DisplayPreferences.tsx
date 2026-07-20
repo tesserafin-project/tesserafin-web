@@ -1,4 +1,5 @@
 import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -16,6 +17,7 @@ import { LayoutMode } from 'constants/layoutMode';
 import { useApi } from 'hooks/useApi';
 import { useThemes } from 'hooks/useThemes';
 import globalize from 'lib/globalize';
+import type { Theme } from 'types/webConfig';
 
 import { useScreensavers } from '../hooks/useScreensavers';
 import type { DisplaySettingsValues } from '../types/displaySettingsValues';
@@ -23,6 +25,43 @@ import type { DisplaySettingsValues } from '../types/displaySettingsValues';
 interface DisplayPreferencesProps {
     onChange: (event: SelectChangeEvent | React.SyntheticEvent) => void;
     values: DisplaySettingsValues;
+}
+
+/**
+ * Renders one theme option, badging the entries the registry marks `experimental` (issue #18
+ * G18b-1: Reefin Glass is opt-in and clearly identifiable as new, never auto-activated).
+ *
+ * The badge is a sibling of the label rather than part of it, so the accessible name of the option
+ * stays the theme's own name; `aria-describedby` is not used because MUI's listbox does not carry
+ * the description element. Instead the chip's text is exposed to assistive tech in place, and the
+ * `data-rf-experimental` attribute gives the e2e journey a stable, non-textual hook that does not
+ * depend on the active translation.
+ */
+function renderThemeOption({ id, name, experimental }: Theme) {
+    return (
+        <MenuItem
+            key={id}
+            value={id}
+            data-rf-experimental={experimental ? 'true' : undefined}
+        >
+            <Stack
+                direction='row'
+                spacing={1}
+                alignItems='center'
+                component='span'
+            >
+                <span>{name}</span>
+                {experimental && (
+                    <Chip
+                        size='small'
+                        color='primary'
+                        variant='outlined'
+                        label={globalize.translate('LabelExperimentalTheme')}
+                    />
+                )}
+            </Stack>
+        </MenuItem>
+    );
 }
 
 export function DisplayPreferences({
@@ -89,11 +128,7 @@ export function DisplayPreferences({
                         onChange={onChange}
                         value={values.theme}
                     >
-                        {...themes.map(({ id, name }) => (
-                            <MenuItem key={id} value={id}>
-                                {name}
-                            </MenuItem>
-                        ))}
+                        {...themes.map(renderThemeOption)}
                     </Select>
                 </FormControl>
             )}
@@ -142,11 +177,7 @@ export function DisplayPreferences({
                         onChange={onChange}
                         value={values.dashboardTheme}
                     >
-                        {...themes.map(({ id, name }) => (
-                            <MenuItem key={id} value={id}>
-                                {name}
-                            </MenuItem>
-                        ))}
+                        {...themes.map(renderThemeOption)}
                     </Select>
                 </FormControl>
             )}

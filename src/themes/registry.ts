@@ -11,8 +11,9 @@ import officialClassicColorScheme from './official.classic';
  * `src/config.json`'s `themes` array, the static `colorSchemes` map in `src/themes/index.ts`, and
  * the implicit list of `src/themes/<id>/` folders. `src/hooks/useThemes.ts` and
  * `src/scripts/settings/webSettings.js` (legacy) both derive their theme catalog from here now —
- * see the deprecation notes at their respective read sites. Both read the `getSelectableThemeEntries()`
- * filter (below), not `THEME_REGISTRY` directly, so `experimental` entries stay out of every picker.
+ * see the deprecation notes at their respective read sites. Both read `getSelectableThemeEntries()`
+ * (below), not `THEME_REGISTRY` directly, so "what a picker may offer" stays one decision in one
+ * place. `experimental` entries are offered too, carrying a badge — see that field's doc.
  */
 export interface ThemeRegistryEntry {
     /**
@@ -37,17 +38,17 @@ export interface ThemeRegistryEntry {
     /** True for the theme selected when the user has no saved preference. */
     default?: boolean;
     /**
-     * True for a theme that is fully defined and functional (`getThemeEntry()`/
-     * `loadColorScheme()` resolve it normally, and it can be applied directly by id) but not yet
-     * meant to be reachable from a theme picker — a hidden/experimental foundation landing ahead
-     * of its own enablement work. Selector-facing consumers (`useThemes()`,
-     * `webSettings.js#getSelectableThemes`, the legacy display-settings `<select>`) must filter
-     * these out via `getSelectableThemeEntries()`; direct id lookups are unaffected.
+     * True for a theme that is offered to users but is still stabilising: it is fully functional
+     * and freely selectable, and every picker must additionally mark it as experimental/new so the
+     * choice is informed (`hooks/useThemes.ts` → `DisplayPreferences.tsx`'s MUI menu, and
+     * `webSettings.js` → the legacy display-settings `<select>`).
      *
-     * Still set on `official.glass`. Issue #18's first slice wired Glass's interaction profiles to
-     * real CSS custom properties (`./useInteractionProfiles.ts`) but deliberately did **not** make
-     * Glass selectable — profiles are reachable only by applying Glass by id. Lifting this flag is
-     * the remaining slice of #18 (theme picker, floating sidebar, light mode).
+     * NOTE — the meaning of this flag changed in issue #18's G18b-1 slice. It previously meant
+     * "hidden from every picker", and `getSelectableThemeEntries()` filtered it out. Glass's first
+     * slice (G18a) wired its interaction profiles to real CSS custom properties while leaving it
+     * unreachable; this slice makes Glass **selectable, opt-in and badged**. The flag is now a
+     * presentation marker only — it never affects reachability. Nothing is auto-activated by it:
+     * Classic keeps `default: true`, so a user with no saved preference still lands on Classic.
      */
     experimental?: boolean;
     /**
@@ -75,8 +76,9 @@ export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
         color: '#0b0e14',
         defaultMode: 'dark',
         builtin: true,
-        // Hidden/experimental foundation (RFC-0005 §8.2): fully functional, but not yet
-        // user-selectable — see the `experimental` field doc and issue #18.
+        // Opt-in and badged (RFC-0005 §8.2, issue #18 G18b-1): selectable from every picker, but
+        // never the default and never auto-activated — Classic below keeps `default: true`. See
+        // the `experimental` field doc.
         experimental: true,
         loadColorScheme: async () =>
             (
@@ -166,16 +168,19 @@ export const getThemeEntry = (id: string): ThemeRegistryEntry | undefined =>
     THEME_REGISTRY.find((theme) => theme.id === id);
 
 /**
- * The subset of `THEME_REGISTRY` a theme picker should offer (RFC-0005 §7.4). Excludes
- * `experimental` entries — currently `official.glass` — which stay fully functional via
- * `getThemeEntry()`/`loadColorScheme()` but must not be reachable from any selector until their
- * own enablement work lands (the remaining slice of issue #18; wiring Glass's interaction profiles
- * did not lift it). `useThemes()` and `webSettings.js#getSelectableThemes`
- * are the two read sites; keep any future selector UI reading from here too rather than
- * `THEME_REGISTRY` directly.
+ * The set of entries a theme picker should offer (RFC-0005 §7.4). `useThemes()` and
+ * `webSettings.js#getSelectableThemes` are the two read sites; keep any future selector UI reading
+ * from here rather than `THEME_REGISTRY` directly, so "what a picker may offer" stays one decision
+ * in one place.
+ *
+ * Since issue #18's G18b-1 slice this excludes nothing: `official.glass` was the only entry ever
+ * withheld, and it is now selectable (opt-in, and rendered with an experimental badge driven by
+ * `ThemeRegistryEntry.experimental` — see that field's doc). The indirection is kept because it is
+ * the established seam both pickers already read; re-introducing an exclusion later is a change
+ * here alone, not at every call site.
  */
 export const getSelectableThemeEntries = (): readonly ThemeRegistryEntry[] =>
-    THEME_REGISTRY.filter((theme) => !theme.experimental);
+    THEME_REGISTRY;
 
 /** The theme applied when the user has no saved preference. */
 export const getDefaultThemeEntry = (): ThemeRegistryEntry =>

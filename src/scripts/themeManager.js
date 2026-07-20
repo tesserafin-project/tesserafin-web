@@ -13,10 +13,11 @@ function getThemes() {
     return getConfiguredThemes();
 }
 
-// Picker-safe subset of `getThemes()` — excludes `experimental` registry entries (Reefin Glass,
-// pending issue #18). `getThemes()`/`getThemeStylesheetInfo` above still resolve those by id, so a
-// theme already applied (or set programmatically) keeps working; only selector UIs should call
-// this instead of `getThemes()`. See `components/displaySettings/displaySettings.js#fillThemes`.
+// What a picker may offer, as decided by `themes/registry.ts#getSelectableThemeEntries`. Since
+// issue #18's G18b-1 slice that is every entry — Reefin Glass included, carrying an experimental
+// badge — but selector UIs should keep calling this rather than `getThemes()`, which is the
+// resolution catalog `getThemeStylesheetInfo` maps a stored id through.
+// See `components/displaySettings/displaySettings.js#fillThemes`.
 function getSelectableThemes() {
     return getConfiguredSelectableThemes();
 }

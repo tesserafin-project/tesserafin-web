@@ -75,16 +75,57 @@ test.describe('theme: Reefin Glass', () => {
         await api.dispose();
     });
 
+    /**
+     * The app has finished booting into an authenticated session and is rendering real content.
+     *
+     * Home tabs only exist behind a live session, so this is false on the login screen and false
+     * mid-boot — which is exactly the distinction every helper below needs, and exactly the one a
+     * network-idle wait cannot make.
+     */
+    const expectSignedIn = async (page: import('@playwright/test').Page) => {
+        await expect(page.getByRole('tab').first()).toBeVisible({
+            timeout: 20_000
+        });
+    };
+
+    /**
+     * Signs in, waiting on product conditions rather than on a network state (issue #38).
+     *
+     * `networkidle` is the wrong instrument for this app: it keeps connections open (the session
+     * websocket, background polling), so "no network activity for 500ms" is not a state it
+     * reliably reaches. When it does not, `waitForLoadState` fails on its own timeout — which is a
+     * failure of the wait, not of the product, and is exactly the flake class #38 exists to remove.
+     * Every wait below is instead an observable fact this spec actually depends on.
+     */
     const signIn = async (page: import('@playwright/test').Page) => {
         await page.goto('/');
-        await page.waitForLoadState('networkidle');
-        if (page.url().includes('/login')) {
-            await page.locator('#txtManualName:visible').fill(USER);
+
+        const userField = page.locator('#txtManualName:visible');
+        const homeTab = page.getByRole('tab').first();
+
+        // Wait for whichever of the two possible screens actually arrives — the sign-in form, or
+        // an already-authenticated home.
+        //
+        // The URL is deliberately NOT the discriminator, and this is the trap that makes
+        // `networkidle` look load-bearing here: the router settles on `#/home` while the sign-in
+        // form is still what is on screen, only later rewriting the URL to `#/login?...`. A check
+        // like `page.url().includes('/login')` therefore reports "already signed in" for a
+        // signed-out visitor unless something has slowed the test down enough for the URL to
+        // catch up — which is all `networkidle` was really contributing. Asserting on the form
+        // itself is both faster and correct at any speed.
+        await expect(userField.or(homeTab).first()).toBeVisible({
+            timeout: 20_000
+        });
+
+        if (await userField.isVisible()) {
+            await userField.fill(USER);
             await page.locator('#txtManualPassword:visible').fill(PASSWORD);
             await page.locator('button[type="submit"]:visible').first().click();
-            await page.waitForURL('**/#/home**', { timeout: 20_000 });
         }
-        await page.waitForLoadState('networkidle');
+
+        // Authenticated content is rendering. This is the readiness every later step depends on,
+        // and unlike a network state it cannot be true while the app is still on the login screen.
+        await expectSignedIn(page);
     };
 
     const applyTheme = async (
@@ -96,7 +137,21 @@ test.describe('theme: Reefin Glass', () => {
             [`${userId}-appTheme`, themeId]
         );
         await page.reload();
-        await page.waitForLoadState('networkidle');
+
+        // Two conditions, and the first is not redundant.
+        //
+        // `data-rf-theme` alone is NOT a sufficient readiness signal, because for the DEFAULT
+        // theme it is already correct while the app is still on the login screen: the theme
+        // runtime mounts and writes `official.classic` before any session is restored. A helper
+        // that waited only on the attribute would therefore return a half-booted page for Classic
+        // (and only for Classic), and the navigation that follows would interrupt the session
+        // restore — landing the next assertion on the sign-in form. That is precisely the failure
+        // `networkidle` used to mask, and why removing it exposed a defect only in the Classic
+        // test while the Glass test kept passing.
+        //
+        // So: wait for the session to be genuinely back, THEN for the requested theme to be the
+        // one applied.
+        await expectSignedIn(page);
         await expect(page.locator('html')).toHaveAttribute(
             'data-rf-theme',
             themeId,
@@ -129,23 +184,29 @@ test.describe('theme: Reefin Glass', () => {
             .toMatch(pattern);
     };
 
-    // A goto that only changes the hash is treated as already-complete by Playwright and can leave
-    // the SPA mid-transition, so navigate then `reload()` to force a real boot + route render (the
-    // theme persists in localStorage, so the reload keeps whichever theme `applyTheme` selected).
-    // Then wait for a route-specific element so the /home and /library captures can't alias.
+    // These routes are reached with a plain `goto`, and deliberately without the `reload()` that
+    // used to follow it.
+    //
+    // The reload was there because a goto that only changes the HASH is treated as
+    // already-complete and can leave the SPA mid-transition. That reasoning does not apply to
+    // these two calls: the app is served from `/web/`, so navigating to `/#/...` changes the path
+    // as well as the hash and is a real document navigation that boots the app on the target
+    // route. The extra reload therefore forced a SECOND boot that interrupted the first one — and
+    // interrupting a boot is what strands the app on the sign-in form, since the session restore
+    // never completes.
+    //
+    // The route-specific element each helper waits for is the readiness condition on its own: it
+    // is something the route renders and the other route does not, so it proves both that the page
+    // is up and that the /home and /library captures cannot alias. No network-state wait sits in
+    // front of it, since `networkidle` would only add a weaker gate that can time out while the
+    // product is perfectly ready (see `signIn`).
     const gotoHome = async (page: import('@playwright/test').Page) => {
         await page.goto('/#/home');
-        await page.reload();
-        await page.waitForLoadState('networkidle');
-        await expect(page.getByRole('tab').first()).toBeVisible({
-            timeout: 20_000
-        });
+        await expectSignedIn(page);
     };
 
     const gotoLibrary = async (page: import('@playwright/test').Page) => {
         await page.goto(`/#/library/${libraryId}`);
-        await page.reload();
-        await page.waitForLoadState('networkidle');
         await expect(page.locator('[data-rf-slot="media-grid"]')).toBeVisible({
             timeout: 20_000
         });
