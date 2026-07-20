@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
     adoptPlaybackSessionForTeardown,
+    adoptedV2PlaybackSessionId,
     releasePlaybackSessionOnStop,
     type TeardownPlayerData
 } from './playbackSessionTeardownTrigger';
@@ -215,5 +216,83 @@ describe('late stop cannot tear down the session that replaced it', () => {
         expect(playerData.playbackSessionTracker?.ownedSessionId).toBe(
             'sess-B'
         );
+    });
+});
+
+describe('adoptedV2PlaybackSessionId (the retry re-plan fork)', () => {
+    it('is undefined for a legacy streamInfo, tracker or not', () => {
+        const target = fakeTarget();
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-1')
+        };
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+
+        // The retry fell back to legacy before this read (or playback was legacy all along).
+        playerData.streamInfo = legacyStreamInfo();
+
+        expect(adoptedV2PlaybackSessionId(playerData)).toBeUndefined();
+    });
+
+    it('is undefined when no tracker exists, even for a v2 streamInfo', () => {
+        // A v2 decision without an adoption is a state the manager never produces on its own,
+        // but the fork must not trust streamInfo alone: only the teardown owner of record can
+        // say what this player holds.
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-1')
+        };
+
+        expect(adoptedV2PlaybackSessionId(playerData)).toBeUndefined();
+    });
+
+    it('names the session when the decision and the live tracker agree', () => {
+        const target = fakeTarget();
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-1')
+        };
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+
+        expect(adoptedV2PlaybackSessionId(playerData)).toBe('sess-1');
+    });
+
+    it('is undefined when the tracker holds a DIFFERENT session than streamInfo names', () => {
+        const target = fakeTarget();
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-A')
+        };
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+
+        // The next item was adopted while an older streamInfo still lingers on this read.
+        playerData.streamInfo = v2StreamInfo('sess-B');
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+        playerData.streamInfo = v2StreamInfo('sess-A');
+
+        expect(adoptedV2PlaybackSessionId(playerData)).toBeUndefined();
+    });
+
+    it('is undefined once the session has been released - a DELETE in flight must not be re-planned', () => {
+        const target = fakeTarget();
+        const playerData: TeardownPlayerData = {
+            streamInfo: v2StreamInfo('sess-1')
+        };
+        adoptPlaybackSessionForTeardown(playerData, api, target, {
+            visibilityState: 'visible'
+        });
+
+        releasePlaybackSessionOnStop(playerData, 'stopped');
+
+        // `ownedSessionId` still reports the released record (that is deliberate - see
+        // `PlaybackSessionTracker`); the fork must read `liveSessionId` and decline here.
+        expect(playerData.playbackSessionTracker?.ownedSessionId).toBe(
+            'sess-1'
+        );
+        expect(adoptedV2PlaybackSessionId(playerData)).toBeUndefined();
     });
 });

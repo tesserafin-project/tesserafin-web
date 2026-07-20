@@ -61,7 +61,8 @@ import {
     PlaybackDecisionPlaybackMethod,
     PlaybackDecisionStreamingProtocol,
     type CreatePlaybackSessionRequest,
-    type PlaybackSessionResponse
+    type PlaybackSessionResponse,
+    type ReplacePlaybackSessionRequest
 } from 'lib/reefin-sdk';
 
 /** `reefin` #43 added an optional `PlaybackAttemptId` to `CreatePlaybackSessionRequest`, but the
@@ -72,6 +73,15 @@ import {
  * `npm run generate:reefin-sdk` is re-run against a spec that includes #47. */
 type CreatePlaybackSessionRequestWithAttemptId =
     CreatePlaybackSessionRequest & {
+        PlaybackAttemptId?: string;
+    };
+
+/** The re-plan verb's counterpart to the alias above, for the same reason and with the same effect:
+ * the generated model types `PlaybackAttemptId` as `string | null | undefined`, and intersecting it
+ * narrows `null` away so `applyPlaybackAttemptId` (which only ever writes a sanitized string, and
+ * omits the key entirely otherwise) accepts the payload. */
+type ReplacePlaybackSessionRequestWithAttemptId =
+    ReplacePlaybackSessionRequest & {
         PlaybackAttemptId?: string;
     };
 
@@ -532,34 +542,25 @@ function overrideDefaultSubtitleTrackUrl(
 }
 
 /**
- * The single decision point that produces the playback URL: resolves the v2 URL and, only when it
- * can supply a *complete* execution state, replaces every execution-derived field on `streamInfo` in
- * one uninterrupted block - `url`, `playMethod`, `playSessionId`, `mimeType`,
- * `transcodingOffsetTicks` and the typed `executionDecision` (which carries the protocol, the server
- * session id and the retry metadata).
+ * The shared tail of both v2 application paths (initial `POST` and retry `PUT` re-plan): resolves
+ * the absolute URLs, builds the complete execution decision, and only then patches `streamInfo` in
+ * one uninterrupted block. Extracted rather than duplicated so the all-or-nothing contract below is
+ * enforced by ONE piece of code regardless of which HTTP verb produced the `V2PlaybackUrlResult` -
+ * a re-plan that half-patched `streamInfo` would reintroduce issue #41's mixed-state defect on
+ * exactly the path (retry) where it is hardest to observe.
  *
- * All-or-nothing, in both directions (issue #41, requirement 4). Nothing is written until every
- * value is computed and validated, so there is no state in which a v2 URL coexists with a legacy
- * mime type or a legacy transcoding offset. Any failure - flag off, network error, 4xx/5xx, a
- * missing `Url`, a `getUrl()` throw, or a decision whose mime type the v2 responses cannot supply -
- * leaves `streamInfo` completely untouched, keeping the legacy decision the caller already built
- * synchronously as a whole. Returns whether v2 was applied, for logging/tests.
+ * Returns whether the patch was applied; `false` always means `streamInfo` is byte-for-byte
+ * untouched. Failure branches log at `debug` here - the CALLER decides whether a decline is
+ * routine (initial path: silent legacy fallback) or warning-worthy (re-plan path: an adopted v2
+ * session exists, so falling back is a real event worth naming loudly).
  */
-export async function applyV2PlaybackUrlToStreamInfo(
+function applyResolvedV2ResultToStreamInfo(
     streamInfo: V2PatchableStreamInfo,
-    params: ResolveV2PlaybackUrlParams,
+    result: V2PlaybackUrlResult,
     apiClient: PlaybackUrlResolvingApiClient,
-    context: V2ExecutionContext = {},
-    deps: ResolveV2PlaybackUrlDeps = {}
-): Promise<boolean> {
-    const result = await resolveV2PlaybackUrl(params, deps);
-
-    if (!result) {
-        return false;
-    }
-
-    const logger = deps.logger ?? console;
-
+    context: V2ExecutionContext,
+    logger: Pick<Console, 'debug'>
+): boolean {
     // Resolve every absolute URL BEFORE the first mutation: getUrl() throwing halfway through
     // would otherwise leave streamInfo half-patched, violating this function's all-or-nothing
     // contract.
@@ -602,4 +603,229 @@ export async function applyV2PlaybackUrlToStreamInfo(
     }
 
     return true;
+}
+
+/**
+ * The single decision point that produces the playback URL: resolves the v2 URL and, only when it
+ * can supply a *complete* execution state, replaces every execution-derived field on `streamInfo` in
+ * one uninterrupted block - `url`, `playMethod`, `playSessionId`, `mimeType`,
+ * `transcodingOffsetTicks` and the typed `executionDecision` (which carries the protocol, the server
+ * session id and the retry metadata).
+ *
+ * All-or-nothing, in both directions (issue #41, requirement 4). Nothing is written until every
+ * value is computed and validated, so there is no state in which a v2 URL coexists with a legacy
+ * mime type or a legacy transcoding offset. Any failure - flag off, network error, 4xx/5xx, a
+ * missing `Url`, a `getUrl()` throw, or a decision whose mime type the v2 responses cannot supply -
+ * leaves `streamInfo` completely untouched, keeping the legacy decision the caller already built
+ * synchronously as a whole. Returns whether v2 was applied, for logging/tests.
+ */
+export async function applyV2PlaybackUrlToStreamInfo(
+    streamInfo: V2PatchableStreamInfo,
+    params: ResolveV2PlaybackUrlParams,
+    apiClient: PlaybackUrlResolvingApiClient,
+    context: V2ExecutionContext = {},
+    deps: ResolveV2PlaybackUrlDeps = {}
+): Promise<boolean> {
+    const result = await resolveV2PlaybackUrl(params, deps);
+
+    if (!result) {
+        return false;
+    }
+
+    return applyResolvedV2ResultToStreamInfo(
+        streamInfo,
+        result,
+        apiClient,
+        context,
+        deps.logger ?? console
+    );
+}
+
+// -------------------------------------------------------------------------------------------------
+// Retry re-plan (`reefin` issue #43, `PUT Playback/Sessions/{id}`)
+// -------------------------------------------------------------------------------------------------
+
+/** The retry-relevant subset of the `changeStream()` request options, mapped onto the native
+ * constraint vocabulary. The initial `POST` never sends these (its `options` carry them as `null`,
+ * meaning "not constrained"), but they are the entire POINT of a retry: `onPlaybackError` asks for
+ * `EnableDirectPlay: false` etc., and a `PUT` that dropped them would ask the server to re-plan the
+ * very decision that just failed. `undefined` means "not constrained" and lets
+ * `buildPlaybackConstraints()` apply its documented defaults - same `!= null` semantics as the
+ * legacy `PlaybackInfo` query builder. */
+export interface V2ReplanConstraintOverrides {
+    allowDirectPlay?: boolean;
+    allowDirectStream?: boolean;
+    allowVideoStreamCopy?: boolean;
+    allowAudioStreamCopy?: boolean;
+}
+
+/** Parameters for the `PUT` re-plan of an already-adopted v2 session. Extends the `POST` params
+ * shape (same api/item/attempt-id threading - the attempt id is deliberately the SAME one, per
+ * `playbackAttemptId.ts`: a retry belongs to the attempt that started it) with what only a re-plan
+ * has: the server session being re-planned and the `PlaySessionId` that session already carries. */
+export interface ReplanV2PlaybackUrlParams extends ResolveV2PlaybackUrlParams {
+    /** The server-assigned `Playback/Sessions` resource id this player adopted at start
+     * (`playbackSessionTeardownTrigger.ts` is the owner of record). The `PUT` targets it in the
+     * route; `ReplacePlaybackSessionRequest` deliberately has no `PlaySessionId` field to (mis)use
+     * for addressing - see the generated model's own doc comment. */
+    sessionId: string;
+    /** The `PlaySessionId` the session was CREATED with. A re-plan does not mint a new one - the
+     * session keeps serving under its original id, and the `PUT` response
+     * (`PlaybackSessionResponse`) does not echo it, so the caller must carry it across for the
+     * patched `streamInfo` to stay coherent with what the server tracks. */
+    playSessionId: string;
+    /** See {@link V2ReplanConstraintOverrides}. */
+    constraintOverrides?: V2ReplanConstraintOverrides;
+}
+
+/** Injectable seams for the re-plan path. Same shape as {@link ResolveV2PlaybackUrlDeps} except the
+ * logger: the re-plan's explicit-fallback contract logs at `warn`, not `debug` - by the time a
+ * `PUT` fails, an adopted v2 session provably exists, so a silent legacy fallback would hide a
+ * real mid-playback protocol failure (exactly what the silent pre-#43 retry path did). */
+export interface ReplanV2PlaybackUrlDeps
+    extends Omit<ResolveV2PlaybackUrlDeps, 'logger'> {
+    /** Defaults to `console`. `.debug` for routine tracing, `.warn` for the explicit fallback. */
+    logger?: Pick<Console, 'debug' | 'warn'>;
+}
+
+/** Names the failure for the explicit-fallback warning: an HTTP status when the server answered
+ * (the contract's 422 "nothing plannable" case included), otherwise a network/client error. */
+function describeReplanFailure(err: unknown): string {
+    const status = (err as { response?: { status?: number } } | null)?.response
+        ?.status;
+
+    return status ? `HTTP ${status}` : 'network or client error';
+}
+
+/**
+ * Re-enters v2 on the retry/stream-change path: `PUT Playback/Sessions/{sessionId}` (full re-plan,
+ * PR92 §3 decision v1) followed by the same `GET .../Stream` read the initial path uses, then the
+ * same all-or-nothing `streamInfo` patch. Returns whether the re-plan was applied.
+ *
+ * Contract differences from the initial `POST` path, each deliberate:
+ *
+ * - **No `PlaySessionId` is generated.** The session already has one; the `PUT` body has no such
+ *   field (it addresses the session by route), and the patched `streamInfo` carries the ORIGINAL
+ *   `params.playSessionId` so progress reporting and `stopActiveEncodings` keep addressing the
+ *   stream the server is actually serving.
+ * - **Same `PlaybackAttemptId`.** Threaded in by the caller from per-player state, exactly like
+ *   the `PlaybackInfo` POST of the same retry - the identity that stitches the retry chain back to
+ *   the one user action behind it (`playbackAttemptId.ts`).
+ * - **Retry constraints go on the wire.** `constraintOverrides` carries the ladder's
+ *   `EnableDirectPlay: false`/stream-copy prohibitions into the native `Constraints`, so the
+ *   server re-plans AWAY from the failed decision instead of reproducing it.
+ * - **Fallback is EXPLICIT, never thrown.** Any failure - network, 4xx/5xx (including the
+ *   contract's 422 "nothing plannable", after which the session keeps serving its old plan -
+ *   proven in `tests/e2e/playback-v2-server-contract.spec.ts`), a descriptor without `Url`, or an
+ *   incomplete execution state - logs ONE `console.warn` naming the reason and returns `false`
+ *   with `streamInfo` untouched, so the legacy URL the caller already built plays instead. This
+ *   function never throws into the player.
+ */
+export async function applyV2PlaybackReplanToStreamInfo(
+    streamInfo: V2PatchableStreamInfo,
+    params: ReplanV2PlaybackUrlParams,
+    apiClient: PlaybackUrlResolvingApiClient,
+    context: V2ExecutionContext = {},
+    deps: ReplanV2PlaybackUrlDeps = {}
+): Promise<boolean> {
+    const logger = deps.logger ?? console;
+
+    // Same gate as the initial path: other media types never reach the v2 protocol.
+    if (!isSupportedMediaType(params.mediaType)) {
+        logger.warn(
+            `${LOG_PREFIX} unsupported mediaType for v2 re-plan (${params.mediaType}) - falling back to the legacy stream URL for this retry`
+        );
+        return false;
+    }
+
+    const resolved = resolveDeps(deps);
+
+    try {
+        // Mirrors `createV2Session()`'s body construction field for field, minus `PlaySessionId`
+        // (route-addressed, see the params doc) and plus the retry constraint overrides.
+        const replacePlaybackSessionRequest: ReplacePlaybackSessionRequestWithAttemptId =
+            {
+                ItemId: params.itemId,
+                UserId: params.userId,
+                MediaSourceId: params.mediaSourceId ?? undefined,
+                Capabilities: resolved.buildCapabilities(),
+                Constraints: resolved.buildConstraints({
+                    startTimeTicks: params.startTimeTicks,
+                    ...params.constraintOverrides
+                })
+            };
+
+        // Same attempt id as the retry's own `PlaybackInfo` POST - carried in as a parameter,
+        // never minted here (see `playbackAttemptId.ts`). The generated model already has the
+        // field (the pinned spec postdates #47 for this type), so no hand-extension is needed.
+        applyPlaybackAttemptId(
+            replacePlaybackSessionRequest,
+            params.playbackAttemptId
+        );
+
+        // Axios resolves only for 2xx, so reaching the next line IS the 200 check; a 422 lands in
+        // the catch below with its status named in the warning.
+        const { data: session }: { data: PlaybackSessionResponse } =
+            await playbackApiFor(params.api).replacePlaybackSession({
+                id: params.sessionId,
+                replacePlaybackSessionRequest
+            });
+
+        // Same TOCTOU read as the initial path: only the `GET .../Stream` response says what will
+        // actually be served under the NEW plan - the `PUT` response is planning-time state.
+        const descriptor = await fetchAndValidateStream(
+            params,
+            resolved,
+            params.sessionId,
+            logger
+        );
+        if (!descriptor) {
+            logger.warn(
+                `${LOG_PREFIX} PUT Playback/Sessions/${params.sessionId} re-planned but GET .../Stream supplied no Url - falling back to the legacy stream URL for this retry`
+            );
+            return false;
+        }
+
+        const result: V2PlaybackUrlResult = {
+            url: descriptor.Url as string,
+            protocol: descriptor.Protocol,
+            playMethod: PLAY_METHOD_MAP[session.Method ?? ''] ?? 'Transcode',
+            playSessionId: params.playSessionId,
+            playbackSessionId: params.sessionId,
+            subtitleUrl: descriptor.SubtitleUrl ?? undefined,
+            servedBy: descriptor.ServedBy,
+            fallbackReason: descriptor.FallbackReason ?? null,
+            // Same `?? undefined` collapse as the initial path: the server's explicit `null` ("no
+            // mapping exists") and an absent field both mean "unknown" to the decision builder.
+            container: descriptor.Container ?? undefined,
+            mimeType: descriptor.MimeType ?? undefined
+        };
+
+        const applied = applyResolvedV2ResultToStreamInfo(
+            streamInfo,
+            result,
+            apiClient,
+            context,
+            logger
+        );
+
+        if (!applied) {
+            // The helper already logged the precise decline at debug; this is the loud, single
+            // warning the explicit-fallback contract requires on the re-plan path.
+            logger.warn(
+                `${LOG_PREFIX} PUT Playback/Sessions/${params.sessionId} re-planned but the result could not supply a complete execution state - falling back to the legacy stream URL for this retry`
+            );
+        }
+
+        return applied;
+    } catch (err) {
+        // The explicit fallback: one warning naming the reason, never a throw into the player.
+        // The legacy streamInfo the caller built synchronously before calling in is untouched and
+        // complete, so this retry still plays - just through the legacy URL.
+        logger.warn(
+            `${LOG_PREFIX} PUT Playback/Sessions/${params.sessionId} re-plan failed (${describeReplanFailure(err)}) - falling back to the legacy stream URL for this retry`,
+            err
+        );
+        return false;
+    }
 }

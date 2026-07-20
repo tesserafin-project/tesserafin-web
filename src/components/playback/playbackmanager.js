@@ -43,11 +43,16 @@ import {
 } from '../../scripts/playbackAttemptId.ts';
 import { triggerShadowPlaybackSession } from '../../scripts/playbackSessionShadowTrigger.ts';
 import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlTrigger.ts';
+// reefin #43: the retry path's re-entry into v2 (PUT re-plan). Same lazy-boundary discipline as
+// the POST trigger above: this module is an eager, dependency-light gate and everything
+// SDK-touching stays behind the shared `playback-v2-url` chunk.
+import { applyV2PlaybackReplanIfEnabled } from '../../scripts/playbackSessionV2ReplanTrigger.ts';
 // reefin #43: static import is safe for the bundle budget - the module it pulls in
 // (`playbackSessionTeardown.ts`) has zero imports of its own, same constraint
 // `playbackAttemptId.ts` documents, so `lib/reefin-sdk` stays behind the lazy boundary.
 import {
     adoptPlaybackSessionForTeardown,
+    adoptedV2PlaybackSessionId,
     releasePlaybackSessionOnStop
 } from '../../scripts/playbackSessionTeardownTrigger.ts';
 // Static import is deliberate and does NOT reintroduce bundle anchor 2 (reefin#44 §5):
@@ -2131,7 +2136,7 @@ export class PlaybackManager {
                         currentMediaSource.Id,
                         liveStreamId,
                         options
-                    ).then(function (result) {
+                    ).then(async function (result) {
                         if (validatePlaybackInfoResult(self, result)) {
                             currentMediaSource = result.MediaSources[0];
 
@@ -2157,6 +2162,78 @@ export class PlaybackManager {
                                 );
                                 return;
                             }
+
+                            // reefin #43: re-enter v2 on the retry/stream-change path. Until this
+                            // call, a retry ALWAYS played the legacy URL built above, silently
+                            // abandoning the v2 session the player adopted at start while the
+                            // server kept serving its stale plan. When this player still holds a
+                            // live adopted v2 session (the teardown trigger is the owner of
+                            // record), re-plan it with PUT Playback/Sessions/{id} - carrying the
+                            // SAME PlaybackAttemptId as the PlaybackInfo call just above (the
+                            // retry belongs to the attempt that started it) plus the retry
+                            // ladder's constraint prohibitions - and play the re-planned stream.
+                            // Any failure (flag off, no adopted session, PUT/GET failure, 422)
+                            // leaves streamInfo untouched, so the legacy URL below plays exactly
+                            // as before; failures past the fork log an explicit console warning
+                            // rather than a silent fallback. Awaited for the same reason the
+                            // initial path awaits its trigger: changeStreamToUrl() hands this
+                            // exact object to player.play().
+                            await applyV2PlaybackReplanIfEnabled(
+                                streamInfo,
+                                {
+                                    api: ServerConnections.getApi(
+                                        apiClient.serverId()
+                                    ),
+                                    itemId: currentItem.Id,
+                                    mediaType: currentItem.MediaType,
+                                    userId: apiClient.getCurrentUserId(),
+                                    mediaSourceId: currentMediaSource.Id,
+                                    startTimeTicks: ticks || 0,
+                                    playbackAttemptId:
+                                        getPlayerData(player).playbackAttemptId,
+                                    sessionId: adoptedV2PlaybackSessionId(
+                                        getPlayerData(player)
+                                    ),
+                                    // The PlaySessionId the outgoing (v2) streamInfo carries -
+                                    // captured before changeStreamToUrl() replaces it. A re-plan
+                                    // keeps the session's original id; only a new attempt mints
+                                    // a new one.
+                                    playSessionId,
+                                    // The ladder's own prohibitions, so the server re-plans AWAY
+                                    // from the decision that just failed. `?? undefined`
+                                    // collapses the legacy `null` ("not constrained") onto the
+                                    // constraint builder's own defaults.
+                                    constraintOverrides: {
+                                        allowDirectPlay:
+                                            params.EnableDirectPlay ??
+                                            undefined,
+                                        allowDirectStream:
+                                            params.EnableDirectStream ??
+                                            undefined,
+                                        allowVideoStreamCopy:
+                                            params.AllowVideoStreamCopy ??
+                                            undefined,
+                                        allowAudioStreamCopy:
+                                            params.AllowAudioStreamCopy ??
+                                            undefined
+                                    }
+                                },
+                                apiClient,
+                                {
+                                    // Same fallback-only role as on the initial path (see the
+                                    // applyV2PlaybackUrlIfEnabled call site): the server's
+                                    // reported MimeType outranks this for every play method.
+                                    directPlayMimeType: getMimeType(
+                                        (
+                                            currentItem.MediaType || ''
+                                        ).toLowerCase(),
+                                        (
+                                            currentMediaSource.Container || ''
+                                        ).toLowerCase()
+                                    ),
+                                    requestOptions: options
+                                }
+                            );
 
                             getPlayerData(player).subtitleStreamIndex =
                                 subtitleStreamIndex;
