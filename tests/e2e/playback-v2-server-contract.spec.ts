@@ -434,8 +434,10 @@ test('409 when the session has no PlaySessionId', async () => {
  * Deliberately NOT "deny every method": `PlaybackSessionRequestValidator` rejects that with `400`
  * ("at least one of AllowDirectPlay/AllowDirectStream/AllowTranscoding"), the malformed-request
  * branch — a different contract from "well-formed but unplannable". */
-function reEncodeOnlyRequest(allowTranscoding: boolean) {
-    const base = baseRequest();
+function reEncodeOnlyRequest(allowTranscoding: boolean, itemId?: string) {
+    const base = baseRequest(
+        itemId ? { ItemId: itemId, MediaSourceId: itemId } : {}
+    );
     return {
         ...base,
         Capabilities: {
@@ -521,22 +523,70 @@ test('422 on POST when nothing is plannable', async () => {
 test('422 on PUT when the session exists but no plan is viable', async () => {
     // Reachable for the same reason as the POST case above - see its comment. This closes the RE-PLAN
     // verb, which re-enters planning by a different path than POST.
-    const created = await createSession(baseRequest());
-    expect(created.status()).toBe(200);
-    const session = await created.json();
-
-    // Seed a genuinely VIABLE session first, so the refusal below is caused by the re-plan and not by
-    // the session having been unservable all along.
-    const seededMethod = session.Method;
+    //
+    // Seed a session that is genuinely DIRECT-PLAY first, exactly as the server's own #59 PUT test
+    // does. This is why it targets `Smoke Test Movie` (h264/aac/mp4) by NAME rather than the file's
+    // positional `ctx.itemId`: that id happens to bind to `Transcode Probe` (mpeg4/ac3), which
+    // `baseRequest()` can only TRANSCODE - and a seed that is already a transcode would make the
+    // post-refusal byte check below vacuous ("did not convert to transcode" proves nothing when it
+    // was a transcode to begin with).
+    const directPlayId = await resolveItemIdByName('Smoke Test Movie (2020)');
+    // The seed MUST declare EXTERNAL vtt subtitle delivery. `Smoke Test Movie` carries an external
+    // subrip subtitle stream; a client that declares no subtitle delivery makes the server conclude
+    // the subtitle must be burned in (`SubtitleBurnInRequired`), which forces a Transcode even though
+    // the h264/aac video is otherwise directly playable. Declaring external vtt delivery lets the
+    // subtitle ride along as a sidecar and the video DirectPlays. (`VideoRangeTypes: ['SDR']` matches
+    // the real client and the SDR source; verified empirically it is the subtitle, not the range,
+    // that gates this.) Without a genuine DirectPlay seed the post-refusal byte check below is vacuous.
+    const created = await createSession(
+        baseRequest({
+            ItemId: directPlayId,
+            MediaSourceId: directPlayId,
+            Capabilities: {
+                Decode: {
+                    DirectPlayProfiles: [
+                        {
+                            Type: 'Video',
+                            Containers: ['mp4', 'm4v'],
+                            VideoCodecs: ['h264'],
+                            AudioCodecs: ['aac']
+                        }
+                    ],
+                    VideoCodecs: [
+                        {
+                            Codec: 'h264',
+                            Profiles: [],
+                            VideoRangeTypes: ['SDR']
+                        }
+                    ],
+                    AudioCodecs: [{ Codec: 'aac' }],
+                    SubtitleDelivery: [{ Format: 'vtt', Method: 'External' }],
+                    SupportsHls: true,
+                    SupportsDash: false
+                },
+                OutputProfiles: []
+            }
+        })
+    );
     expect(
-        seededMethod,
-        `[422-put] seed session carried no Method: ${JSON.stringify(session).slice(0, 200)}`
-    ).toBeTruthy();
-    expect(seededMethod).not.toBe('Transcode');
+        created.status(),
+        `seed session should be viable; body: ${(await created.text()).slice(0, 300)}`
+    ).toBe(200);
+    const session = await created.json();
+    expect(
+        session.Method,
+        `[422-put] seed Method=${session.Method} (expected DirectPlay so the refusal below has a non-transcode plan to preserve)`
+    ).toBe('DirectPlay');
 
+    // Re-plan the SAME item to capabilities whose only plan is a re-encode, with transcoding
+    // forbidden. The item MUST match the seed's - the session is bound to it, and re-planning it with
+    // a different item's payload would be a mismatch, not the contract under test.
     const replaced = await ctx.api.put(`/Playback/Sessions/${session.Id}`, {
         headers: { Authorization: ctx.token },
-        data: reEncodeOnlyRequest(false) as Record<string, unknown>
+        data: reEncodeOnlyRequest(false, directPlayId) as Record<
+            string,
+            unknown
+        >
     });
     expect(
         replaced.status(),
@@ -545,15 +595,41 @@ test('422 on PUT when the session exists but no plan is viable', async () => {
 
     // The refusal must not have quietly converted the session into the transcode it just refused.
     // Asserting the status alone would not catch that - a 422 response and a session mutated into a
-    // re-encode are perfectly compatible - so this checks the BYTES the session still serves.
+    // re-encode are perfectly compatible - so this inspects the plan the session STILL serves and the
+    // bytes it produces. (The decided method itself is pinned where it actually lives: the seed's
+    // Method='DirectPlay' above and the refused PUT's 422. The GET /Stream descriptor deliberately
+    // does not carry a Method field - it is `null` for a healthy DirectPlay too, verified against this
+    // rig - so the intactness proof is the static-mp4 delivery below, not a descriptor Method.)
     const after = await getDescriptor(session.Id);
+    const afterBody = after.status() === 200 ? await after.json() : null;
+    // eslint-disable-next-line no-console
+    console.log(
+        `[422-put] post-refusal descriptor status=${after.status()} Protocol=${afterBody?.Protocol} ` +
+            `Container=${afterBody?.Container} ServedBy=${afterBody?.ServedBy} ` +
+            `FallbackReason=${afterBody?.FallbackReason} Url=${String(afterBody?.Url).slice(0, 80)}`
+    );
     expect(
         after.status(),
-        `session should still resolve after a refused re-plan; body: ${(await after.text()).slice(0, 300)}`
+        `session should still resolve after a refused re-plan; body: ${JSON.stringify(afterBody).slice(0, 300)}`
     ).toBe(200);
-    const d = await after.json();
-    const served = await ctx.api.get(d.Url);
-    expect(served.status(), `post-refusal Url not fetchable: ${d.Url}`).toBeLessThan(300);
+    // The surviving plan is the original direct file passthrough, not the refused HLS transcode.
+    expect(afterBody.Protocol).toBe('Http');
+    expect(afterBody.Container).toBe('mp4');
+    expect(
+        afterBody.FallbackReason,
+        `refused re-plan pushed the session onto the legacy fallback (${afterBody.FallbackReason})`
+    ).toBeFalsy();
+    expect(
+        String(afterBody.Url),
+        `expected a static direct-play URL, got ${afterBody.Url}`
+    ).toContain('Static=true');
+    expect(String(afterBody.Url)).not.toContain('.m3u8');
+
+    const served = await ctx.api.get(afterBody.Url);
+    expect(
+        served.status(),
+        `post-refusal Url not fetchable: ${afterBody.Url}`
+    ).toBeLessThan(300);
     const body = await served.body();
     const head = body.subarray(0, 12).toString('latin1');
     expect(
