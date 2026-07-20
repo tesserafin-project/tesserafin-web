@@ -20,9 +20,12 @@ import { expect, request, test } from '@playwright/test';
  * positional record whose `Profiles`/`VideoRangeTypes` members are non-nullable, so every
  * `POST /Playback/Sessions` from the real client was rejected `400` and the v2 SUCCESS path was
  * unreachable without patching the outgoing body. That blocker is GONE: the builder now emits
- * `Profiles: []` and `VideoRangeTypes: ['SDR']` on every video codec entry
- * (`src/scripts/reefinPlaybackCapabilities.ts`), so the unmodified client creates a v2 session on
- * its own and #26's descriptor consumption executes end-to-end with no patching at all.
+ * both members on every video codec entry (`src/scripts/reefinPlaybackCapabilities.ts`), so the
+ * unmodified client creates a v2 session on its own and #26's descriptor consumption executes
+ * end-to-end with no patching at all. Since issue #29's `Profiles` half, `Profiles` is derived from
+ * real `canPlayType` probes (`src/scripts/videoCodecProfiles.ts`) instead of being a constant `[]`,
+ * so this file asserts only that it is PRESENT and an array - its content is a browser-dependent
+ * fact covered by `video-codec-profiles-browser.spec.ts`. `VideoRangeTypes` remains `['SDR']`.
  */
 
 const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
@@ -327,7 +330,17 @@ test.describe('playback v2 — flag ON', () => {
             'client sent no VideoCodecs'
         ).toBeGreaterThan(0);
         for (const vc of videoCodecs!) {
-            expect(vc.Profiles, `codec ${vc.Codec} Profiles`).toEqual([]);
+            // ISSUE #29, `Profiles` HALF: `Profiles` is no longer the constant `[]` this loop used
+            // to pin - `src/scripts/videoCodecProfiles.ts` derives it from the browser's own
+            // `canPlayType`, so its CONTENT is browser-dependent and belongs to
+            // `video-codec-profiles-browser.spec.ts` / `playback-capabilities-contract.spec.ts`.
+            // What this test is about is unchanged and still asserted: the member must be PRESENT
+            // and an array on every entry, because the server's positional record requires it.
+            expect(
+                Array.isArray(vc.Profiles),
+                `codec ${vc.Codec} Profiles must be present as an array, got ${JSON.stringify(vc.Profiles)}`
+            ).toBe(true);
+            // `VideoRangeTypes` IS still a constant - that half of #29 is untouched.
             expect(
                 vc.VideoRangeTypes,
                 `codec ${vc.Codec} VideoRangeTypes`
