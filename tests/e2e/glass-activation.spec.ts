@@ -151,10 +151,15 @@ test.describe('Reefin Glass: activation', () => {
         expect(options.map((option) => option.value)).toContain(
             'official.glass.light'
         );
-        expect(options.map((option) => option.label)).toContain('Reefin Glass');
-        expect(options.map((option) => option.label)).toContain(
-            'Reefin Glass Light'
+        // The visible label carries the experimental badge's text ("Experimental") appended by
+        // the picker — G18b-1 ships Glass badged, not bare — so match on the leading name.
+        const labels = options.map((option) => option.label ?? '');
+        expect(labels.some((label) => label.startsWith('Reefin Glass'))).toBe(
+            true
         );
+        expect(
+            labels.some((label) => label.startsWith('Reefin Glass Light'))
+        ).toBe(true);
     });
 
     test('selecting Glass from the picker applies the frosted theme', async ({
