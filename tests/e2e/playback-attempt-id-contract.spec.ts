@@ -262,6 +262,18 @@ async function waitForSessionResponses(wire: Wire, count: number) {
         .toBeGreaterThanOrEqual(count);
 }
 
+/** The `PlaybackInfo` half of the same distinction. Same reasoning, same budget as
+ * `waitForSessionResponses` — see its comment. */
+async function waitForPlaybackInfoResponses(wire: Wire, count: number) {
+    await expect
+        .poll(
+            () =>
+                wire.responses.filter((r) => PLAYBACK_INFO.test(r.url)).length,
+            { timeout: 45_000 }
+        )
+        .toBeGreaterThanOrEqual(count);
+}
+
 test.describe('PlaybackAttemptId wire contract', () => {
     let movieIds: string[] = [];
 
@@ -645,6 +657,19 @@ test.describe('PlaybackAttemptId wire contract', () => {
         await pressPlay(page, movieIds[0]);
         await assertV2PathReallyRan(page, wire);
         await waitForSessionPosts(wire, 1);
+
+        // Wait on the RESPONSES, which is what the two `find()`s below actually read.
+        //
+        // `waitForSessionPosts` is satisfied by `page.on('request')`, which fires when the request
+        // LEAVES. The `page.on('response')` listener that fills `wire.responses` fires a whole round
+        // trip later, so reading `wire.responses` right after it races that round trip and finds an
+        // empty list — reported as "no Playback/Sessions response captured" (issue #39) on a server
+        // that answered perfectly well. This is the same correction already applied to the retry
+        // traversal above: poll the collection actually read, on the same 45s budget as the other
+        // wire helpers. No global timeout is widened, no retry is added, and the listeners were
+        // always armed before the action — `instrument()` runs first thing in the test.
+        await waitForPlaybackInfoResponses(wire, 1);
+        await waitForSessionResponses(wire, 1);
 
         const infoResponse = wire.responses.find((r) =>
             PLAYBACK_INFO.test(r.url)
