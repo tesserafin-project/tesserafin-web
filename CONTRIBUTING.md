@@ -1,4 +1,14 @@
-# Contributing to Jellyfin Web
+# Contributing to Tesserafin Web
+
+> **Tesserafin Web** is a fork of [Jellyfin Web](https://github.com/jellyfin/jellyfin-web).
+> The guidelines below are inherited from the upstream project and still apply where relevant;
+> upstream references are kept as attribution and because the shared tooling still applies.
+
+## Language
+
+All GitHub collaboration on Tesserafin — issue titles and bodies, pull-request titles and
+bodies, comments, commit messages, and branch names — **MUST** be written in English. New code
+comments and new documentation **MUST** also be in English.
 
 Thanks for taking the time to contribute! :purple_heart:
 Jellyfin is an entirely volunteer-driven project, so without contributors like you it could not exist!
