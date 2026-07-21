@@ -2,10 +2,10 @@ import type { AxiosRequestConfig } from 'axios';
 import type { LibraryApiGetDownloadRequest } from '@jellyfin/sdk/lib/generated-client';
 import { getLibraryApi } from '@jellyfin/sdk/lib/utils/api/library-api';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { type JellyfinApiContext, useApi } from 'hooks/useApi';
+import { type TesserafinApiContext, useApi } from 'hooks/useApi';
 
 const getDownload = async (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LibraryApiGetDownloadRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -19,7 +19,7 @@ const getDownload = async (
 };
 
 export const getDownloadQuery = (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LibraryApiGetDownloadRequest
 ) =>
     queryOptions({

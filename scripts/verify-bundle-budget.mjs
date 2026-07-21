@@ -3,7 +3,7 @@
  * Defense-in-depth check for the "bundle principal" size budget (RFC-0002 §7 "Final
  * measurements", W13.1). The primary enforcement lives in webpack.prod.js's `performance` block
  * (`maxAssetSize` + `assetFilter`, reading the same threshold from webpack.performance-budget.json)
- * - that config fails `npm run build:production` outright the moment main.jellyfin.bundle.js
+ * - that config fails `npm run build:production` outright the moment main.tesserafin.bundle.js
  * exceeds budget, and can't be skipped by forgetting to run a separate script.
  *
  * This script adds a second, independent way to ask the same question without necessarily forcing

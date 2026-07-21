@@ -19,7 +19,7 @@ module.exports = merge(common, {
         // here and by the standalone script, no extra compression dependency, no risk of the two
         // numbers drifting apart).
         maxAssetSize: mainBundleBudgetBytes,
-        // splitChunks (see `optimization` above) fans the "main.jellyfin" entrypoint out across
+        // splitChunks (see `optimization` above) fans the "main.tesserafin" entrypoint out across
         // dozens of vendor/theme chunks by design - their sum is not "the bundle principal" this
         // budget targets (RFC-0002 §7 "Final measurements" / W13.1), so the entrypoint-sum check
         // is disabled and only the specific asset below is gated via assetFilter.
