@@ -2565,6 +2565,225 @@
         },
         "type": "object"
       },
+      "ContractFieldIssue": {
+        "additionalProperties": false,
+        "description": "One closed-vocabulary issue observed for one known contract member (issue #75): WHERE, by\nserver-owned path, and WHAT, by server-owned code. Never why, never with what value.",
+        "properties": {
+          "Code": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractIssueCode"
+              }
+            ],
+            "description": "The closed issue code."
+          },
+          "Path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractPath"
+              }
+            ],
+            "description": "The known contract member the issue concerns."
+          }
+        },
+        "type": "object"
+      },
+      "ContractIssueCode": {
+        "description": "The closed error vocabulary issue #75 allows for a KNOWN contract member. Every member of this\nenum is server-owned; none of them carries, encodes, or implies any value the client sent.",
+        "enum": [
+          "None",
+          "Missing",
+          "WrongType",
+          "OutOfRange",
+          "UnsupportedValue",
+          "Truncated"
+        ],
+        "type": "string"
+      },
+      "ContractMappingDelta": {
+        "additionalProperties": false,
+        "description": "The before/after comparison of ONE known contract member across the request mapping\n(issue #75, \"comparaison avant/après uniquement pour les membres déjà définis dans le\ncontrat\"). This is the signal Option 1 actually delivers: it separates case (b) - the client\ndeclared something and the mapping lost it - from case (c) - the mapping kept everything and the\ndecision engine is what changed.",
+        "properties": {
+          "CountAfter": {
+            "description": "How many entries survived the mapping, under the same convention as Reefin.Playback.Contract.Diagnostics.ContractMappingDelta.CountBefore.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "CountBefore": {
+            "description": "How many entries the client declared for a collection member, or 0 for a scalar member (whose\nsignal is Reefin.Playback.Contract.Diagnostics.ContractMappingDelta.PresentBefore/Reefin.Playback.Contract.Diagnostics.ContractMappingDelta.PresentAfter instead).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "Path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractPath"
+              }
+            ],
+            "description": "The known contract member this delta concerns."
+          },
+          "PresentAfter": {
+            "description": "Whether the member survived into the mapped capabilities.",
+            "type": "boolean"
+          },
+          "PresentBefore": {
+            "description": "Whether the member was declared by the client.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ContractMappingDiagnostic": {
+        "additionalProperties": false,
+        "description": "Issue #75, Option 1: what the server can honestly say about ONE playback request's journey\nthrough the capability mapping, using a strictly closed, server-owned vocabulary.",
+        "properties": {
+          "Deltas": {
+            "description": "The before/after comparison for the known contract members that LOST something across the\nmapping. Only genuine losses are listed - a member that survived intact, or that grew (the\nreverse mapper legitimately synthesizes per-codec entries from direct-play combinations),\nproduces no entry. Empty means the mapping preserved everything it is asked about, which points\nat case (c).",
+            "items": {
+              "$ref": "#/components/schemas/ContractMappingDelta"
+            },
+            "type": "array"
+          },
+          "FieldIssues": {
+            "description": "Closed-vocabulary issues for known members. Empty in this iteration: see\nReefin.Playback.Contract.Diagnostics.ContractIssueCode for why each code either has no semantically correct source yet\nor is structurally unobservable at this point in the pipeline. Present so the shape does not\nhave to change when one of them becomes truthfully emittable.",
+            "items": {
+              "$ref": "#/components/schemas/ContractFieldIssue"
+            },
+            "type": "array"
+          },
+          "MappingVersion": {
+            "description": "The server-side mapping version this diagnostic was produced under - a compile-time server\nconstant, never anything the client influences. Lets two diagnostics from different server\nbuilds be told apart.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "PayloadSizeBytes": {
+            "description": "The total request payload size in bytes, read from the `Content-Length` header alone, or\nnull when the header is absent (a chunked or streamed request). Deliberately\nSystem.Nullable`1: request buffering is NOT enabled to measure the body, so\n\"unknown\" is reported as unknown rather than as a lying 0. A count of bytes, never a byte of\ncontent.",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "StructuralScan": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractStructuralScan"
+              }
+            ],
+            "description": "Issue #75 slice 75b: the result of the bounded, single-pass structural scan of the raw request\nbody, or null when no scan ran for this diagnostic - which is the case for\nevery slice-75a-only diagnostic, and whenever the request was not sampled for scanning. Trailing\nand nullable so every slice-75a call site and OpenAPI consumer keeps working unchanged; a\nnon-null value is the signal that the scan actually executed (a silently-disabled scan cannot\npresent one). Like the rest of this type, its entire closure is enums and integers - see\nReefin.Playback.Contract.Diagnostics.ContractStructuralScan.",
+            "nullable": true
+          },
+          "UnknownMemberTotal": {
+            "description": "The count-shaped slot slice 75a leaves null: the 75a mapping comparison does\nnot read the raw body, so on a diagnostic that carries no Reefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic.StructuralScan this is\nhonestly null (unknown, never a lying 0). Slice 75b's bounded structural scan reports its own\ntruthful total on Reefin.Playback.Contract.Diagnostics.ContractStructuralScan.UnknownMemberTotal instead of mutating\nthis field, so every slice-75a assertion that this stays null keeps holding while the scanned\ntotal is still available (on Reefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic.StructuralScan) when a scan actually ran.",
+            "format": "int32",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ContractMember": {
+        "description": "One segment of a Reefin.Playback.Contract.Diagnostics.ContractPath: a member the SERVER declares in the playback\nrequest contract, named by a server-owned enum rather than by any text the client sent\n(issue #75, \"chemins connus représentés par un enum interne au serveur, jamais par une chaîne\nfournie par le client\").",
+        "enum": [
+          "None",
+          "Capabilities",
+          "Decode",
+          "DirectPlayProfiles",
+          "VideoCodecs",
+          "AudioCodecs",
+          "SubtitleDelivery",
+          "SupportsHls",
+          "SupportsDash",
+          "OutputProfiles",
+          "Request"
+        ],
+        "type": "string"
+      },
+      "ContractPath": {
+        "additionalProperties": false,
+        "description": "A path to a known member of the playback request contract, expressed as a fixed-arity tuple of\nserver-owned Reefin.Playback.Contract.Diagnostics.ContractMember segments (issue #75).",
+        "properties": {
+          "Branch": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractMember"
+              }
+            ],
+            "description": "The middle segment, or Reefin.Playback.Contract.Diagnostics.ContractMember.None for a one-segment path."
+          },
+          "Leaf": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractMember"
+              }
+            ],
+            "description": "The innermost segment, or Reefin.Playback.Contract.Diagnostics.ContractMember.None for a shorter path."
+          },
+          "Root": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractMember"
+              }
+            ],
+            "description": "The outermost segment."
+          }
+        },
+        "type": "object"
+      },
+      "ContractStructuralScan": {
+        "additionalProperties": false,
+        "description": "Issue #75 slice 75b: the result of the BOUNDED, SINGLE-PASS structural scan of ONE raw playback\nrequest body - what the server can honestly count about members the client sent, without ever\nmaterializing a key, a value, an excerpt, a truncated form, or a hash of any of them.",
+        "properties": {
+          "BodyLimitExceeded": {
+            "description": "True when the request body exceeded the scan's explicit size limit, so the scan stopped without\nproducing counts. The bound is on how much the scan reads; model binding is unaffected and still\nsees the whole body. Lets \"the body was too large to scan\" be told apart from \"the body was\nscanned and had no unknown members\".",
+            "type": "boolean"
+          },
+          "ScannedBodyByteCount": {
+            "description": "The number of bytes the scan actually read from the request body. This is the honest measured\nsize when the `Content-Length` header was absent (a chunked/streamed request), where\nReefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic.PayloadSizeBytes is null. A count of bytes, never a byte\nof content. Null only if the body was not read (see Reefin.Playback.Contract.Diagnostics.ContractStructuralScan.BodyLimitExceeded).",
+            "format": "int64",
+            "nullable": true,
+            "type": "integer"
+          },
+          "UnknownMemberTotal": {
+            "description": "The total number of members the client sent, anywhere the scan looked, that the contract does\nnot declare. A count, never a name. 0 is meaningful here (unlike on\nReefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic.UnknownMemberTotal): the scan actually ran, so \"the\nclient sent no unknown members\" is a fact the server can now establish rather than a lying zero.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "UnknownMembers": {
+            "description": "The per-container breakdown of Reefin.Playback.Contract.Diagnostics.ContractStructuralScan.UnknownMemberTotal: one entry per known container\nthat had at least one unknown member directly inside it. Empty when\nReefin.Playback.Contract.Diagnostics.ContractStructuralScan.UnknownMemberTotal is 0. The entries sum to Reefin.Playback.Contract.Diagnostics.ContractStructuralScan.UnknownMemberTotal.",
+            "items": {
+              "$ref": "#/components/schemas/ContractUnknownMemberCount"
+            },
+            "type": "array"
+          },
+          "WrongTypes": {
+            "description": "Closed-vocabulary Reefin.Playback.Contract.Diagnostics.ContractIssueCode.WrongType issues for KNOWN members only: a\nmember the contract declares as numeric that arrived as a JSON string. The scan judges by JSON\ntoken kind alone and never reads the string's content. Which of these actually SURVIVES to a\nretained diagnostic is bounded by the binder: only a numeric-looking string (e.g. `\"64000\"`)\nbinds under `NumberHandling.AllowReadingFromString` and lets the request reach the shadow\npublication point; a non-numeric string 400s at the binder, so its (leak-free) WrongType is\nobserved by the scan but never retained. Either way the operator learns only \"a known numeric\nmember arrived string-typed under this path\", never which value.",
+            "items": {
+              "$ref": "#/components/schemas/ContractFieldIssue"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ContractUnknownMemberCount": {
+        "additionalProperties": false,
+        "description": "Issue #75 slice 75b: HOW MANY members the client sent that the contract does not declare, under\none known container named by a server-owned Reefin.Playback.Contract.Diagnostics.ContractPath - never WHICH members,\nand never a single character of any of their names.",
+        "properties": {
+          "Count": {
+            "description": "How many unknown members appeared directly under Path. Always > 0 - a container with no unknown members produces no entry.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "Path": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractPath"
+              }
+            ],
+            "description": "The known container the unknown members appeared inside."
+          }
+        },
+        "type": "object"
+      },
       "CountryInfo": {
         "additionalProperties": false,
         "description": "Class CountryInfo.",
@@ -8860,6 +9079,15 @@
               }
             ],
             "description": "The legacy-vs-v2 shadow comparison, or null if no diagnostic was retained.",
+            "nullable": true
+          },
+          "ContractMapping": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ContractMappingDiagnostic"
+              }
+            ],
+            "description": "Issue #75 (Option 1): what the client's DECLARED capabilities lost on their way through the\nrequest mapping, in a strictly closed server-owned vocabulary - or null when no\nshadow diagnostic was retained (shadow mode is off by default), or when the session was planned\nby a caller that declares no domain capabilities (the legacy path). Additive and nullable: a\nclient that ignores this member sees no change.\n\nThis member, unlike Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.Capabilities and Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.PlaybackAttemptId (both of which\nintentionally echo client-supplied data and are catalogued as such in issue #80), cannot carry a\nclient-supplied value at all: its entire transitive type closure is enums, booleans and integers.\nSee Reefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic for the closure guarantee and for an explicit account\nof what Option 1 does NOT observe - unknown members above all.",
             "nullable": true
           },
           "CreatedAt": {

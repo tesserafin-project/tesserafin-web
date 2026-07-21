@@ -104,6 +104,14 @@ models/collection-type-options.ts
 models/collection-type.ts
 models/configuration-page-info.ts
 models/container-profile.ts
+models/contract-field-issue.ts
+models/contract-issue-code.ts
+models/contract-mapping-delta.ts
+models/contract-mapping-diagnostic.ts
+models/contract-member.ts
+models/contract-path.ts
+models/contract-structural-scan.ts
+models/contract-unknown-member-count.ts
 models/country-info.ts
 models/create-playback-session-request.ts
 models/create-playlist-dto.ts

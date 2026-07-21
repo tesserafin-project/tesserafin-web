@@ -14,6 +14,9 @@
 
 // May contain unused imports in some cases
 // @ts-ignore
+import type { ContractMappingDiagnostic } from './contract-mapping-diagnostic';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { DiagnosticComparison } from './diagnostic-comparison';
 // May contain unused imports in some cases
 // @ts-ignore
@@ -70,6 +73,12 @@ export interface PlaybackDiagnosticDetail {
      * @memberof PlaybackDiagnosticDetail
      */
     'Comparison'?: DiagnosticComparison | null;
+    /**
+     * Issue #75 (Option 1): what the client\'s DECLARED capabilities lost on their way through the request mapping, in a strictly closed server-owned vocabulary - or null when no shadow diagnostic was retained (shadow mode is off by default), or when the session was planned by a caller that declares no domain capabilities (the legacy path). Additive and nullable: a client that ignores this member sees no change.  This member, unlike Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.Capabilities and Reefin.Api.Models.PlaybackSessionDtos.PlaybackDiagnosticDetail.PlaybackAttemptId (both of which intentionally echo client-supplied data and are catalogued as such in issue #80), cannot carry a client-supplied value at all: its entire transitive type closure is enums, booleans and integers. See Reefin.Playback.Contract.Diagnostics.ContractMappingDiagnostic for the closure guarantee and for an explicit account of what Option 1 does NOT observe - unknown members above all.
+     * @type {ContractMappingDiagnostic}
+     * @memberof PlaybackDiagnosticDetail
+     */
+    'ContractMapping'?: ContractMappingDiagnostic | null;
     /**
      * When the session was first created.
      * @type {string}
