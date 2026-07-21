@@ -43,7 +43,7 @@ const config = {
     context: path.resolve(__dirname, 'src'),
     target: 'browserslist',
     entry: {
-        'main.jellyfin': './index.jsx',
+        'main.tesserafin': './index.jsx',
         ...THEMES_BY_ID
     },
     resolve: {
@@ -74,7 +74,7 @@ const config = {
             template: 'index.html',
             // Append file hashes to bundle urls for cache busting
             hash: true,
-            chunks: ['main.jellyfin', 'serviceworker']
+            chunks: ['main.tesserafin', 'serviceworker']
         }),
         new CopyPlugin({
             patterns: [

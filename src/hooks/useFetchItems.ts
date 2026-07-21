@@ -22,7 +22,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import datetime from 'scripts/datetime';
 import globalize from 'lib/globalize';
 
-import { type JellyfinApiContext, useApi } from './useApi';
+import { type TesserafinApiContext, useApi } from './useApi';
 import {
     getAlphaPickerQuery,
     getFieldsQuery,
@@ -43,7 +43,7 @@ import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result
 import type { ItemDto } from 'types/base/models/item-dto';
 
 const fetchGetItems = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parametersOptions: LibraryApiGetItemsRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -85,7 +85,7 @@ export const useGetItems = (parametersOptions: LibraryApiGetItemsRequest) => {
 };
 
 const fetchGetGenres = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     itemType: BaseItemKind[],
     parentId: ParentId,
     options?: AxiosRequestConfig
@@ -120,7 +120,7 @@ export const useGetGenres = (itemType: BaseItemKind[], parentId: ParentId) => {
 };
 
 const fetchGetStudios = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parentId: ParentId,
     itemType: BaseItemKind[],
     options?: AxiosRequestConfig
@@ -160,7 +160,7 @@ export const useGetStudios = (parentId: ParentId, itemType: BaseItemKind[]) => {
 };
 
 const fetchGetQueryFiltersLegacy = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parentId: ParentId,
     itemType: BaseItemKind[],
     options?: AxiosRequestConfig
@@ -199,7 +199,7 @@ export const useGetQueryFiltersLegacy = (
 };
 
 const fetchGetItemsViewByType = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     viewType: LibraryTab,
     parentId: ParentId,
     itemType: BaseItemKind[],
@@ -453,7 +453,7 @@ export const useGetItemsViewByType = (
 };
 
 const fetchPlaylistsMoveItem = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     requestParameters: PlaylistApiMoveItemRequest
 ) => {
     const { api, user } = currentApi;
@@ -522,7 +522,7 @@ function groupsUpcomingEpisodes(items: ItemDto[]) {
 }
 
 const fetchGetGroupsUpcomingEpisodes = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parentId: ParentId,
     options?: AxiosRequestConfig
 ) => {
@@ -567,7 +567,7 @@ interface ToggleFavoriteMutationProp {
 }
 
 const fetchUpdateFavoriteStatus = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     itemId: string,
     isFavorite: boolean
 ) => {
@@ -603,7 +603,7 @@ interface TogglePlayedMutationProp {
 }
 
 const fetchUpdatePlayedState = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     itemId: string,
     isPlayed: boolean
 ) => {
@@ -696,7 +696,7 @@ function groupsTimers(timers: ItemDto[], indexByDate?: boolean) {
 }
 
 const fetchGetTimers = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     indexByDate?: boolean,
     options?: AxiosRequestConfig
 ) => {
@@ -735,7 +735,7 @@ export const useGetTimers = (
 };
 
 const fetchGetSectionItems = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parentId: ParentId,
     section: Section,
     options?: AxiosRequestConfig
@@ -940,7 +940,7 @@ type SectionWithItems = {
 };
 
 const getSectionsWithItems = async (
-    currentApi: JellyfinApiContext,
+    currentApi: TesserafinApiContext,
     parentId: ParentId,
     sections: Section[],
     sectionType?: SectionType[],

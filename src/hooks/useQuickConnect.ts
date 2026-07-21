@@ -2,10 +2,10 @@ import { getAuthenticationApi } from '@jellyfin/sdk/lib/utils/api/authentication
 import { useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
-import { type JellyfinApiContext, useApi } from './useApi';
+import { type TesserafinApiContext, useApi } from './useApi';
 
 const fetchQuickConnectEnabled = async (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     options?: AxiosRequestConfig
 ) => {
     const { api } = apiContext;

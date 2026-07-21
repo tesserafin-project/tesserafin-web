@@ -15,7 +15,7 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import type { ReefinApi } from 'lib/reefin-sdk';
 import events from 'utils/events';
 
-export interface JellyfinApiContext {
+export interface TesserafinApiContext {
     __legacyApiClient__?: ApiClient;
     api?: Api;
     /**
@@ -29,7 +29,7 @@ export interface JellyfinApiContext {
     user?: UserDto;
 }
 
-export const ApiContext = createContext<JellyfinApiContext>({});
+export const ApiContext = createContext<TesserafinApiContext>({});
 export const useApi = () => useContext(ApiContext);
 
 export const ApiProvider: FC<PropsWithChildren<unknown>> = ({ children }) => {

@@ -1,5 +1,5 @@
 {
-  description = "jellyfin-web nix flake";
+  description = "tesserafin-web nix flake";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs";

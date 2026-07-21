@@ -2,10 +2,10 @@ import type { AxiosRequestConfig } from 'axios';
 import type { LiveTvApiGetSeriesTimerRequest } from '@jellyfin/sdk/lib/generated-client';
 import { getLiveTvApi } from '@jellyfin/sdk/lib/utils/api/live-tv-api';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { type JellyfinApiContext, useApi } from 'hooks/useApi';
+import { type TesserafinApiContext, useApi } from 'hooks/useApi';
 
 const getSeriesTimer = async (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LiveTvApiGetSeriesTimerRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -18,7 +18,7 @@ const getSeriesTimer = async (
 };
 
 export const getSeriesTimerQuery = (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LiveTvApiGetSeriesTimerRequest
 ) =>
     queryOptions({

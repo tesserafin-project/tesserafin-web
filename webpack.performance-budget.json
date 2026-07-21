@@ -1,5 +1,5 @@
 {
-    "mainBundleAsset": "main.jellyfin.bundle.js",
+    "mainBundleAsset": "main.tesserafin.bundle.js",
     "mainBundleBudgetBytes": 460800,
     "note": "460800 bytes = 450 KiB. Raw (uncompressed) size on disk, not gzip - see webpack.prod.js `performance` block and scripts/verify-bundle-budget.mjs for the rationale. Single source of truth for both the webpack-integrated guard and the standalone verify:bundle-budget script; keep them reading this file rather than duplicating the number."
 }

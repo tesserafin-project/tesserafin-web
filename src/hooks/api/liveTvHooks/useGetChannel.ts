@@ -2,10 +2,10 @@ import type { AxiosRequestConfig } from 'axios';
 import type { LiveTvApiGetChannelRequest } from '@jellyfin/sdk/lib/generated-client';
 import { getLiveTvApi } from '@jellyfin/sdk/lib/utils/api/live-tv-api';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { type JellyfinApiContext, useApi } from 'hooks/useApi';
+import { type TesserafinApiContext, useApi } from 'hooks/useApi';
 
 const getChannel = async (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LiveTvApiGetChannelRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -25,7 +25,7 @@ const getChannel = async (
 };
 
 export const getChannelQuery = (
-    apiContext: JellyfinApiContext,
+    apiContext: TesserafinApiContext,
     params: LiveTvApiGetChannelRequest
 ) =>
     queryOptions({
