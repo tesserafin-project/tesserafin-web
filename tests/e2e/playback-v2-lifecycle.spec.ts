@@ -213,20 +213,63 @@ async function enableV2Engine() {
     await api.dispose();
 }
 
-/** Signs in without `networkidle`: the app lands on either the login form or home, and the poll
- * below waits on that concrete outcome — the collections/URL actually read — not on the network
- * going quiet. */
+/** Signs in without `networkidle`, discriminating on the SCREEN and on the auth call — never on
+ * the URL. Same discipline `home.spec.ts` and `theme-glass.spec.ts` already apply after issue #38;
+ * this file had kept the URL variant, and that is the whole of issue #50.
+ *
+ * WHY THE URL IS NOT A SESSION SIGNAL — the root cause, read off the product:
+ * `src/apps/modern/routes/routes.tsx` declares `{ index: true, element: <Navigate replace
+ * to='/home'/> }` as a SIBLING of the `ConnectionRequired` branch, not as a child of it. So
+ * `page.goto('/')` rewrites the hash to `#/home` the instant the router mounts, with no
+ * authentication check of any kind having run. The verdict arrives strictly later, when
+ * `ConnectionRequired`'s `ServerConnections.connect()` resolves `ServerSignIn` and bounces to
+ * `#/login?serverid=…&url=…`.
+ *
+ * Reproduced on the `ci/serve-e2e.sh` rig against a fully-paired server: the previous
+ * `expect.poll(() => page.url()).toMatch(/#\/(login|home)/)` is a race — over `--repeat-each=10`
+ * the full-cycle test failed 5 of 20 executions, the reds sampling inside the transient `#/home`
+ * window, concluding "already signed in", never filling the form. The failing run's trace carries
+ * ZERO page-side `POST /Users/AuthenticateByName` and its failure screenshot is the login form
+ * ("Please sign in", User/Password fields) — the browser never held a session, so none was lost;
+ * every later full navigation — `pressPlay`'s `page.goto` — simply lands back on login with no
+ * play button.
+ *
+ * The three waits below are product states, not timing:
+ *   1. one of the two landing surfaces is really on screen (the login form, or the home shell);
+ *   2. the authentication POST itself came back non-error, observed on the wire — matched
+ *      case-insensitively because `jellyfin-apiclient` posts the path lowercased;
+ *   3. the home tab strip is mounted, which is authenticated React chrome and cannot render while
+ *      the app is still on the login screen.
+ * No `networkidle`, no sleep, no retry, no injected storage state, no raised global timeout. */
 async function signIn(page: import('@playwright/test').Page) {
-    await page.goto('/');
-    await expect
-        .poll(() => page.url(), { timeout: 30_000 })
-        .toMatch(/#\/(login|home)/);
-    if (page.url().includes('/login')) {
-        await page.locator('#txtManualName:visible').fill(USER);
+    const response = await page.goto('/');
+    expect(response?.ok(), 'the server did not serve the SPA').toBeTruthy();
+
+    const userField = page.locator('#txtManualName:visible');
+    const homeTab = page.getByRole('tab', { name: /accueil|home/i });
+
+    await expect(
+        userField.or(homeTab).first(),
+        'the SPA never rendered either the login form or the home shell'
+    ).toBeVisible({ timeout: 30_000 });
+
+    if (await userField.isVisible()) {
+        await userField.fill(USER);
         await page.locator('#txtManualPassword:visible').fill(PASSWORD);
+        const authenticated = page.waitForResponse(
+            (res) =>
+                /\/users\/authenticatebyname/i.test(res.url()) &&
+                res.status() < 400,
+            { timeout: 20_000 }
+        );
         await page.locator('button[type="submit"]:visible').first().click();
-        await page.waitForURL('**/#/home**', { timeout: 20_000 });
+        await authenticated;
     }
+
+    await expect(
+        homeTab,
+        'the /home shell never mounted its tab strip — the session was not established'
+    ).toBeVisible({ timeout: 30_000 });
 }
 
 /** ONE user-initiated playback start — a separate `playInternal()` invocation, i.e. a separate
