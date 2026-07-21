@@ -1,13 +1,13 @@
-<h1 align="center">Reefin Web</h1>
-<h3 align="center">Web client for the <a href="https://github.com/all3f0r1/reefin">Reefin</a> media server</h3>
+<h1 align="center">Tesserafin Web</h1>
+<h3 align="center">Web client for the <a href="https://github.com/tesserafin/tesserafin">Tesserafin</a> media server</h3>
 
 ---
 
-Reefin Web is the frontend used for most of the clients available for end users, such as desktop browsers, Android, and iOS. It is the official web client for Reefin, a media server. We welcome all contributions and pull requests! If you have a larger feature in mind please open an issue so we can discuss the implementation before you start.
+Tesserafin Web is the frontend used for most of the clients available for end users, such as desktop browsers, Android, and iOS. It is the official web client for Tesserafin, a media server. We welcome all contributions and pull requests! If you have a larger feature in mind please open an issue so we can discuss the implementation before you start.
 
-## Origine
+## Origin
 
-Reefin Web is a fork of [Jellyfin Web](https://github.com/jellyfin/jellyfin-web), the web client of the [Jellyfin Project](https://jellyfin.org). All credit for the original design, architecture, and the vast majority of the codebase goes to the Jellyfin contributors. This project is distributed under the same license, GPL-2.0-or-later, in accordance with the terms of the original work.
+Tesserafin Web is a fork of [Jellyfin Web](https://github.com/jellyfin/jellyfin-web), the web client of the [Jellyfin Project](https://jellyfin.org). All credit for the original design, architecture, and the vast majority of the codebase goes to the Jellyfin contributors. This project is distributed under the same license, GPL-2.0-or-later, in accordance with the terms of the original work. Tesserafin does not claim product or protocol compatibility with Jellyfin.
 
 ## Build Process
 
@@ -21,8 +21,8 @@ Reefin Web is a fork of [Jellyfin Web](https://github.com/jellyfin/jellyfin-web)
 1. Clone or download this repository.
 
    ```sh
-   git clone https://github.com/all3f0r1/reefin-web.git
-   cd reefin-web
+   git clone https://github.com/tesserafin/tesserafin-web.git
+   cd tesserafin-web
    ```
 
 2. Install build dependencies in the project directory.

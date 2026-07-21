@@ -1,24 +1,24 @@
 # Support
 
-Jellyfin contributors have limited availability to address general support
-questions. Please make sure you are using the latest version of Jellyfin.
+Tesserafin is an early-stage project maintained by volunteers, so support
+availability is limited. Please make sure you are running the latest version
+before reporting a problem.
 
-When looking for support or information, please first search for your
-question in these venues:
+When looking for help or information, please first search the existing
+issues:
 
-* [Jellyfin Forum](https://forum.jellyfin.org)
-* [Jellyfin Documentation](https://jellyfin.org/docs/)
-* [Open or **closed** issues in the organization](https://github.com/issues?q=sort%3Aupdated-desc+org%3Ajellyfin+is%3Aissue+)
+* [Open or closed issues](https://github.com/tesserafin/tesserafin-web/issues?q=is%3Aissue)
 
-If you didn't find an answer in the resources above, contributors and other
-users are reachable through the following channels:
+If you cannot find an answer, open a new issue using the appropriate template:
 
-* #jellyfin on [Matrix](https://matrix.to/#/#jellyfin:matrix.org%22) or [IRC](ircs://irc.libera.chat:6697/#jellyfin)
-* #jellyfin-troubleshooting on [Matrix](https://matrix.to/#/#jellyfin-troubleshooting:matrix.org) or [IRC](ircs://irc.libera.chat:6697/#jellyfin-troubleshooting)
-* [/r/jellyfin on Reddit](https://www.reddit.com/r/jellyfin)
+* [New issue](https://github.com/tesserafin/tesserafin-web/issues/new/choose)
 
-GitHub issues are for tracking enhancements and bugs, not general support.
+GitHub issues are for tracking bugs and enhancements, not general support.
 
-The open source license grants you the freedom to use Jellyfin.
-It does not guarantee commitments of other people's time.
-Please be respectful and manage your expectations.
+Tesserafin is a fork of Jellyfin Web and is not affiliated with or supported
+by the Jellyfin project; please do not direct Tesserafin support requests to
+Jellyfin's community channels.
+
+The open source license grants you the freedom to use Tesserafin. It does not
+guarantee commitments of other people's time. Please be respectful and manage
+your expectations.
