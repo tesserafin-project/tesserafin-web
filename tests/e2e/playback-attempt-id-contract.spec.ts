@@ -40,12 +40,12 @@ import { expect, request, test } from '@playwright/test';
  * `playback-capabilities-contract.spec.ts` does.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const E2E_AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-attempt-id-contract", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-attempt-id-contract", Version="0.0.0"';
 
 /** The lazily-loaded chunk `playbackSessionV2UrlTrigger.ts` reaches for ONLY when the flag is on.
  * Its presence in captured traffic is the positive control that the flag genuinely took effect. */

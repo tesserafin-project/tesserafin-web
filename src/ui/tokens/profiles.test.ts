@@ -14,15 +14,15 @@ import {
     REDUCED_MOTION_OVERRIDE,
     REDUCED_TRANSPARENCY_OVERRIDE,
     REMOTE_OVERRIDE,
-    type ReefinTokensOverride,
+    type TesserafinTokensOverride,
     resolveProfileTokens,
     resolveTokensForProfiles
 } from './profiles';
-import type { ReefinTokens } from './types';
+import type { TesserafinTokens } from './types';
 
 /**
  * Behavioural spec for interaction-profile *resolution*
- * (`docs/reefin/design-glass-interaction-profiles.md`): the cascade order and the `reducedMotion`
+ * (`docs/tesserafin/design-glass-interaction-profiles.md`): the cascade order and the `reducedMotion`
  * orthogonality, pinned so neither can be quietly reordered.
  *
  * Scope note: these assertions are about the resolved token object only. That object was never the
@@ -39,7 +39,7 @@ import type { ReefinTokens } from './types';
  * emphatically not no-ops against Classic, which is exactly why that guard exists and is tested
  * against real computed styles.
  */
-const base: ReefinTokens = officialClassic;
+const base: TesserafinTokens = officialClassic;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const tokensSchema = JSON.parse(
@@ -49,7 +49,7 @@ const tokensSchema = JSON.parse(
             '..',
             '..',
             '..',
-            'reefin-design',
+            'tesserafin-design',
             'schema',
             'tokens.schema.json'
         ),
@@ -61,7 +61,7 @@ describe('interaction profiles (dormant)', () => {
     describe('format: concrete deep-partials of the token set', () => {
         it('introduces no key outside tokens.schema.json top level', () => {
             const allowed = Object.keys(tokensSchema.properties);
-            const overrides: ReefinTokensOverride[] = [
+            const overrides: TesserafinTokensOverride[] = [
                 REMOTE_OVERRIDE,
                 LOW_POWER_OVERRIDE,
                 REDUCED_TRANSPARENCY_OVERRIDE,
@@ -75,7 +75,7 @@ describe('interaction profiles (dormant)', () => {
         });
 
         it('only overrides keys the base token set already defines', () => {
-            const overrides: ReefinTokensOverride[] = [
+            const overrides: TesserafinTokensOverride[] = [
                 REMOTE_OVERRIDE,
                 LOW_POWER_OVERRIDE,
                 REDUCED_TRANSPARENCY_OVERRIDE,

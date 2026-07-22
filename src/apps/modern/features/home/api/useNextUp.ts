@@ -2,13 +2,16 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
-import { getShowApi } from 'lib/reefin-sdk';
-import type { ReefinApi, ShowApiGetNextUpRequest } from 'lib/reefin-sdk';
+import { getShowApi } from 'lib/tesserafin-sdk';
+import type {
+    TesserafinApi,
+    ShowApiGetNextUpRequest
+} from 'lib/tesserafin-sdk';
 
 const NEXT_UP_LIMIT = 12;
 
 export const fetchNextUp = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     params: ShowApiGetNextUpRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -18,7 +21,7 @@ export const fetchNextUp = async (
 
 /** Query options for fetching "à suivre" episodes on the home page. */
 export const getNextUpQuery = (
-    api?: ReefinApi,
+    api?: TesserafinApi,
     params: ShowApiGetNextUpRequest = {}
 ) =>
     queryOptions({

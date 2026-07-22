@@ -9,7 +9,7 @@
             "!dist",
             "!.idea",
             "!.vscode",
-            "!src/lib/reefin-sdk/generated"
+            "!src/lib/tesserafin-sdk/generated"
         ]
     },
     "formatter": {

@@ -38,7 +38,7 @@ export interface ThemeRegistryEntry {
      * a theme offering both modes offers them as two entries, and the second one needs to select
      * the same generated stylesheet as the first: `official.glass.light` renders
      * `[data-rf-theme="official.glass"][data-rf-mode="light"]`, a tier
-     * `reefin-design/scripts/generate-web-tokens.mjs` already emits for every mode in
+     * `tesserafin-design/scripts/generate-web-tokens.mjs` already emits for every mode in
      * `theme.json#modes`.
      *
      * Declared explicitly rather than derived by stripping a `.light` suffix: a naming convention

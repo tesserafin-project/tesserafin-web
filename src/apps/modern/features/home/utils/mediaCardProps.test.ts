@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { BaseItemDto } from 'lib/reefin-sdk';
-import { CollectionType } from 'lib/reefin-sdk';
+import type { BaseItemDto } from 'lib/tesserafin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 import {
     type ImageApiClient,

@@ -14,14 +14,14 @@ Thanks for taking the time to contribute! :purple_heart:
 Jellyfin is an entirely volunteer-driven project, so without contributors like you it could not exist!
 
 Below are some general guidelines and information about this project.
-If you have any questions, please join one of our [development chat rooms](https://jellyfin.org/contact) to discuss them!
+If you have any questions, please open an issue or discussion on the [Tesserafin project](https://github.com/tesserafin-project) to discuss them.
 
 ## Contributor Guidelines
 
 ### New Code
 
 * New files **MUST** be written in TypeScript.
-* API interactions **MUST** be made using the Jellyfin TypeScript SDK.
+* New Tesserafin-owned API interactions **MUST** use the Tesserafin SDK (`src/lib/tesserafin-sdk`), generated from the Tesserafin server OpenAPI contract. The upstream `@jellyfin/sdk` and `jellyfin-apiclient` remain in place for existing inherited call sites.
 * New app pages **MUST** be written using React components using `src/components/Page.tsx` as the base component.
 * **SHOULD** be covered by unit tests when possible (legacy component/view code is deemed untestable).
 * **SHOULD** avoid whitespace only changes in unchanged sections of code.
@@ -48,10 +48,8 @@ GitHub also picks up this file automatically when browsing blame views on the we
 
 ### Pull Requests
 
-* **MUST** follow [project guidelines](https://jellyfin.org/docs/general/contributing/development#pull-request-guidelines).
-  * **SHOULD NOT** use "Conventional Commits" for titles or commit messages.
+* **SHOULD** use [Conventional Commits](https://www.conventionalcommits.org/) for PR titles and commit messages, matching the style used across Tesserafin (e.g. `refactor(brand): ...`).
   * **SHOULD NOT** rebase once reviews are in progress.
-* **MUST** follow the [LLM development policy](https://jellyfin.org/docs/general/contributing/llm-policies).
 * **MUST** test that the change works as expected before marking a PR as ready for review.
 * **MUST** fully complete the PR template. Failing to do so will result in the PR being closed as invalid without review.
 * **SHOULD** represent a singular focus (i.e. a PR to fix a bug should not include unrelated refactoring).

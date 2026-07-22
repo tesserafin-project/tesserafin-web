@@ -1,6 +1,6 @@
 /**
  * The live signals behind Reefin Glass's interaction profiles (RFC-0005 §7.2, issue #18), as
- * specified in `docs/reefin/design-glass-interaction-profiles.md` §4.
+ * specified in `docs/tesserafin/design-glass-interaction-profiles.md` §4.
  *
  * Each profile is derived from an **observable, reversible** platform signal — never from a stored
  * preference — so turning the underlying condition off restores the previous presentation with no

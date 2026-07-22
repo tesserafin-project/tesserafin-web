@@ -4,8 +4,8 @@
  * pulling it into the main bundle unconditionally.
  *
  * The problem this fixes: `playbackmanager.js` `import`ed `playbackSessionV2Url.ts` statically, and
- * that module in turn statically imports the native `reefinPlaybackCapabilities.ts` builder plus
- * `PlaybackApi`/`Configuration`/the decision enums from `lib/reefin-sdk`. `resolveV2PlaybackUrl()`
+ * that module in turn statically imports the native `tesserafinPlaybackCapabilities.ts` builder plus
+ * `PlaybackApi`/`Configuration`/the decision enums from `lib/tesserafin-sdk`. `resolveV2PlaybackUrl()`
  * only *checks* `enableV2PlaybackPath()` at call time - by then webpack has already had to bundle
  * the whole chain into the main chunk, flag OFF or not, because a static `import` is resolved at
  * build time regardless of what runs at runtime. PR116e fixed exactly this for the shadow chain

@@ -2,7 +2,7 @@ import React, { type FC } from 'react';
 
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import { BaseItemKind } from 'lib/reefin-sdk';
+import { BaseItemKind } from 'lib/tesserafin-sdk';
 import { EmptyState, MediaCard, MediaShelf } from 'ui';
 
 import { useFavoriteItems } from '../api/useFavoriteItems';

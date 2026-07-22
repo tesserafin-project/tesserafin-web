@@ -1,6 +1,6 @@
 /**
  * Navigation model for `/library/:libraryId` — the four-destination alternative to the 7–8 legacy
- * tabs, specified in `docs/reefin/design-library-navigation.md` (issue #15, arbitrage §8-C of
+ * tabs, specified in `docs/tesserafin/design-library-navigation.md` (issue #15, arbitrage §8-C of
  * reefin#44).
  *
  * **ROUTED AND ACTIVATED (L15b).** The destinations are mounted, `appRouter.getRouteUrl()` points
@@ -15,7 +15,7 @@
  * `apps/modern/routes/asyncRoutes/user.ts` and loaded by `AsyncRoute.tsx` via
  * `lazy: () => import(...)`, so it lives in an async chunk outside `main.jellyfin.bundle.js`.
  *
- * Deliberately free of `@jellyfin/sdk` / `reefin-sdk` imports: this is the navigation vocabulary,
+ * Deliberately free of `@jellyfin/sdk` / `tesserafin-sdk` imports: this is the navigation vocabulary,
  * not a query builder, and it must not pre-empt the SDK migration that PR #22 carries.
  */
 

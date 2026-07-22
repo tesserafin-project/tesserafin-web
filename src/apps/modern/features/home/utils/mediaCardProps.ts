@@ -1,5 +1,5 @@
-import type { BaseItemDto } from 'lib/reefin-sdk';
-import { CollectionType, ImageType } from 'lib/reefin-sdk';
+import type { BaseItemDto } from 'lib/tesserafin-sdk';
+import { CollectionType, ImageType } from 'lib/tesserafin-sdk';
 import type { MediaCardImageAspect, MediaCardProps } from 'ui';
 import {
     getCanonicalLibraryUrl,
@@ -215,7 +215,7 @@ const getItemHref = (item: BaseItemDto, fallbackServerId?: string): string => {
 };
 
 /**
- * Adapts one `reefin-sdk` `BaseItemDto` to `ui`'s `MediaCardProps` (RFC-0005 §6/§11 W13.6, WP4).
+ * Adapts one `tesserafin-sdk` `BaseItemDto` to `ui`'s `MediaCardProps` (RFC-0005 §6/§11 W13.6, WP4).
  * `subtitle` follows a single rule that happens to reproduce every `/home` section's previous
  * per-card configuration: episodes show their series name, everything else falls back to its
  * production year (movies/series), or nothing (library tiles, which have neither).

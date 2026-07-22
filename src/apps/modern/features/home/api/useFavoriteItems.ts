@@ -7,14 +7,14 @@ import {
     ItemFilter,
     ItemSortBy,
     type LibraryApiGetItemsRequest,
-    type ReefinApi,
+    type TesserafinApi,
     getLibraryApi
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 const FAVORITE_ITEMS_LIMIT = 20;
 
 export const fetchFavoriteItems = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     params: LibraryApiGetItemsRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -24,7 +24,7 @@ export const fetchFavoriteItems = async (
 
 /** Query options for fetching the current user's favorite items on the home page. */
 export const getFavoriteItemsQuery = (
-    api?: ReefinApi,
+    api?: TesserafinApi,
     params: LibraryApiGetItemsRequest = {}
 ) =>
     queryOptions({

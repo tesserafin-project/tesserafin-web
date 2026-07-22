@@ -49,13 +49,17 @@ import * as sass from 'sass';
 const findRepoRoot = (): string => {
     let dir = process.cwd();
     for (;;) {
-        if (existsSync(resolve(dir, 'reefin-design/web/backdrop-filter.mjs'))) {
+        if (
+            existsSync(
+                resolve(dir, 'tesserafin-design/web/backdrop-filter.mjs')
+            )
+        ) {
             return dir;
         }
         const parent = dirname(dir);
         if (parent === dir) {
             throw new Error(
-                `could not locate the reefin-web repo root from ${process.cwd()}`
+                `could not locate the tesserafin-web repo root from ${process.cwd()}`
             );
         }
         dir = parent;

@@ -55,7 +55,7 @@ describe('isCanonicalLibraryCollectionType()', () => {
 
     /**
      * `appRouter.js` compares against `@jellyfin/sdk`'s enum while the library slice uses
-     * `lib/reefin-sdk`'s. This module matches on the string value, so that difference cannot
+     * `lib/tesserafin-sdk`'s. This module matches on the string value, so that difference cannot
      * silently make the two disagree — pinned here rather than assumed.
      */
     it('matches the enum values both SDKs emit', () => {

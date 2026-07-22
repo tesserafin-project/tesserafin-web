@@ -1,7 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ReefinApi } from 'lib/reefin-sdk';
+import { TesserafinApi } from 'lib/tesserafin-sdk';
 
 import { fetchUserViews } from './useUserViews';
 
@@ -14,14 +14,14 @@ import { fetchUserViews } from './useUserViews';
 vi.mock('hooks/useApi', () => ({ useApi: () => ({}) }));
 
 /**
- * Tests `fetchUserViews` in isolation against a `ReefinApi` built with a mocked axios instance -
+ * Tests `fetchUserViews` in isolation against a `TesserafinApi` built with a mocked axios instance -
  * per `playbackDiagnosticsApi.test.ts`'s pattern. The generated `UserViewApi` class always
- * dispatches through `axiosInstance.request(...)` (`lib/reefin-sdk/generated/common.ts`'s
+ * dispatches through `axiosInstance.request(...)` (`lib/tesserafin-sdk/generated/common.ts`'s
  * `createRequestFunction`), and reads `axios.defaults.baseURL` before doing so, so `defaults` has
  * to exist on the mock even though its value doesn't matter here.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): ReefinApi =>
-    new ReefinApi(
+const createMockApi = (request: ReturnType<typeof vi.fn>): TesserafinApi =>
+    new TesserafinApi(
         'https://example.com',
         { name: 'Reefin Web', version: '1.0.0' },
         { name: 'Test Device', id: 'device-1' },

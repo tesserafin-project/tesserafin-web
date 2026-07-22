@@ -5,7 +5,7 @@ import type {
     PlaybackDecisionPlaybackOutputProfile,
     PlaybackDecisionSubtitleCapability,
     PlaybackDecisionVideoCodecCapability
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 /**
  * Set comparison for one capability category (video codecs, audio codecs, ...) between a native
@@ -104,7 +104,7 @@ const outputContainerNames = (
         .filter((container): container is string => !!container);
 
 /**
- * Compares a native `ClientCapabilities` declaration (`reefinPlaybackCapabilities.ts`'s
+ * Compares a native `ClientCapabilities` declaration (`tesserafinPlaybackCapabilities.ts`'s
  * `buildClientCapabilities()`, built directly from browser probes) against a server-reconstructed
  * one (`PlaybackDiagnosticDetail.Capabilities` - for a legacy `PlaybackInfo`-originated session,
  * this is what `ClientCapabilitiesMapper`/`DlnaPlaybackAdapter` derived from the client's real

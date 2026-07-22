@@ -11,16 +11,16 @@ import {
     ItemFields,
     ItemSortBy,
     type RecommendationDto,
-    type ReefinApi,
+    type TesserafinApi,
     SortOrder
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 import type { ItemDto } from 'types/base/models/item-dto';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 
 /**
  * The non-Browse destinations of `/library/:libraryId`, as real Reefin SDK requests (issue #15,
  * L15a — structural parity). One fetcher per destination named in
- * `docs/reefin/design-library-navigation.md` §3.2, plus the Studios *filter*'s option list and the
+ * `docs/tesserafin/design-library-navigation.md` §3.2, plus the Studios *filter*'s option list and the
  * Upcoming *shelf*, neither of which is a destination.
  *
  * **Routed as of L15b.** L15a delivered these queries dormant and proved each one emits the request
@@ -29,7 +29,7 @@ import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result
  * not change — `libraryDestinationQueries.test.ts` still asserts every one of them against the URL
  * axios actually emits.
  *
- * Every request goes through `lib/reefin-sdk`'s generated client — no `@jellyfin/sdk` import
+ * Every request goes through `lib/tesserafin-sdk`'s generated client — no `@jellyfin/sdk` import
  * appears in this slice, which is the migration rule issue #15 enforces.
  */
 
@@ -60,7 +60,7 @@ export interface LibraryGenresParams {
  * endpoint, not a predicate on `getItems`.
  */
 export const fetchLibraryGenres = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryGenresParams,
     options?: AxiosRequestConfig
@@ -96,7 +96,7 @@ export interface LibraryCollectionsParams {
  * which is precisely the line §3.1 draws between a destination and a filter.
  */
 export const fetchLibraryCollections = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryCollectionsParams,
     options?: AxiosRequestConfig
@@ -135,7 +135,7 @@ export interface LibraryStudiosParams {
  * a real list.
  */
 export const fetchLibraryStudios = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryStudiosParams,
     options?: AxiosRequestConfig
@@ -173,7 +173,7 @@ export const UPCOMING_LIMIT = 25;
  * natural home is among the Suggestions shelves.
  */
 export const fetchLibraryUpcoming = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryUpcomingParams,
     options?: AxiosRequestConfig
@@ -207,7 +207,7 @@ export const fetchLibraryUpcoming = async (
  * (`suggestionsTabContent.sectionsView.suggestionSections`), so they had nothing to move; they are
  * added by L15b, when the destination stopped being dormant and had to actually render.
  *
- * They are added *here*, through `lib/reefin-sdk`, rather than by importing the existing
+ * They are added *here*, through `lib/tesserafin-sdk`, rather than by importing the existing
  * `apps/legacy/features/libraries/api/use{ResumeItems,LatestMedia,NextUp}.ts` hooks. Those hooks are
  * `@jellyfin/sdk`-based, and reusing them would have put a direct `@jellyfin/sdk` type dependency
  * back into a slice L15a deliberately cleared of them — trading a migration invariant for three
@@ -231,7 +231,7 @@ const shelfImageOptions = () => ({
 
 /** `ContinueWatchingMovies` / `ContinueWatchingEpisode` — the same endpoint, differing only by item kind. */
 export const fetchLibraryResumeItems = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryShelfParams,
     options?: AxiosRequestConfig
@@ -256,7 +256,7 @@ export const fetchLibraryResumeItems = async (
  * other shelves produce, keeping one rendering path for all of them.
  */
 export const fetchLibraryLatestItems = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryShelfParams,
     options?: AxiosRequestConfig
@@ -277,7 +277,7 @@ export const fetchLibraryLatestItems = async (
 
 /** `NextUp` — tvshows only; the shelf list in `librarySections.ts` is what decides that. */
 export const fetchLibraryNextUp = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryShelfParams,
     options?: AxiosRequestConfig
@@ -303,7 +303,7 @@ export const fetchLibraryNextUp = async (
  * instead of a query (design §3.1 criterion 2).
  */
 export const fetchLibraryMovieRecommendations = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryShelfParams,
     options?: AxiosRequestConfig

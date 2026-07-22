@@ -11,7 +11,7 @@ import { compareVersions } from 'utils/versions';
 
 import { ConnectionMode } from './connectionMode';
 import { ConnectionState } from './connectionState';
-import { toApi, toReefinApi } from 'utils/jellyfin-apiclient/compat';
+import { toApi, toTesserafinApi } from 'utils/jellyfin-apiclient/compat';
 import { safeDecodeURIComponent } from 'utils/url';
 
 const DEFAULT_CONNECTION_TIMEOUT = 20000;
@@ -114,9 +114,9 @@ export default class ConnectionManager {
         self.addApiClient = (apiClient) => {
             self._apiClients.push(apiClient);
             apiClient._sdk ??= toApi(apiClient);
-            // Parallel reefin-sdk instance (design doc §8 PR3) - additive, does not affect `_sdk`
+            // Parallel tesserafin-sdk instance (design doc §8 PR3) - additive, does not affect `_sdk`
             // or anything reading it (WebSocket subscribe/etc. stay on `_sdk` exclusively).
-            apiClient._reefinSdk ??= toReefinApi(apiClient);
+            apiClient._tesserafinSdk ??= toTesserafinApi(apiClient);
 
             const existingServers = credentialProvider
                 .credentials()
@@ -188,7 +188,7 @@ export default class ConnectionManager {
                 events.trigger(self, 'apiclientcreated', [apiClient]);
             }
             apiClient._sdk ??= toApi(apiClient);
-            apiClient._reefinSdk ??= toReefinApi(apiClient);
+            apiClient._tesserafinSdk ??= toTesserafinApi(apiClient);
 
             console.log('returning instance from getOrAddApiClient');
             return apiClient;
@@ -256,9 +256,9 @@ export default class ConnectionManager {
                 }
             });
 
-            // Parallel reefin-sdk instance (design doc §8 PR3) - same session, only `clientInfo.name`
-            // differs (sourced from REEFIN_CLIENT_IDENTITY, see utils/jellyfin-apiclient/compat.ts).
-            apiClient._reefinSdk?.update({
+            // Parallel tesserafin-sdk instance (design doc §8 PR3) - same session, only `clientInfo.name`
+            // differs (sourced from TESSERAFIN_CLIENT_IDENTITY, see utils/jellyfin-apiclient/compat.ts).
+            apiClient._tesserafinSdk?.update({
                 basePath: apiClient.serverAddress(),
                 accessToken: apiClient.accessToken(),
                 deviceInfo: {
@@ -787,9 +787,9 @@ export default class ConnectionManager {
                 }
             });
 
-            // Parallel reefin-sdk instance (design doc §8 PR3) - same session, only `clientInfo.name`
-            // differs (sourced from REEFIN_CLIENT_IDENTITY, see utils/jellyfin-apiclient/compat.ts).
-            result.ApiClient._reefinSdk?.update({
+            // Parallel tesserafin-sdk instance (design doc §8 PR3) - same session, only `clientInfo.name`
+            // differs (sourced from TESSERAFIN_CLIENT_IDENTITY, see utils/jellyfin-apiclient/compat.ts).
+            result.ApiClient._tesserafinSdk?.update({
                 basePath: result.ApiClient.serverAddress(),
                 accessToken: result.ApiClient.accessToken(),
                 deviceInfo: {
@@ -999,13 +999,13 @@ export default class ConnectionManager {
     }
 
     /**
-     * `getApi()`'s reefin-sdk counterpart (design doc §8 PR3) - returns the same server/session's
-     * parallel `ReefinApi` instance, additive alongside (not instead of) `getApi()`'s `@jellyfin/sdk`
-     * instance. See `ReefinApi`'s doc comment (`lib/reefin-sdk`) for why this isn't a replacement.
+     * `getApi()`'s tesserafin-sdk counterpart (design doc §8 PR3) - returns the same server/session's
+     * parallel `TesserafinApi` instance, additive alongside (not instead of) `getApi()`'s `@jellyfin/sdk`
+     * instance. See `TesserafinApi`'s doc comment (`lib/tesserafin-sdk`) for why this isn't a replacement.
      * @param {string} [serverId] The ID of the server
-     * @returns {import('lib/reefin-sdk').ReefinApi|undefined}
+     * @returns {import('lib/tesserafin-sdk').TesserafinApi|undefined}
      */
-    getReefinApi(serverId) {
+    getTesserafinApi(serverId) {
         if (!serverId) {
             const server = this.getLastUsedServer();
             serverId = server?.Id;
@@ -1016,8 +1016,8 @@ export default class ConnectionManager {
         }
 
         const apiClient = this.getApiClient(serverId);
-        apiClient._reefinSdk ??= toReefinApi(apiClient);
-        return apiClient._reefinSdk;
+        apiClient._tesserafinSdk ??= toTesserafinApi(apiClient);
+        return apiClient._tesserafinSdk;
     }
 
     minServerVersion(val) {

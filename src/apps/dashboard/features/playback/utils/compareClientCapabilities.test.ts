@@ -5,7 +5,7 @@ import type {
     PlaybackDecisionDecodeProfile,
     PlaybackDecisionPlaybackOutputProfile,
     PlaybackDecisionVideoCodecCapability
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 import { compareClientCapabilities } from './compareClientCapabilities';
 
 /**

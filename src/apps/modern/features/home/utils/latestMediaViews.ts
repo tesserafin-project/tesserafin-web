@@ -1,10 +1,10 @@
-import type { BaseItemDto } from 'lib/reefin-sdk';
-import { CollectionType } from 'lib/reefin-sdk';
+import type { BaseItemDto } from 'lib/tesserafin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 /**
  * Collection types the legacy home page never builds an "ajouts récents" section for
  * (`src/components/homesections/sections/recentlyAdded.ts`'s `excludeViewTypes`). Legacy's list
- * also includes `channels`, which has no `reefin-sdk` `CollectionType` equivalent (channel-plugin
+ * also includes `channels`, which has no `tesserafin-sdk` `CollectionType` equivalent (channel-plugin
  * views aren't modeled by this API surface), so it's dropped here.
  */
 const EXCLUDED_LATEST_MEDIA_COLLECTION_TYPES: ReadonlySet<string> = new Set([

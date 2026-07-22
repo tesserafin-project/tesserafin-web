@@ -2,11 +2,14 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
-import type { ReefinApi, UserViewApiGetUserViewsRequest } from 'lib/reefin-sdk';
-import { getUserViewApi } from 'lib/reefin-sdk';
+import type {
+    TesserafinApi,
+    UserViewApiGetUserViewsRequest
+} from 'lib/tesserafin-sdk';
+import { getUserViewApi } from 'lib/tesserafin-sdk';
 
 export const fetchUserViews = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     params: UserViewApiGetUserViewsRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -16,7 +19,7 @@ export const fetchUserViews = async (
 
 /** Query options for fetching the current user's media library tiles ("Mes médias"). */
 export const getUserViewsQuery = (
-    api?: ReefinApi,
+    api?: TesserafinApi,
     params: UserViewApiGetUserViewsRequest = {}
 ) =>
     queryOptions({

@@ -1,4 +1,4 @@
-import { ImageType } from 'lib/reefin-sdk';
+import { ImageType } from 'lib/tesserafin-sdk';
 
 import type { ImageApiClient } from 'apps/modern/features/home/utils/mediaCardProps';
 import type { ItemDto } from 'types/base/models/item-dto';
@@ -8,7 +8,7 @@ import type { MediaCardProps } from 'ui';
  * `ItemDto` (`types/base/models/item-dto.ts`) to `ui`'s `MediaCardProps` adapter for
  * `/library/:libraryId` (RFC-0005 §11 WP-C step 4). `/home`'s own adapter
  * (`apps/modern/features/home/utils/mediaCardProps.ts`) does the same job but is typed against
- * `lib/reefin-sdk`'s `BaseItemDto` (RFC-0005 §4.2) - a different, non-assignable nominal type from
+ * `lib/tesserafin-sdk`'s `BaseItemDto` (RFC-0005 §4.2) - a different, non-assignable nominal type from
  * the `ItemDto` this route's grid works in, which `useLibraryItems` produces by casting its
  * `getItems` response to `ItemDtoQueryResult`. Rather than force a
  * generic cross-realm shared module (more coupling than the ~20 lines below are worth), this

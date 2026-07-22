@@ -14,7 +14,7 @@ import { applyV2PlaybackUrlIfEnabled } from './playbackSessionV2UrlTrigger';
  * wrapped module's own fallback matrix is covered by `playbackSessionV2Url.test.ts`.
  *
  * The property under test (PR116f's whole point): with the flag off, `loadV2UrlModule` must never be
- * called at all - that is what keeps `playback-v2-url.chunk.js`, the `reefinPlaybackCapabilities`
+ * called at all - that is what keeps `playback-v2-url.chunk.js`, the `tesserafinPlaybackCapabilities`
  * builder and the v2 network calls off the wire, not just out of the main bundle.
  */
 const baseParams: ResolveV2PlaybackUrlParams = {

@@ -1,6 +1,6 @@
 import type { Api } from '@jellyfin/sdk';
 
-import { Configuration, SystemApi } from 'lib/reefin-sdk';
+import { Configuration, SystemApi } from 'lib/tesserafin-sdk';
 import type {
     PlaybackDiagnosticDetail,
     PlaybackSessionListItem
@@ -9,19 +9,19 @@ import type {
 /**
  * Generated client for the Reefin-specific admin playback diagnostics routes
  * (`Reefin.Api/Controllers/PlaybackDiagnosticsSessionsController.cs`, `[Authorize(Policy =
- * Policies.RequiresElevation)]`) — `docs/reefin/design-reefin-api-layer.md` §4.1/§8 PR2, replacing
+ * Policies.RequiresElevation)]`) — `docs/tesserafin/design-tesserafin-api-layer.md` §4.1/§8 PR2, replacing
  * the hand-mirrored-types + raw-axios pattern this file used before (still the right pattern for a
  * Reefin route with no generated client at all — see `src/utils/bitrateTest.ts` — just no longer
- * this one's situation now that `src/lib/reefin-sdk/generated/` covers it).
+ * this one's situation now that `src/lib/tesserafin-sdk/generated/` covers it).
  *
  * `systemApiFor()` configures the generated `SystemApi` class from the CURRENT `@jellyfin/sdk`
  * session (`api.basePath`/`api.axiosInstance`/`api.authorizationHeader`) rather than through
- * `lib/reefin-sdk`'s forward-looking `createReefinApi()` construction wrapper: that wrapper isn't
+ * `lib/tesserafin-sdk`'s forward-looking `createTesserafinApi()` construction wrapper: that wrapper isn't
  * wired into `useApi()`/the connection layer yet (see its doc comment), so building a *second*,
  * independent client identity here would risk the server seeing two different `DeviceId`s for the
  * same browser session. This bridge — reuse the session that already exists, just call it through
  * the generated class — goes away once a later PR migrates the connection layer itself (design doc
- * §8 PR3), at which point `useApi()` can hand out a `ReefinApi` directly.
+ * §8 PR3), at which point `useApi()` can hand out a `TesserafinApi` directly.
  */
 const systemApiFor = (api: Api): SystemApi =>
     new SystemApi(

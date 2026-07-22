@@ -20,7 +20,7 @@
  * `data-rf-profile` carries exactly one name — the cascade winner — because a CSS selector cannot
  * arbitrate a priority on its own. It exists for scoping, never for deriving values: CSS that
  * computed its blur from the profile *name* would be the hidden per-theme resolution table that
- * `docs/reefin/design-glass-interaction-profiles.md` §1 rejects. The values arrive as custom
+ * `docs/tesserafin/design-glass-interaction-profiles.md` §1 rejects. The values arrive as custom
  * properties, from the concrete partials, and only from there.
  *
  * ## Glass only, and provably so

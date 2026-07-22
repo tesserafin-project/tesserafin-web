@@ -8,10 +8,10 @@ import { devices, expect, request, test } from '@playwright/test';
  *
  * The movies library id isn't known ahead of time, so it's discovered at run time through a
  * direct API login (`POST /Users/AuthenticateByName` with a standard `MediaBrowser ...`
- * `Authorization` header - same shape `src/lib/reefin-sdk/index.ts`'s `buildAuthorizationHeader`
+ * `Authorization` header - same shape `src/lib/tesserafin-sdk/index.ts`'s `buildAuthorizationHeader`
  * produces) followed by a `/UserViews` lookup for the user's `movies`-`CollectionType` view.
  * (The mission mentions the classic `GET /Users/{userId}/Views` alias; this server's own OpenAPI
- * surface - `src/lib/reefin-sdk/spec/openapi.json` - only lists `/UserViews`, so that's the
+ * surface - `src/lib/tesserafin-sdk/spec/openapi.json` - only lists `/UserViews`, so that's the
  * endpoint actually called here.) This API login is independent from the UI login each test does
  * in `beforeEach`; it only exists to resolve `libraryId` once for the whole file.
  *
@@ -21,12 +21,12 @@ import { devices, expect, request, test } from '@playwright/test';
  * page to navigate to.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const E2E_AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-library", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-library", Version="0.0.0"';
 
 const MOVIE_TITLE = 'Smoke Test Movie';
 const OTHER_MOVIE_TITLE = 'Transcode Probe';
@@ -468,7 +468,7 @@ test.describe('library activation', () => {
      * not-found state on a request that had succeeded, and the product was right to not show it.
      * The empty-GUID case is now exercised for what it really is, in the test below.
      *
-     * Reefin's `GET /Items/{itemId}` filters by user and answers 404 for both "gone" and "not
+     * Tesserafin's `GET /Items/{itemId}` filters by user and answers 404 for both "gone" and "not
      * visible to you" (see `utils/libraryAccess.ts`), so this is the state a user reaches in either
      * case — and it offers no retry, because retrying a deleted library cannot succeed.
      */
@@ -751,9 +751,9 @@ test.describe('library legacy holdouts (Studios/Playlists)', () => {
  */
 test.describe('library access restriction (restricted user)', () => {
     const RESTRICTED_USER =
-        process.env.REEFIN_E2E_RESTRICTED_USER ?? 'smokerestricted';
+        process.env.TESSERAFIN_E2E_RESTRICTED_USER ?? 'smokerestricted';
     const RESTRICTED_PASSWORD =
-        process.env.REEFIN_E2E_RESTRICTED_PASSWORD ?? 'restrictedpass123';
+        process.env.TESSERAFIN_E2E_RESTRICTED_PASSWORD ?? 'restrictedpass123';
 
     let withheldId = '';
 
@@ -787,10 +787,10 @@ test.describe('library access restriction (restricted user)', () => {
         expect(types).toContain('movies');
         expect(types).not.toContain('homevideos');
 
-        withheldId = process.env.REEFIN_E2E_RESTRICTED_LIBRARY_ID ?? '';
+        withheldId = process.env.TESSERAFIN_E2E_RESTRICTED_LIBRARY_ID ?? '';
         expect(
             withheldId,
-            'REEFIN_E2E_RESTRICTED_LIBRARY_ID must name the withheld library — exported by ci/serve-e2e.sh'
+            'TESSERAFIN_E2E_RESTRICTED_LIBRARY_ID must name the withheld library — exported by ci/serve-e2e.sh'
         ).toBeTruthy();
         await api.dispose();
     });

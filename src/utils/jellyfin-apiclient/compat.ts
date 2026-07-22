@@ -2,10 +2,10 @@ import { Api, Jellyfin } from '@jellyfin/sdk';
 import { ApiClient } from 'jellyfin-apiclient';
 
 import {
-    REEFIN_CLIENT_IDENTITY,
-    ReefinApi,
-    ReefinSdk
-} from 'lib/reefin-sdk/client';
+    TESSERAFIN_CLIENT_IDENTITY,
+    TesserafinApi,
+    TesserafinSdk
+} from 'lib/tesserafin-sdk/client';
 import { safeDecodeURIComponent } from 'utils/url';
 
 /**
@@ -29,25 +29,25 @@ export const toApi = (apiClient: ApiClient): Api => {
 };
 
 /**
- * `toApi()`'s `reefin-sdk` counterpart (docs/reefin/design-reefin-api-layer.md §8 PR3) - builds a
- * `ReefinApi` from the same (legacy) `ApiClient`, so it targets the identical session: same
+ * `toApi()`'s `tesserafin-sdk` counterpart (docs/tesserafin/design-tesserafin-api-layer.md §8 PR3) - builds a
+ * `TesserafinApi` from the same (legacy) `ApiClient`, so it targets the identical session: same
  * `serverAddress`/`accessToken`/`deviceName`/`deviceId` as `toApi()` reads, which is what
  * guarantees the exact same `DeviceId` the server already knows about, not a second device
  * identity. The one deliberate difference is `clientInfo.name`: sourced from the centralized
- * `REEFIN_CLIENT_IDENTITY.name` rather than re-derived through `apiClient.appName()` (which itself
- * traces to `appHost.appName()`) - both resolve to the same `'Jellyfin Web'` literal today, so this
+ * `TESSERAFIN_CLIENT_IDENTITY.name` rather than re-derived through `apiClient.appName()` (which itself
+ * traces to `appHost.appName()`) - both resolve to the same `'Tesserafin Web'` literal today, so this
  * changes nothing observable server-side, but it is the single point a future rename touches on
- * this side (see `REEFIN_CLIENT_IDENTITY`'s doc comment in `lib/reefin-sdk`).
+ * this side (see `TESSERAFIN_CLIENT_IDENTITY`'s doc comment in `lib/tesserafin-sdk`).
  *
  * Callers needing to keep this fresh across re-login/token refresh should call `.update(...)` on
  * the returned instance the same way `utils/jellyfin-apiclient/connectionManager.js` already does
- * for `toApi()`'s result (`apiClient._sdk?.update(...)`) - see that file's `apiClient._reefinSdk`
+ * for `toApi()`'s result (`apiClient._sdk?.update(...)`) - see that file's `apiClient._tesserafinSdk`
  * handling for the concrete pattern.
  */
-export const toReefinApi = (apiClient: ApiClient): ReefinApi => {
-    return new ReefinSdk({
+export const toTesserafinApi = (apiClient: ApiClient): TesserafinApi => {
+    return new TesserafinSdk({
         clientInfo: {
-            name: REEFIN_CLIENT_IDENTITY.name,
+            name: TESSERAFIN_CLIENT_IDENTITY.name,
             version: safeDecodeURIComponent(apiClient.appVersion())
         },
         deviceInfo: {

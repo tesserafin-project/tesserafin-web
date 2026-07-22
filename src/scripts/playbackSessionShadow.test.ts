@@ -91,7 +91,7 @@ describe('sendShadowPlaybackSession()', () => {
             })
         );
         // The generated client JSON-serializes the body itself (`serializeDataIfNeeded`,
-        // `src/lib/reefin-sdk/generated/common.ts`) before handing it to axios - `data` on the
+        // `src/lib/tesserafin-sdk/generated/common.ts`) before handing it to axios - `data` on the
         // captured request args is therefore a JSON string, not the plain object.
         const [[sentArgs]] = request.mock.calls;
         expect(JSON.parse(sentArgs.data)).toEqual({

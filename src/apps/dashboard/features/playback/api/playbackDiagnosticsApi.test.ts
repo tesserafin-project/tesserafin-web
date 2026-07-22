@@ -11,9 +11,9 @@ import type { PlaybackSessionListItem } from './types';
  * Tests the fetch functions in isolation against a minimal mocked `Api`, per design doc §7.3 —
  * avoids introducing `@testing-library/react-hooks` for a need that doesn't justify it yet.
  *
- * Since PR2 (docs/reefin/design-reefin-api-layer.md), these functions call through the generated
+ * Since PR2 (docs/tesserafin/design-tesserafin-api-layer.md), these functions call through the generated
  * `SystemApi` class rather than `axiosInstance.get()` directly. The generated client always
- * dispatches through `axiosInstance.request(...)` (see `src/lib/reefin-sdk/generated/common.ts`'s
+ * dispatches through `axiosInstance.request(...)` (see `src/lib/tesserafin-sdk/generated/common.ts`'s
  * `createRequestFunction`), so the mock shape changed from `{ get }` to `{ request, defaults }` —
  * `defaults` is read (`axios.defaults.baseURL`) by that same helper before `request` is ever
  * called, so it has to exist on the mock even though its value doesn't matter here.

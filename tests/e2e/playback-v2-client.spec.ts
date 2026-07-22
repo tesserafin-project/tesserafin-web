@@ -15,12 +15,12 @@ import { expect, request, test } from '@playwright/test';
  * document for themselves. The bytes asserted on are the bytes the real, unpatched bundle put on
  * the wire; a test that rewrites the request it then asserts about proves only its own injection.
  *
- * Formerly this file carried a KNOWN BLOCKER: `reefinPlaybackCapabilities.ts` emitted
+ * Formerly this file carried a KNOWN BLOCKER: `tesserafinPlaybackCapabilities.ts` emitted
  * `VideoCodecs: [{Codec}]` while the server's `Reefin.Playback.Decision/VideoCodecCapability` is a
  * positional record whose `Profiles`/`VideoRangeTypes` members are non-nullable, so every
  * `POST /Playback/Sessions` from the real client was rejected `400` and the v2 SUCCESS path was
  * unreachable without patching the outgoing body. That blocker is GONE: the builder now emits
- * both members on every video codec entry (`src/scripts/reefinPlaybackCapabilities.ts`), so the
+ * both members on every video codec entry (`src/scripts/tesserafinPlaybackCapabilities.ts`), so the
  * unmodified client creates a v2 session on its own and #26's descriptor consumption executes
  * end-to-end with no patching at all. Since issue #29's `Profiles` half, `Profiles` is derived from
  * real `canPlayType` probes (`src/scripts/videoCodecProfiles.ts`) instead of being a constant `[]`,
@@ -28,12 +28,12 @@ import { expect, request, test } from '@playwright/test';
  * fact covered by `video-codec-profiles-browser.spec.ts`. `VideoRangeTypes` remains `['SDR']`.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const E2E_AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-playback-v2", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-playback-v2", Version="0.0.0"';
 
 /** The lazily-loaded chunk `playbackSessionV2UrlTrigger.ts` reaches for ONLY when the flag is on.
  * Its presence/absence in the captured traffic is the positive/negative control that the flag was
@@ -311,7 +311,7 @@ test.describe('playback v2 — flag ON', () => {
         // The body the REAL client produced, read back off the wire and never modified. These two
         // fields are the ones the server's positional `VideoCodecCapability` record requires; the
         // assertion is what makes this test a genuine contract check on
-        // `reefinPlaybackCapabilities.ts` rather than on a test-side injection.
+        // `tesserafinPlaybackCapabilities.ts` rather than on a test-side injection.
         const post = wire.requests.find(
             (r) => r.method === 'POST' && V2_SESSIONS.test(r.url)
         )!;
@@ -557,7 +557,7 @@ test.describe('playback v2 — flag ON', () => {
  *
  * It does NOT prove a Remux/DirectStream decision, because THE REAL CLIENT CANNOT PROVOKE ONE ON
  * THIS RIG. The premise that it could rests on the claim that
- * `src/scripts/reefinPlaybackCapabilities.ts` offers `DirectPlayProfiles` for `webm`/`mp4`/`mov`
+ * `src/scripts/tesserafinPlaybackCapabilities.ts` offers `DirectPlayProfiles` for `webm`/`mp4`/`mov`
  * only. That claim is false: `buildVideoDirectPlayProfiles()` has an explicit third branch —
  *
  *     if (canPlayMkv(videoProbe, browser) && mp4VideoCodecs.length) {
@@ -773,7 +773,7 @@ test.describe('playback v2 — external subtitle sidecar', () => {
         );
 
         // THE LOAD-BEARING ASSERTION. The client declares `SubtitleDelivery: [{Method: External}]`
-        // (`buildSubtitleDelivery` in reefinPlaybackCapabilities.ts), and the server honours it:
+        // (`buildSubtitleDelivery` in tesserafinPlaybackCapabilities.ts), and the server honours it:
         // the sidecar is converted to a browser-consumable format and handed over as a SEPARATE
         // track rather than burned into the video. `SubtitleFormatConverted` is the server's own
         // reason code for exactly that, and its presence is what distinguishes external delivery
@@ -839,7 +839,9 @@ test.describe('playback v2 — external subtitle sidecar', () => {
         expect(subtitleProbe.contentType).toMatch(/text\/vtt/);
         // Real cue content, converted from the SubRip source — not an empty 200.
         expect(subtitleProbe.body).toContain('WEBVTT');
-        expect(subtitleProbe.body).toContain('Reefin E2E external subtitle');
+        expect(subtitleProbe.body).toContain(
+            'Tesserafin E2E external subtitle'
+        );
     });
 });
 

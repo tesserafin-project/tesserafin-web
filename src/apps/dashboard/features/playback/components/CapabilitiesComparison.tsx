@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import React, { useMemo } from 'react';
 
 import globalize from 'lib/globalize';
-import { buildClientCapabilities } from 'scripts/reefinPlaybackCapabilities';
+import { buildClientCapabilities } from 'scripts/tesserafinPlaybackCapabilities';
 import type { ClientCapabilities } from '../api/types';
 import type { CapabilitySetDiff } from '../utils/compareClientCapabilities';
 import { compareClientCapabilities } from '../utils/compareClientCapabilities';
@@ -114,7 +114,7 @@ const CapabilityDiffRow = ({ label, diff }: CapabilityDiffRowProps) => {
 
 /**
  * Renders the declaration-fidelity comparison PR116c adds to the diagnostics drawer (design doc
- * §3 PR116c): the native `ClientCapabilities` declaration `reefinPlaybackCapabilities.ts` (PR116a)
+ * §3 PR116c): the native `ClientCapabilities` declaration `tesserafinPlaybackCapabilities.ts` (PR116a)
  * would build, against `PlaybackDiagnosticDetail.Capabilities` - what the server actually
  * reconstructed for *this* session from its real `DeviceProfile`.
  *

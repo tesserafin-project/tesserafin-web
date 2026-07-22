@@ -36,7 +36,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
  * real ffmpeg.
  *
  * RIG: `reefin/ci/serve-e2e.sh --webdir <this repo>/dist --exec 'npx playwright test ...'`.
- * `REEFIN_E2E_BASE_URL` / `REEFIN_E2E_USER` / `REEFIN_E2E_PASSWORD` come from it. The fixtures this
+ * `TESSERAFIN_E2E_BASE_URL` / `TESSERAFIN_E2E_USER` / `TESSERAFIN_E2E_PASSWORD` come from it. The fixtures this
  * file needs are the rig's own: the H264 + AAC in MP4 movie (the DIRECT PLAY fixture, the only one
  * whose first plan can legitimately be `DirectPlay`) and a second movie for the new-attempt leg.
  *
@@ -54,12 +54,12 @@ import type { APIRequestContext, Page } from '@playwright/test';
  * a stage that never happened is a failure naming itself, never a silent skip.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const E2E_AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-v2-oracle", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-v2-oracle", Version="0.0.0"';
 
 /** The lazily-loaded chunk both v2 triggers reach for ONLY when the client flag is on. */
 const V2_CHUNK = /playback-v2-url\.[a-f0-9]+\.chunk\.js/i;
@@ -346,7 +346,7 @@ async function readServerLog(admin: Admin): Promise<string> {
     }[];
     expect(
         files.length,
-        'the server must be writing at least one log file (the rig sets REEFIN_LOG_DIR)'
+        'the server must be writing at least one log file (the rig sets TESSERAFIN_LOG_DIR)'
     ).toBeGreaterThan(0);
     const newest = [...files].sort((a, b) =>
         String(a.DateModified).localeCompare(String(b.DateModified))

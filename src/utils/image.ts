@@ -84,7 +84,7 @@ export function getDeviceIcon(info: DeviceInfoDto | SessionInfoDto) {
             return BASE_DEVICE_IMAGE_URL + 'titanos.svg';
         case 'Finamp':
             return BASE_DEVICE_IMAGE_URL + 'finamp.svg';
-        case 'Jellyfin Web':
+        case 'Tesserafin Web':
             return getWebDeviceIcon(
                 (info as DeviceInfoDto).Name ||
                     (info as SessionInfoDto).DeviceName

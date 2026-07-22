@@ -1,6 +1,6 @@
 /**
  * Interaction-profile token overrides (RFC-0005 §7.2, issue #18), specified in
- * `docs/reefin/design-glass-interaction-profiles.md`.
+ * `docs/tesserafin/design-glass-interaction-profiles.md`.
  *
  * **LIVE.** These partials are resolved at runtime by `src/themes/useInteractionProfiles.ts` and
  * projected onto CSS custom properties by `./projectTokens.ts`, so an override is true in this
@@ -30,11 +30,11 @@
  * token paths, so no profile-name → value table exists anywhere in the chain.
  */
 
-import type { ReefinTokens } from './types';
+import type { TesserafinTokens } from './types';
 
 /**
  * `NonNullable` before the `object` test, because an *optional* token group would otherwise not
- * recurse: `ReefinColorTokens['light']` is `ReefinColorGroup | undefined`, and a union with
+ * recurse: `TesserafinColorTokens['light']` is `TesserafinColorGroup | undefined`, and a union with
  * `undefined` does not extend `object`, so the naive form fell through to the non-partial branch
  * and demanded all 13 color keys from a partial that legitimately declares four.
  */
@@ -45,7 +45,7 @@ type DeepPartial<T> = {
 };
 
 /** A profile override: a deep-partial of the token set, never a new namespace. */
-export type ReefinTokensOverride = DeepPartial<ReefinTokens>;
+export type TesserafinTokensOverride = DeepPartial<TesserafinTokens>;
 
 /**
  * Profiles that participate in the surface-composition cascade, **in application order — last
@@ -64,7 +64,7 @@ export const PROFILE_CASCADE = [
 export type CascadeProfile = (typeof PROFILE_CASCADE)[number];
 
 /** 3 metres, D-pad: cheaper blur, larger targets, larger type. */
-export const REMOTE_OVERRIDE: ReefinTokensOverride = {
+export const REMOTE_OVERRIDE: TesserafinTokensOverride = {
     blur: { sm: '6px', md: '10px', lg: '14px' },
     density: 'spacious',
     spacing: { md: '20px', lg: '32px', xl: '44px' },
@@ -78,7 +78,7 @@ export const REMOTE_OVERRIDE: ReefinTokensOverride = {
  * per-frame GPU compositing costs. Touches neither `motion` (that is `reducedMotion`'s axis) nor
  * typography (that is `remote`'s).
  */
-export const LOW_POWER_OVERRIDE: ReefinTokensOverride = {
+export const LOW_POWER_OVERRIDE: TesserafinTokensOverride = {
     blur: { sm: '2px', md: '4px', lg: '6px' },
     elevation: {
         level2: '0 1px 3px rgba(0, 0, 0, 0.28)',
@@ -96,12 +96,12 @@ export const LOW_POWER_OVERRIDE: ReefinTokensOverride = {
  * while leaving its surface translucent — precisely the "worse than the blur" state this override
  * exists to prevent, and an override true in this object and false in the computed styles. The
  * light values are not a `mode === 'light'` branch (that would be the per-theme resolution table
- * `docs/reefin/design-glass-interaction-profiles.md` §1 rejects): they are the same concrete
+ * `docs/tesserafin/design-glass-interaction-profiles.md` §1 rejects): they are the same concrete
  * partial shape as `dark`, authored by compositing Glass Light's own translucent tokens over its
  * `background` so the opaque surface renders the color the frosted one already resolved to, at
  * identical contrast (6.38:1 for `textMuted`, either way).
  */
-export const REDUCED_TRANSPARENCY_OVERRIDE: ReefinTokensOverride = {
+export const REDUCED_TRANSPARENCY_OVERRIDE: TesserafinTokensOverride = {
     blur: { sm: '0', md: '0', lg: '0' },
     color: {
         dark: {
@@ -119,7 +119,10 @@ export const REDUCED_TRANSPARENCY_OVERRIDE: ReefinTokensOverride = {
     }
 };
 
-export const CASCADE_OVERRIDES: Record<CascadeProfile, ReefinTokensOverride> = {
+export const CASCADE_OVERRIDES: Record<
+    CascadeProfile,
+    TesserafinTokensOverride
+> = {
     remote: REMOTE_OVERRIDE,
     lowPower: LOW_POWER_OVERRIDE,
     reducedTransparency: REDUCED_TRANSPARENCY_OVERRIDE
@@ -129,7 +132,7 @@ export const CASCADE_OVERRIDES: Record<CascadeProfile, ReefinTokensOverride> = {
  * The orthogonal axis. Durations only — easing curves stay, since a zero-duration transition never
  * samples them and a future non-zero duration must recover the same motion identity.
  */
-export const REDUCED_MOTION_OVERRIDE: ReefinTokensOverride = {
+export const REDUCED_MOTION_OVERRIDE: TesserafinTokensOverride = {
     motion: { duration: { fast: '0ms', normal: '0ms', slow: '0ms' } }
 };
 
@@ -168,10 +171,10 @@ const deepMerge = <T>(base: T, override: unknown): T => {
  * `active.reducedMotion` is ignored here on purpose: use `applyReducedMotion`.
  */
 export const resolveProfileTokens = (
-    base: ReefinTokens,
+    base: TesserafinTokens,
     active: ActiveProfiles
-): ReefinTokens =>
-    PROFILE_CASCADE.reduce<ReefinTokens>(
+): TesserafinTokens =>
+    PROFILE_CASCADE.reduce<TesserafinTokens>(
         (tokens, profile) =>
             active[profile]
                 ? deepMerge(tokens, CASCADE_OVERRIDES[profile])
@@ -181,16 +184,16 @@ export const resolveProfileTokens = (
 
 /** The orthogonal axis, applied independently of — and after — the cascade. */
 export const applyReducedMotion = (
-    tokens: ReefinTokens,
+    tokens: TesserafinTokens,
     reducedMotion: boolean | undefined
-): ReefinTokens =>
+): TesserafinTokens =>
     reducedMotion ? deepMerge(tokens, REDUCED_MOTION_OVERRIDE) : tokens;
 
 /** Full resolution: cascade first, then the orthogonal motion axis. */
 export const resolveTokensForProfiles = (
-    base: ReefinTokens,
+    base: TesserafinTokens,
     active: ActiveProfiles
-): ReefinTokens =>
+): TesserafinTokens =>
     applyReducedMotion(
         resolveProfileTokens(base, active),
         active.reducedMotion
@@ -218,8 +221,8 @@ export const resolveTokensForProfiles = (
  */
 export const resolveProfileOverride = (
     active: ActiveProfiles
-): ReefinTokensOverride => {
-    const cascaded = PROFILE_CASCADE.reduce<ReefinTokensOverride>(
+): TesserafinTokensOverride => {
+    const cascaded = PROFILE_CASCADE.reduce<TesserafinTokensOverride>(
         (override, profile) =>
             active[profile]
                 ? deepMerge(override, CASCADE_OVERRIDES[profile])

@@ -83,4 +83,4 @@ const createIDBPersister = (idbValidKey: IDBValidKey = 'query-cache') =>
         }
     }) satisfies Persister;
 
-export const persister = createIDBPersister('jellyfin-query-cache');
+export const persister = createIDBPersister('tesserafin-query-cache');

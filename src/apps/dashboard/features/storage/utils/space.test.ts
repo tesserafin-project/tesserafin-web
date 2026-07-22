@@ -1,4 +1,4 @@
-import type { FolderStorageDto } from 'lib/reefin-sdk';
+import type { FolderStorageDto } from 'lib/tesserafin-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { calculateUsedPercentage, calculateTotal } from './space';

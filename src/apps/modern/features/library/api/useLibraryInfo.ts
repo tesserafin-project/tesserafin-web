@@ -9,7 +9,7 @@ import { useItem } from 'hooks/useItem';
  *
  * Residual `@jellyfin/sdk` usage (issue #15): `hooks/useItem` is a *shared* hook, still SDK-based
  * and used by legacy screens. It is reused here rather than reimplemented, so this is not a manual
- * API wrapper - the rule the migration enforces. Porting it to `lib/reefin-sdk` would change the
+ * API wrapper - the rule the migration enforces. Porting it to `lib/tesserafin-sdk` would change the
  * `ItemDto` type every existing caller depends on, so it belongs to a shared-hook migration, not to
  * this route's slice.
  */

@@ -1,4 +1,4 @@
-import { CollectionType } from 'lib/reefin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 /**
  * Legacy `#/movies` / `#/tv` URL → canonical `/library/:libraryId` destination (issue #15, L15b —
@@ -15,7 +15,7 @@ import { CollectionType } from 'lib/reefin-sdk';
  *
  * The indices come from `apps/modern/features/libraries/constants/views/movies.ts` and
  * `.../tvshows.ts` — the `Record<number, LibraryTabContent>` each file default-exports — and each
- * target comes from `docs/reefin/design-library-navigation.md` §3.2's fate table. Read them
+ * target comes from `docs/tesserafin/design-library-navigation.md` §3.2's fate table. Read them
  * together: index → legacy tab → fate → URL.
  *
  * ## Two cells deliberately have NO redirect

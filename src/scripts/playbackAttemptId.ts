@@ -23,7 +23,7 @@
  * Deliberately zero imports - same constraint `playbackExecutionDecision.ts` documents for itself.
  * `playbackmanager.js` imports this module statically, so anything it pulled in would land in the
  * main chunk; keeping it dependency-free (`crypto` only, a platform global) keeps it off the
- * bundle budget and keeps the `lib/reefin-sdk` scope behind the existing lazy `playback-v2-url`
+ * bundle budget and keeps the `lib/tesserafin-sdk` scope behind the existing lazy `playback-v2-url`
  * boundary where PR #21 put it.
  *
  * NO module-level current attempt, and this is the correctness core of the module. An earlier

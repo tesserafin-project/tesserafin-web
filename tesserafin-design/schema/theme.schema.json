@@ -1,0 +1,91 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:tesserafin-design:schema:theme",
+    "title": "Reefin theme manifest",
+    "description": "Universal theme manifest (RFC-0005 §7.3). Identity + compatibility + profile overrides + available modes. One theme.json per theme directory under tesserafin-design/themes/<id>/.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "id",
+        "version",
+        "name",
+        "author",
+        "license",
+        "compatibility",
+        "modes"
+    ],
+    "properties": {
+        "id": {
+            "type": "string",
+            "description": "namespace.name — e.g. \"official.classic\", \"community.abyss-remix\".",
+            "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+        },
+        "version": {
+            "type": "string",
+            "description": "Semver of the theme itself.",
+            "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+        },
+        "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable display name, e.g. \"Reefin Classic\"."
+        },
+        "author": {
+            "type": "string",
+            "minLength": 1
+        },
+        "license": {
+            "type": "string",
+            "minLength": 1,
+            "description": "SPDX license identifier (RFC-0005 §7.3/§10.3, e.g. \"GPL-2.0-or-later\", \"MIT\")."
+        },
+        "compatibility": {
+            "type": "object",
+            "description": "Per-platform Reefin version range this theme targets (RFC-0005 §7.3). At least one platform is required; tier attribution (§10.2) is derived from coverage.",
+            "additionalProperties": false,
+            "minProperties": 1,
+            "properties": {
+                "web": { "$ref": "#/$defs/semverRange" },
+                "android": { "$ref": "#/$defs/semverRange" },
+                "ios": { "$ref": "#/$defs/semverRange" },
+                "tv": { "$ref": "#/$defs/semverRange" }
+            }
+        },
+        "profiles": {
+            "type": "object",
+            "description": "Optional per-profile token overrides (RFC-0005 §7.2). Absent or empty for a theme that does not differentiate by profile.",
+            "additionalProperties": false,
+            "properties": {
+                "pointer": { "$ref": "#/$defs/profileOverride" },
+                "touch": { "$ref": "#/$defs/profileOverride" },
+                "remote": { "$ref": "#/$defs/profileOverride" },
+                "compact": { "$ref": "#/$defs/profileOverride" },
+                "medium": { "$ref": "#/$defs/profileOverride" },
+                "expanded": { "$ref": "#/$defs/profileOverride" },
+                "reducedMotion": { "$ref": "#/$defs/profileOverride" },
+                "reducedTransparency": { "$ref": "#/$defs/profileOverride" },
+                "lowPower": { "$ref": "#/$defs/profileOverride" }
+            }
+        },
+        "modes": {
+            "type": "array",
+            "description": "Modes this theme provides tokens for (tokens.json's color group, RFC-0005 §7.1).",
+            "items": { "enum": ["light", "dark"] },
+            "minItems": 1,
+            "uniqueItems": true
+        }
+    },
+    "$defs": {
+        "semverRange": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Loose semver range, e.g. \">=13.0\", \"^1.0.0\", \"~1.2.0\".",
+            "pattern": "^(>=|<=|>|<|\\^|~)?\\d+(\\.(\\d+|x|\\*)){0,2}([ \\t]*(-|\\|\\|)[ \\t]*(>=|<=|>|<|\\^|~)?\\d+(\\.(\\d+|x|\\*)){0,2})*$"
+        },
+        "profileOverride": {
+            "type": "object",
+            "description": "Partial token overrides applied when the profile is active (RFC-0005 §7.2). Deliberately loosely typed here: it is a deep-partial of tokens.schema.json, validated structurally by consumers rather than by this manifest schema.",
+            "additionalProperties": true
+        }
+    }
+}

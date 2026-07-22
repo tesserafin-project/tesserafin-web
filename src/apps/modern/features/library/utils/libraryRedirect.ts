@@ -1,4 +1,4 @@
-import { CollectionType } from 'lib/reefin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 /**
  * v1-supported collection types for `/library/:libraryId` (RFC-0005 §11 WP-C mission scope:

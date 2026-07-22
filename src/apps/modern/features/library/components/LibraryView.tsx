@@ -1,4 +1,4 @@
-import { BaseItemKind, CollectionType } from 'lib/reefin-sdk';
+import { BaseItemKind, CollectionType } from 'lib/tesserafin-sdk';
 import React, { type FC, useCallback, useMemo } from 'react';
 import {
     Navigate,
@@ -62,7 +62,7 @@ const DESTINATION_LABEL_KEY: Record<LibraryDestination, string> = {
 
 /**
  * `/library/:libraryId` and `/library/:libraryId/:destination` — the four-destination library route
- * (issue #15; `docs/reefin/design-library-navigation.md`), **activated** by L15b.
+ * (issue #15; `docs/tesserafin/design-library-navigation.md`), **activated** by L15b.
  *
  * ## What activation means here
  *

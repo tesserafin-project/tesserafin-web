@@ -1,4 +1,4 @@
-import { ItemSortBy, SortOrder } from 'lib/reefin-sdk';
+import { ItemSortBy, SortOrder } from 'lib/tesserafin-sdk';
 import { describe, expect, it } from 'vitest';
 
 import {

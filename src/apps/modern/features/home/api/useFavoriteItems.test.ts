@@ -1,7 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ReefinApi } from 'lib/reefin-sdk';
+import { TesserafinApi } from 'lib/tesserafin-sdk';
 
 import { fetchFavoriteItems } from './useFavoriteItems';
 
@@ -11,12 +11,12 @@ import { fetchFavoriteItems } from './useFavoriteItems';
 vi.mock('hooks/useApi', () => ({ useApi: () => ({}) }));
 
 /**
- * Tests `fetchFavoriteItems` in isolation against a `ReefinApi` built with a mocked axios instance
+ * Tests `fetchFavoriteItems` in isolation against a `TesserafinApi` built with a mocked axios instance
  * - per `playbackDiagnosticsApi.test.ts`'s pattern. See `useUserViews.test.ts` for why `defaults`
  * has to be present on the mock.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): ReefinApi =>
-    new ReefinApi(
+const createMockApi = (request: ReturnType<typeof vi.fn>): TesserafinApi =>
+    new TesserafinApi(
         'https://example.com',
         { name: 'Reefin Web', version: '1.0.0' },
         { name: 'Test Device', id: 'device-1' },

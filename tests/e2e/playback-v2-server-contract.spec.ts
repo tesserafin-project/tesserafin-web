@@ -12,7 +12,7 @@ import { expect, request, test } from '@playwright/test';
  *
  *   STALE-CAPTION CORRECTION: this header previously claimed the hand-crafted payload was necessary
  *   because "the real client's payload is rejected 400" for omitting `Profiles`/`VideoRangeTypes`.
- *   That has not been true since `reefinPlaybackCapabilities.ts` began emitting `Profiles: []` and
+ *   That has not been true since `tesserafinPlaybackCapabilities.ts` began emitting `Profiles: []` and
  *   `VideoRangeTypes: ['SDR']`. The unpatched client now creates v2 sessions on its own — observed,
  *   not assumed: `playback-capabilities-contract.spec.ts` captures the real body on the wire and
  *   `playback-v2-client.spec.ts` drives the full descriptor path through the UI. The payload here is
@@ -21,12 +21,12 @@ import { expect, request, test } from '@playwright/test';
  *   lives here rather than in the client spec.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const H =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-v2-contract", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-v2-contract", Version="0.0.0"';
 
 interface Ctx {
     api: import('@playwright/test').APIRequestContext;

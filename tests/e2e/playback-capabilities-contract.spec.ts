@@ -9,7 +9,7 @@ import {
  * `POST /Playback/Sessions` CAPABILITY CONTRACT — REAL browser E2E, real server.
  *
  * What this file proves:
- *   The client's `reefinPlaybackCapabilities.ts` used to emit `VideoCodecs: [{Codec}]`, omitting
+ *   The client's `tesserafinPlaybackCapabilities.ts` used to emit `VideoCodecs: [{Codec}]`, omitting
  *   `Profiles` and `VideoRangeTypes`. The server's `VideoCodecCapability`
  *   (`Reefin.Playback.Decision`) is a positional record whose corresponding members are non-nullable
  *   `IReadOnlyList<string>`, so ASP.NET model binding required both to be present and rejected every
@@ -39,12 +39,12 @@ import {
  * via `addInitScript`. The source default (OFF) is never modified.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const E2E_AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-capability-contract", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-capability-contract", Version="0.0.0"';
 
 /** The lazily-loaded chunk `playbackSessionV2UrlTrigger.ts` reaches for ONLY when the flag is on.
  * Its presence in captured traffic is the positive control that the flag genuinely took effect, and

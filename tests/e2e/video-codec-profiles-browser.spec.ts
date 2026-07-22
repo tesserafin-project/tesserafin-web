@@ -15,9 +15,9 @@ import {
  * strings in `VIDEO_CODEC_PROFILE_PROBES`, printing every raw answer, and deriving from those real
  * answers rather than from fixtures.
  *
- * NO SERVER, NO NAVIGATION. Unlike every other spec in this directory, nothing here talks to Reefin
+ * NO SERVER, NO NAVIGATION. Unlike every other spec in this directory, nothing here talks to Tesserafin
  * - the assertions are about the browser's own decoder inventory, so the page stays on `about:blank`
- * and the run needs no `REEFIN_E2E_BASE_URL`. That is also why it is safe under the config's single
+ * and the run needs no `TESSERAFIN_E2E_BASE_URL`. That is also why it is safe under the config's single
  * worker: it touches no shared server state.
  *
  * MEASURED, NOT ASSUMED - Playwright Chromium 149.0.7827.55 on Linux x86_64:

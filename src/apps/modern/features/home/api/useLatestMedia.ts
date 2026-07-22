@@ -2,16 +2,16 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
-import { getLibraryApi } from 'lib/reefin-sdk';
+import { getLibraryApi } from 'lib/tesserafin-sdk';
 import type {
     LibraryApiGetLatestMediaRequest,
-    ReefinApi
-} from 'lib/reefin-sdk';
+    TesserafinApi
+} from 'lib/tesserafin-sdk';
 
 const LATEST_MEDIA_LIMIT = 16;
 
 export const fetchLatestMedia = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     params: LibraryApiGetLatestMediaRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -21,7 +21,7 @@ export const fetchLatestMedia = async (
 
 /** Query options for fetching a single library view's "ajouts récents" on the home page. */
 export const getLatestMediaQuery = (
-    api?: ReefinApi,
+    api?: TesserafinApi,
     params: LibraryApiGetLatestMediaRequest = {}
 ) =>
     queryOptions({

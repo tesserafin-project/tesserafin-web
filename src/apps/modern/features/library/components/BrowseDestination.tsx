@@ -3,7 +3,7 @@ import {
     CollectionType,
     ItemSortBy,
     SortOrder
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 import React, { type FC, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
