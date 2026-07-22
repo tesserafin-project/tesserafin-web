@@ -1,11 +1,11 @@
 /**
  * GENERATED — do not edit by hand.
- * Source: reefin-design/themes/classic/{theme,tokens}.json
+ * Source: tesserafin-design/themes/classic/{theme,tokens}.json
  * Regenerate: npm run generate:tokens
  */
-import type { ReefinTokens } from './types';
+import type { TesserafinTokens } from './types';
 
-export const officialClassicTokens: ReefinTokens = {
+export const officialClassicTokens: TesserafinTokens = {
     color: {
         dark: {
             background: '#101010',

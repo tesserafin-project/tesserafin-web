@@ -1,4 +1,4 @@
-import { BaseItemKind } from 'lib/reefin-sdk';
+import { BaseItemKind } from 'lib/tesserafin-sdk';
 
 import { useGetQueryFiltersLegacy } from 'hooks/useFetchItems';
 import type { ParentId } from 'types/library';
@@ -14,7 +14,7 @@ import type { ParentId } from 'types/library';
  *
  * Residual `@jellyfin/sdk` usage (issue #15): `hooks/useFetchItems` is a *shared* hook, still
  * SDK-based and used by the legacy library screens. Reusing it is precisely what avoids a manual
- * API wrapper here; rewriting this route against `lib/reefin-sdk`'s generated `FilterApi` would
+ * API wrapper here; rewriting this route against `lib/tesserafin-sdk`'s generated `FilterApi` would
  * duplicate an endpoint the shared hook already covers and add bundle weight for no behaviour
  * change. Migrating the shared hook is a separate, cross-cutting change.
  */

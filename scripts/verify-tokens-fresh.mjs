@@ -4,8 +4,8 @@
  * "Design system v1".
  *
  * Regenerates `src/ui/tokens/` from the versioned theme sources
- * (`reefin-design/themes/<id>/theme.json` + `tokens.json`) via
- * `npm run generate:tokens` (reefin-design/scripts/generate-web-tokens.mjs) and fails
+ * (`tesserafin-design/themes/<id>/theme.json` + `tokens.json`) via
+ * `npm run generate:tokens` (tesserafin-design/scripts/generate-web-tokens.mjs) and fails
  * (non-zero exit) if:
  *   - `src/ui/tokens/` has pending changes before the check even starts (ambiguous result -
  *     can't tell whether a subsequent diff comes from regeneration or from pre-existing edits);
@@ -15,7 +15,7 @@
  *     created (untracked) files count as a diff, not just changes to files git already tracks
  *     (generated tokens are stale, run `npm run generate:tokens` and commit).
  *
- * The generator (reefin-design/scripts/generate-web-tokens.mjs) is deterministic by design
+ * The generator (tesserafin-design/scripts/generate-web-tokens.mjs) is deterministic by design
  * (fixed key order, no timestamps, no environment-dependent data) - re-running it against
  * unchanged theme sources must produce byte-identical output.
  *
@@ -62,12 +62,12 @@ function main() {
     }
 
     console.log(
-        '[verify:tokens-fresh] Regenerating web tokens from reefin-design/themes/*...'
+        '[verify:tokens-fresh] Regenerating web tokens from tesserafin-design/themes/*...'
     );
     try {
         execFileSync(
             'node',
-            ['reefin-design/scripts/generate-web-tokens.mjs'],
+            ['tesserafin-design/scripts/generate-web-tokens.mjs'],
             {
                 cwd: REPO_ROOT,
                 stdio: 'inherit'
@@ -89,7 +89,7 @@ function main() {
 
     console.log(
         `[verify:tokens-fresh] ${TOKENS_RELATIVE} matches a fresh regeneration from ` +
-            'reefin-design/themes/*.'
+            'tesserafin-design/themes/*.'
     );
     console.log('[verify:tokens-fresh] PASS.');
 }

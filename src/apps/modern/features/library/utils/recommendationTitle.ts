@@ -1,5 +1,5 @@
 import globalize from 'lib/globalize';
-import { type RecommendationDto, RecommendationType } from 'lib/reefin-sdk';
+import { type RecommendationDto, RecommendationType } from 'lib/tesserafin-sdk';
 
 /**
  * Heading for one `MovieRecommendations` category ("Because you watched X", "Directed by Y", …).
@@ -7,7 +7,7 @@ import { type RecommendationDto, RecommendationType } from 'lib/reefin-sdk';
  * Mirrors `apps/modern/features/libraries/components/SuggestionsSectionView.tsx`'s
  * `getRecommendationTittle` [sic] exactly — same `RecommendationType` branches, same four
  * `Recommendation*` strings — so the Suggestions destination labels its shelves with the wording
- * users already know. It is re-expressed here against `lib/reefin-sdk`'s `RecommendationType`
+ * users already know. It is re-expressed here against `lib/tesserafin-sdk`'s `RecommendationType`
  * rather than imported, because the legacy component types it against `@jellyfin/sdk`'s enum and
  * this slice is kept free of that import (issue #15's migration rule). The two enums are
  * `openapi-generator` output over the same contract, so the string values are identical.

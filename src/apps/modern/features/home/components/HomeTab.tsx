@@ -2,7 +2,7 @@ import React, { type FC, useMemo } from 'react';
 
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import type { BaseItemDto } from 'lib/reefin-sdk';
+import type { BaseItemDto } from 'lib/tesserafin-sdk';
 import { MediaCard, MediaShelf } from 'ui';
 
 import { useLatestMedia } from '../api/useLatestMedia';

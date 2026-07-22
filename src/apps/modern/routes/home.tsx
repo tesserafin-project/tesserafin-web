@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { clearBackdrop } from 'components/backdrop/backdrop';
 import Page from 'components/Page';
 import globalize from 'lib/globalize';
-import { BaseItemKind } from 'lib/reefin-sdk';
+import { BaseItemKind } from 'lib/tesserafin-sdk';
 import { Tabs, type TabItem } from 'ui';
 
 import FavoritesTab from '../features/home/components/FavoritesTab';
@@ -32,7 +32,7 @@ const Home = () => {
 
     // Same `.skinHeader.noHomeButtonHeader` toggling the previous `onResume`/`onPause` did, now
     // scoped to mount/unmount since there's no per-tab controller lifecycle left to hook into.
-    // TODO(RFC-0005 §4.2/design-reefin-shell-and-routing.md): retire this once the shell
+    // TODO(RFC-0005 §4.2/design-tesserafin-shell-and-routing.md): retire this once the shell
     // (`AppLayout`/`components/`) is migrated onto `src/ui` and exposes a declarative way to hide
     // the home button instead of a legacy DOM class toggle on `.skinHeader`.
     useEffect(() => {

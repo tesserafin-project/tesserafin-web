@@ -20,7 +20,7 @@
  * This module is a leaf — no imports, no side effects — so both sides can depend on it, and so it
  * is unit-testable without dragging in either import graph. `CollectionType` is compared by string
  * value rather than imported for the same reason: `appRouter.js` uses `@jellyfin/sdk`'s enum, the
- * library slice uses `lib/reefin-sdk`'s, and both are `openapi-generator` output over one contract
+ * library slice uses `lib/tesserafin-sdk`'s, and both are `openapi-generator` output over one contract
  * with identical values.
  */
 

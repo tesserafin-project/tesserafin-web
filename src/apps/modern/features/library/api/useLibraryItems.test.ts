@@ -1,7 +1,12 @@
 import type { AxiosInstance } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BaseItemKind, ItemSortBy, ReefinApi, SortOrder } from 'lib/reefin-sdk';
+import {
+    BaseItemKind,
+    ItemSortBy,
+    TesserafinApi,
+    SortOrder
+} from 'lib/tesserafin-sdk';
 
 import {
     fetchLibraryItems,
@@ -18,11 +23,11 @@ import {
 vi.mock('hooks/useApi', () => ({ useApi: () => ({}) }));
 
 /**
- * Tests `fetchLibraryItems` in isolation against a `ReefinApi` built with a mocked axios instance -
+ * Tests `fetchLibraryItems` in isolation against a `TesserafinApi` built with a mocked axios instance -
  * same pattern as `apps/modern/features/home/api/useLatestMedia.test.ts`.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): ReefinApi =>
-    new ReefinApi(
+const createMockApi = (request: ReturnType<typeof vi.fn>): TesserafinApi =>
+    new TesserafinApi(
         'https://example.com',
         { name: 'Reefin Web', version: '1.0.0' },
         { name: 'Test Device', id: 'device-1' },

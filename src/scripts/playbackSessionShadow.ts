@@ -8,7 +8,7 @@
  * Bridge pattern: `playbackApiFor()` below mirrors `systemApiFor()`
  * (`apps/dashboard/features/playback/api/playbackDiagnosticsApi.ts`) - it configures the generated
  * `PlaybackApi` from the CURRENT `@jellyfin/sdk` session (`api.basePath`/`api.axiosInstance`/
- * `api.authorizationHeader`) rather than through `lib/reefin-sdk`'s independent `createReefinApi()`,
+ * `api.authorizationHeader`) rather than through `lib/tesserafin-sdk`'s independent `createTesserafinApi()`,
  * for the same reason: avoid the server seeing a second `DeviceId` for the same browser session
  * (design doc §1.4/§3 PR116b).
  *
@@ -26,15 +26,15 @@ import appSettings from './settings/appSettings';
 import {
     buildClientCapabilities,
     buildPlaybackConstraints
-} from './reefinPlaybackCapabilities';
+} from './tesserafinPlaybackCapabilities';
 import {
     Configuration,
     PlaybackApi,
     type PlaybackSessionResponse
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 /** Configures a generated `PlaybackApi` from an existing `@jellyfin/sdk` session - see file-level
- * doc comment for why this reuses the session instead of `createReefinApi()`. */
+ * doc comment for why this reuses the session instead of `createTesserafinApi()`. */
 const playbackApiFor = (api: Api): PlaybackApi =>
     new PlaybackApi(
         new Configuration({

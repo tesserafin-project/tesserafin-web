@@ -442,7 +442,7 @@ class AppRouter {
 
             /*
              * Movies and Tvshows point at the canonical four-destination library route
-             * (issue #15, L15b — `docs/reefin/design-library-navigation.md`). This is the
+             * (issue #15, L15b — `docs/tesserafin/design-library-navigation.md`). This is the
              * activation: `getRouteUrl()` is the one URL builder behind home cards,
              * `MainDrawerContent` and `UserViewNav`/`UserViewsMenu` alike, so changing it here
              * moves every entry point at once — which is why L15a mounted the destinations first.

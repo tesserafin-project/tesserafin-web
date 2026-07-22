@@ -18,16 +18,16 @@ import { expect, request, test, type Page } from '@playwright/test';
  * three viewports, for both Glass modes — against the running app, never against a fixture page.
  */
 
-const USER = process.env.REEFIN_E2E_USER ?? 'smokeadmin';
-const PASSWORD = process.env.REEFIN_E2E_PASSWORD ?? 'smokepass123';
-const BASE_URL = process.env.REEFIN_E2E_BASE_URL ?? 'http://localhost:8096';
+const USER = process.env.TESSERAFIN_E2E_USER ?? 'smokeadmin';
+const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
+const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
 
 const CAPTURE_DIR =
-    process.env.REEFIN_E2E_CAPTURE_DIR ??
+    process.env.TESSERAFIN_E2E_CAPTURE_DIR ??
     resolve(process.cwd(), 'test-results', 'glass-captures');
 
 const AUTH_HEADER =
-    'MediaBrowser Client="Reefin Web E2E", Device="Playwright", DeviceId="reefin-e2e-glass-activation", Version="0.0.0"';
+    'MediaBrowser Client="Tesserafin Web E2E", Device="Playwright", DeviceId="tesserafin-e2e-glass-activation", Version="0.0.0"';
 
 /** The three form factors RFC-0005 §8.2 asks for captures at. */
 const VIEWPORTS = {

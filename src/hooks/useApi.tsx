@@ -12,20 +12,20 @@ import React, {
 } from 'react';
 
 import { ServerConnections } from 'lib/jellyfin-apiclient';
-import type { ReefinApi } from 'lib/reefin-sdk';
+import type { TesserafinApi } from 'lib/tesserafin-sdk';
 import events from 'utils/events';
 
 export interface TesserafinApiContext {
     __legacyApiClient__?: ApiClient;
     api?: Api;
     /**
-     * Parallel `reefin-sdk` client for the same session/device as `api` (design doc §8 PR3) -
-     * additive, not a replacement: see `ReefinApi`'s doc comment (`lib/reefin-sdk`) for why `api`
+     * Parallel `tesserafin-sdk` client for the same session/device as `api` (design doc §8 PR3) -
+     * additive, not a replacement: see `TesserafinApi`'s doc comment (`lib/tesserafin-sdk`) for why `api`
      * (still the only field with WebSocket support via `.subscribe()`) isn't being swapped out
      * wholesale. New call sites against Reefin-superset routes (generated `*Api` classes) should
      * prefer this over `api`; existing `api` consumers are unaffected.
      */
-    reefinApi?: ReefinApi;
+    reefinApi?: TesserafinApi;
     user?: UserDto;
 }
 
@@ -35,7 +35,7 @@ export const useApi = () => useContext(ApiContext);
 export const ApiProvider: FC<PropsWithChildren<unknown>> = ({ children }) => {
     const [legacyApiClient, setLegacyApiClient] = useState<ApiClient>();
     const [api, setApi] = useState<Api>();
-    const [reefinApi, setReefinApi] = useState<ReefinApi>();
+    const [reefinApi, setTesserafinApi] = useState<TesserafinApi>();
     const [user, setUser] = useState<UserDto>();
 
     const context = useMemo(
@@ -86,12 +86,12 @@ export const ApiProvider: FC<PropsWithChildren<unknown>> = ({ children }) => {
                 ? ServerConnections.getApi(legacyApiClient.serverId())
                 : undefined
         );
-        setReefinApi(
+        setTesserafinApi(
             legacyApiClient
-                ? ServerConnections.getReefinApi(legacyApiClient.serverId())
+                ? ServerConnections.getTesserafinApi(legacyApiClient.serverId())
                 : undefined
         );
-    }, [legacyApiClient, setApi, setReefinApi]);
+    }, [legacyApiClient, setApi, setTesserafinApi]);
 
     return (
         <ApiContext.Provider value={context}>{children}</ApiContext.Provider>

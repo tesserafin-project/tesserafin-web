@@ -7,7 +7,7 @@ import profileBuilder from '../scripts/browserDeviceProfile';
 import { AppFeature } from 'constants/appFeature';
 import { LayoutMode } from 'constants/layoutMode';
 
-const appName = 'Jellyfin Web';
+const appName = 'Tesserafin Web';
 
 const BrowserName = {
     titanos: 'Titan OS',
@@ -151,7 +151,7 @@ function generateDeviceId() {
 
 function getDeviceId() {
     if (!deviceId) {
-        const key = '_deviceId2';
+        const key = '_tesserafinDeviceId';
 
         deviceId = appSettings.get(key);
 

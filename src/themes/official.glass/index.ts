@@ -13,7 +13,7 @@ import 'ui/tokens/official.glass.css';
  *
  * The translucency itself (the `rgba()` surface/surfaceVariant colors, `backdrop-filter` blur)
  * lives entirely in the `--rf-*` design-token layer (`src/ui/tokens/official.glass.css`,
- * generated from `reefin-design/themes/glass/tokens.json`) and is applied by `src/ui/` component
+ * generated from `tesserafin-design/themes/glass/tokens.json`) and is applied by `src/ui/` component
  * CSS. This MUI `ColorSystemOptions` intentionally keeps `background.paper` OPAQUE: MUI-driven
  * legacy surfaces (dialogs, menus, the classic card grid, etc.) do not read `--rf-*` tokens and
  * have no backdrop to blur, so giving them a translucent paper color would just make their text
@@ -58,7 +58,7 @@ const theme = buildCustomColorScheme({
  * Reefin Glass — light frosted mode (issue #18, W13.8b).
  *
  * The frost is *not* mode-specific: `blur.md` stays `16px` for both modes in
- * `reefin-design/themes/glass/tokens.json`, and only the `color.light` group differs. So this
+ * `tesserafin-design/themes/glass/tokens.json`, and only the `color.light` group differs. So this
  * scheme is a light mode that is still Glass, rather than a flat light theme wearing Glass's name
  * — the translucency and the `backdrop-filter` reach the page identically, from the same
  * `[data-rf-theme="official.glass"]` tier, with the `[data-rf-mode="light"]` block overriding
@@ -69,7 +69,7 @@ const theme = buildCustomColorScheme({
  * `src/ui/` component surface, whose tokens carry it.
  *
  * The palette is authored against WCAG AA over Glass Light's *composited* frosted surface — every
- * foreground/background pair in `reefin-design/themes/glass/tokens.json#color.light` resolves at
+ * foreground/background pair in `tesserafin-design/themes/glass/tokens.json#color.light` resolves at
  * 4.5:1 or better once the translucent surface is composited over the background, which
  * `src/ui/tokens/profiles.test.ts` pins numerically rather than leaving to inspection.
  */

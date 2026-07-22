@@ -1,4 +1,4 @@
-import type { FolderStorageDto } from 'lib/reefin-sdk';
+import type { FolderStorageDto } from 'lib/tesserafin-sdk';
 
 export const calculateTotal = (folder?: FolderStorageDto) => {
     if (typeof folder?.UsedSpace === 'undefined' || folder.UsedSpace < 0) {

@@ -6,12 +6,12 @@
  * It is a pure, dependency-injected description of *how* a browser's HDR support could be
  * measured. It is NOT wired into anything: nothing in `src/` imports it, it does not read a
  * single global, and it does not emit or influence `VideoRangeTypes` anywhere.
- * `reefinPlaybackCapabilities.ts` keeps returning the conservative `['SDR']` constant, and issue
+ * `tesserafinPlaybackCapabilities.ts` keeps returning the conservative `['SDR']` constant, and issue
  * #29 stays open. Only a *conjunction positive* observed on identified real HDR hardware may ever
  * justify changing that, and that change is not this change.
  *
  * Because nothing imports it, this module is proven absent from every emitted bundle - see
- * `docs/reefin/bench-hdr/hdr-detection-feasibility.md` for the build-and-grep evidence.
+ * `docs/tesserafin/bench-hdr/hdr-detection-feasibility.md` for the build-and-grep evidence.
  *
  * ## The rule the design is held to: HDR10 is a CONJUNCTION
  *

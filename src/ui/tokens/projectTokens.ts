@@ -3,7 +3,7 @@
  *
  * ## Why this exists
  *
- * An interaction profile (`./profiles.ts`) is a concrete deep-partial of `ReefinTokens`. Resolving
+ * An interaction profile (`./profiles.ts`) is a concrete deep-partial of `TesserafinTokens`. Resolving
  * it produces a new *TypeScript object* — and nothing else. The rendered page does not read that
  * object: every Reefin surface reads `--rf-*` custom properties that were emitted **at build time**
  * into `src/ui/tokens/<themeId>.css`. Without this module a profile override is true in the object
@@ -20,7 +20,7 @@
  * described above.
  *
  * So this module **re-derives** the derived property, through the very same function the generator
- * uses (`reefin-design/web/backdrop-filter.mjs`) rather than a second copy of the formula. One
+ * uses (`tesserafin-design/web/backdrop-filter.mjs`) rather than a second copy of the formula. One
  * formula, two call sites, no possibility of build-time and run-time disagreeing. This is the
  * chosen runtime authority: the projection regenerates every derived property it invalidates.
  *
@@ -31,17 +31,17 @@
  * `blur.md` → `--rf-blur-md` (+ `--rf-backdrop-filter-md`). The one structural exception is
  * `color.<mode>.<key>`, whose mode segment is dropped — `color.dark.surfaceVariant` becomes
  * `--rf-color-surface-variant` — because the generator scopes modes by `[data-rf-mode]` selector
- * instead of by property name. This mirrors `reefin-design/scripts/generate-web-tokens.mjs`; the
+ * instead of by property name. This mirrors `tesserafin-design/scripts/generate-web-tokens.mjs`; the
  * `projectTokens.test.ts` suite pins the two against the generated CSS so they cannot drift.
  *
  * Because names are derived from paths, a profile cannot address a token that does not exist, and
  * there is no profile-name → value lookup anywhere in the chain: the partials carry their own
- * concrete values (see `docs/reefin/design-glass-interaction-profiles.md` §1).
+ * concrete values (see `docs/tesserafin/design-glass-interaction-profiles.md` §1).
  */
 
-import { toBackdropFilter } from '../../../reefin-design/web/backdrop-filter.mjs';
+import { toBackdropFilter } from '../../../tesserafin-design/web/backdrop-filter.mjs';
 
-import type { ReefinTokensOverride } from './profiles';
+import type { TesserafinTokensOverride } from './profiles';
 
 /** A projected custom property: the `--rf-*` name and the value to write. */
 export type CustomProperties = Record<string, string>;
@@ -62,7 +62,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
  * would silently repaint the page if the mode later changed.
  */
 export const toCustomProperties = (
-    override: ReefinTokensOverride,
+    override: TesserafinTokensOverride,
     mode: 'dark' | 'light' = 'dark'
 ): CustomProperties => {
     const properties: CustomProperties = {};

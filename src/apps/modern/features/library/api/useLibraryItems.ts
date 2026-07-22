@@ -2,13 +2,13 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
-import { getLibraryApi, ImageType, ItemFields } from 'lib/reefin-sdk';
+import { getLibraryApi, ImageType, ItemFields } from 'lib/tesserafin-sdk';
 import type {
     BaseItemKind,
     ItemSortBy,
-    ReefinApi,
+    TesserafinApi,
     SortOrder
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 
 import {
@@ -23,7 +23,7 @@ import {
  * `Filters`-object grab bag (`types/library.ts`'s `LibraryViewSettings`), since that type is the
  * existing `ItemsView` slice's local state shape, not a wire format worth reusing here.
  *
- * Issued through `lib/reefin-sdk`'s generated `LibraryApi` (issue #15): the generated client covers
+ * Issued through `lib/tesserafin-sdk`'s generated `LibraryApi` (issue #15): the generated client covers
  * this endpoint, so no hand-written wrapper is warranted. The request shape is identical to
  * `@jellyfin/sdk`'s - both are `openapi-generator` `typescript-axios` output over the same contract
  * - so this is an import and client swap, not a call-site rewrite.
@@ -61,7 +61,7 @@ export interface LibraryItemsParams {
 }
 
 export const fetchLibraryItems = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     userId: string,
     params: LibraryItemsParams,
     options?: AxiosRequestConfig

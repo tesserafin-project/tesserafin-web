@@ -1,6 +1,6 @@
 /**
  * Playback diagnostics types, sourced from the generated Reefin API client
- * (`src/lib/reefin-sdk/generated/`, see `docs/reefin/design-reefin-api-layer.md`) rather than
+ * (`src/lib/tesserafin-sdk/generated/`, see `docs/tesserafin/design-tesserafin-api-layer.md`) rather than
  * hand-mirrored from the C# DTOs as this file did before PR2 of that design.
  *
  * The generated model interfaces mark every property optional (`'Foo'?: T`), including properties
@@ -10,7 +10,7 @@
  * optionality (`?`) while leaving genuine domain nullability (`T | null`) untouched, restoring the
  * required/nullable split this file previously hand-maintained - now re-derived from the generated
  * shape instead of retyped from the C# source, so structural drift (new/renamed/removed fields) is
- * caught by `tsc` the next time `npm run generate:reefin-sdk` runs, not discovered at runtime.
+ * caught by `tsc` the next time `npm run generate:tesserafin-sdk` runs, not discovered at runtime.
  *
  * This still relies on the same two facts about the wire format the pre-generation version of this
  * file verified directly against `reefin` source (`src/Reefin.Extensions/Json/JsonDefaults.cs`),
@@ -53,7 +53,7 @@ import type {
     PlaybackDiagnosticDetail as GeneratedPlaybackDiagnosticDetail,
     PlaybackSessionListItem as GeneratedPlaybackSessionListItem,
     PlaybackSessionResponse as GeneratedPlaybackSessionResponse
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 export type {
     DivergenceClass,

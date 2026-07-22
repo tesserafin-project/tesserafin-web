@@ -1,11 +1,11 @@
 /**
  * GENERATED — do not edit by hand.
- * Source: reefin-design/themes/glass/{theme,tokens}.json
+ * Source: tesserafin-design/themes/glass/{theme,tokens}.json
  * Regenerate: npm run generate:tokens
  */
-import type { ReefinTokens } from './types';
+import type { TesserafinTokens } from './types';
 
-export const officialGlassTokens: ReefinTokens = {
+export const officialGlassTokens: TesserafinTokens = {
     color: {
         dark: {
             background: '#0b0e14',

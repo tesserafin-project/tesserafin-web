@@ -2,7 +2,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import React, { type FC, useMemo } from 'react';
 
 import globalize from 'lib/globalize';
-import { BaseItemKind, CollectionType } from 'lib/reefin-sdk';
+import { BaseItemKind, CollectionType } from 'lib/tesserafin-sdk';
 import type { ItemDto } from 'types/base/models/item-dto';
 import type { ItemDtoQueryResult } from 'types/base/models/item-dto-query-result';
 import { EmptyState, LoadingState, MediaCard, MediaShelf } from 'ui';

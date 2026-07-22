@@ -3,9 +3,9 @@
  * (issue #29, the `Profiles` half - the `VideoRangeTypes` half is deliberately NOT touched here).
  *
  * WHY THIS FILE HAS NO IMPORTS. It is consumed by three very different runtimes: the app bundle
- * (through `reefinPlaybackCapabilities.ts`), vitest (jsdom, pure mapping tests), and a Playwright
+ * (through `tesserafinPlaybackCapabilities.ts`), vitest (jsdom, pure mapping tests), and a Playwright
  * spec that imports it straight from `tests/e2e/` to run the table's MIME strings through a REAL
- * Chromium. Keeping it dependency-free (no `lib/reefin-sdk` path alias, no `./browser`) is what
+ * Chromium. Keeping it dependency-free (no `lib/tesserafin-sdk` path alias, no `./browser`) is what
  * makes that third consumer possible without a second bundling step.
  *
  * ---------------------------------------------------------------------------------------------
@@ -49,7 +49,7 @@
  * A profile is emitted ONLY when one of its own exact MIME strings answers `'probably'`.
  *
  *  - A GENERIC PROBE PROVES NOTHING SPECIFIC. `canPlayType('video/mp4; codecs="avc1.42E01E"')`
- *    proves Constrained Baseline and Constrained Baseline only. `reefinPlaybackCapabilities.ts`
+ *    proves Constrained Baseline and Constrained Baseline only. `tesserafinPlaybackCapabilities.ts`
  *    uses that same string as its "can this browser do H.264 at all" gate; it is NOT evidence for
  *    `high`, and the two uses are kept textually separate here for that reason.
  *
@@ -177,7 +177,7 @@ export const VIDEO_CODEC_PROFILE_PROBES: Readonly<
 };
 
 /** The browser-family signals the vetoes below read. Structurally a subset of
- * `reefinPlaybackCapabilities.ts`'s `BrowserSignals`, redeclared to keep this module import-free. */
+ * `tesserafinPlaybackCapabilities.ts`'s `BrowserSignals`, redeclared to keep this module import-free. */
 export interface ProfileBrowserSignals {
     safari?: boolean;
     iOS?: boolean;

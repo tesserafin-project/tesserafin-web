@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CollectionType } from 'lib/reefin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 import moviesViews from 'apps/modern/features/libraries/constants/views/movies';
 import tvShowsViews from 'apps/modern/features/libraries/constants/views/tvshows';
@@ -32,7 +32,7 @@ import {
 
 /**
  * Behavioural spec for the Library navigation model (structure delivered, not routed)
- * (`docs/reefin/design-library-navigation.md`). Nothing here activates a route; these assertions
+ * (`docs/tesserafin/design-library-navigation.md`). Nothing here activates a route; these assertions
  * pin the arbitration so a later activation slice cannot silently drop a legacy tab or ship a
  * misleading AlphaPicker.
  */

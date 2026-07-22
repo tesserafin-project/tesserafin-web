@@ -10,7 +10,7 @@ import {
  * Reefin Glass interaction profiles — **computed-style** proof (RFC-0005 §7.2, issue #18).
  *
  * The defect this suite exists to pin down: a profile used to change `blur.*` in the resolved
- * `ReefinTokens` object while the page kept painting the build-time blur, because
+ * `TesserafinTokens` object while the page kept painting the build-time blur, because
  * `_glass-surface.scss` reads the *derived* `--rf-backdrop-filter-md` and nothing re-derived it at
  * run time. An override was true in TypeScript and false in the browser.
  *

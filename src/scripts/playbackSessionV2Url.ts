@@ -22,19 +22,19 @@
  * (`apps/dashboard/features/playback/api/playbackDiagnosticsApi.ts`) and `playbackSessionShadow.ts`'s
  * own copy of the same helper - configures the generated `PlaybackApi` from the CURRENT
  * `@jellyfin/sdk` session (`api.basePath`/`api.axiosInstance`/`api.authorizationHeader`) instead of
- * `lib/reefin-sdk`'s independent `createReefinApi()`, so the server never sees a second `DeviceId`
+ * `lib/tesserafin-sdk`'s independent `createTesserafinApi()`, so the server never sees a second `DeviceId`
  * for the same browser session. Deliberately duplicated here rather than imported from
- * `playbackSessionShadow.ts` - same repo precedent as `reefinPlaybackCapabilities.ts`'s file-level
+ * `playbackSessionShadow.ts` - same repo precedent as `tesserafinPlaybackCapabilities.ts`'s file-level
  * comment on deliberate duplication over a drive-by extraction of an unrelated, already-shipped file.
  *
  * Hand-written wrapper for the `GET`: `Reefin.Api/Controllers/PlaybackSessionsController.cs`'s
  * `Playback/Sessions/{id}/Stream` (PR117) postdates the pinned OpenAPI spec
- * (`src/lib/reefin-sdk/spec/version.json`) the generated client was built from, so no
+ * (`src/lib/tesserafin-sdk/spec/version.json`) the generated client was built from, so no
  * `PlaybackApi.getPlaybackSessionStream()` method exists to call. `fetchPlaybackSessionStream()`
  * below calls it directly through the same `api.axiosInstance`/`api.basePath`/
  * `api.authorizationHeader` triple the bridge above uses - same session identity, no generated
  * method required. Regenerating the whole client is out of scope for this PR (task instructions);
- * revisit once `npm run generate:reefin-sdk` is re-run against a spec that includes PR117.
+ * revisit once `npm run generate:tesserafin-sdk` is re-run against a spec that includes PR117.
  *
  * `PlaySessionId` (`docs/pr116d-url-contract-design.md` §2.3): unlike PR116b's shadow call (which
  * deliberately never supplies the real session's id - see `playbackSessionShadow.ts`), this IS the
@@ -54,7 +54,7 @@ import {
 import {
     buildClientCapabilities,
     buildPlaybackConstraints
-} from './reefinPlaybackCapabilities';
+} from './tesserafinPlaybackCapabilities';
 import {
     Configuration,
     PlaybackApi,
@@ -63,14 +63,14 @@ import {
     type CreatePlaybackSessionRequest,
     type PlaybackSessionResponse,
     type ReplacePlaybackSessionRequest
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 /** `reefin` #43 added an optional `PlaybackAttemptId` to `CreatePlaybackSessionRequest`, but the
- * pinned OpenAPI spec (`src/lib/reefin-sdk/spec/version.json`) predates it, so the generated model
+ * pinned OpenAPI spec (`src/lib/tesserafin-sdk/spec/version.json`) predates it, so the generated model
  * has no such property yet. Hand-extended here rather than regenerating the whole client - the same
  * precedent this file already sets for `PlaybackSessionStreamDescriptor` (see the file-level doc
  * comment on the PR117 `GET .../Stream` wrapper). Drop this once
- * `npm run generate:reefin-sdk` is re-run against a spec that includes #47. */
+ * `npm run generate:tesserafin-sdk` is re-run against a spec that includes #47. */
 type CreatePlaybackSessionRequestWithAttemptId =
     CreatePlaybackSessionRequest & {
         PlaybackAttemptId?: string;
@@ -86,7 +86,7 @@ type ReplacePlaybackSessionRequestWithAttemptId =
     };
 
 /** Configures a generated `PlaybackApi` from an existing `@jellyfin/sdk` session - see file-level
- * doc comment for why this reuses the session instead of `createReefinApi()`. */
+ * doc comment for why this reuses the session instead of `createTesserafinApi()`. */
 const playbackApiFor = (api: Api): PlaybackApi =>
     new PlaybackApi(
         new Configuration({

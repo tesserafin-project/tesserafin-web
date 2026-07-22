@@ -1,0 +1,294 @@
+# RFC-0002 — Abandon des cibles navigateurs legacy et adoption de Biome
+
+- **Statut** : Implemented
+- **Date** : 2026-07-16
+- **Auteur** : Reefin Team
+- **Dépôt** : `reefin-web` (fork de `jellyfin-web`)
+- **Relation** : s'appuie sur RFC-0001 (`docs/tesserafin/RFC-0001-vision-and-feasibility.md`) — §3 politique de breaking changes (critère 1, « supprime de l'architecture héritée »), §7 phase 2 (« mise en place d'une politique de synchronisation contrôlée avec l'upstream »), §8 (« dépendances tierces et outillage de build tant qu'ils ne bloquent pas la trajectoire TypeScript/React ciblée »).
+- **Clôture (W13.1, « Clôture des fondations »)** : toutes les étapes du plan d'exécution §5.4
+  (1-7) sont faites, y compris l'étape 7 (TypeScript 6.0) et le retrait de
+  `ForkTsCheckerWebpackPlugin` qui en découlait (voir §7 « Mesures finales » ci-dessous pour les
+  chiffres de clôture et l'écart avec les estimations antérieures).
+
+---
+
+## 1. Contexte et motivation
+
+RFC-0001 pose que Reefin Web est un fork qui modernise intentionnellement, par tranches verticales, sans reconstruire le shell depuis zéro. Mais deux pans de l'outillage actuel tirent dans l'autre sens : la cible navigateurs héritée de `jellyfin-web` (TV ES5, IE-era) impose des transformations, polyfills et vérifications qui ralentissent chaque build et chaque contribution, et la chaîne ESLint (8 plugins, config flat de ~200+ lignes) est lente et redondante avec un outil plus simple. Ce RFC formalise une décision déjà validée par le mainteneur : abandonner la cible legacy et migrer vers Biome comme formatter + linter principal.
+
+Ce changement remplit le **critère 1** de la politique de breaking changes de RFC-0001 (« il supprime de l'architecture héritée ») : la cible navigateur ES5 est explicitement identifiée en RFC-0001 §1.2/§6.2 comme dette à faire disparaître, pas comme une contrainte permanente du produit.
+
+### 1.1 Inventaire concret de la cible legacy actuelle
+
+**`package.json` → `browserslist`** :
+
+```json
+"browserslist": [
+    "last 2 Firefox versions",
+    "last 2 Chrome versions",
+    "last 2 ChromeAndroid versions",
+    "last 2 Safari versions",
+    "iOS > 10",
+    "last 2 Edge versions",
+    "Chrome 27",
+    "Chrome 38",
+    "Chrome 47",
+    "Chrome 53",
+    "Chrome 56",
+    "Chrome 63",
+    "Edge 18",
+    "Firefox ESR"
+]
+```
+
+Les entrées `Chrome 27` à `Chrome 63` et `Edge 18` ne correspondent à aucun navigateur desktop/mobile actuel : ce sont des pins pour les moteurs Chromium embarqués dans les firmwares de TV LG webOS et Samsung Tizen (voir §2), et pour la Xbox One (Edge 18, EdgeHTML). `iOS > 10` étend la cible à des versions de Safari mobile antérieures à ES2017.
+
+**`.escheckrc`** — vérifie que le bundle de production ne contient aucune syntaxe au-delà d'ES5 :
+
+```json
+{
+    "ecmaVersion": "es5",
+    "files": "./dist/**/*.js",
+    "not": ["./dist/libraries/pdf.worker.js", "./dist/libraries/worker-bundle.js", "./dist/serviceworker.js"]
+}
+```
+
+Exécuté en CI via `npm run build:es-check` (`build:production` + `escheck`), c'est un des 5 entrées de la matrice `quality` (`.github/workflows/__quality_checks.yml:35-41`), au même titre que `lint`, `stylelint`, `build:check`, `test`.
+
+**`babel.config.js`** — `@babel/preset-env` avec `useBuiltIns: 'usage', corejs: 3` : Babel injecte automatiquement les polyfills `core-js` nécessaires pour chaque fichier source selon la cible browserslist, syntaxe par syntaxe.
+
+**`webpack.common.js`** :
+- `target: 'browserslist'` (ligne 45) — webpack lit directement la même config pour ses propres choix de transformation/chunking.
+- Un plugin `@babel/plugin-transform-modules-umd` appliqué spécifiquement à `pdfjs-dist` et `xmldom` (ligne ~307) car « Babel casse leur transformation vers ESM » — contournement direct lié à la cible ES5/ES modules non supportés nativement.
+- Liste `Assets` (ligne ~11) qui copie `native-promise-only/npo.js` en asset statique — polyfill Promise pour moteurs pré-ES2015.
+- Longue liste d'inclusions babel-loader pour des paquets `node_modules/@mui/*`, `@tanstack/*`, etc. (lignes 196-244) car ces paquets publient de la syntaxe moderne que la cible ES5 ne peut pas consommer telle quelle — sans cette cible, la plupart de ces transpilations de dépendances tierces deviennent inutiles.
+
+**`src/index.jsx`**, première ligne de code : `import 'lib/legacy';` — point d'entrée qui charge inconditionnellement, pour **tous** les utilisateurs, le bundle de polyfills. `src/lib/legacy/index.ts` :
+
+```ts
+import 'core-js/stable';
+import 'regenerator-runtime/runtime';
+import 'jquery';
+import 'element-closest-polyfill';
+import 'fast-text-encoding';
+import 'intersection-observer';
+import 'classlist.js';
+import 'whatwg-fetch';
+import 'abortcontroller-polyfill'; // requires fetch
+import 'resize-observer-polyfill';
+import 'proxy-polyfill';
+
+import './domParserTextHtml';
+import './elementAppendPrepend';
+import './focusPreventScroll';
+import './htmlMediaElement';
+import './keyboardEvent';
+import './patchHeaders';
+import './vendorStyles';
+```
+
+`CONTRIBUTING.md:119` documente `src/lib/legacy` comme « Polyfills for legacy browsers » dans l'arborescence officielle. `src/lib/legacy/patchHeaders.js` cible nommément « Tizen 3, Tizen 4, webOS 4 ». Ces polyfills et shims (Fetch, AbortController, ResizeObserver, Proxy, `Element.closest`, `classList`, TextEncoder, IntersectionObserver, comportements DOM/clavier divergents) s'exécutent au chargement pour tout le monde, y compris les utilisateurs sur navigateurs evergreen où toutes ces API sont natives depuis des années.
+
+**`eslint-plugin-compat`** — un des 8 plugins de `eslint.config.mjs` (`compat.configs['flat/recommended']`), qui vérifie statiquement que le code ne référence pas d'API DOM/JS absentes de la cible `browserslist`. `eslint.config.mjs` contient aussi une règle manuelle liée : `no-restricted-properties` sur `replaceChildren` avec le message « replaceChildren is not supported in all target browsers » — un garde-fou codé à la main pour la même raison.
+
+Résumé de ce que la cible legacy coûte concrètement : 11 imports de polyfills chargés pour 100 % des utilisateurs, une transformation Babel/core-js à l'usage sur tout le code source et une bonne partie de `node_modules`, un plugin UMD dédié pour deux paquets, un job CI dédié (`build:es-check`, qui nécessite un build de production complet avant de pouvoir vérifier quoi que ce soit), un plugin ESLint dédié plus une règle manuelle, et une liste d'inclusions babel-loader dans `webpack.common.js` qui n'existerait pas sans la contrainte ES5.
+
+---
+
+## 2. Ce que la cible legacy sert réellement : les TV embarquées
+
+`jellyfin-web` — et donc `reefin-web` en l'état — n'est pas seulement un site web desktop. Les applications LG webOS et Samsung Tizen officielles de Jellyfin **embarquent directement le bundle produit par ce dépôt** dans une WebView native (contrairement à Android TV, Swiftfin ou AppleTV, qui sont des codebases natives séparées). C'est pour cette raison que `src/` contient une détection et des contournements matériels très spécifiques, indépendants de la config browserslist/babel :
+
+- `src/components/apphost.js` : branches dédiées `browser.tizen`, `browser.web0s`, `browser.orsay` (vieux Samsung Orsay, pré-Tizen), `browser.operaTv`, `browser.edgeUwp` (Xbox).
+- `src/components/scrollManager.js:110-118` : trois comportements de scroll différents documentés pour webOS 2, webOS 3, webOS 4/Tizen 4, Tizen 5.
+- `src/utils/subtitleStyles.ts:24-25` : « Tizen 5 doesn't support displaying secondary subtitles ».
+- `src/plugins/htmlVideoPlayer/plugin.js:1322` : « Worker in Tizen 5 doesn't resolve relative path with async request ».
+- `src/elements/emby-checkbox/emby-checkbox.js`, `emby-radio/emby-radio.js` : contournements clavier « Real (non-emulator) Tizen does nothing on Space ».
+- `src/components/homesections/homesections.js:83`, `src/components/viewContainer.js:97` : timeouts spécifiques pour « polyfilled CustomElements (webOS 1.2) ».
+
+C'est un inventaire de plus de 190 occurrences `tizen`/`web0s`/`webos`/`orsay`/`operaTv` dans `src/` (hors `node_modules`). **Ce RFC ne traite pas ce code** — il porte uniquement sur la cible de build (browserslist/babel/es-check/polyfills globaux) et sur l'outillage de lint/format. Le sort de ces branches de détection matérielle spécifique est une question séparée, notée en §6.
+
+RFC-0001 §5 classe déjà « les clients Android, Swiftfin, AppleTV, Tizen, Vidaa » comme hors périmètre de `reefin-web` (« ne sont pas maintenus dans ce dépôt »). Pour Android/Swiftfin/AppleTV c'est sans ambiguïté : ce sont des codebases natives distinctes. Pour Tizen (et, non nommé explicitement dans RFC-0001, webOS), la situation est différente précisément parce que ces wrappers TV consomment le bundle de *ce* dépôt — abandonner la cible ES5 ici a un effet direct sur ces applications TV, pas seulement sur de vieux navigateurs desktop. Ce RFC assume ce choix explicitement (voir §3) plutôt que de le laisser implicite dans la lecture de RFC-0001 §5.
+
+---
+
+## 3. Décision — baseline navigateurs Reefin Web 13
+
+**Baseline proposée** :
+
+```
+last 2 Chrome versions
+last 2 Firefox versions
+last 2 Safari versions
+last 2 Edge versions
+last 2 ChromeAndroid versions
+last 2 iOS versions
+Firefox ESR
+not dead
+```
+
+Concrètement : navigateurs evergreen desktop et mobile uniquement, plus le pin explicite `Firefox ESR` déjà présent (conservé — utile pour les distributions Linux à cycle lent). Suppression de `iOS > 10`, `Chrome 27/38/47/53/56/63`, `Edge 18`. Cela relève la syntaxe minimale supportée à environ **ES2020/ES2022 natif** (modules ES natifs, optional chaining, nullish coalescing, `Promise.allSettled`, classes natives sans transpilation) — à confirmer précisément par `npx browserslist` une fois la liste modifiée, avant de décider si Babel reste nécessaire ou si sa suppression devient réaliste (voir §6, question ouverte).
+
+**Ce qui est perdu, nommément** :
+- TV LG webOS et Samsung Tizen dont le firmware embarque un Chromium correspondant aux pins retirés (`Chrome 27` à `Chrome 63` couvrent grossièrement webOS 1.x à 5.x / Tizen 2.3 à 5.5, soit des téléviseurs commercialisés jusqu'à ~2019-2020). L'app Jellyfin officielle sur ces TV cesserait de fonctionner si elle embarquait un bundle `reefin-web` construit sur cette nouvelle baseline.
+- Vieux Safari iOS (< 11) et Xbox One (Edge 18/EdgeHTML).
+
+**Pourquoi c'est acceptable pour ce fork** :
+1. **RFC-0001 §3, critère 1** : la cible ES5 est de l'architecture héritée pure — elle ne sert aucun utilisateur desktop/mobile actuel (les entrées `last 2 X versions` couvrent déjà tout navigateur evergreen), elle ne sert que des firmwares TV figés qui ne seront plus mis à jour.
+2. **Les utilisateurs de TV anciennes ne perdent pas l'accès à Jellyfin** : ils gardent `jellyfin-web` upstream (non-forké, toujours maintenu avec cette cible) et les apps TV officielles construites dessus. Reefin Web est un choix de fork explicite (RFC-0001 §1.1, « ce n'est pas un Jellyfin Web avec un thème différent ») ; rien n'oblige un utilisateur de TV 2018 à migrer vers Reefin.
+3. **Le coût de maintien est concret et récurrent**, pas hypothétique : chaque nouvelle feature moderne (ex. tranches verticales du pilier 1, RFC-0001 §6.5) doit composer avec cette cible tant qu'elle reste active — c'est le genre de frein que RFC-0001 §1.2 identifie déjà comme structurel.
+
+Ce RFC ne fixe **pas** de version minimale webOS/Tizen de remplacement (ex. « webOS ≥ 6 / Tizen ≥ 6 ») : le mapping exact firmware → moteur Chromium n'est pas vérifié dans ce document et mérite une validation dédiée contre de vrais appareils avant toute annonce publique de compatibilité TV (voir §6, question ouverte). La décision actée ici est seulement l'abandon des pins ES5/Chrome legacy dans `browserslist`, pas l'engagement sur une nouvelle matrice TV précise.
+
+---
+
+## 4. Conséquences toolchain
+
+| Élément | Aujourd'hui | Après ce RFC |
+| --- | --- | --- |
+| `browserslist` (`package.json`) | 14 entrées dont 7 pins TV/legacy | **Fait (PR2)** : liste evergreen uniquement (§3) |
+| `.escheckrc` + `es-check` (devDependency) | Job CI dédié, vérifie ES5 sur `dist/**/*.js` | **Fait (PR2)** : supprimé (`.escheckrc`, scripts `escheck`/`build:es-check`, devDependency, entrée dans la matrice `__quality_checks.yml`) — la cible evergreen n'a plus besoin d'un check de syntaxe post-build séparé |
+| `eslint-plugin-compat` (devDependency + 1 des 8 plugins ESLint) | Vérifie les API DOM contre la cible browserslist | **Fait (PR2)** : supprimé (import, `compat.configs['flat/recommended']`, override `compat/compat: 'off'` sur `scripts/**`, réglage `settings.polyfills`, devDependency), règle manuelle `no-restricted-properties(replaceChildren)` retirée aussi ; 20 commentaires `eslint-disable(-next-line) compat/compat` orphelins nettoyés dans 10 fichiers |
+| `src/lib/legacy/*` (11 polyfills + 6 shims custom) | Chargé pour 100 % des utilisateurs à chaque démarrage | **Fait (PR2)** : dossier supprimé en bloc avec son `import 'lib/legacy'` dans `src/index.jsx`. `core-js`, `element-closest-polyfill`, `fast-text-encoding`, `intersection-observer`, `classlist.js`, `whatwg-fetch`, `abortcontroller-polyfill`, `resize-observer-polyfill`, `proxy-polyfill`, `native-promise-only` retirés de `package.json` (`regenerator-runtime` n'y était déjà pas listé en direct). `jquery` conservé (dépendance réelle — voir §6, question ouverte 5, résolue). Découverte en cours de route : `src/lib/scroller/index.js` important `resize-observer-polyfill` directement, migré vers le constructeur natif `ResizeObserver` |
+| `babel.config.js` `useBuiltIns: 'usage', corejs: 3` | Injection automatique de polyfills `core-js` par usage de syntaxe | **Fait (PR2, §4.1)** : options retirées, `@babel/preset-env` gardé sans `useBuiltIns`/`corejs`. Remplacement de Babel par esbuild/swc reste question ouverte (§6) |
+| `webpack.common.js` `@babel/plugin-transform-modules-umd` (pdfjs-dist, xmldom) | Contournement UMD pour 2 paquets qui cassent en ESM sous Babel/cible ES5 | **Conservé par prudence (PR2)** : `xmldom` n'est déjà plus une dépendance installée (le chemin `node_modules/xmldom` référencé ne correspond à rien — dépendance transitive `@xmldom/xmldom`, scoping différent, incohérence préexistante non liée à ce RFC), donc seul `pdfjs-dist` est réellement concerné aujourd'hui. Vérifier l'absence de cette transformation aurait nécessité de tester l'aperçu PDF en conditions réelles (le succès du build ne suffit pas à garantir l'interop ESM/CJS au runtime) — non fait faute de temps, donc gardé tel quel plutôt que retiré sur une hypothèse non vérifiée |
+| `webpack.common.js` inclusions babel-loader étendues (`@mui/*`, `@tanstack/*`, etc., lignes 196-244) | Nécessaires pour transpiler la syntaxe moderne publiée par ces paquets vers ES5 | Probablement réductibles — beaucoup de ces paquets publient déjà du JS moderne consommable tel quel par la nouvelle baseline ; à vérifier paquet par paquet, pas en bloc |
+| `webpack.common.js` `target: 'browserslist'` | Piloté par la même config | Inchangé dans son fonctionnement, mais la cible effective change de nature |
+| Taille du bundle initial | Polyfills + code transpilé ES5 chargés pour tous | Réduction attendue (pas chiffrée dans ce RFC — à mesurer via `build:analyze` avant/après comme critère d'acceptation de la PR de retrait) |
+
+### 4.1 Mesures (PR2 — retrait des cibles legacy, exécutée)
+
+Mesuré avec `npm run build:production` + `du`, avant/après la PR de retrait des cibles legacy (browserslist, es-check, eslint-plugin-compat, `src/lib/legacy`, `babel.config.js` `useBuiltIns`/`corejs`), sur la même révision de contenu hors ce changement :
+
+| Métrique | Avant | Après | Delta |
+| --- | --- | --- | --- |
+| `dist/` total (apparent size, `du -sb`) | 57 761 607 octets (~55,1 MiB) | 55 586 031 octets (~53,0 MiB) | **-2 175 576 octets (~-2,07 MiB, -3,8 %)** |
+| `main.jellyfin.bundle.js` | 1 174 162 octets | 1 086 621 octets | -87 541 octets (-7,5 %) |
+| `main.jellyfin` entrypoint (somme des chunks, rapportée par webpack) | 3,9 MiB | 2,68 MiB | -1,22 MiB |
+| `node_modules.@jellyfin.sdk.bundle.js` | 664 KiB | 340 KiB | -324 KiB |
+| `node_modules.@mui.material.bundle.js` | 728 KiB | 372 KiB | -356 KiB |
+| Chunks polyfills dédiés (`core-js`, `regenerator-runtime`, `resize-observer-polyfill`, `abortcontroller-polyfill`, `intersection-observer`) | 220 427 + 6 732 + 7 677 + 8 176 + 9 046 = 251 991 octets, chargés par 100 % des utilisateurs | **Disparus intégralement** de `dist/` | -251 991 octets de chunks qui n'existent plus du tout |
+
+Le gain le plus significatif ne vient pas des chunks polyfills eux-mêmes (~246 KiB) mais de la disparition de l'injection `core-js` par Babel dans les dépendances tierces bundlées (`@jellyfin/sdk`, `@mui/material`, etc.) : ces paquets n'ont plus besoin d'être retranspilés vers ES5 avec polyfills usage-based, d'où les -324 KiB et -356 KiB sur ces deux chunks à eux seuls.
+
+`node_modules.jquery.bundle.js` (87 KiB) reste présent dans `dist/` après la PR — attendu : jQuery est un consommateur réel (`src/scripts/editorsidebar.js`, `src/components/tvproviders/{xmltv,schedulesdirect}.js`, plus `src/components/viewContainer.js` et `src/scripts/libraryBrowser.js` qui consommaient le `$` global exposé implicitement par `src/lib/legacy` et ont reçu un `import 'jquery'` explicite — voir §6, question ouverte 5, résolue dans cette PR), pas un polyfill de compatibilité navigateur au sens de ce RFC.
+
+Vérifications post-migration : `npx tsc --noEmit` propre, `npx eslint` à 0 erreur (98 warnings préexistants, non liés à ce changement), `npx vitest --watch=false` 204/204 tests verts, `npm run build:production` réussi.
+
+---
+
+## 5. Adoption de Biome
+
+### 5.1 État de l'art Biome (vérifié juillet 2026)
+
+Biome couvre bien le remplacement du cœur ESLint + du formatage, avec des trous identifiés face aux 8 plugins actuels de `eslint.config.mjs` (`eslint.configs.recommended`, `tseslint.configs.recommended`, `comments.recommended`, `compat.configs['flat/recommended']`, `importPlugin.flatConfigs.errors`, `sonarjs.configs.recommended`, `reactPlugin.configs.flat.recommended`, `jsxA11y.flatConfigs.recommended`, plus `@stylistic/eslint-plugin`) :
+
+- **Formatage / règles stylistiques** (`@stylistic/eslint-plugin`, ~25 règles dans `eslint.config.mjs`) : couverture native complète par le formatter Biome (équivalent Prettier avec ~97 % de compatibilité rapportée). C'est le remplacement le plus direct.
+- **`eslint.configs.recommended` + `typescript-eslint` + règles JS/TS manuelles** (`no-var`, `prefer-const`, `no-shadow`, `no-unused-vars`, etc.) : bonne couverture native par le linter Biome (500+ règles portées depuis ESLint/typescript-eslint/autres sources).
+- **`eslint-plugin-import`** (tri, résolution, `no-unresolved`) : couverture partielle via `organizeImports`/`useImportExtensions` ; la résolution de modules et certaines règles de dépendances n'ont pas d'équivalent 1:1 vérifié.
+- **`eslint-plugin-react` + `eslint-plugin-react-hooks`** : couverture correcte, y compris `useHookAtTopLevel`, mais pas garantie exhaustive face à `eslint-plugin-react` (règles JSX plus obscures).
+- **`eslint-plugin-jsx-a11y`** : **trou identifié** — Biome n'a qu'une couverture a11y basique (des règles a11y existent, en progression avec les rules HTML de Biome v2.4, mais très en retrait de la couverture de `eslint-plugin-jsx-a11y`, qui reste la référence pour de l'accessibilité sérieuse).
+- **`eslint-plugin-sonarjs`** : **pas d'équivalent direct** — les règles de détection de bugs/complexité de sonarjs (`no-nested-functions`, `pseudo-random`, `fixme-tag`, etc., déjà configurées avec des dérogations dans `eslint.config.mjs`) n'ont pas de correspondance systématique côté Biome.
+- **`@eslint-community/eslint-plugin-eslint-comments`** : pas d'équivalent (règle sur l'hygiène des directives `eslint-disable` elles-mêmes — n'a de sens que si ESLint reste présent).
+- **`eslint-plugin-compat`** : sans objet après ce RFC (§4) — sa suppression est déjà actée indépendamment de Biome.
+- **`biome migrate eslint --write`** : commande officielle qui lit `eslint.config.mjs` (flat config supportée) et porte automatiquement les règles équivalentes vers `biome.json`, avec option `--include-inspired` pour les règles approximatives. Point de départ de la migration, pas un résultat final : nécessite une revue manuelle des règles non portées.
+- **CSS/SCSS** : le linter/formatter CSS de Biome est stable pour du CSS standard, mais **le support SCSS n'est pas encore livré** (sur la roadmap Biome 2026, pas disponible aujourd'hui). `stylelint` (`stylelint-scss`, `stylelint-config-rational-order`, `stylelint-order`, `@stylistic/stylelint-plugin`) reste donc nécessaire tel quel pour tout `src/**/*.scss` — ce n'est pas un choix conservateur temporaire, c'est une contrainte technique actuelle de Biome.
+
+### 5.2 Portée retenue
+
+- **Biome** : format + lint pour JS/TS/TSX (remplace `eslint` + `@stylistic/eslint-plugin` en formatage, et la majorité du linting).
+- **ESLint résiduel** : conservé uniquement si la revue manuelle post-`migrate eslint` identifie des règles sans équivalent jugées non négociables — candidats concrets d'après §5.1 : couverture a11y (`jsx-a11y`) si jugée insuffisante côté Biome pour un produit qui affiche l'accessibilité clavier/télécommande comme un principe de conception dès le départ (RFC-0001 §2, pilier 1), et éventuellement une partie de `sonarjs` si des règles actives aujourd'hui (`no-inverted-boolean-check`, `no-alphabetical-sort`, etc.) sont jugées trop utiles pour être abandonnées sans filet. Si la revue conclut que rien ne justifie de garder ESLint en parallèle, il est retiré entièrement — c'est l'option par défaut, pas l'exception, étant donné le coût de maintenir deux linters actifs simultanément.
+- **stylelint** : conservé sans changement pour `src/**/*.scss` (§5.1 — contrainte technique Biome, pas un choix révisable à court terme).
+
+### 5.3 Stratégie de migration
+
+1. `biome migrate eslint --write` pour générer `biome.json` à partir de `eslint.config.mjs`, avec `--include-inspired`.
+2. Aligner manuellement `biome.json` sur le style déjà en vigueur (indentation 4 espaces, quotes simples, pas de virgule finale, etc. — voir les règles `@stylistic/*` de `eslint.config.mjs` §1) pour que le reformatage global de l'étape suivante produise le **plus petit diff possible**, pas un diff dicté par les défauts Biome.
+3. **Un seul commit de reformatage global, isolé** : `biome format --write .` (ou `biome check --write .` si le linting auto-fixable est inclus) dans un commit dédié qui ne contient **aucun** changement fonctionnel. Ajouter son SHA à un fichier `.git-blame-ignore-revs` à la racine (actuellement absent du dépôt) et documenter `git config blame.ignoreRevsFile .git-blame-ignore-revs` dans `CONTRIBUTING.md` pour que `git blame` continue de pointer vers les auteurs réels au-delà de ce commit.
+4. Revue manuelle des règles ESLint non migrées (§5.1) → décision garder/abandonner par catégorie, pas règle par règle.
+5. Mise à jour des scripts npm : `"lint": "eslint"` → `"lint": "biome lint"` (ou `biome check` selon ce que couvre la commande finale), ajout d'un script `"format"` s'il n'existe pas déjà (aucun script `format` actuel dans `package.json` — le formatage passait implicitement par les règles `@stylistic/eslint-plugin` sans commande de fix dédiée séparée du lint).
+6. Mise à jour de `.github/workflows/__quality_checks.yml` : la matrice `quality` (`command:` à la ligne 36, entrées lignes 37-41) référence `lint` par nom de script npm, donc le changement est transparent côté CI tant que `npm run lint` reste le point d'entrée — mais `build:es-check` (ligne 37) disparaît de la matrice (§4), et un job `format`/`biome ci` peut être ajouté si le format n'est pas déjà couvert par `lint`. Le job séparé `run-eslint` (`.github/workflows/pull_request.yml:42-64`, `CatChen/eslint-suggestion-action`) qui poste des suggestions ESLint en commentaires de PR doit être retiré ou remplacé par l'équivalent Biome s'il existe, sinon supprimé sans remplacement.
+
+### 5.4 Plan d'exécution PR-sized
+
+1. **RFC-0002 accepté** (ce document) — préalable à tout code, conformément à RFC-0001 §3.
+2. **PR — retrait des cibles legacy** : `browserslist` (§3), `.escheckrc`, script `build:es-check` + job CI correspondant, `eslint-plugin-compat` + règle `no-restricted-properties(replaceChildren)`, `src/lib/legacy/*` et son import dans `src/index.jsx`, dépendances polyfills mortes de `package.json`. Mesure `build:analyze` avant/après comme preuve de gain. PR isolée, aucun changement de style/format.
+3. **PR — `biome migrate eslint` + configuration** : génération de `biome.json`, alignement manuel du style, sans encore reformater le code. Biome coexiste avec ESLint (double config) le temps de valider que `biome check` ne casse rien d'inattendu sur un sous-ensemble du code.
+4. **PR — reformatage global isolé** : commit unique `biome format --write .` (ou `biome check --write .`), entrée dans `.git-blame-ignore-revs`, doc `CONTRIBUTING.md`. Aucune autre modification dans cette PR.
+5. **PR — retrait ESLint** (ou réduction à son périmètre résiduel défini en §5.2) : suppression des dépendances ESLint devenues inutiles, `eslint.config.mjs` supprimé ou réduit, scripts npm et workflows CI mis à jour (§5.3 point 5-6), job `run-eslint` de suggestion PR retiré/remplacé.
+6. **PR — simplification Babel/webpack** (dépend des réponses aux questions ouvertes §6) : réduction ou suppression de `useBuiltIns`/`corejs`, réévaluation de `@babel/plugin-transform-modules-umd` et des inclusions babel-loader étendues.
+7. **PR — transition TypeScript 6.0** (voir `investigation-typescript-upgrade.md`) : nettoyage préalable de `tsconfig.json` (`target: ES2020`+, `moduleResolution: bundler`, retrait de `downlevelIteration` — trois options vestigiales avec ts-loader en `transpileOnly`, dépréciées en 6.0 et supprimées en 7.0), puis bump `typescript@6.0.3` (dernière release JS-based, compatible `ts-loader`). Optionnel dans la même PR ou en suivi : alias npm `typescript@7.0.2` pour le seul script `build:check` (`tsc --noEmit` CLI pur, gain 8–12× sur le type-check CI). L'upgrade complet vers TS 7 reste différé : bloqué par `ts-loader` (API JS disparue en 7.0, v10 non publiée) — débloqué par ts-loader v10 (~octobre 2026) ou par la migration esbuild-loader (question ouverte §6.1).
+
+Chaque PR reste revuable indépendamment ; l'ordre est contraint (le retrait des cibles legacy doit précéder le reformatage pour ne pas reformater du code qui va être supprimé, et le reformatage global doit être isolé pour préserver `git blame` sur tout le reste).
+
+---
+
+## 6. Questions ouvertes
+
+1. ~~**Babel → esbuild/swc ?**~~ — **Résolu par spike (juillet 2026, voir `spike-esbuild-loader.md`) : go avec réserves.** Prototype `esbuild-loader@4.5.0` (target es2020, ForkTsChecker conservé) : build prod à froid ~2,3× plus rapide (163 s → ~69 s), bundle principal minifié 1 086 → 391 ko (surtout effet de cible ES5→ES2020 — 78 occurrences de helpers de downlevel TS éliminées). Réserves : babel-loader reste en périmètre résiduel minimal pour la règle UMD `pdfjs-dist`/`xmldom` (pas de sortie UMD chez esbuild) ; règles `.ts`/`.tsx` à séparer (ambiguïté generics/JSX) ; `fork-ts-checker-webpack-plugin` dépend encore de l'API JS de TypeScript (risque TS 7 réduit à non-bloquant, pas éliminé) ; HMR/dev-server à vérifier en usage réel avant bascule. Enjeu additionnel depuis TS 7.0 : sortir de `ts-loader` lève le verrou vers l'upgrade complet TypeScript 7 (voir `investigation-typescript-upgrade.md`).
+2. **Version minimale webOS/Tizen exacte** : ce RFC abandonne les pins `Chrome 27-63`/`Edge 18` sans fixer de nouvelle matrice TV de remplacement (§3). Si Reefin souhaite conserver une story TV (wrapper webOS/Tizen embarquant ce bundle), quelle est la version de firmware minimale réaliste à valider contre de vrais appareils, et qui la maintient (Reefin ne fork pas aujourd'hui les dépôts wrapper `jellyfin-webos`/`jellyfin-tizen`) ?
+3. **Politique pour `src/apps/legacy` et le code de détection matérielle TV** (§2 — `browser.tizen`/`web0s`/`orsay`/`operaTv`, ~190 occurrences) : ce RFC ne les traite pas. Faut-il un RFC dédié pour décider de leur sort une fois la cible de build modernisée, en cohérence avec RFC-0001 §6.2 (`src/apps/legacy` comme périmètre de remplacement par tranches verticales) ?
+4. ~~**Portée finale d'ESLint résiduel** (§5.2)~~ — **Résolu (étape 5 du plan §5.4)** : décision actée après audit — abandon total d'ESLint, aucun résidu conservé. `eslint.config.mjs` supprimé, les 13 dépendances ESLint (`eslint`, `@eslint/js`, `typescript-eslint`, `@typescript-eslint/parser`, `@stylistic/eslint-plugin`, `eslint-plugin-import`, `eslint-plugin-jsx-a11y`, `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-sonarjs`, `@eslint-community/eslint-plugin-eslint-comments`, `confusing-browser-globals`, `globals`) retirées de `package.json`, script `lint` basculé sur `biome check .`, job `run-eslint` (suggestions PR, `.github/workflows/pull_request.yml`) supprimé. Le candidat a11y identifié en §5.2 est couvert quasi 1:1 par les règles `a11y.*` de `biome.json` (portage direct de `eslint-plugin-jsx-a11y`, voir liste dans `biome.json`), ce qui lève la réserve qui aurait justifié de garder ESLint pour l'accessibilité. Pertes acceptées, documentées comme risques :
+   - **`eslint-plugin-sonarjs`** (~45 règles sans équivalent Biome recensé) : déjà largement configurées `off`/`warn` dans l'ancien `eslint.config.mjs` (peu de règles actives en `error`), perte jugée mineure.
+   - **`@typescript-eslint/no-floating-promises`** : règle *type-aware*, structurellement hors de portée du linter Biome (pas de vérification de type) — risque accepté sans filet de rattrapage automatique.
+   - **`@typescript-eslint/no-restricted-imports`** (tree-shaking `@mui/*`, `@jellyfin/sdk/lib/generated-client*`) : pas de règle Biome équivalente pour interdire des imports de paquets nommés ; régression possible non bloquée par CI.
+   - **`@typescript-eslint/naming-convention`** : couverture Biome (`style.useNamingConvention`) présente dans `biome.json` mais actuellement `off` pour `src/**` — conservé désactivé, pas de fonctionnalité perdue par ce changement en soi mais pas de parité stricte avec l'ancienne config ESLint.
+   - **`@eslint-community/eslint-plugin-eslint-comments`** : sans objet, n'a de sens que si ESLint reste présent (§5.1) — perte nulle par construction.
+   - **`eslint-plugin-import`** : déjà configuré `off` côté Biome (`correctness.noUnresolvedImports: "off"`, pas d'organisation d'imports — `assist.organizeImports: "off"`) ; la résolution de modules erronée reste couverte indirectement par `tsc` (`npm run build:check`).
+5. ~~**`jquery` dans `src/lib/legacy/index.ts`**~~ — **Résolu dans la PR de retrait (§4.1)** : audit complet des usages de `$`/`jQuery` global (`$(document)`, `$(window)`, `$.` bare) a trouvé 5 consommateurs réels. Trois importaient déjà `jquery` explicitement (`src/scripts/editorsidebar.js`, `src/components/tvproviders/xmltv.js`, `src/components/tvproviders/schedulesdirect.js`) et n'étaient pas affectés. Deux dépendaient du chargement implicite via `lib/legacy` sans import propre — `src/components/viewContainer.js` (`$(view).appendTo(...)`) et `src/scripts/libraryBrowser.js` (`$(button).trigger(...)`) — et ont chacun reçu un `import 'jquery';` explicite avant le retrait de `lib/legacy`. `jquery` reste dans `package.json` (dépendance réelle, pas un polyfill de compat navigateur) ; voir aussi `src/lib/scroller/index.js`, qui importait `resize-observer-polyfill` directement (indépendamment de `lib/legacy`) et a été basculé sur le constructeur natif `ResizeObserver` (supporté nativement par toute la baseline evergreen — §3).
+
+---
+
+## 7. Mesures finales (W13.1 — « Clôture des fondations »)
+
+Toutes les étapes du plan §5.4 sont exécutées : retrait des cibles legacy (§4.1), Biome (§5),
+migration esbuild-loader (`spike-esbuild-loader.md`), TypeScript 6.0
+(`investigation-typescript-upgrade.md`), Babel réduit à la règle UMD résiduelle (probablement un
+no-op — voir commit `b5b834f44f`). En clôture de tranche, W13.1 ajoute le dernier retrait laissé en
+suspens par la question ouverte §6 point 1 : **`ForkTsCheckerWebpackPlugin`**, dont la dépendance à
+l'API JS de TypeScript restait un risque résiduel identifié par le spike esbuild (§6 point 1,
+`spike-esbuild-loader.md` point 3). Il est supprimé de `webpack.common.js` et de `package.json` ;
+le type-check est désormais exclusivement porté par `npm run typecheck` (`tsc --noEmit`, alias
+`build:check` conservé pour compatibilité), complètement découplé du build webpack — un type-check
+cassé sous une TypeScript future ne peut plus bloquer `build:production`/`build:development`
+eux-mêmes.
+
+Mesures reproduites le 16 juillet 2026 sur cette machine, `rm -rf dist node_modules/.cache` puis
+`npm run build:production` (build à froid, sans aucun cache webpack/esbuild/babel) :
+
+| Métrique | Avant RFC-0002 (baseline pré-legacy-removal, §4.1) | Après (spike esbuild, `ForkTsChecker` encore présent) | **Final (W13.1, `ForkTsChecker` retiré)** | Delta final vs baseline |
+| --- | --- | --- | --- | --- |
+| Build prod à froid | ~163–167 s (Babel + `ts-loader`, `spike-esbuild-loader.md`) | 67–76 s | **64,9 s** (webpack ; 66,7 s de bout en bout avec `npm`/`cross-env`) | **~2,5× plus rapide** (163 s / 65 s ≈ 2,51×) |
+| `main.jellyfin.bundle.js` | 1 174 162 octets (1 147,6 KiB) | 391 552 octets | **391 552 octets (382,4 KiB)** | **-66,7 %** |
+| `dist/` total (apparent size, `du -sb`) | 57 761 607 octets (~55,09 MiB) | ~52 MiB (spike, non chiffré à l'octet) | **54 547 872 octets (~52,02 MiB)** | **-3 213 735 octets (-5,6 %)** |
+| Tests Vitest | — | — | **204/204 verts** (19 fichiers de test) | — |
+
+**Écart avec les chiffres pressentis avant mesure** : le gain de build à froid mesuré ici (~2,5×)
+est supérieur à l'estimation grossière de ~2,2× circulant avant cette clôture — l'écart vient
+précisément du retrait de `ForkTsCheckerWebpackPlugin` : le spike (§ci-dessus, colonne du milieu)
+mesurait 67–76 s **avec** ForkTsChecker encore actif en worker parallèle ; le retirer fait
+redescendre le temps mesuré ici à 64,9 s, en plus de simplifier le graphe de plugins. La réduction du
+bundle principal (-66,7 %) est légèrement supérieure aux ~64 % pressentis également — les deux
+écarts vont dans le même sens (mieux que prévu), pas de régression à signaler. Le total `dist/`
+bouge peu en proportion (-5,6 %) parce que l'essentiel de son poids (assets statiques, wasm
+libarchive/libass, polices Noto, workers pdf.js/libpgs) est indépendant du toolchain JS/TS — seul le
+JS applicatif et ses dépendances bundlées se contractent significativement, ce qui est cohérent avec
+le constat déjà fait en §4.1 (le gain vient de l'absence de retranspilation ES5 des dépendances, pas
+des quelques chunks polyfills eux-mêmes).
+
+**Nouveau garde-fou** : un budget de taille est désormais appliqué sur `main.jellyfin.bundle.js` —
+**450 KiB (460 800 octets) en taille brute non compressée**, appliqué à la fois par
+`webpack.prod.js` (`performance.maxAssetSize` + `assetFilter`, échoue le build en cas de
+dépassement) et par le script `npm run verify:bundle-budget` (mesure `dist/` existant ou déclenche
+un build). Voir `webpack.performance-budget.json` pour la valeur unique partagée par les deux, et le
+choix taille brute vs gzip justifié dans `scripts/verify-bundle-budget.mjs`. Mesure actuelle
+(382,4 KiB) laisse ~78 KiB (~17 %) de marge avant ce seuil.
+
+Vérifications de clôture (toutes exécutées localement le 16 juillet 2026, CI GitHub indisponible —
+quota épuisé) : `npm run typecheck` (0 erreur), `npm run lint` (Biome — 0 erreur, 278 warnings
+préexistants et non liés à ce changement, cohérent avec le rapport §4.1 sur ESLint avant Biome),
+`npm run stylelint` (0 erreur), `npm test` (204/204), `npm run build:production` (réussi, budget
+bundle respecté), `npm run verify:tesserafin-sdk-fresh` (SDK généré identique à celui commité),
+`npm run verify:bundle-budget` (PASS, voir tableau ci-dessus).
+
+---

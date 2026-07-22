@@ -16,7 +16,7 @@
  * reachable from `playbackmanager.js`'s main chunk, so anything it pulled in would land in the
  * bundle. The `DELETE` therefore goes out through a plain `fetch` against the session's own
  * `basePath`/`authorizationHeader` rather than through the generated SDK client - which also
- * keeps `lib/reefin-sdk` behind the existing lazy `playback-v2-url` boundary.
+ * keeps `lib/tesserafin-sdk` behind the existing lazy `playback-v2-url` boundary.
  *
  * ## Why teardown keys on the SERVER id
  *

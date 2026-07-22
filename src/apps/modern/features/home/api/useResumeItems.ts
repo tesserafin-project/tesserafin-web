@@ -6,14 +6,14 @@ import {
     ItemFields,
     type LibraryApiGetResumeItemsRequest,
     MediaType,
-    type ReefinApi,
+    type TesserafinApi,
     getLibraryApi
-} from 'lib/reefin-sdk';
+} from 'lib/tesserafin-sdk';
 
 const RESUME_ITEMS_LIMIT = 12;
 
 export const fetchResumeItems = async (
-    api: ReefinApi,
+    api: TesserafinApi,
     params: LibraryApiGetResumeItemsRequest,
     options?: AxiosRequestConfig
 ) => {
@@ -23,7 +23,7 @@ export const fetchResumeItems = async (
 
 /** Query options for fetching "continuer à regarder" items on the home page. */
 export const getResumeItemsQuery = (
-    api?: ReefinApi,
+    api?: TesserafinApi,
     params: LibraryApiGetResumeItemsRequest = {}
 ) =>
     queryOptions({

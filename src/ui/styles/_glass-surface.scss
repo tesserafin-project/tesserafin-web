@@ -12,7 +12,7 @@
     // last 2 Safari versions), so it must not be written by hand (stylelint property-no-vendor-prefix).
     //
     // Reads the pre-derived `--rf-backdrop-filter-md` token (generated from `blur.md`,
-    // `reefin-design/scripts/generate-web-tokens.mjs#toBackdropFilter`) rather than wrapping
+    // `tesserafin-design/scripts/generate-web-tokens.mjs#toBackdropFilter`) rather than wrapping
     // `--rf-blur-md` in `blur()` here: `blur(0)` still allocates a compositing layer (GPU cost)
     // where `none` does not, so Classic's zero blur must reach the browser as `none`, not `blur(0)`.
     backdrop-filter: var(--rf-backdrop-filter-md, none);

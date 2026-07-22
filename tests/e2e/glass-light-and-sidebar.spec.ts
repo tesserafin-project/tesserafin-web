@@ -19,7 +19,7 @@ import {
  * Two claims are specific to this tranche and could not be checked before it:
  *
  *   - **Glass Light is still Glass.** `blur.md` is not per-mode in
- *     `reefin-design/themes/glass/tokens.json`, so light mode must paint the same `blur(16px)` the
+ *     `tesserafin-design/themes/glass/tokens.json`, so light mode must paint the same `blur(16px)` the
  *     dark mode does, over a *translucent* light surface. A light mode that resolved to `none` or
  *     to an opaque surface would be a flat theme wearing Glass's name.
  *   - **The reduced-transparency profile works in light mode.** Before W13.8b the override carried

@@ -8,7 +8,7 @@
  * container's answer would be an artefact of the container. A green run here is evidence that the
  * outcomes are computed correctly; it is NOT evidence that any hardware supports HDR10. The only
  * thing that could be that evidence is a conjunction positive on identified HDR hardware, which
- * does not exist yet - see `docs/reefin/bench-hdr/hdr-detection-feasibility.md`.
+ * does not exist yet - see `docs/tesserafin/bench-hdr/hdr-detection-feasibility.md`.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -250,7 +250,7 @@ describe('concludeHdr10 - the conjunction', () => {
 
     it('reproduces the measured bench outcome: decode positive, display negative, no claim', () => {
         // This mirrors the real Chromium 149 / headed X11 / AUO 6-bit eDP measurement recorded in
-        // docs/reefin/bench-hdr/. The values are typed in here as a regression guard on the
+        // docs/tesserafin/bench-hdr/. The values are typed in here as a regression guard on the
         // conjunction logic - running this test measures nothing about the current host.
         expect(concludeHdr10('negative', 'positive')).toEqual({
             display: 'negative',

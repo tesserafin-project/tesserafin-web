@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { BaseItemDto } from 'lib/reefin-sdk';
-import { CollectionType } from 'lib/reefin-sdk';
+import type { BaseItemDto } from 'lib/tesserafin-sdk';
+import { CollectionType } from 'lib/tesserafin-sdk';
 
 import { getLatestMediaViews } from './latestMediaViews';
 

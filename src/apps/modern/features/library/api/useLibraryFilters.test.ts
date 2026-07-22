@@ -1,4 +1,4 @@
-import { BaseItemKind } from 'lib/reefin-sdk';
+import { BaseItemKind } from 'lib/tesserafin-sdk';
 import { describe, expect, it, vi } from 'vitest';
 
 import { useLibraryFilters } from './useLibraryFilters';

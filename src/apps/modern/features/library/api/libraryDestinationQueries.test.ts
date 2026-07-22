@@ -1,7 +1,7 @@
 import type { AxiosInstance } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 
-import { BaseItemKind, ReefinApi } from 'lib/reefin-sdk';
+import { BaseItemKind, TesserafinApi } from 'lib/tesserafin-sdk';
 
 import {
     fetchLibraryCollections,
@@ -21,8 +21,8 @@ import {
  * Reefin SDK request the design attributes to it — endpoint and params read off the URL axios was
  * called with, not off the source. Same `createMockApi` pattern as `useLibraryItems.test.ts`.
  */
-const createMockApi = (request: ReturnType<typeof vi.fn>): ReefinApi =>
-    new ReefinApi(
+const createMockApi = (request: ReturnType<typeof vi.fn>): TesserafinApi =>
+    new TesserafinApi(
         'https://example.com',
         { name: 'Reefin Web', version: '1.0.0' },
         { name: 'Test Device', id: 'device-1' },

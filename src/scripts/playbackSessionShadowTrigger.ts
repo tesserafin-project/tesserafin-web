@@ -4,8 +4,8 @@
  *
  * The problem this fixes: `playbackmanager.js` used to `import` `playbackSessionShadow.ts`
  * statically, and `playbackSessionShadow.ts` in turn statically imports the native
- * `reefinPlaybackCapabilities.ts` builder (792 lines) and `PlaybackApi`/`Configuration` from
- * `lib/reefin-sdk`. `sendShadowPlaybackSession()` itself only *checks* `enablePlaybackSessionShadow()`
+ * `tesserafinPlaybackCapabilities.ts` builder (792 lines) and `PlaybackApi`/`Configuration` from
+ * `lib/tesserafin-sdk`. `sendShadowPlaybackSession()` itself only *checks* `enablePlaybackSessionShadow()`
  * at call time - by then webpack has already had to bundle the whole chain into the main chunk,
  * flag OFF or not, because a static `import` is resolved at build time regardless of what runs at
  * runtime.

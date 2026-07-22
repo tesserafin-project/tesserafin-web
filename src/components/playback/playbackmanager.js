@@ -35,7 +35,7 @@ import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
 import * as bitrateTest from 'utils/bitrateTest';
 // Static import is safe for the bundle budget: `playbackAttemptId.ts` has zero imports of its own
-// (see its file-level comment), so it pulls no `lib/reefin-sdk` scope into the main chunk and the
+// (see its file-level comment), so it pulls no `lib/tesserafin-sdk` scope into the main chunk and the
 // v2 path stays behind its lazy trigger.
 import {
     applyPlaybackAttemptId,
@@ -49,14 +49,14 @@ import { applyV2PlaybackUrlIfEnabled } from '../../scripts/playbackSessionV2UrlT
 import { applyV2PlaybackReplanIfEnabled } from '../../scripts/playbackSessionV2ReplanTrigger.ts';
 // reefin #43: static import is safe for the bundle budget - the module it pulls in
 // (`playbackSessionTeardown.ts`) has zero imports of its own, same constraint
-// `playbackAttemptId.ts` documents, so `lib/reefin-sdk` stays behind the lazy boundary.
+// `playbackAttemptId.ts` documents, so `lib/tesserafin-sdk` stays behind the lazy boundary.
 import {
     adoptPlaybackSessionForTeardown,
     adoptedV2PlaybackSessionId,
     releasePlaybackSessionOnStop
 } from '../../scripts/playbackSessionTeardownTrigger.ts';
 // Static import is deliberate and does NOT reintroduce bundle anchor 2 (reefin#44 §5):
-// `playbackExecutionDecision.ts` has zero imports of its own, so it pulls no `lib/reefin-sdk`
+// `playbackExecutionDecision.ts` has zero imports of its own, so it pulls no `lib/tesserafin-sdk`
 // scope into the main chunk. The v2 URL path itself stays behind the lazy trigger above.
 import {
     buildLegacyExecutionDecision,
@@ -682,7 +682,7 @@ async function getPlaybackInfo(
 
     // PR116b (docs/pr116-client-migration-design.md, `reefin` repo): best-effort shadow
     // `POST Playback/Sessions`, behind a flag (default off). PR116e: the flag is now checked, and
-    // the shadow module (+ its native capabilities builder + reefin-sdk client) only dynamically
+    // the shadow module (+ its native capabilities builder + tesserafin-sdk client) only dynamically
     // `import()`-ed, INSIDE `triggerShadowPlaybackSession()` - see that module's doc comment. Never
     // awaited here - it never throws/rejects and must never delay or affect the real response above.
     triggerShadowPlaybackSession({
