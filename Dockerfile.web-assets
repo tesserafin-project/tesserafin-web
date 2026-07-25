@@ -1,0 +1,116 @@
+# syntax=docker/dockerfile:1
+#
+# Tesserafin Web — reproducible static production-assets image.
+#
+# WHY THIS EXISTS
+#
+#   The distributable Tesserafin server image (tesserafin#87 / [A1]) shipped with
+#   `--nowebclient` and no web bundle, so `http://host:8096/` redirected to the
+#   Swagger API documentation instead of the first-run onboarding wizard
+#   (tesserafin#115 / [A1.2], blocking tesserafin#89 / [A3]).
+#
+#   This image is the missing build input: an exact, pinned, reproducible
+#   production build of Tesserafin Web, published under immutable commit-derived
+#   tags. The server Dockerfile pins it BY MANIFEST DIGEST and copies the bundle
+#   into the final runtime image, which then starts with `--webdir`.
+#
+#   It is a BUILD INPUT, not a service. It has no entrypoint, no shell, no Node.js
+#   and no runtime of any kind: the final stage is `scratch` and contains only the
+#   production `dist` tree, the licence/attribution files and a deterministic
+#   revision manifest. Nothing here is ever run by a user.
+#
+# LAYOUT OF THE PUBLISHED IMAGE
+#
+#   /web/                      the production `dist` tree verbatim (index.html at its root)
+#   /licenses/LICENSE          GPL-2.0-or-later, as required by the licence
+#   /licenses/CONTRIBUTORS.md  attribution
+#   /metadata/web-revision.json  { repository, revision, version, license, sourceDateEpoch }
+#
+#   `/metadata/web-revision.json` makes the paired web commit auditable from the
+#   FINAL SERVER IMAGE CONTENT alone, without registry access or label lookups.
+#
+# REPRODUCIBILITY
+#
+#   Every build-affecting input is pinned: the Node base image by immutable
+#   digest, the dependency tree by the committed `package-lock.json` (`npm ci`,
+#   never `npm install`). All file mtimes are clamped to the source commit time
+#   (SOURCE_DATE_EPOCH), and docker/build-assets.sh disables the provenance and
+#   SBOM attestations, which embed wall-clock timestamps. Two clean builds of the
+#   same commit therefore yield the same manifest digest — docker/repro-check.sh
+#   is the gate.
+#
+# ARCHITECTURE NEUTRALITY
+#
+#   The content is pure static files and identical for every architecture. The
+#   image is published as a single linux/amd64-declared manifest and the server
+#   Dockerfile consumes it through a stage pinned with `--platform=linux/amd64`,
+#   so the server's amd64 and arm64 builds copy byte-identical web bytes. The
+#   stage is only a file source; it is never executed, so there is no emulation.
+
+# ---- Pinned Node base image (immutable digest) ----
+# node:24-bookworm-slim — matches .nvmrc (24) and package.json engines (>=24).
+ARG NODE_IMAGE=node@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
+
+# =====================================================================
+# Stage 1 — install from the lockfile and build the production bundle
+# =====================================================================
+FROM ${NODE_IMAGE} AS build
+
+# NODE_ENV is deliberately NOT set to "production" here: `npm ci` would then skip
+# devDependencies, and the whole build toolchain (webpack, babel, sass, ...) lives
+# in devDependencies. `npm run build:production` sets NODE_ENV itself via cross-env.
+ENV npm_config_audit=false \
+    npm_config_fund=false \
+    npm_config_update_notifier=false
+
+WORKDIR /src
+
+# The pruned build context (see .dockerignore) is the only build input: no host
+# node_modules, no pre-existing dist, no .git.
+COPY . .
+
+# Deterministic dependency installation from the committed lockfile only.
+RUN npm ci
+
+# Production bundle (webpack.prod.js). Fails the build on a bundle-budget breach,
+# because webpack.prod.js sets `performance.hints = 'error'`.
+RUN npm run build:production
+
+ARG VERSION=13.0.0
+ARG VCS_REF=unknown
+ARG SOURCE_DATE_EPOCH=0
+
+# Assemble exactly what ships, verify the server's own startup precondition
+# (a non-empty web directory with a top-level index.html — see
+# Tesserafin.Server/Program.cs), and normalise every timestamp to the commit time.
+RUN set -eux; \
+    test -s /src/dist/index.html; \
+    mkdir -p /out/web /out/licenses /out/metadata; \
+    cp -a /src/dist/. /out/web/; \
+    cp /src/LICENSE /out/licenses/LICENSE; \
+    cp /src/CONTRIBUTORS.md /out/licenses/CONTRIBUTORS.md; \
+    printf '{\n  "repository": "https://github.com/tesserafin-project/tesserafin-web",\n  "revision": "%s",\n  "version": "%s",\n  "license": "GPL-2.0-or-later",\n  "sourceDateEpoch": "%s"\n}\n' \
+        "${VCS_REF}" "${VERSION}" "${SOURCE_DATE_EPOCH}" > /out/metadata/web-revision.json; \
+    # No sourcemaps and no stray source leakage in a production bundle.
+    ! find /out/web -name '*.map' | grep -q .; \
+    find /out -exec touch --no-dereference --date=@"${SOURCE_DATE_EPOCH}" {} +
+
+# =====================================================================
+# Stage 2 — the published artefact: static files and nothing else
+# =====================================================================
+FROM scratch AS assets
+
+ARG VERSION=13.0.0
+ARG VCS_REF=unknown
+
+COPY --from=build /out/ /
+
+LABEL org.opencontainers.image.title="Tesserafin Web assets" \
+      org.opencontainers.image.description="Reproducible Tesserafin Web production bundle; build input for the Tesserafin server image" \
+      org.opencontainers.image.source="https://github.com/tesserafin-project/tesserafin-web" \
+      org.opencontainers.image.url="https://github.com/tesserafin-project/tesserafin-web" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.licenses="GPL-2.0-or-later" \
+      org.opencontainers.image.vendor="Tesserafin" \
+      org.tesserafin.web.assets.path="/web"

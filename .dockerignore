@@ -1,0 +1,53 @@
+# Build context pruning for the reproducible web-assets image
+# (Dockerfile.web-assets). Goal: a clean checkout is the only build input.
+# Everything `npm ci` + `npm run build:production` needs is retained; everything
+# else — and anything that would make the build non-deterministic — is excluded.
+
+# --- Version control ---
+.git
+.gitattributes
+.gitignore
+.git-blame-ignore-revs
+
+# --- Build outputs and installed trees: MUST be excluded (reproducibility) ---
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# --- Container definition & its tooling (not a build input) ---
+.dockerignore
+Dockerfile.web-assets
+docker-bake.hcl
+docker/
+
+# --- CI harnesses; not needed to produce the production bundle ---
+.github/
+.devcontainer/
+
+# --- IDE / editor cruft ---
+.vscode/
+.idea/
+.vs/
+
+# --- Docs and meta (not build inputs; LICENSE and CONTRIBUTORS.md are kept) ---
+docs/
+README.md
+CONTRIBUTING.md
+.sonarcloud.properties
+flake.nix
+flake.lock
+
+# --- Browser end-to-end suite (not part of the production bundle) ---
+tests/
+playwright.config.ts
+
+# --- Local data / secrets (never ship) ---
+.env
+*.env
+*.pem
+*.key
+*.pfx
+.npmrc.local
