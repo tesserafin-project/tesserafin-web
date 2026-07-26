@@ -50,8 +50,15 @@ interface OwnedSession {
     /** Set once playback for this record has ended - i.e. a teardown is genuinely OWED.
      * Distinct from `released`: a session can be owed a teardown that has not been issued. */
     ended: boolean;
-    /** Set once the `DELETE` for this record has actually been issued, so a second trigger
-     * (stop followed by `pagehide`, the common case) cannot issue a duplicate. */
+    /** Set once the `DELETE` for this record has actually been DISPATCHED, so a second trigger
+     * (stop followed by `pagehide`, the common case) cannot issue a duplicate.
+     *
+     * "Dispatched" and not "succeeded", deliberately: a request that left the client is the
+     * server's problem from then on, and re-issuing it later is the stale-teardown hazard §5
+     * exists to prevent. The one case that does NOT set it is a dispatch that never happened at
+     * all - an absent or synchronously throwing `fetch` - because there the backstop is the only
+     * remaining route and suppressing it would lose the session for a whole TTL. See
+     * {@link PlaybackSessionTracker.release}. */
     released: boolean;
 }
 
@@ -139,19 +146,27 @@ export class PlaybackSessionTracker {
      * Never throws and never rejects. Playback has already ended by the time this runs, so
      * there is no user-visible outcome that a failure could usefully change.
      *
+     * ## Dispatch is synchronous, and that is the contract (`tesserafin-web#60`)
+     *
+     * The `DELETE` is handed to the network stack before this method returns. Nothing is queued,
+     * deferred to a microtask or scheduled on a timer, because a caller whose next statement
+     * navigates has no way to wait for work that has not started. A stop path that returns
+     * before the request left is indistinguishable from one that never sent it.
+     *
      * @param reason Diagnostic only - recorded in the debug log, never sent to the server.
-     * @param options `keepalive` requests the unload-survivable transport. Measured as
-     * mandatory for the tab-close case: a plain `fetch` is dropped there, a keepalive one is
-     * delivered (see the measurements doc).
+     * @param options `expectSessionId` is the stale-teardown guard described below.
+     * @returns `true` when the `DELETE` was dispatched by THIS call. `false` covers both "there
+     * was nothing to release" and "the transport refused it"; {@link hasPendingRelease}
+     * separates the two.
      */
     release(
         reason: string,
-        options: { keepalive?: boolean; expectSessionId?: string } = {}
-    ): void {
+        options: { expectSessionId?: string } = {}
+    ): boolean {
         const session = this.current;
 
         if (!session || session.released) {
-            return;
+            return false;
         }
 
         // The stale-teardown guard, and the reason a caller that CAN name the session it is
@@ -165,7 +180,7 @@ export class PlaybackSessionTracker {
             options.expectSessionId !== undefined &&
             options.expectSessionId !== session.sessionId
         ) {
-            return;
+            return false;
         }
 
         // Mark before issuing, not after: `sendDelete` is async, and a second trigger arriving
@@ -173,7 +188,18 @@ export class PlaybackSessionTracker {
         // set here too - calling release IS the statement that playback is over.
         this.current = { ...session, ended: true, released: true };
 
-        sendDelete(session, reason, options.keepalive === true, this.deps);
+        const dispatched = sendDelete(session, reason, this.deps);
+
+        if (!dispatched) {
+            // The request never left. Re-arm the backstop rather than pretending a teardown is
+            // in flight: `ended` stays true so `hasPendingRelease` reports an owed teardown and
+            // `pagehide`/`visibilitychange` can still try. This is the ONLY path that clears
+            // `released`, and it is reached only when `fetch` is absent or threw synchronously -
+            // never for a request that left and failed, which is the server's TTL to recover.
+            this.current = { ...session, ended: true, released: false };
+        }
+
+        return dispatched;
     }
 
     /**
@@ -229,7 +255,24 @@ export interface TeardownDeps {
 const LOG_PREFIX = '[playbackSessionTeardown]';
 
 /**
- * Issues the `DELETE`, swallowing every outcome.
+ * Issues the `DELETE`, swallowing every outcome. Returns whether the request was actually handed
+ * to the transport - see {@link PlaybackSessionTracker.release} for what the caller does with it.
+ *
+ * ## `keepalive: true`, unconditionally (`tesserafin-web#60`)
+ *
+ * This used to be opt-in, set only by the `pagehide`/`visibilitychange` flush, so the PRIMARY
+ * stop-time teardown went out as an ordinary `fetch`. An ordinary `fetch` belongs to its
+ * document's fetch group and is ABORTED when that document is destroyed. A user who stops
+ * playback and navigates within the same few tens of milliseconds therefore had the request
+ * cancelled in flight - and because `release()` had already marked the record released, the
+ * keepalive `pagehide` backstop was suppressed and issued nothing. The session survived to its
+ * TTL with the server never having seen a single request. Observed once in eight runs of
+ * `tests/e2e/playback-v2-lifecycle-oracle.spec.ts`.
+ *
+ * There is no teardown for which the ordinary transport is correct: this request exists
+ * precisely to outlive the playback context that produced it. Making it unconditional removes
+ * the failure mode rather than narrowing it, and costs nothing measurable - the body is empty,
+ * so none of the 64 KiB keepalive quota is consumed.
  *
  * Status handling (design doc §4/§7):
  * - **204** - done.
@@ -246,47 +289,63 @@ const LOG_PREFIX = '[playbackSessionTeardown]';
 function sendDelete(
     session: OwnedSession,
     reason: string,
-    keepalive: boolean,
     deps: TeardownDeps
-): void {
+): boolean {
     const logger = deps.logger ?? console;
     const fetchImpl = deps.fetchImpl ?? globalThis.fetch;
 
     if (typeof fetchImpl !== 'function') {
-        return;
+        return false;
     }
 
     const url = `${session.api.basePath}/Playback/Sessions/${encodeURIComponent(session.sessionId)}`;
 
+    let result: ReturnType<typeof fetchImpl>;
+
     try {
-        const result = fetchImpl(url, {
+        result = fetchImpl(url, {
             method: 'DELETE',
             headers: { Authorization: session.api.authorizationHeader },
-            keepalive
+            keepalive: true
         });
-
-        // `fetch` rejects on network failure; nothing here may surface beyond a debug line.
-        void Promise.resolve(result)
-            .then((response) => {
-                if (response && !response.ok && response.status !== 404) {
-                    logger.debug(
-                        `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) answered ${response.status} - not retrying`
-                    );
-                }
-            })
-            .catch((err: unknown) => {
-                logger.debug(
-                    `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) failed - leaving the session to the server's own expiry`,
-                    err
-                );
-            });
     } catch (err) {
         // A synchronous throw from a patched/absent fetch must not escape into the stop path.
+        // Reported as NOT dispatched, which re-arms the unload backstop.
         logger.debug(
             `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) could not be issued`,
             err
         );
+        return false;
     }
+
+    // Emitted at dispatch, not at completion, and naming the trigger: this line is the only
+    // client-side evidence of WHICH path issued a teardown, and the E2E stress rig reads it to
+    // tell "the primary stop path sent it" from "the unload backstop sent it".
+    logger.debug(
+        `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) dispatched keepalive`
+    );
+
+    // `fetch` rejects on network failure; nothing here may surface beyond a debug line. The
+    // outcome is observed but never acted on: ONE attempt, no retry, no timeout, no fallback
+    // transport. A request that left and failed is left to the server's TTL sweep, which is the
+    // last-resort recovery the design reserves for exactly this - re-issuing it later would be
+    // the stale-teardown hazard §5 exists to prevent.
+    void Promise.resolve(result)
+        .then((response) => {
+            if (response && !response.ok && response.status !== 404) {
+                logger.debug(
+                    `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) answered ${response.status} - not retrying`
+                );
+            }
+        })
+        .catch((err: unknown) => {
+            logger.debug(
+                `${LOG_PREFIX} DELETE ${session.sessionId} (${reason}) failed - leaving the session to the server's own expiry`,
+                err
+            );
+        });
+
+    return true;
 }
 
 /**
@@ -305,7 +364,18 @@ function sendDelete(
  *   where `pagehide` was also delivered, it is skipped on bfcache eviction, and registering it
  *   can make the page ineligible for the back/forward cache. It would add cost and no coverage.
  * - **`keepalive: true`** - mandatory rather than an optimisation: on tab close the plain
- *   `fetch` was dropped and the keepalive one was delivered.
+ *   `fetch` was dropped and the keepalive one was delivered. It is no longer requested here
+ *   because `sendDelete` now applies it to every teardown, for the reason that function
+ *   documents (`tesserafin-web#60`).
+ *
+ * ## This is a BACKSTOP, not the route (`tesserafin-web#60`)
+ *
+ * The primary teardown is the explicit stop path -
+ * `releasePlaybackSessionOnStop()` from `playbackSessionTeardownTrigger.ts`, called
+ * synchronously by the manager's `playbackstop` handling. By the time an unload event fires
+ * after an ordinary stop, the record is already released and both handlers here are no-ops.
+ * They exist for the cases the stop path cannot cover: a tab closed mid-playback, or a
+ * navigation that destroys the document before the player ever reports a stop.
  *
  * None of this is a guarantee, and the design does not treat it as one: closing the browser
  * process delivered nothing at all, by any transport. The authoritative cleanup stays
@@ -319,13 +389,13 @@ export function registerTeardownFlush(
     doc: { visibilityState: string } | undefined
 ): () => void {
     const onPageHide = () => {
-        tracker.release('pagehide', { keepalive: true });
+        tracker.release('pagehide');
     };
 
     const onVisibilityChange = () => {
         // Only ever FLUSHES an owed teardown - never initiates one. See the doc comment.
         if (doc?.visibilityState === 'hidden' && tracker.hasPendingRelease) {
-            tracker.release('visibilitychange', { keepalive: true });
+            tracker.release('visibilitychange');
         }
     };
 

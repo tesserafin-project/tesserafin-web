@@ -100,18 +100,84 @@ describe('PlaybackSessionTracker', () => {
         expect(tracker.ownedSessionId).toBeNull();
     });
 
-    it('sends keepalive only when asked', () => {
+    // #60. This assertion is the inverse of the one it replaces ("sends keepalive only when
+    // asked", which pinned the stop path to `keepalive: false`). That was the defect: an
+    // ordinary `fetch` belongs to its document's fetch group and a navigation aborts it. Every
+    // trigger is asserted here, not just the stop one, so the property cannot regress on a
+    // single path.
+    it('always uses the unload-survivable transport - a teardown a navigation can abort is the #60 defect', () => {
         const fetchImpl = okFetch();
+        const target = {
+            handlers: {} as Record<string, Array<() => void>>,
+            addEventListener(t: string, h: () => void) {
+                this.handlers[t] = this.handlers[t] ?? [];
+                this.handlers[t].push(h);
+            },
+            removeEventListener() {
+                /* not exercised here */
+            }
+        };
+        const doc = { visibilityState: 'visible' };
+
+        // 1. the explicit stop path
         const a = new PlaybackSessionTracker(deps(fetchImpl));
         a.adopt(api, 's1');
         a.release('stopped');
 
+        // 2. adoption replacing a live session
         const b = new PlaybackSessionTracker(deps(fetchImpl));
         b.adopt(api, 's2');
-        b.release('pagehide', { keepalive: true });
+        b.adopt(api, 's3');
 
-        expect(fetchImpl.mock.calls[0][1]).toMatchObject({ keepalive: false });
-        expect(fetchImpl.mock.calls[1][1]).toMatchObject({ keepalive: true });
+        // 3. pagehide, and 4. visibilitychange flushing an owed teardown
+        const c = new PlaybackSessionTracker(deps(fetchImpl));
+        c.adopt(api, 's4');
+        registerTeardownFlush(c, target, doc);
+        target.handlers.pagehide[0]();
+
+        const d = new PlaybackSessionTracker(deps(fetchImpl));
+        d.adopt(api, 's5');
+        registerTeardownFlush(d, target, doc);
+        d.markEnded();
+        doc.visibilityState = 'hidden';
+        for (const h of target.handlers.visibilitychange) h();
+
+        expect(fetchImpl).toHaveBeenCalledTimes(4);
+        for (const call of fetchImpl.mock.calls) {
+            expect(call[1]).toMatchObject({
+                method: 'DELETE',
+                keepalive: true
+            });
+        }
+    });
+
+    // #60, clause 1/5: the manager's stop handler navigates immediately after this returns, so
+    // "dispatched" has to mean "the transport already has it", not "it is scheduled". A release
+    // that deferred the request by so much as a microtask would fail this.
+    it('hands the DELETE to the transport before release() returns', () => {
+        const order: string[] = [];
+        const fetchImpl = vi.fn().mockImplementation(() => {
+            order.push('fetch');
+            return Promise.resolve({ ok: true, status: 204 });
+        });
+        const tracker = new PlaybackSessionTracker(deps(fetchImpl));
+
+        tracker.adopt(api, 's1');
+        expect(tracker.release('stopped')).toBe(true);
+        order.push('navigate');
+
+        expect(order).toEqual(['fetch', 'navigate']);
+    });
+
+    it('reports dispatch, so a caller can tell "sent" from "nothing to send"', () => {
+        const fetchImpl = okFetch();
+        const tracker = new PlaybackSessionTracker(deps(fetchImpl));
+
+        expect(tracker.release('stopped')).toBe(false); // no session
+
+        tracker.adopt(api, 's1');
+        expect(tracker.release('stopped')).toBe(true);
+        expect(tracker.release('pagehide')).toBe(false); // already released
     });
 });
 
@@ -145,7 +211,16 @@ describe('error handling', () => {
 
         await Promise.resolve();
         await Promise.resolve();
-        expect(logger.debug).not.toHaveBeenCalled();
+        // The dispatch line is unconditional (#60 evidence); what must NOT appear is an outcome
+        // line, because a 404 IS the goal state and reporting it as a failure would send the
+        // stress rig hunting a defect that is not there.
+        expect(
+            logger.debug.mock.calls.filter(
+                (c) =>
+                    String(c[0]).includes('answered') ||
+                    String(c[0]).includes('failed')
+            )
+        ).toEqual([]);
     });
 
     it('logs a 403 without retrying', async () => {
@@ -165,7 +240,7 @@ describe('error handling', () => {
         expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
 
-    it('survives a synchronously throwing fetch', () => {
+    it('survives a synchronously throwing fetch, and leaves the teardown owed', () => {
         const fetchImpl = vi.fn().mockImplementation(() => {
             throw new Error('nope');
         });
@@ -173,6 +248,34 @@ describe('error handling', () => {
 
         tracker.adopt(api, 's1');
         expect(() => tracker.release('stopped')).not.toThrow();
+        // #60: a request that never left must not consume the session's one release. The
+        // backstop is the only remaining route, and `hasPendingRelease` is what re-arms it.
+        expect(tracker.release('stopped')).toBe(false);
+        expect(tracker.hasPendingRelease).toBe(true);
+    });
+
+    // #60, and the boundary of it: a request that LEFT and then failed is NOT re-armed. One
+    // attempt, no retry, no timeout, no second transport - the server's TTL sweep is the
+    // last-resort recovery, and re-issuing later is the stale-teardown hazard the design
+    // forbids.
+    it('a dispatched request that fails on the network is not retried and not re-armed', async () => {
+        const fetchImpl = vi.fn().mockRejectedValue(new Error('offline'));
+        const logger = { debug: vi.fn() };
+        const tracker = new PlaybackSessionTracker({
+            fetchImpl,
+            logger
+        } as never);
+
+        tracker.adopt(api, 's1');
+        expect(tracker.release('stopped')).toBe(true);
+
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(fetchImpl).toHaveBeenCalledTimes(1);
+        expect(tracker.hasPendingRelease).toBe(false);
+        expect(tracker.release('pagehide')).toBe(false);
+        expect(fetchImpl).toHaveBeenCalledTimes(1);
     });
 });
 
