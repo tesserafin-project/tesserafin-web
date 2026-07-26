@@ -134,21 +134,41 @@ export function adoptPlaybackSessionForTeardown(
  * `expectSessionId` is deliberately taken from the `streamInfo` the stop is FOR, not from the
  * tracker: a stop event that fires late, after the next item has already been adopted, must
  * not tear down the session that replaced it. Naming the session makes that a no-op instead.
+ *
+ * ## The PRIMARY teardown route, and it dispatches before it returns (`tesserafin-web#60`)
+ *
+ * This is what actually ends a session in the ordinary case; the `pagehide`/`visibilitychange`
+ * flush is a backstop for the cases a stop is never reported at all. The manager calls this
+ * synchronously from its `playbackstop` handling, BEFORE it emits the event that makes the
+ * video view navigate away - so by the time any navigation is initiated the `DELETE` has left
+ * the client, not merely been scheduled. `PlaybackSessionTracker.release()` guarantees that
+ * half; this function must not put anything asynchronous in front of it.
+ *
+ * @returns `true` when this call dispatched the `DELETE`. `false` means there was nothing to
+ * release, the stop named a session the player no longer holds, or the transport refused it -
+ * in the last case the unload backstop is deliberately left registered.
  */
 export function releasePlaybackSessionOnStop(
     playerData: TeardownPlayerData,
     reason = 'stopped'
-): void {
+): boolean {
     const tracker = playerData.playbackSessionTracker;
 
     if (!tracker) {
-        return;
+        return false;
     }
 
-    tracker.release(reason, {
+    const dispatched = tracker.release(reason, {
         expectSessionId: v2SessionIdOf(playerData.streamInfo)
     });
 
-    playerData.playbackSessionTeardownOff?.();
-    playerData.playbackSessionTeardownOff = undefined;
+    // Unregister the unload flush only once it has nothing left to do. A teardown that is still
+    // OWED - the transport refused the request - keeps its backstop, because removing the
+    // listeners here would leave the session with no route to the server at all until its TTL.
+    if (!tracker.hasPendingRelease) {
+        playerData.playbackSessionTeardownOff?.();
+        playerData.playbackSessionTeardownOff = undefined;
+    }
+
+    return dispatched;
 }

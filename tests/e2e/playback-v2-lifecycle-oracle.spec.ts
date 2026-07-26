@@ -120,6 +120,11 @@ interface Wire {
     responses: WireResponse[];
     sessionBodies: CapturedBody[];
     streamBodies: CapturedBody[];
+    /** Browser console text, in order. The teardown `DELETE` goes out as a keepalive `fetch`
+     * that Playwright's request instrumentation does not surface (see stage 8), so the client's
+     * own dispatch line is the only place the CLIENT side of that request is observable — which
+     * trigger issued it, and whether it was issued at all. `tesserafin-web#60`. */
+    console: string[];
 }
 
 function instrument(page: Page): Wire {
@@ -127,8 +132,10 @@ function instrument(page: Page): Wire {
         requests: [],
         responses: [],
         sessionBodies: [],
-        streamBodies: []
+        streamBodies: [],
+        console: []
     };
+    page.on('console', (m) => wire.console.push(m.text()));
     page.on('request', (r) =>
         wire.requests.push({
             method: r.method(),
@@ -938,6 +945,39 @@ test.describe('v2 playback session lifecycle — hard oracle (#43)', () => {
             .toBe(200);
 
         await stopPlayback(page);
+
+        // #60: the CLIENT half of the teardown, which the wire cannot see.
+        //
+        // `stopPlayback()` presses Escape and navigates immediately, and that navigation is what
+        // ends playback here: `beforeunload` -> `onAppClose()` -> the stop path, then `pagehide`
+        // -> the backstop. Which of the two dispatches is a property of that ordering, not of
+        // the contract — when the manager no longer considers itself playing at `beforeunload`,
+        // the backstop is legitimately the only route left, and clause 3 of the #60 contract
+        // says so. What the contract DOES fix is that the request is dispatched exactly once and
+        // over a transport the navigation cannot abort.
+        //
+        // Before the fix this list could be empty while the session survived to its TTL: the
+        // stop path issued an ordinary `fetch` that the navigation killed, and because the
+        // record was already marked released the `pagehide` backstop issued nothing at all.
+        const teardownDispatch = wire.console
+            .filter(
+                (l) =>
+                    l.includes('dispatched keepalive') && l.includes(sessionId)
+            )
+            .map((l) => /\(([a-z-]+)\) dispatched keepalive/.exec(l)?.[1] ?? '')
+            .filter(Boolean);
+        expect
+            .soft(
+                teardownDispatch.length,
+                `the client must dispatch the teardown DELETE for this session exactly once — 0 means it never left the browser (the #60 defect), more than 1 means the single-flight guard broke; dispatches seen: ${JSON.stringify(teardownDispatch)}`
+            )
+            .toBe(1);
+        expect
+            .soft(
+                ['stopped', 'error', 'pagehide', 'visibilitychange'],
+                'the teardown must come from a recognised lifecycle trigger'
+            )
+            .toContain(teardownDispatch[0]);
 
         // The teardown DELETE is issued by `playbackSessionTeardown.ts` as a `keepalive` `fetch`,
         // which Playwright's page instrumentation does not surface: a measured run in which the
