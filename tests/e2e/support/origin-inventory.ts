@@ -65,6 +65,43 @@ const OUT_FILE =
     join(process.cwd(), 'test-results', 'runtime-origins.jsonl');
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+
+/**
+ * Loopback is not the only way the rig's own server gets addressed.
+ *
+ * The image-backed run publishes the container on 127.0.0.1, but the SERVER advertises its
+ * own container address in `/System/Info/Public`, and the client follows it — the release
+ * run observed `http://172.17.0.4:8096/system/info/public`, which is the Docker bridge
+ * address of the very container under test. Classifying that as `external` was wrong: it is
+ * the candidate server, reached by a second address for the same host.
+ *
+ * So private and link-local address space counts as local infrastructure. These ranges are
+ * not routable on the public internet (RFC 1918, RFC 3927, RFC 4193, RFC 4291), so nothing
+ * classified here can be a dependency on someone else's service — which is the only thing
+ * #54 actually forbids. A public origin still fails closed.
+ */
+function isPrivateAddress(hostname: string): boolean {
+    const host = hostname.replace(/^\[|\]$/g, '');
+
+    // IPv4 dotted quad.
+    const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+    if (v4) {
+        const [a, b] = [Number(v4[1]), Number(v4[2])];
+        if (a === 10) return true; // 10.0.0.0/8
+        if (a === 127) return true; // 127.0.0.0/8  loopback
+        if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+        if (a === 192 && b === 168) return true; // 192.168.0.0/16
+        if (a === 169 && b === 254) return true; // 169.254.0.0/16 link-local
+        return false;
+    }
+
+    // IPv6: loopback, link-local (fe80::/10) and unique-local (fc00::/7).
+    const lower = host.toLowerCase();
+    if (lower === '::1') return true;
+    if (/^fe[89ab][0-9a-f]:/.test(lower)) return true;
+    if (/^f[cd][0-9a-f]{2}:/.test(lower)) return true;
+    return false;
+}
 const BROWSER_SCHEMES = new Set([
     'about:',
     'chrome:',
@@ -81,6 +118,15 @@ export type OriginClass =
 
 export interface OriginRecord {
     spec: string;
+    /**
+     * A coverage marker, emitted once per test BEFORE anything is observed. It records that
+     * this spec is instrumented at all, which is a different claim from "this spec reached
+     * no origin". A spec that never opens a page — an API-only contract spec, say —
+     * legitimately observes nothing, and without this marker the post-run gate could not
+     * tell it apart from a spec that quietly stopped importing this module. Markers are
+     * excluded from the printed inventory.
+     */
+    marker?: true;
     origin: string;
     class: OriginClass;
     kind: 'request' | 'websocket';
@@ -138,7 +184,9 @@ export function classifyUrl(raw: string): {
         return { origin: url.origin, cls: 'candidate-server' };
     }
     // ws:// to the candidate host is the application's own socket, not a foreign origin.
-    if (LOCAL_HOSTS.has(url.hostname)) {
+    // Private and link-local space covers both loopback and the container/LAN address the
+    // server advertises for itself — see isPrivateAddress().
+    if (LOCAL_HOSTS.has(url.hostname) || isPrivateAddress(url.hostname)) {
         return { origin: url.origin, cls: 'local-infra' };
     }
     return { origin: url.origin, cls: 'external' };
@@ -173,6 +221,15 @@ function specOf(testInfo: TestInfo): string {
 
 function subscribe(context: BrowserContext, testInfo: TestInfo) {
     const spec = specOf(testInfo);
+    // Emitted unconditionally, so "instrumented" is provable independently of traffic.
+    emit({
+        spec,
+        marker: true,
+        origin: '(instrumented)',
+        class: 'in-document',
+        kind: 'request',
+        sample: '(no observation)'
+    });
     const declared = declaredOrigins(testInfo.project.testDir);
     const seen = new Set<string>();
     const offenders: string[] = [];
