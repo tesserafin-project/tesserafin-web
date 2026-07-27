@@ -1,8 +1,10 @@
 import { AUTHORIZATION_HEADER } from '@jellyfin/sdk/lib/constants';
 import { getAuthorizationHeader } from '@jellyfin/sdk/lib/utils';
-import { MINIMUM_VERSION } from '@jellyfin/sdk/lib/versions';
 import { getSessionApi } from '@jellyfin/sdk/lib/utils/api/session-api';
 
+// Imported from the module directly rather than through the `lib/tesserafin-sdk` barrel: the barrel
+// re-exports `generated/`, and this file is in `main.jellyfin.bundle.js`.
+import { MINIMUM_VERSION } from 'lib/tesserafin-sdk/versions';
 import events from 'utils/events';
 import { ajax } from 'utils/fetch';
 import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
@@ -74,7 +76,7 @@ export default class ConnectionManager {
         const self = this;
         this._apiClients = [];
 
-        // Set the minimum version to match the SDK
+        // Set the minimum version to match the pinned Tesserafin contract, not the Jellyfin SDK
         self._minServerVersion = MINIMUM_VERSION;
 
         self.appVersion = () =>
