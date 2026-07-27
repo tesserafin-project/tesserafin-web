@@ -1,16 +1,16 @@
 {
     "title": "Tesserafin API",
-    "version": "12.0.0",
-    "xTesserafinVersion": "12.0.0",
-    "serverVersion": "12.0.0",
-    "webAppVersion": "13.0.0",
-    "versionSkewNote": "Spec pinned at server 12.0.0; tesserafin-web is 13.0.0. Upgrade tracked for W14.1.",
+    "version": "1.0.0",
+    "xTesserafinVersion": "1.0.0",
+    "serverVersion": "1.0.0",
+    "webAppVersion": "1.0.0",
+    "versionSkewNote": null,
     "openapi": "3.0.4",
     "pathCount": 301,
     "schemaCount": 409,
-    "source": "~/Repos/reefin/openapi/openapi.json",
-    "sourceCommit": "8c358f930c2b903c81de6a28ab07e074fd88b3f5",
-    "sourceRef": "8c358f930c2b903c81de6a28ab07e074fd88b3f5",
-    "specSha256": "49e4eb87735f9c69791d1962823b29f49cc6ec500ca71f8898cf4255e85d7482",
-    "generatedAt": "2026-07-22T15:10:42.795Z"
+    "source": "/tmp/claude-1000/-home-alex-Repos/dd2ee288-fc3b-4068-bdb5-3fc1b2489ebd/scratchpad/wt/srv/openapi/openapi.json",
+    "sourceCommit": "498e1f348aa27788cf2fc8320677b39c60ad9dd5",
+    "sourceRef": "origin/master",
+    "specSha256": "d5061badda045fa906e16ba89311e98316f07ec7160ab8a103dee55d79ae2cc2",
+    "generatedAt": "2026-07-27T03:22:06.342Z"
 }
