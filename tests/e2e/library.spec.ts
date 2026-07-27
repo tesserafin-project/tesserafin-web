@@ -761,15 +761,24 @@ test.describe('library access restriction (restricted user)', () => {
         // The withheld library's id comes from the rig; re-derived and re-checked here through the
         // real API so a drifted fixture fails THIS suite loudly instead of producing vacuous green.
         const api = await request.newContext({ baseURL: BASE_URL });
-        const auth = await (
-            await api.post('/Users/AuthenticateByName', {
-                headers: { Authorization: E2E_AUTH_HEADER },
-                data: { Username: RESTRICTED_USER, Pw: RESTRICTED_PASSWORD }
-            })
-        ).json();
+        const authResponse = await api.post('/Users/AuthenticateByName', {
+            headers: { Authorization: E2E_AUTH_HEADER },
+            data: { Username: RESTRICTED_USER, Pw: RESTRICTED_PASSWORD }
+        });
+        // The status is read BEFORE the body is parsed. A rig that never seeded the restricted
+        // user answers 401 with the plain-text "Error processing request: Invalid username or
+        // password entered.", and calling .json() on it first turned a missing fixture into
+        // `SyntaxError: Unexpected token 'E'` — a message that names neither the user, nor the
+        // rig, nor authentication. Observed for real on the B1 image-backed run of 2026-07-27,
+        // where ci/verify-release-pair.sh's reduced seeder had not created this user.
+        expect(
+            authResponse.ok(),
+            `the restricted fixture user "${RESTRICTED_USER}" must authenticate; the rig answered ${authResponse.status()} — does this harness seed the restricted user and export TESSERAFIN_E2E_RESTRICTED_LIBRARY_ID? (${(await authResponse.text()).slice(0, 200)})`
+        ).toBe(true);
+        const auth = await authResponse.json();
         expect(
             auth.AccessToken,
-            'the restricted fixture user must authenticate — is the rig running reefin PR #68?'
+            'the restricted fixture user authenticated but the response carried no AccessToken'
         ).toBeTruthy();
 
         const views = await (

@@ -91,10 +91,9 @@ jobs:
   # Despite this workflow's name, nothing here publishes a release, updates a
   # mutable tag or deploys. `main` only calls __package.yml, which runs
   # `npm run build:production` and uploads the result as a run artifact. The
-  # `deploy` job below is gated on `github.repository == 'jellyfin/jellyfin-web'`
-  # and therefore never runs in this repository — it is left in place verbatim
-  # rather than deleted, so the diff against upstream stays readable. The
-  # ungated deployment path lives in workflow_run.yml, which stays parked.
+  # upstream `deploy` job that used to follow it is gone (B1, see the note
+  # where it stood), and so is workflow_run.yml, which carried the ungated
+  # deployment path.
   main:
     name: 'Unstable release 🚀⚠️'
     uses: ./.github/workflows/__package.yml
@@ -141,21 +140,19 @@ jobs:
     with:
       commit: ${{ github.sha }}
 
-  deploy:
-    name: Deploy 🚀
-    if: ${{ github.repository == 'jellyfin/jellyfin-web' }}
-    uses: ./.github/workflows/__deploy.yml
-    needs:
-      - main
-    permissions:
-      contents: read
-      deployments: write
-    secrets:
-      JF_BOT_TOKEN: ${{ secrets.JF_BOT_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-    with:
-      branch: ${{ github.ref_name }}
-      commit: ${{ github.sha }}
-      workflow_run_id: ${{ github.run_id }}
-      comment: false
+  # DEPLOY JOB REMOVED (tesserafin-web #54 / B1).
+  #
+  # It called __deploy.yml, which published the built bundle to the upstream
+  # project's Cloudflare Pages project using the Jellyfin bot credential and the
+  # Jellyfin project's Cloudflare account. Tesserafin owns none of those three.
+  # The job was gated on the repository being the upstream one and so was
+  # already unreachable here, but that condition was the only thing standing
+  # between this repository and a deployment to upstream infrastructure.
+  # __deploy.yml,
+  # __job_messages.yml, __automation.yml, workflow_run.yml and schedule.yml are
+  # removed with it — see docs/tesserafin/b1-jellyfin-boundary.md for the full
+  # disposition of each.
+  #
+  # No deployment path replaces it in this workflow. `main` above still builds
+  # the production bundle and uploads it as a run artifact, which is all this
+  # repository publishes from CI.

@@ -140,6 +140,7 @@
         "verify:tesserafin-sdk-fresh": "node scripts/verify-tesserafin-sdk-fresh.mjs",
         "verify:version-single-source": "node scripts/verify-version-single-source.mjs",
         "verify:no-new-reefin": "node scripts/verify-no-new-reefin.mjs",
+        "verify:no-runtime-jellyfin": "node scripts/verify-no-runtime-jellyfin.mjs",
         "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "lint": "biome check .",
@@ -149,7 +150,7 @@
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test",
-        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:version-single-source"
+        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source"
     },
     "engines": {
         "node": ">=24.0.0",

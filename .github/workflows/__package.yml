@@ -35,10 +35,22 @@ jobs:
           JELLYFIN_VERSION: ${{ inputs.commit || github.sha }}
         run: npm run build:production
 
-      - name: Update config.json for testing
-        run: |
-          jq '.multiserver=true | .servers=["https://demo.jellyfin.org/unstable"]' dist/config.json > dist/config.tmp.json
-          mv dist/config.tmp.json dist/config.json
+      # UPSTREAM STEP REMOVED (tesserafin-web #54 / B1).
+      #
+      # Upstream had an "Update config.json for testing" step here that used jq
+      # to set `multiserver: true` and to write the Jellyfin project's public
+      # demo server into the freshly built bundle's client configuration, so the
+      # artifact pointed at an upstream-operated service instead of at whichever
+      # server served it. That step was NOT gated on the repository, so it ran on every
+      # pull request and every push to main in this repository and produced an
+      # artifact whose FIRST runtime action was a call to an upstream-operated
+      # service. B1 forbids exactly that. The bundle is now uploaded as built:
+      # src/config.json ships `"multiserver": false` and `"servers": []`, so the
+      # client talks only to the server that served it.
+      #
+      # scripts/verify-no-runtime-jellyfin.mjs fails the build if this — or any
+      # equivalent injection of an upstream endpoint into a built artifact —
+      # comes back.
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

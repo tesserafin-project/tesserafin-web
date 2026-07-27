@@ -1,0 +1,91 @@
+{
+    "$comment": [
+        "Classified inventory of every upstream-Jellyfin host reference this repository still carries.",
+        "Enforced by scripts/verify-no-runtime-jellyfin.mjs; explained in docs/tesserafin/b1-jellyfin-boundary.md.",
+        "A (file, host) pair that is not listed here fails the gate until a human classifies it.",
+        "Permitted classes: inherited-identity, attribution, developer-sync, inert-link, inherited-trust-allowlist, test-fixture.",
+        "The classes #54 forbids — runtime-network and active-automation — cannot be written here: the gate rejects them on sight.",
+        "`built: true` additionally declares that the host is EXPECTED to survive into dist/."
+    ],
+    "entries": [
+        {
+            "file": ".github/ISSUE_TEMPLATE/1-bug-report.yml",
+            "host": "jellyfin.org",
+            "class": "attribution",
+            "why": "Links the Jellyfin Code of Conduct in the bug-report checklist. Inherited prose shown to a human filing an issue; nothing fetches it. Rewriting the issue templates in Tesserafin's own voice is presentation work and belongs to B2/E1, not B1."
+        },
+        {
+            "file": ".github/ISSUE_TEMPLATE/2-playback-issue.yml",
+            "host": "jellyfin.org",
+            "class": "attribution",
+            "why": "Same Code of Conduct link in the playback-issue checklist. See above."
+        },
+        {
+            "file": ".github/pull_request_template.md",
+            "host": "jellyfin.org",
+            "class": "attribution",
+            "why": "Points contributors at the upstream contributing guide. Prose in a template, read by humans on github.com; no automation resolves it."
+        },
+        {
+            "file": "src/apps/dashboard/constants/helpLinks.ts",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "Thirteen documentation URLs rendered as `href` targets on dashboard help buttons. The application never fetches them; a user may click one and leave. Replacing them needs Tesserafin documentation to exist first (E1)."
+        },
+        {
+            "file": "src/apps/dashboard/routes/playback/transcoding.tsx",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "Three `href` links to upstream hardware-acceleration and font documentation on the transcoding settings page."
+        },
+        {
+            "file": "src/apps/dashboard/routes/plugins/plugin.tsx",
+            "host": "repo.jellyfin.org",
+            "class": "inherited-trust-allowlist",
+            "built": true,
+            "why": "TRUSTED_REPO_URL. The web client never contacts this host — the SERVER fetches plugin repositories. The constant only decides whether the install confirmation dialog is skipped, so an inherited upstream origin is implicitly trusted. Not a class 5 runtime dependency (no request is made from the browser), but it is a real inherited trust decision and is recorded as such in docs/tesserafin/b1-jellyfin-boundary.md for a follow-up outside B1."
+        },
+        {
+            "file": "src/apps/dashboard/routes/settings/index.tsx",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "`href` to the upstream translation-contribution page in the general settings screen."
+        },
+        {
+            "file": "src/apps/wizard/controllers/library.html",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "`href` on the setup wizard's library help button."
+        },
+        {
+            "file": "src/apps/wizard/controllers/library.js",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "Four per-collection-type documentation URLs handed to the wizard's help button as its `href`. Onboarding completes without any of them being resolved — proven by the onboarding browser gate and by tests/e2e/no-runtime-jellyfin.spec.ts."
+        },
+        {
+            "file": "src/apps/wizard/controllers/start/index.html",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "`href` on the first setup-wizard screen's help link."
+        },
+        {
+            "file": "src/components/ConnectionErrorPage.tsx",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "An `href` inside the ServerUpdateNeeded message only. The Unavailable state that B1's network-failure criterion exercises renders MessageUnableToConnectToServer and contains no upstream link at all."
+        },
+        {
+            "file": "src/components/cardbuilder/utils/builder.test.ts",
+            "host": "jellyfin.org",
+            "class": "test-fixture",
+            "why": "An arbitrary absolute image URL used as a unit-test input string. Never requested: the assertion is on the URL the builder produces."
+        },
+        {
+            "file": "src/components/subtitleeditor/subtitleeditor.template.html",
+            "host": "jellyfin.org",
+            "class": "inert-link",
+            "why": "`href` on the subtitle editor's external-files help button."
+        }
+    ]
+}
