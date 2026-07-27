@@ -2266,16 +2266,39 @@ export class PlaybackManager {
             playerData.isChangingStream = true;
 
             if (playerData.streamInfo && playSessionId) {
-                apiClient.stopActiveEncodings(playSessionId).then(function () {
+                // #67: stopping the previous transcode is BEST-EFFORT CLEANUP, and it must not
+                // be able to strand the stream change. It used to carry a success handler only,
+                // so when the request failed the chain rejected, `setSrcIntoPlayer` was never
+                // called, and `isChangingStream` — which only `setSrcIntoPlayer`'s settlement
+                // handlers clear — stayed set forever. `onPlaybackError` was never re-entered,
+                // so it never reached its terminal branch: the retry ladder did not exhaust, it
+                // STALLED, and playback failed in complete silence with no dialog, no toast and
+                // no error state.
+                //
+                // That is not a contrived case. This request goes to the media host, so it fails
+                // in exactly the situation a stream change is being attempted for — the media is
+                // unreachable. Both settlements now continue identically, which is already the
+                // shape used for `afterSetSrc` immediately below. The ladder therefore always
+                // reaches a terminal state, `onPlaybackError` falls through to
+                // `onPlaybackStopped` with a `displayErrorCode`, and the error is reported.
+                const proceed = function () {
                     // Stop the first transcoding afterwards because the player may still send requests to the original url
                     const afterSetSrc = function () {
-                        apiClient.stopActiveEncodings(playSessionId);
+                        // Best-effort too: swallow, never reject into an empty chain.
+                        apiClient
+                            .stopActiveEncodings(playSessionId)
+                            .catch(function () {
+                                /* the transcode is already unreachable; nothing to recover */
+                            });
                     };
                     setSrcIntoPlayer(apiClient, player, streamInfo).then(
                         afterSetSrc,
                         afterSetSrc
                     );
-                });
+                };
+                apiClient
+                    .stopActiveEncodings(playSessionId)
+                    .then(proceed, proceed);
             } else {
                 setSrcIntoPlayer(apiClient, player, streamInfo);
             }
