@@ -1,4 +1,29 @@
-# PARKED — manual trigger only. GitHub refuses to allocate a hosted runner
+# Automatic triggers RESTORED on 2026-07-27 (tesserafin#94). The July 2026
+# allocation refusal described in the parking stamp below is over: GitHub
+# allocates hosted runners for this organisation again. Evidence comes from
+# the sibling server repository, run 30229812748, job "ABI - HEAD"
+# completed/SUCCESS with 8 executed steps on runner "GitHub Actions
+# 1000000000" (ubuntu-latest) — the exact opposite of the parked signature
+# (failure in 1-3 s, zero steps, no runner, billing annotation). Both
+# repositories are owned by the same free organisation tesserafin-project and
+# meter against the same pool, so that result establishes allocation for this
+# repository too; the personal all3f0r1 allowance named below is no longer
+# the metered pool.
+#
+# paths-ignore is deliberately NOT restored. The original excluded '**/*.md',
+# and this workflow is the entry point for __codeql.yml: a documentation-only
+# exclusion here silently suppresses security analysis on any pull request
+# that happens to touch only Markdown. Running the full set on those pull
+# requests is the cheaper mistake.
+#
+# NOT restored by this: required status checks. GET .../branches/main/protection
+# and GET .../rulesets both return 403 "Upgrade to GitHub Pro or make this
+# repository public to enable this feature" (private repo, free organisation
+# plan). These workflows report statuses automatically; nothing can make those
+# statuses mandatory. tesserafin#94 stays open for that reason.
+#
+# ── Parking stamp (historical, superseded by the restoration above) ────────
+# (was) PARKED — manual trigger only. GitHub refuses to allocate a hosted runner
 # for this PRIVATE repo BEFORE the first step (account-wide 2000 free
 # minutes/month exhausted, spending limit $0), so this went red on every push
 # to main without running a single step.
@@ -56,9 +81,20 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches:
+      - main
+      - release*
   workflow_dispatch:
 
 jobs:
+  # Despite this workflow's name, nothing here publishes a release, updates a
+  # mutable tag or deploys. `main` only calls __package.yml, which runs
+  # `npm run build:production` and uploads the result as a run artifact. The
+  # `deploy` job below is gated on `github.repository == 'jellyfin/jellyfin-web'`
+  # and therefore never runs in this repository — it is left in place verbatim
+  # rather than deleted, so the diff against upstream stays readable. The
+  # ungated deployment path lives in workflow_run.yml, which stays parked.
   main:
     name: 'Unstable release 🚀⚠️'
     uses: ./.github/workflows/__package.yml
