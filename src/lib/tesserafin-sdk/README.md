@@ -6,8 +6,10 @@ Typed API client generated from the `reefin` server's OpenAPI spec. Successor to
 
 **Status: one real consumer.** `apps/dashboard/features/playback/api/` (the playback diagnostics
 feature) calls the generated `SystemApi` class directly - see "What's migrated" below. The
-connection layer (`useApi()`, `ServerConnections`, `utils/jellyfin-apiclient/compat.ts`) is still
-untouched and still hands out a `@jellyfin/sdk` `Api` instance; see "What's not done here".
+connection layer (`useApi()`, `ServerConnections`, `utils/jellyfin-apiclient/compat.ts`) still hands
+out a `@jellyfin/sdk` `Api` instance; see "What's not done here". Its one migrated piece is the
+minimum-server-version boundary: `connectionManager.js` imports `MINIMUM_VERSION` from `versions.ts`
+below rather than from `@jellyfin/sdk/lib/versions` (tesserafin-web#65).
 
 ## Layout
 
@@ -161,8 +163,9 @@ every call site.
 ## What's not done here (see design doc §7/§8 for the follow-up PRs)
 
 - **Connection layer not migrated.** `useApi()`, `ServerConnections`/`connectionManager.js`,
-  `utils/jellyfin-apiclient/compat.ts` (`toApi()`) are untouched and still hand out a `@jellyfin/sdk`
-  `Api`. `TesserafinApi`/`createTesserafinApi()` above are not called by anything yet.
+  `utils/jellyfin-apiclient/compat.ts` (`toApi()`) still hand out a `@jellyfin/sdk` `Api`. The single
+  exception is `connectionManager.js`'s default minimum server version, which now comes from
+  `versions.ts` (tesserafin-web#65) - the `Api` construction path itself is unchanged.
 - **CI contract-check job (design doc §6) not added.** The script and pinned `spec/version.json`
   give it what it needs (a version to diff against), but the `openapi-diff` GitHub Actions job that
   would consume it isn't part of this change.
