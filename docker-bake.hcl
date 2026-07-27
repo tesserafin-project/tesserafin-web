@@ -8,7 +8,7 @@
 # build timestamps; docker/build-assets.sh passes the flags that do so.
 
 variable "VERSION" {
-  default = "13.0.0"
+  default = "1.0.0"
 }
 
 # Full 40-char commit SHA of the tesserafin-web tree being built.

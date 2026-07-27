@@ -90,12 +90,13 @@ version is treated as a failure, not a silent gap. `generatedAt`/`source` churn 
 is expected on every run and is not part of the check (the file is reset to its committed content
 afterwards either way, so a run never leaves the working tree dirty as a side effect).
 
-**Known, tracked version skew**: `spec/version.json`'s `serverVersion` (`12.0.0`) does not match
-`webAppVersion` (`13.0.0`, this package's own version) - the pinned spec was captured from a Reefin
-12.0.0 server before `tesserafin-web` bumped to 13.0.0. This is deliberate, not a bug to paper over
-with a fabricated newer spec: `versionSkewNote` records it explicitly, and the check prints it as
-an informational note (not a failure) whenever it's non-null. Upgrading the pinned spec to a
-13.0.0 server is tracked for **W14.1**, not this slice.
+**Version skew: resolved by the 1.0 epoch.** This package and the server both carry `1.0.0` now,
+so `serverVersion` and `webAppVersion` agree and `versionSkewNote` is null. The long-standing
+`12.0.0` / `13.0.0` skew recorded here previously was an artefact of the two inherited upstream
+version lines; both were reset to `1.0.0` when Tesserafin opened its public version epoch (see
+`docs/versioning-policy.md` in the server repository). The skew machinery is retained on purpose:
+`versionSkewNote` still records any future disagreement explicitly, and the check still prints it
+as an informational note rather than papering over it with a fabricated newer spec.
 
 **Local Docker equivalent** (CI quota is currently exhausted - see
 `docs/tesserafin/design-tesserafin-api-layer.md` for the CI pipeline this substitutes for locally):

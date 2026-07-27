@@ -1,6 +1,6 @@
 {
     "name": "tesserafin-web",
-    "version": "13.0.0",
+    "version": "1.0.0",
     "description": "Web interface for Tesserafin",
     "repository": "https://github.com/tesserafin/tesserafin-web",
     "license": "GPL-2.0-or-later",
@@ -138,6 +138,7 @@
         "generate:tesserafin-sdk": "node scripts/generate-tesserafin-sdk.mjs",
         "generate:tokens": "node tesserafin-design/scripts/generate-web-tokens.mjs",
         "verify:tesserafin-sdk-fresh": "node scripts/verify-tesserafin-sdk-fresh.mjs",
+        "verify:version-single-source": "node scripts/verify-version-single-source.mjs",
         "verify:no-new-reefin": "node scripts/verify-no-new-reefin.mjs",
         "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
@@ -148,7 +149,7 @@
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test",
-        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin"
+        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:version-single-source"
     },
     "engines": {
         "node": ">=24.0.0",
