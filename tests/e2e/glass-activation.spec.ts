@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { expect, request, test, type Page } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request, type Page } from '@playwright/test';
 
 /**
  * Reefin Glass activation journey and captures (RFC-0005 §8.2, issue #18 / W13.8b).

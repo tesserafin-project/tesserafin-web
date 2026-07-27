@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
 
 import {
     VIDEO_CODEC_PROFILE_PROBES,

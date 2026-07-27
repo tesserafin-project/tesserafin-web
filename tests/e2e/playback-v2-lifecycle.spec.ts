@@ -1,4 +1,5 @@
-import { expect, request, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request } from '@playwright/test';
 
 /**
  * THE FULL v2 SESSION LIFECYCLE — REAL browser E2E, real server (reefin issue #43).

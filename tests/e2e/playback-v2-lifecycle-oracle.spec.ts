@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { expect, request, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 
 /**

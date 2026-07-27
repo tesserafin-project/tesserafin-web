@@ -1,0 +1,23 @@
+{
+    "$comment": [
+        "Declared non-local origins the browser suite is permitted to observe at runtime.",
+        "Enforced by tests/e2e/support/origin-inventory.ts and scripts/verify-runtime-origins.mjs.",
+        "An origin that is not listed here FAILS the test at the moment it is observed.",
+        "This file is the reviewed record of every destination the shipped client reaches",
+        "outside the candidate server. Adding an entry is a deliberate, explained decision -",
+        "the same discipline .github/jellyfin-boundary-allowlist.json applies to the static gate.",
+        "#54 forbids a runtime functional dependency on JELLYFIN infrastructure. An entry here",
+        "is not automatically acceptable under that rule; each one states why it is not one."
+    ],
+    "entries": [
+        {
+            "origin": "https://www.gstatic.com",
+            "alsoObservedAs": "http://www.gstatic.com",
+            "source": "src/plugins/chromecastPlayer/castSenderApi.js",
+            "url": "https://www.gstatic.com/cv/js/sender/v1/cast_sender.js",
+            "class": "inherited-optional-feature",
+            "jellyfinInfrastructure": false,
+            "why": "The Google Cast sender SDK, loaded by the inherited chromecastPlayer plugin so the app bar's 'Cast to Device' control can enumerate receivers. It is Google infrastructure, not Jellyfin infrastructure, so it is outside what #54 class 5 forbids. It is also not functional for any B1 criterion: onboarding, authentication, library browse, detail, search and playback all complete with it blocked - the only consequence is that casting is unavailable. It is recorded here rather than hidden because #54 asks for application-requested non-local origins to be surfaced, and this is the only one the suite observes. Removing the Cast integration, or making the SDK load on demand when the user actually opens the cast menu, is real work and belongs to a follow-up, not to B1."
+        }
+    ]
+}

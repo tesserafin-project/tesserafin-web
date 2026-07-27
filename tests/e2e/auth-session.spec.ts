@@ -1,4 +1,5 @@
-import { expect, request, test, type Page } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request, type Page } from '@playwright/test';
 
 /**
  * B1 (#54) — authentication and session, through the real product UI.

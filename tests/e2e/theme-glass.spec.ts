@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { expect, request, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request } from '@playwright/test';
 
 /**
  * Reefin Glass (RFC-0005 §8.2) capture + regression journey (W13.8a).

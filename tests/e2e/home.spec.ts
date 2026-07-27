@@ -1,4 +1,5 @@
-import { expect, request, test, type Page } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request, type Page } from '@playwright/test';
 
 /**
  * First E2E journey of the repo (design-tesserafin-shell-and-routing.md §5):

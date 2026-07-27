@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { type Page, type Route } from '@playwright/test';
 
 /**
  * B1 (#54) — network/server failure, through the real product UI.
