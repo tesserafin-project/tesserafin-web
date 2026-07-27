@@ -23,27 +23,28 @@ import { expect, request, test, type Page, type Route } from '@playwright/test';
  * the media itself cannot be obtained.
  *
  * ────────────────────────────────────────────────────────────────────────────────────────
- * ONE OF THESE TESTS IS DECLARED FAILING, AND THAT IS THE POINT.
+ * #67 — NO TEST IN THIS FILE IS DECLARED FAILING ANY MORE.
  *
- * "a media failure reaches a visible error state" is marked `test.fail()`. It is NOT
- * skipped: it runs in full, every assertion executes, and the moment the product starts
- * passing it Playwright turns the run RED with "expected to fail but passed" — which is the
- * signal to delete the annotation. What it records is a real defect found by writing it:
+ * "a media failure reaches a visible error state" used to carry a `test.fail()`. It recorded
+ * a real defect found by writing it:
  *
- *   after the retry ladder exhausts, NOTHING appears. No dialog, no toast, no error state,
- *   for at least 24 s. The player OSD stays mounted over a <video> that will never play,
- *   and the user is given no indication that anything went wrong.
+ *   after the retry ladder exhausts, NOTHING appeared. No dialog, no toast, no error state,
+ *   for at least 24 s. The player OSD stayed mounted over a <video> that would never play,
+ *   and the user was given no indication that anything had gone wrong.
  *
- * The code intends otherwise — `onPlaybackError` falls through to `onPlaybackStopped` with
- * a `displayErrorCode`, and `onPlaybackStopped` calls `showPlaybackInfoErrorMessage`, which
- * shows a real in-DOM dialog. Something between those two swallows it; `onPlaybackStopped`
- * early-returns while `isChangingStream` is set, and the fatal error arrives during exactly
- * such a change.
+ * The code always intended otherwise — `onPlaybackError` falls through to `onPlaybackStopped`
+ * with a `displayErrorCode`, and `onPlaybackStopped` calls `showPlaybackInfoErrorMessage`,
+ * which shows a real in-DOM dialog. What swallowed it was `onPlaybackStopped`'s in-flight
+ * guard: `changeStreamToUrl()` sets `isChangingStream` and only clears it when
+ * `player.play()` settles, and a fatal HLS error surfaces through the player's error event
+ * instead — so the flag was still set when the terminal stop was dispatched and the whole
+ * terminal path, error dialog included, was skipped.
  *
- * Fixing it changes shipped runtime bytes, which under #54's publication rule forces a new
- * web-assets publication, a server Dockerfile re-pin, a new server candidate and a full
- * A1/A3/A7/B1 re-run. That is not a change to make inside a test commit, so it is filed as
- * the focused blocker #67, and B1 stays open on it.
+ * The annotation is gone and the assertion is an ordinary one. It is also wider than it was:
+ * a visible surface alone is not what B1 asks for. The terminal failure must carry a real
+ * translated message, must not sit behind an active spinner or a blank page, must tear the
+ * player down rather than leave it over dead media, must be dismissable deterministically
+ * without reloading the application, and must still release the server-side session.
  * ────────────────────────────────────────────────────────────────────────────────────────
  */
 
@@ -281,28 +282,138 @@ test.describe('playback failure (B1)', () => {
     });
 
     test('a media failure reaches a visible error state', async ({ page }) => {
-        // DECLARED FAILING — see the file header. Not a skip: every line below runs, and the
-        // day the product starts passing it Playwright turns the suite red with "expected to
-        // fail but passed", which is exactly when this line must be deleted.
-        //
-        // Called INSIDE the test body on purpose: `test.fail()` at describe scope applies to
-        // every test in the describe, which would silently declare the two genuinely passing
-        // tests around it as expected failures too.
-        test.fail(
-            true,
-            '#67 — the exhausted retry ladder shows no dialog, toast or error state at all'
-        );
-
+        // #67: this was a declared `test.fail()` while the exhausted retry ladder ended in
+        // silence. It is an ordinary assertion now, and the assertions below were widened at
+        // the same time: "something visible appeared" was never the whole of what B1 asks —
+        // the terminal failure also has to end the attempt, release the server-side session
+        // and be dismissable deterministically.
         const a = await admin();
         try {
             const itemId = await firstMovieId(a);
+            const transcodesBefore = await activeTranscodes(a);
+
             await signIn(page);
             await failPlayback(page, itemId);
 
+            // The no-reload marker is stamped HERE, after the attempt has been started, and
+            // not before it: `failPlayback` reaches the item through `pressPlay`, which uses
+            // `page.goto` — a real document navigation that wipes any marker set beforehand.
+            // Stamped at this point it covers exactly the window under test: the terminal
+            // error appearing, being dismissed, and the user carrying on. Same reasoning, and
+            // the same placement, as the sibling test above.
+            await page.evaluate(() => {
+                (window as unknown as Record<string, unknown>).__b1SpaMarker =
+                    'alive';
+            });
+
+            // 1. A VISIBLE ERROR SURFACE. The exhausted ladder must say so on screen.
+            const surface = errorSurface(page);
             await expect(
-                errorSurface(page),
+                surface,
                 'a playback failure must reach a visible error state, not fail silently'
             ).toBeVisible({ timeout: 25_000 });
+
+            // 2. IT MUST CARRY A REAL MESSAGE, not an empty shell. `showPlaybackInfoErrorMessage`
+            //    builds `HeaderPlaybackError` + `PlaybackError.<type>`; both are translated, so
+            //    this matches the shipped English and French wording rather than a raw key.
+            //    A bare key leaking through ("PlaybackError.NETWORK_ERROR") fails here.
+            const shown = ((await surface.innerText()) || '').trim();
+            expect(
+                shown.length,
+                'the playback error surface appeared but carries no text'
+            ).toBeGreaterThan(0);
+            expect(
+                shown,
+                'the error surface must name a playback failure in the shipped wording'
+            ).toMatch(/playback error|erreur de lecture/i);
+            expect(
+                shown,
+                'an untranslated message key reached the screen'
+            ).not.toMatch(/PlaybackError\./);
+
+            // 3. NO FALSE SUCCESS AND NO SILENT STOP. The failure is reported while the
+            //    application is not pretending to still be working on it: the spinner is not
+            //    active behind the message, and the page has not gone blank.
+            await expect(
+                activeSpinner(page),
+                'the application still shows a loading state behind the playback error'
+            ).toHaveCount(0);
+            expect(
+                (await page.locator('body').innerText()).trim().length,
+                'the page went blank instead of reporting the playback failure'
+            ).toBeGreaterThan(0);
+
+            // 4. THE PLAYER MUST NOT BE LEFT MOUNTED OVER DEAD MEDIA. Before the fix the OSD
+            //    and the <video> stayed up indefinitely over media that would never play.
+            //    Polled, because teardown is asynchronous.
+            await expect
+                .poll(
+                    () =>
+                        page
+                            .locator(
+                                'video, .videoOsdBottom, .videoPlayerContainer'
+                            )
+                            .count(),
+                    {
+                        timeout: 25_000,
+                        message:
+                            'the player is still mounted over media that will never play'
+                    }
+                )
+                .toBe(0);
+
+            // 5. DISMISSAL IS DETERMINISTIC. The dialog's own button closes it, and the
+            //    application is usable immediately afterwards — with no reload (the marker
+            //    stamped on the live document before playback must survive).
+            const dismiss = surface
+                .locator('button[type="submit"], button')
+                .first();
+            await expect(
+                dismiss,
+                'the playback error must be dismissable'
+            ).toBeVisible({ timeout: 10_000 });
+            await dismiss.click();
+            await expect(
+                surface,
+                'dismissing the playback error must actually close it'
+            ).toBeHidden({ timeout: 10_000 });
+
+            // Dismissal leaves the user on the item page the failed attempt started from, so
+            // "usable again" is asserted the same way the sibling test above asserts it: by
+            // performing the client-side route change the application's own links perform, and
+            // then requiring the destination to render. `page.goto` is deliberately NOT used —
+            // it is a real document navigation even when only the fragment differs, which would
+            // reload the SPA and destroy the marker that proves no reload was needed.
+            await expect(
+                page.locator('button.btnPlay:visible').first(),
+                'the item page must still be interactive after the error is dismissed'
+            ).toBeVisible({ timeout: 25_000 });
+            await page.evaluate(() => {
+                window.location.hash = '#/home';
+            });
+            await expect(
+                page.getByRole('tab', { name: /accueil|home/i }),
+                'the application must be usable again after the error is dismissed'
+            ).toBeVisible({ timeout: 25_000 });
+            expect(
+                await page.evaluate(
+                    () =>
+                        (window as unknown as Record<string, unknown>)
+                            .__b1SpaMarker
+                ),
+                'recovering from a playback error must not require reloading the application'
+            ).toBe('alive');
+
+            // 6. TEARDOWN STILL COMPLETES. Making the error visible must not cost the
+            //    session cleanup that the silent path happened to perform.
+            await page.unroute('**/*');
+            await expect
+                .poll(() => activeTranscodes(a), {
+                    timeout: 20_000,
+                    message:
+                        'reporting the playback error left a transcoding session running on the server'
+                })
+                .toBeLessThanOrEqual(transcodesBefore);
         } finally {
             await a.api.dispose();
         }
