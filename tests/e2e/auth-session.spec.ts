@@ -302,7 +302,9 @@ test.describe('session lifecycle (B1)', () => {
             .getByRole('button', { name: /user menu|menu utilisateur/i })
             .click();
         await page
-            .getByRole('menuitem', { name: /sign out|se déconnecter|déconnexion/i })
+            .getByRole('menuitem', {
+                name: /sign out|se déconnecter|déconnexion/i
+            })
             .click();
 
         await expect(

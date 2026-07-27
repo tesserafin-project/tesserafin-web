@@ -86,12 +86,21 @@ Console errors relevant to any failure:
 No credential, token or complete media path was displayed at any point: YES/NO
 ```
 
-## Known limitation to watch for at step 7
+## Known defect at step 7 — expect it, and confirm it
 
-The automated suite found that a playback session can outlive a stop: the
-client dispatches the teardown `DELETE /Playback/Sessions/{id}` exactly once, as
-its contract requires, but the request can be lost in flight during page
-teardown, leaving the session alive on the server until its TTL. See the
-`b1-` evidence section of #54. It does not produce a visible symptom for a
-user, so step 7 will not surface it — it is recorded here so the manual pass is
-not read as having cleared it.
+Step 7 is the one that already has a known answer, and it is the wrong one.
+**#67**: once the playback retry ladder exhausts, the application shows nothing
+at all — no dialog, no toast, no error state — while the player stays mounted
+over media that will never play. `tests/e2e/error-playback.spec.ts` carries that
+assertion as a declared expected failure.
+
+So step 7 is not asking you to discover the problem; it is asking you to confirm
+what a user actually experiences, which automation cannot judge: whether the
+screen you are left on reads as "broken", as "still loading", or as nothing at
+all, and whether you can tell that playback failed without opening the console.
+Record what you saw in those terms.
+
+Everything else about step 7 is already proven green and does not need your
+adjudication: no credential, media path or token is exposed, no transcode
+outlives the attempt, leaving does not require a reload, and pressing play again
+is served real media bytes.

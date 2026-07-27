@@ -43,7 +43,7 @@ import { expect, request, test, type Page, type Route } from '@playwright/test';
  * Fixing it changes shipped runtime bytes, which under #54's publication rule forces a new
  * web-assets publication, a server Dockerfile re-pin, a new server candidate and a full
  * A1/A3/A7/B1 re-run. That is not a change to make inside a test commit, so it is filed as
- * a focused blocker and B1 stays open on it.
+ * the focused blocker #67, and B1 stays open on it.
  * ────────────────────────────────────────────────────────────────────────────────────────
  */
 
@@ -116,7 +116,9 @@ async function activeTranscodes(a: Admin): Promise<number> {
         headers: { Authorization: a.token }
     });
     expect(sessions.status(), 'GET /Sessions must answer 200').toBe(200);
-    const body = (await sessions.json()) as Array<{ TranscodingInfo?: unknown }>;
+    const body = (await sessions.json()) as Array<{
+        TranscodingInfo?: unknown;
+    }>;
     return body.filter((s) => s.TranscodingInfo).length;
 }
 
@@ -125,7 +127,9 @@ async function signIn(page: Page) {
     expect(response?.ok(), 'the server did not serve the SPA').toBeTruthy();
     const loginName = page.locator('#txtManualName:visible');
     const homeTab = page.getByRole('tab', { name: /accueil|home/i });
-    await expect(loginName.or(homeTab).first()).toBeVisible({ timeout: 25_000 });
+    await expect(loginName.or(homeTab).first()).toBeVisible({
+        timeout: 25_000
+    });
     if (page.url().includes('/login')) {
         const accepted = page.waitForResponse(
             (res) =>
@@ -213,7 +217,9 @@ test.describe('playback failure (B1)', () => {
             // Nothing sensitive on screen: not the container's media path, not an API key,
             // not a token, not the password. Asserted on whatever IS shown, which today is
             // the item page the player left behind — see the file header.
-            const shown = ((await page.locator('body').innerText()) || '').trim();
+            const shown = (
+                (await page.locator('body').innerText()) || ''
+            ).trim();
             testInfo.annotations.push({
                 type: 'after-playback-failure',
                 description: shown.slice(0, 300)
@@ -284,7 +290,7 @@ test.describe('playback failure (B1)', () => {
         // tests around it as expected failures too.
         test.fail(
             true,
-            'known defect: the exhausted retry ladder shows no dialog, toast or error state at all'
+            '#67 — the exhausted retry ladder shows no dialog, toast or error state at all'
         );
 
         const a = await admin();

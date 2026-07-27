@@ -31,7 +31,8 @@ const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? 'smokepass123';
 const RECOVERY_BUDGET_MS = 45_000;
 
 /** Requests the SPA needs in order to BE loaded. Everything else is API traffic. */
-const STATIC_ASSET = /\.(js|mjs|css|html|png|jpe?g|svg|ico|woff2?|ttf|map|json)(\?|$)/i;
+const STATIC_ASSET =
+    /\.(js|mjs|css|html|png|jpe?g|svg|ico|woff2?|ttf|map|json)(\?|$)/i;
 
 const loginForm = (page: Page) => ({
     name: page.locator('#txtManualName:visible'),
@@ -49,7 +50,8 @@ async function signIn(page: Page) {
     await expect(loginForm(page).name).toBeVisible({ timeout: 30_000 });
     const accepted = page.waitForResponse(
         (res) =>
-            /\/users\/authenticatebyname/i.test(res.url()) && res.status() < 400,
+            /\/users\/authenticatebyname/i.test(res.url()) &&
+            res.status() < 400,
         { timeout: 20_000 }
     );
     await loginForm(page).name.fill(USER);
@@ -57,9 +59,9 @@ async function signIn(page: Page) {
     await loginForm(page).submit.click();
     await accepted;
     await page.waitForURL('**/#/home**', { timeout: 20_000 });
-    await expect(
-        page.getByRole('tab', { name: /accueil|home/i })
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('tab', { name: /accueil|home/i })).toBeVisible({
+        timeout: 30_000
+    });
 }
 
 /**
@@ -112,7 +114,9 @@ test.describe('network/server failure (B1)', () => {
         ).toHaveCount(0);
 
         // Not blank: something is genuinely rendered.
-        const bodyText = ((await page.locator('body').innerText()) || '').trim();
+        const bodyText = (
+            (await page.locator('body').innerText()) || ''
+        ).trim();
         expect(
             bodyText.length,
             'the failure state must not be a blank page'
