@@ -119,6 +119,20 @@ jobs:
 
   codeql:
     name: GitHub CodeQL 🔬
+    # GATED OFF. Code scanning requires GitHub Advanced Security, which a
+    # private repository on a free organisation plan does not have. The
+    # analysis runs fine and then the upload is refused — proven by run
+    # 30230774481, where "Initialize CodeQL" and "Autobuild" both succeeded
+    # and the job then failed with:
+    #   ##[error]Please verify that the necessary features are enabled:
+    #   Advanced Security must be enabled for this repository to use code
+    #   scanning.
+    # Left armed it burns a full analysis on every event and then goes red at
+    # the last step, every time. The job is kept intact and gated on a
+    # repository variable rather than deleted: set ENABLE_CODE_SCANNING=true
+    # once Advanced Security is available. LOSS OF COVERAGE IS REAL AND
+    # UNMITIGATED — nothing else performs static security analysis here.
+    if: ${{ vars.ENABLE_CODE_SCANNING == 'true' }}
     uses: ./.github/workflows/__codeql.yml
     permissions:
       actions: read

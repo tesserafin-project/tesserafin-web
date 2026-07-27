@@ -11,6 +11,8 @@ jobs:
   run-build-prod:
     name: Run production build 🏗️
     runs-on: ubuntu-latest
+    # Minute economy: a hard ceiling instead of the 6-hour default.
+    timeout-minutes: 25
 
     steps:
       - name: Check out Git repository
@@ -44,3 +46,6 @@ jobs:
           name: frontend
           path: dist
           if-no-files-found: error
+          # Storage economy: the default retention is 90 days. This artifact
+          # is a per-run production build used for inspection, not a release.
+          retention-days: 7
