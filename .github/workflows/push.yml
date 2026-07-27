@@ -105,7 +105,15 @@ jobs:
     name: Quality checks 👌🧪
     if: ${{ always() && !cancelled() }}
     uses: ./.github/workflows/__quality_checks.yml
-    permissions: {}
+    # Upstream uses `permissions: {}` here, which works because
+    # jellyfin/jellyfin-web is public: an empty-permission GITHUB_TOKEN can
+    # still clone it. This repository is PRIVATE, so the same setting makes
+    # actions/checkout fail with
+    #   fatal: repository 'https://github.com/tesserafin-project/tesserafin-web/' not found
+    # (proven by run 30230684855). contents: read is the minimum that lets the
+    # checkout succeed, and it is still least-privilege.
+    permissions:
+      contents: read
     with:
       commit: ${{ github.sha }}
 
