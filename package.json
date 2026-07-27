@@ -141,6 +141,7 @@
         "verify:version-single-source": "node scripts/verify-version-single-source.mjs",
         "verify:no-new-reefin": "node scripts/verify-no-new-reefin.mjs",
         "verify:no-runtime-jellyfin": "node scripts/verify-no-runtime-jellyfin.mjs",
+        "verify:runtime-origins": "node scripts/verify-runtime-origins.mjs",
         "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "lint": "biome check .",

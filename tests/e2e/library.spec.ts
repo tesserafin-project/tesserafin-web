@@ -1,4 +1,5 @@
-import { devices, expect, request, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { devices, request } from '@playwright/test';
 
 /**
  * `/library/<libraryId>` E2E journey (RFC-0005 §11 WP-D, movies/tvshows v1 - see

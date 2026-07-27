@@ -1,4 +1,5 @@
-import { expect, request, test } from '@playwright/test';
+import { expect, test } from './support/origin-inventory';
+import { request } from '@playwright/test';
 import type { CDPSession, Page } from '@playwright/test';
 
 /**
