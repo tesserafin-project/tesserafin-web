@@ -11,6 +11,19 @@ on:
 jobs:
   dependency-review:
     name: Vulnerable dependencies 🔎
+    timeout-minutes: 10
+    # Dependency review needs the dependency graph AND GitHub Advanced
+    # Security. On this private repository under a free organisation plan the
+    # action cannot run at all — proven by run 30230774481:
+    #   ##[error]Dependency review is not supported on this repository. Please
+    #   ensure that Dependency graph is enabled along with GitHub Advanced
+    #   Security
+    # Left armed it fails on every pull request regardless of the diff, which
+    # is permanent red for a capability the plan does not include. The job is
+    # kept intact and gated on a repository variable instead of being deleted:
+    # set ENABLE_DEPENDENCY_REVIEW=true once Advanced Security is available.
+    # This is visible, unmitigated security debt, not a fix.
+    if: ${{ vars.ENABLE_DEPENDENCY_REVIEW == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -30,7 +43,14 @@ jobs:
   quality:
     name: Run ${{ matrix.command }} 🕵️‍♂️
     runs-on: ubuntu-latest
+    # Minute economy: a hard ceiling. Without it a hung job bills up to the
+    # 6-hour default; these commands finish in a couple of minutes.
+    timeout-minutes: 20
     strategy:
+      # Kept false on purpose: lint, stylelint, build:check and test fail for
+      # unrelated reasons and a developer wants all four verdicts in one run
+      # rather than four sequential pushes. The legs are cheap and identical
+      # in cost, so this costs at most three short jobs.
       fail-fast: false
       matrix:
         command:

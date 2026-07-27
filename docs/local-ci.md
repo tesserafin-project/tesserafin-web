@@ -1,8 +1,40 @@
 # Local CI — reference merge gate during the GitHub Actions outage
 
-**Status: active since 2026-07-19.** GitHub Actions is not running on
-`all3f0r1/reefin-web`. Until it is restored, the **local gate described here is
-the mandatory merge gate**. No change lands without it passing.
+> ## Update 2026-07-27 — hosted CI is back (tesserafin#94)
+>
+> GitHub allocates hosted runners for this organisation again. The July 2026
+> allocation refusal described in section 1 is **over** and is kept below only
+> as an archive. Evidence comes from the sibling server repository, run
+> [30229812748](https://github.com/tesserafin-project/tesserafin/actions/runs/30229812748):
+> job `ABI - HEAD` **completed/success**, **8 steps executed**, runner
+> `GitHub Actions 1000000000` — the exact opposite of the parked signature
+> (failure in 1-3 s, zero steps, no runner, billing annotation). Both
+> repositories are owned by the same free organisation `tesserafin-project`
+> and meter against the same pool, so that result establishes allocation here
+> too. The personal `all3f0r1` account named throughout section 1 is no longer
+> the metered pool.
+>
+> `pull_request.yml` and `push.yml` are re-armed, which brings back the
+> quality-check matrix, the production build and CodeQL. `workflow_run.yml`
+> stays parked: it is the only ungated deployment path in this repository.
+>
+> `paths-ignore: '**/*.md'` was deliberately **not** restored. These workflows
+> are the entry point for `__codeql.yml`, and a documentation-only exclusion
+> there silently suppresses security analysis on any pull request that happens
+> to touch only Markdown.
+>
+> **Not resolved, and the reason tesserafin#94 stays open:** required status
+> checks remain unavailable. `GET .../branches/main/protection` and
+> `GET .../rulesets` both return
+> `403 "Upgrade to GitHub Pro or make this repository public to enable this
+> feature"` (private repository, free organisation plan). The checks run and
+> report a status; none of them can be made mandatory. The local gate
+> therefore keeps conventional authority only, and remains the discipline of
+> record.
+
+**Status: active since 2026-07-19.** Until required checks can be enforced,
+the **local gate described here remains the mandatory merge gate**. No change
+lands without it passing.
 
 ---
 
