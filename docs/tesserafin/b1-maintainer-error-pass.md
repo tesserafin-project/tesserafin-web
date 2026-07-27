@@ -38,11 +38,36 @@ docker run -d --name tesserafin-b1-manual \
   ghcr.io/tesserafin-project/tesserafin-server@sha256:fd1fa9e0f5a28a07e5872cc5ff13257a92d988717a33519f62c4b26c6ab36249
 ```
 
-Then open <http://127.0.0.1:8096/>, complete onboarding, and add
-`/media` as a Movies library. For steps 7 and 8 you need one file that direct
-plays (H.264 + AAC in MP4) and one that cannot (MPEG-4 Part 2 + AC-3 in MP4);
-`ci/serve-e2e.sh`'s `synthesize_fixtures` builds both with ffmpeg if you would
-rather not supply your own.
+### The two media fixtures
+
+Steps 7 and 8 need one file that direct plays and one that cannot. These are the
+same recipes the automated rig uses. Run them **before** adding the library, so
+the first scan already sees both:
+
+```bash
+mkdir -p "/tmp/b1-manual/media/Smoke Test Movie (2020)" \
+         "/tmp/b1-manual/media/Transcode Probe (2021)"
+
+# DIRECT PLAY — H.264 + AAC in MP4.
+ffmpeg -hide_banner -loglevel error -y \
+  -f lavfi -i "testsrc=size=320x240:rate=15:duration=2" \
+  -f lavfi -i "sine=frequency=1000:duration=2" \
+  -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
+  -c:a aac -movflags +faststart \
+  "/tmp/b1-manual/media/Smoke Test Movie (2020)/Smoke Test Movie (2020).mp4"
+
+# TRANSCODE — MPEG-4 Part 2 + AC-3. No browser build ships either decoder, so
+# the server has no choice but to re-encode.
+ffmpeg -hide_banner -loglevel error -y \
+  -f lavfi -i "testsrc=size=320x240:rate=15:duration=2" \
+  -f lavfi -i "sine=frequency=1000:duration=2" \
+  -c:v mpeg4 -pix_fmt yuv420p \
+  -c:a ac3 -b:a 96k -movflags +faststart \
+  "/tmp/b1-manual/media/Transcode Probe (2021)/Transcode Probe (2021).mp4"
+```
+
+Each clip is two seconds long. Then open <http://127.0.0.1:8096/>, complete
+onboarding, and add `/media` as a **Movies** library.
 
 Before you start, open the browser console and leave it open. Steps 1, 5 and 7
 ask what appeared there.
