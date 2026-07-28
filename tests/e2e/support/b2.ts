@@ -177,6 +177,85 @@ export async function signIn(page: Page) {
     ).toBeVisible({ timeout: 25_000 });
 }
 
+/**
+ * Opens the seeded movie's detail page by CLIENT-SIDE navigation from the authenticated shell.
+ *
+ * WHY NOT `page.goto('/#/details?id=…')`. A deep-linked hash is a full document load, and in a
+ * full-suite run one was observed landing on the sign-in page instead: the shell had authenticated,
+ * the reload discarded the session, and the detail page rendered as `Please sign in`. That is a
+ * setup step failing, not the subject of any B2 test, and it made a green run indistinguishable
+ * from a red one for the wrong reason. Search-and-activate is the path a user takes anyway, it is
+ * what `b2-responsive.spec.ts` already drives, and it keeps the document alive throughout.
+ */
+export async function openItemDetail(page: Page) {
+    const searchControl = navSearch(page);
+    await expect(searchControl, 'the shell must offer Search').toBeVisible({
+        timeout: 25_000
+    });
+    await searchControl.click();
+    await page.waitForURL('**/#/search**', { timeout: 15_000 });
+    const field = page.locator('.searchFields input:visible').first();
+    await expect(field).toBeVisible({ timeout: 15_000 });
+    await field.fill(MOVIE_TITLE);
+    const card = searchResultCard(page);
+    await expect(card, 'the seeded movie must be findable').toBeVisible({
+        timeout: 25_000
+    });
+    // Focus and Enter, for the reason `search.spec.ts` documents: the card's hover overlay
+    // intercepts pointer events and its Resume button would start playback instead.
+    await card.focus();
+    await card.press('Enter');
+    await page.waitForURL('**/#/details?id=**', { timeout: 25_000 });
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({
+        timeout: 25_000
+    });
+}
+
+/**
+ * Starts playback from the item detail page and leaves the player on screen, paused.
+ *
+ * TWO THINGS MAKE THE NAIVE VERSION FLAKY, and both were observed against the release candidate.
+ *
+ * 1. THE FIXTURE IS TWO SECONDS LONG. `synthesize_fixtures` in `ci/verify-release-pair.sh` builds a
+ *    2 s clip, so the player can reach `#/video`, finish, and restore the detail view before a
+ *    `waitForURL` registered AFTER the click ever looks. Under the TV layout the extra layout work
+ *    made that window close every time, and the log showed exactly that: `playbackstart` followed
+ *    immediately by `playbackstop` and `tryRestoreView` back to `/details`. The navigation wait is
+ *    therefore armed BEFORE the control is activated.
+ * 2. Once there, the clip keeps running. Pausing it is what makes every later assertion — the OSD
+ *    controls, the layout measurement, the accessibility scan — about a player that is still on
+ *    screen rather than one that ended mid-assertion.
+ *
+ * The control itself is `.mainDetailButtons .btnPlay`, not a title match: the button's `title` is
+ * localized (the rig runs in French, where it is "Lire"), so `button[title*="Play"]` matches
+ * nothing there.
+ */
+export async function openPlayer(page: Page) {
+    const play = page.locator('.mainDetailButtons .btnPlay:visible').first();
+    await expect(
+        play,
+        'the item detail page must offer a play control'
+    ).toBeVisible({ timeout: 25_000 });
+
+    const reachedPlayer = page.waitForURL(/#\/video/, { timeout: 30_000 });
+    await play.click();
+    await reachedPlayer;
+
+    await expect(
+        page.locator('video'),
+        'the player must reach a real video surface'
+    ).toBeVisible({ timeout: 30_000 });
+
+    // Hold the player open. `loop` is belt and braces for the case where the pause lands after the
+    // clip has already ended.
+    await page.evaluate(() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        video.loop = true;
+        video.pause();
+    });
+}
+
 /** The href of the live main-theme stylesheet — the product's own evidence of which theme is on. */
 export async function activeThemeHref(page: Page): Promise<string> {
     return page.evaluate(() => {
@@ -208,6 +287,13 @@ export async function useTheme(page: Page, userId: string, theme: ThemeName) {
             message: `the ${theme} stylesheet must be the live main theme after the reload`
         })
         .toContain(marker);
+    // The stylesheet can be live before the shell has rendered, and a caller that navigated
+    // immediately afterwards found no Search control. The app bar's Search entry is present on
+    // every route in both shells, so it is the settle condition that does not assume a route.
+    await expect(
+        navSearch(page),
+        'the shell must have rendered after the theme reload'
+    ).toBeVisible({ timeout: 25_000 });
 }
 
 export interface LayoutReport {

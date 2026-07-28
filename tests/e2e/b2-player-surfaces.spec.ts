@@ -1,19 +1,17 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { type Route, request } from '@playwright/test';
+import type { Route } from '@playwright/test';
 import { expect, test } from './support/origin-inventory';
 import {
-    AUTH_HEADER,
-    BASE_URL,
     type FormFactor,
-    PASSWORD,
-    USER,
     VIEWPORTS,
     apiUserId,
     applyFormFactor,
     describeFocus,
     expectTvLayout,
     measureLayoutStable,
+    openItemDetail,
+    openPlayer,
     signIn,
     useTheme
 } from './support/b2';
@@ -50,37 +48,6 @@ const capturePath = (name: string): string => {
 const MEDIA_BYTES =
     /\/(videos|audio)\/[^/]+\/(stream|master\.m3u8|main\.m3u8|hls1)/i;
 
-async function firstMovieId(): Promise<string> {
-    const api = await request.newContext({ baseURL: BASE_URL });
-    try {
-        const auth = await api.post('/Users/AuthenticateByName', {
-            headers: { Authorization: AUTH_HEADER },
-            data: { Username: USER, Pw: PASSWORD }
-        });
-        expect(auth.ok()).toBe(true);
-        const body = await auth.json();
-        const items = await api.get('/Items', {
-            params: {
-                userId: String(body.User.Id),
-                recursive: 'true',
-                includeItemTypes: 'Movie'
-            },
-            headers: {
-                Authorization: `${AUTH_HEADER}, Token="${body.AccessToken}"`
-            }
-        });
-        expect(items.status()).toBe(200);
-        const id = (await items.json()).Items?.[0]?.Id;
-        expect(
-            id,
-            'the rig must expose at least one movie fixture'
-        ).toBeTruthy();
-        return String(id);
-    } finally {
-        await api.dispose();
-    }
-}
-
 const FORM_FACTORS: FormFactor[] = ['desktop', 'mobile', 'tv'];
 
 test.describe('B2 player: controls and the terminal error dialog at every form factor', () => {
@@ -90,7 +57,6 @@ test.describe('B2 player: controls and the terminal error dialog at every form f
                 page
             }, testInfo) => {
                 const userId = await apiUserId();
-                const itemId = await firstMovieId();
 
                 await applyFormFactor(page, factor);
                 await signIn(page);
@@ -98,69 +64,30 @@ test.describe('B2 player: controls and the terminal error dialog at every form f
                 await applyFormFactor(page, factor);
                 if (factor === 'tv') await expectTvLayout(page);
 
-                // 1. THE PLAYER ITSELF, with media flowing. Its controls must be on screen and
-                //    addressable at this form factor.
-                await page.goto(`/#/details?id=${itemId}`);
-                const play = page
-                    .locator(
-                        'button.btnPlay:visible, button[title*="Play" i]:visible'
-                    )
-                    .first();
-                await expect(
-                    play,
-                    'the item detail page must offer a play control'
-                ).toBeVisible({ timeout: 25_000 });
-                await play.click();
-                await page.waitForURL(/#\/video/, { timeout: 30_000 });
-                await expect(page.locator('video')).toBeVisible({
-                    timeout: 30_000
-                });
-                // The on-screen display auto-hides; a real pointer move is what brings it back.
-                await page.mouse.move(300, 300);
-                await page.mouse.move(320, 320);
+                await openItemDetail(page);
 
-                const playerLayout = await measureLayoutStable(page);
-                testInfo.annotations.push({
-                    type: `layout:player:${theme}:${factor}`,
-                    description: JSON.stringify(playerLayout)
-                });
-                expect(
-                    playerLayout.horizontalOverflowPx,
-                    `the player at ${factor} in ${theme} must not scroll horizontally`
-                ).toBeLessThanOrEqual(1);
-                expect(
-                    playerLayout.offscreenControls,
-                    `the player at ${factor} in ${theme} must not leave a control outside the viewport`
-                ).toEqual([]);
-                await page.screenshot({
-                    path: capturePath(`${theme}-${factor}-player.png`)
-                });
+                // ORDER MATTERS. The terminal error is provoked FIRST, from the detail page, and
+                // the healthy player is opened afterwards. The reverse order needs a reliable way
+                // back out of the player, and there is none that is not itself a claim: Escape does
+                // not always leave a paused player whose on-screen display has hidden, and a
+                // deep-linked `#/details` document load was observed landing on the sign-in page.
+                // Ending the test inside the player costs nothing and removes both.
 
-                // A remote user must be able to put focus on a player control and see it.
-                await page.keyboard.press('Tab');
-                const focus = await describeFocus(page);
-                testInfo.annotations.push({
-                    type: `focus:player:${theme}:${factor}`,
-                    description: JSON.stringify(focus)
-                });
-
-                await page.keyboard.press('Escape');
-                await page.waitForURL(/#\/(details|home)/, { timeout: 25_000 });
-
-                // 2. THE TERMINAL ERROR DIALOG, provoked the way B1 provokes it.
+                // 1. THE TERMINAL ERROR DIALOG, provoked the way B1 provokes it — every media byte
+                //    refused while PlaybackInfo and the session endpoints stay healthy.
                 await page.route('**/*', (route: Route) =>
                     MEDIA_BYTES.test(new URL(route.request().url()).pathname)
                         ? route.abort('connectionrefused')
                         : route.continue()
                 );
-                await page.goto(`/#/details?id=${itemId}`);
-                const playAgain = page
-                    .locator(
-                        'button.btnPlay:visible, button[title*="Play" i]:visible'
-                    )
+                const playFailing = page
+                    .locator('.mainDetailButtons .btnPlay:visible')
                     .first();
-                await expect(playAgain).toBeVisible({ timeout: 25_000 });
-                await playAgain.click();
+                await expect(
+                    playFailing,
+                    'the item detail page must offer a play control'
+                ).toBeVisible({ timeout: 25_000 });
+                await playFailing.click();
 
                 const dialog = page
                     .locator(
@@ -207,6 +134,45 @@ test.describe('B2 player: controls and the terminal error dialog at every form f
                 ).toBeHidden({ timeout: 15_000 });
 
                 await page.unroute('**/*');
+
+                // 2. THE HEALTHY PLAYER. Media flows again, so its controls must be on screen and
+                //    addressable at this form factor.
+                if (!/#\/details/.test(page.url())) await openItemDetail(page);
+                await openPlayer(page);
+                // The on-screen display auto-hides; a real pointer move is what brings it back.
+                await page.mouse.move(300, 300);
+                await page.mouse.move(320, 320);
+
+                const playerLayout = await measureLayoutStable(page);
+                testInfo.annotations.push({
+                    type: `layout:player:${theme}:${factor}`,
+                    description: JSON.stringify(playerLayout)
+                });
+                expect(
+                    playerLayout.horizontalOverflowPx,
+                    `the player at ${factor} in ${theme} must not scroll horizontally`
+                ).toBeLessThanOrEqual(1);
+                expect(
+                    playerLayout.offscreenControls,
+                    `the player at ${factor} in ${theme} must not leave a control outside the viewport`
+                ).toEqual([]);
+                await page.screenshot({
+                    path: capturePath(`${theme}-${factor}-player.png`)
+                });
+
+                // A remote user must be able to put focus on a player control and see it.
+                await page.keyboard.press('Tab');
+                const focus = await describeFocus(page);
+                testInfo.annotations.push({
+                    type: `focus:player:${theme}:${factor}`,
+                    description: JSON.stringify(focus)
+                });
+
+                // Release the loop `openPlayer` set so the clip can end and the session close.
+                await page.evaluate(() => {
+                    const video = document.querySelector('video');
+                    if (video) video.loop = false;
+                });
             });
         }
     }

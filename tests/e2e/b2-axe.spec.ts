@@ -6,6 +6,7 @@ import {
     apiUserId,
     navLibrary,
     navSearch,
+    openPlayer,
     searchResultCard,
     signIn,
     useTheme
@@ -147,21 +148,7 @@ test.describe('B2 accessibility: automated scans of the authenticated flows', ()
 
             // 5. PLAYER — named explicitly in the gate. Playback is started through the real
             //    play control, and the scan runs once the video surface is actually on screen.
-            const play = page
-                .locator(
-                    'button.btnPlay:visible, button[title*="Play" i]:visible'
-                )
-                .first();
-            await expect(
-                play,
-                'the item detail page must offer a play control'
-            ).toBeVisible({ timeout: 25_000 });
-            await play.click();
-            await page.waitForURL(/#\/video/, { timeout: 30_000 });
-            await expect(
-                page.locator('video'),
-                'the player must reach a real video surface before it is scanned'
-            ).toBeVisible({ timeout: 30_000 });
+            await openPlayer(page);
             // The on-screen display auto-hides. Move the pointer so the controls are present —
             // scanning a player with its controls hidden would scan an empty screen and pass
             // for the wrong reason.
