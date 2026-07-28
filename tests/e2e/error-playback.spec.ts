@@ -216,9 +216,20 @@ test.describe('playback failure (B1)', () => {
                 description: String(attempted.length)
             });
 
+            // Wait for the terminal error surface before adjudicating anything about the
+            // screen. Since #67 the exhausted ladder ends in a real modal dialog, and it
+            // arrives asynchronously — so every step below has to be taken relative to it,
+            // not relative to the moment the media requests were refused. Its content is the
+            // sibling test's subject; here it only has to have arrived.
+            const surface = errorSurface(page);
+            await expect(
+                surface,
+                'a playback failure must reach a visible error state before the user can leave it'
+            ).toBeVisible({ timeout: 25_000 });
+
             // Nothing sensitive on screen: not the container's media path, not an API key,
-            // not a token, not the password. Asserted on whatever IS shown, which today is
-            // the item page the player left behind — see the file header.
+            // not a token, not the password. Asserted on whatever IS shown — the item page
+            // the player left behind, with the error dialog over it — see the file header.
             const shown = (
                 (await page.locator('body').innerText()) || ''
             ).trim();
@@ -244,6 +255,24 @@ test.describe('playback failure (B1)', () => {
                 activeSpinner(page),
                 'the loading indicator must not still be active once playback has failed'
             ).toHaveCount(0);
+
+            // The error dialog is modal: it holds the application until it is dismissed, so
+            // "the user can leave" means dismissing it first and then leaving, which is what
+            // a user does. Pressing its own button is the deterministic way to do that.
+            // Without this step the route change below races the dialog, and a round in
+            // which the dialog wins finds no home tab behind it.
+            const dismiss = surface
+                .locator('button[type="submit"], button')
+                .first();
+            await expect(
+                dismiss,
+                'the playback error must be dismissable'
+            ).toBeVisible({ timeout: 10_000 });
+            await dismiss.click();
+            await expect(
+                surface,
+                'dismissing the playback error must actually close it'
+            ).toBeHidden({ timeout: 10_000 });
 
             // The user can leave. The hash is set directly rather than through `page.goto`,
             // because Playwright's `goto` performs a real document navigation even when only
