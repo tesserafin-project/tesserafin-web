@@ -12,19 +12,26 @@ comment on #54.
 
 | | |
 | --- | --- |
-| Server image | `ghcr.io/tesserafin-project/tesserafin-server@sha256:fd1fa9e0f5a28a07e5872cc5ff13257a92d988717a33519f62c4b26c6ab36249` |
-| Immutable server tag | `1.0.0-dev.44f5ab62b522` |
-| Server source commit | `44f5ab62b522684b4fa58ed10de80b8c6a7bb392` |
-| Bundled web commit | `489a90be0dbe80aede3dbbc028b140756211d43c` |
-| Bundled web-assets image | `ghcr.io/tesserafin-project/tesserafin-web-assets@sha256:ef817dec29f8fd08cee9910954b576d05a947936f93a8a9e3309031b8d656104` |
+| Server image | `ghcr.io/tesserafin-project/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9` |
+| Immutable server tag | `1.0.0-dev.a8ac09f3ff5a` |
+| Server source commit | `a8ac09f3ff5a715b35b9dc31d1b23c5865a6d34e` |
+| Bundled web commit | `a63cb11e8e9cfa137b6c3f739e8881a6dfb39dfb` |
+| Bundled web-assets image | `ghcr.io/tesserafin-project/tesserafin-web-assets@sha256:2585fc7e1e06cee0be1bb0bcac735ed783b6e8c3ea2ff346561e7f62c0a75daf` |
 
-The web client you exercise must be the one the image bundles. Do not point a
-locally built bundle at the container: that would test different bytes from the
-ones the candidate ships.
+The web client you exercise must be the one the image bundles — the client the
+container serves at `/web/`, reached by opening the server's own address. Do not
+point a locally built bundle, a `npm run serve` dev server or a checkout of this
+repository at the container: that would test different bytes from the ones the
+candidate ships, and the answers would not be about this candidate.
+
+This candidate replaces `sha256:fd1fa9e0f5a28a07e5872cc5ff13257a92d988717a33519f62c4b26c6ab36249`,
+which is still published and immutable but is no longer an installation default.
+Do not run this checklist against it: it bundles the web client in which a
+terminal playback failure was silent (#67).
 
 ## Bringing the candidate up
 
-From a checkout of the server repository at `44f5ab62b522684b4fa58ed10de80b8c6a7bb392`
+From a checkout of the server repository at `a8ac09f3ff5a715b35b9dc31d1b23c5865a6d34e`
 or later:
 
 ```bash
@@ -35,12 +42,12 @@ docker run -d --name tesserafin-b1-manual \
   -v /tmp/b1-manual/config:/config -v /tmp/b1-manual/cache:/cache \
   -v /tmp/b1-manual/data:/data \
   -v /tmp/b1-manual/media:/media:ro -v /tmp/b1-manual/probes:/probes:ro \
-  ghcr.io/tesserafin-project/tesserafin-server@sha256:fd1fa9e0f5a28a07e5872cc5ff13257a92d988717a33519f62c4b26c6ab36249
+  ghcr.io/tesserafin-project/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9
 ```
 
 ### The two media fixtures
 
-Steps 7 and 8 need one file that direct plays and one that cannot. These are the
+Steps 7 and 9 need one file that direct plays and one that cannot. These are the
 same recipes the automated rig uses. Run them **before** adding the library, so
 the first scan already sees both:
 
@@ -72,7 +79,7 @@ onboarding, and add `/media` as a **Movies** library.
 Before you start, open the browser console and leave it open. Steps 1, 5 and 7
 ask what appeared there.
 
-## The eight observations
+## The nine observations
 
 Record, for each: **pass / fail**, the wording or state you actually saw, and any
 console error that belongs to the failure.
@@ -85,15 +92,19 @@ console error that belongs to the failure.
 | 4 | Sign in again | Your library is there as before — the same libraries, the same items. |
 | 5 | Stop the container (`docker stop tesserafin-b1-manual`), then reload the page | Within a bounded time a visible connection error appears. **Not** an endless spinner, **not** a blank page. No password, token or server filesystem path appears in the message. |
 | 6 | Start it again (`docker start tesserafin-b1-manual`), wait for it to come up, and retry from the UI — **without** deleting browser data | The application recovers and shows your library again. |
-| 7 | Provoke a playback failure. The simplest deterministic way: with a video open, stop the container mid-playback; alternatively use DevTools request blocking on the media URL | A visible playback error appears. Playback does not silently continue on some other path. You can leave the item or retry **without** reloading the whole application. No full source-media path, API key or token is displayed. |
-| 8 | Start the container again and play both fixtures: the H.264/AAC one and the MPEG-4 Part 2/AC-3 one | Both play. The first direct plays; the second is transcoded by the server. |
+| 7 | Provoke a playback failure. The simplest deterministic way: with a video open, stop the container mid-playback; alternatively use DevTools request blocking on the media URL | A visible playback error appears and says a playback failure happened, in ordinary wording rather than a message key. Playback does not silently continue on some other path. The player does not stay mounted over media that will never play. You can dismiss the error with its own button and carry on **without** reloading the whole application. No full source-media path, API key or token is displayed. |
+| 8 | Open **Search** from the toolbar. Search for `Smoke`, then for a string that matches nothing (for example `zzzzzz`) | The first search shows the matching movie. The second says plainly that there is no result — not a blank panel, not a spinner that never ends, not an error. |
+| 9 | Start the container again and play both fixtures: the H.264/AAC one and the MPEG-4 Part 2/AC-3 one | Both play. The first direct plays; the second is transcoded by the server. |
 
 ## What to report back
 
 Copy this block into the #54 comment and fill it in:
 
 ```
-Candidate digest : sha256:fd1fa9e0f5a28a07e5872cc5ff13257a92d988717a33519f62c4b26c6ab36249
+Candidate digest : sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9
+Server source    : a8ac09f3ff5a715b35b9dc31d1b23c5865a6d34e
+Bundled web      : a63cb11e8e9cfa137b6c3f739e8881a6dfb39dfb
+Web client used  : the one the image bundles (served by the container at /web/)
 Browser / version:
 Operating system :
 
@@ -104,28 +115,26 @@ Operating system :
 5 server unavailable   : PASS/FAIL — observed:
 6 server restored      : PASS/FAIL — observed:
 7 playback failure     : PASS/FAIL — observed:
-8 direct play + transcode: PASS/FAIL — observed:
+8 search               : PASS/FAIL — observed:
+9 direct play + transcode: PASS/FAIL — observed:
 
 Console errors relevant to any failure:
 
 No credential, token or complete media path was displayed at any point: YES/NO
 ```
 
-## Known defect at step 7 — expect it, and confirm it
+## What step 7 is asking now
 
-Step 7 is the one that already has a known answer, and it is the wrong one.
-**#67**: once the playback retry ladder exhausts, the application shows nothing
-at all — no dialog, no toast, no error state — while the player stays mounted
-over media that will never play. `tests/e2e/error-playback.spec.ts` carries that
-assertion as a declared expected failure.
+Step 7 used to carry a known wrong answer. It does not any more. #67 is fixed in
+the bundled web client (tesserafin-project/tesserafin-web#69): a terminal
+playback failure now reaches a real, translated, dismissable error dialog, the
+player is torn down rather than left over dead media, dismissal needs no document
+reload, and the server-side session is released. The automated suite asserts all
+of that on every run — as an ordinary passing assertion, not a declared expected
+failure — over three consecutive rounds against this exact image.
 
-So step 7 is not asking you to discover the problem; it is asking you to confirm
-what a user actually experiences, which automation cannot judge: whether the
-screen you are left on reads as "broken", as "still loading", or as nothing at
-all, and whether you can tell that playback failed without opening the console.
-Record what you saw in those terms.
-
-Everything else about step 7 is already proven green and does not need your
-adjudication: no credential, media path or token is exposed, no transcode
-outlives the attempt, leaving does not require a reload, and pressing play again
-is served real media bytes.
+So step 7 is a genuine observation again, not a confirmation of a defect. What
+automation cannot judge is whether the surface you are left on reads as "broken"
+to a person, whether the wording tells you what went wrong, and whether you can
+tell playback failed without opening the console. Record what you saw in those
+terms.
