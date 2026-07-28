@@ -9,7 +9,8 @@
             "!dist",
             "!.idea",
             "!.vscode",
-            "!src/lib/tesserafin-sdk/generated"
+            "!src/lib/tesserafin-sdk/generated",
+            "!tests/e2e/vendor"
         ]
     },
     "formatter": {

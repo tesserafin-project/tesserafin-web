@@ -1895,6 +1895,8 @@
     "RemuxHelp1": "The media is in an incompatible file container (MKV, AVI, WMV, etc) but both the video stream and audio stream are compatible with the device. The media will be repackaged losslessly on the fly before being sent to the device.",
     "RemuxHelp2": "Remux uses very little processing power with a completely lossless media quality.",
     "LabelPlaybackInfo": "Playback Info",
+    "LabelPlaybackPosition": "Playback position",
+    "LabelVolumeLevel": "Volume level",
     "LabelAudioInfo": "Audio Info",
     "LabelVideoInfo": "Video Info",
     "LabelTrackGain": "Track Gain",
