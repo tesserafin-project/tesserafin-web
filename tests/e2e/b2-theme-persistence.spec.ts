@@ -144,14 +144,20 @@ test.describe('B2 theme: runtime switching and persistence', () => {
             ).toContain(THEMES[theme].replace('official.', ''));
 
             // A second, independent reload — the stored value must still decide.
+            //
+            // POLLED, NOT READ ONCE. `domcontentloaded` fires before the boot path has attached the
+            // themed stylesheet, so a single read can catch the window in which no `themes/` link
+            // exists yet and compare an empty string. That is what failed one round in three
+            // against the release candidate. Waiting on a shell control instead would be the same
+            // bet on a different element; the stylesheet is the thing under test, so it is the
+            // thing to wait for.
             await page.reload({ waitUntil: 'domcontentloaded' });
-            await expect(
-                page.getByRole('tab', { name: /accueil|home/i })
-            ).toBeVisible({ timeout: 25_000 });
-            expect(
-                await activeThemeHref(page),
-                `${theme} must still be live after a second reload`
-            ).toBe(href);
+            await expect
+                .poll(() => activeThemeHref(page), {
+                    timeout: 25_000,
+                    message: `${theme} must still be live after a second reload`
+                })
+                .toBe(href);
         }
 
         // The stored key is the product's own user-scoped one, not a test invention.
