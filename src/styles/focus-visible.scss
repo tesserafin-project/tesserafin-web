@@ -1,0 +1,30 @@
+/*
+ * B2 (#55) — a visible keyboard focus indicator on the MUI-based shell controls.
+ *
+ * WHY THIS FILE EXISTS. The design system's own components already paint one:
+ * `src/ui/components/Tabs/Tabs.scss`, `MediaCard.scss`, `FloatingSidebar.scss`, `Pagination.scss`,
+ * `SortSelect.scss` and `states.scss` all declare the same
+ * `outline: 2px solid var(--rf-color-focus, …); outline-offset: 2px` on `:focus-visible`.
+ *
+ * The MUI surfaces do not. Measured against the release candidate, tabbing through the shell put
+ * focus on the navigation links and the app-bar icon buttons with `outline-style: none`,
+ * `outline-width: 0px`, `box-shadow: none` and an unchanged background — while `:focus-visible`
+ * matched. `MuiButtonBase-root` sets `outline: 0` in its own reset and MUI's ripple, which would
+ * otherwise carry the indication, is not what this shell renders. A keyboard user could not see
+ * where they were, and a remote user could not see it at ten feet either, so the same run failed
+ * #55's TV clause outright.
+ *
+ * WHY A GLOBAL RULE RATHER THAN PER-COMPONENT SX. The controls affected are spread across the
+ * navigation drawer, the app toolbar and the user menu, and are rendered by MUI components this
+ * repository does not wrap. One rule keyed on the class MUI itself guarantees is present is
+ * smaller than touching every call site, and it cannot be forgotten at the next one.
+ *
+ * `:focus-visible`, NOT `:focus`. A mouse click must not draw a ring; the browser's own heuristic
+ * for "the user is navigating by keyboard" is exactly the distinction wanted here, and it is the
+ * one the rest of the design system already uses.
+ */
+
+.MuiButtonBase-root:focus-visible {
+    outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+    outline-offset: 2px;
+}
