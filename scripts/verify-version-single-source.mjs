@@ -20,7 +20,7 @@
  * Why a shape check and not a `=== '1.0.0'` check: pinning the expected number here would create a
  * second authority, which is the exact failure mode the gate is meant to prevent.
  *
- * See tesserafin-project/tesserafin docs/versioning-policy.md for the epoch this anchors.
+ * See tesserafin/tesserafin docs/versioning-policy.md for the epoch this anchors.
  */
 
 import { readFileSync } from 'node:fs';

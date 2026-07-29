@@ -1,5 +1,13 @@
 # B1 maintainer-observed error-handling pass
 
+> **Namespace note.** The references below name `tesserafin-project`, the
+> organisation login in force when this record was written. The canonical
+> organisation is now `tesserafin` and the same artifacts are served from
+> `ghcr.io/tesserafin/…`. The recorded identities are preserved verbatim so this
+> record keeps stating where each artifact was originally published. See the
+> namespace cutover tracker, `tesserafin/tesserafin#147`.
+
+
 tesserafin-web #54 requires a manual pass over error handling. Automation does
 not substitute for it: the automated suite proves that error *states* are
 reached, and this checklist asks a human whether what appears on screen is

@@ -1,5 +1,13 @@
 # Local CI — reference merge gate during the GitHub Actions outage
 
+> **Namespace note.** The references below name `tesserafin-project`, the
+> organisation login in force when this record was written. The canonical
+> organisation is now `tesserafin` and the same artifacts are served from
+> `ghcr.io/tesserafin/…`. The recorded identities are preserved verbatim so this
+> record keeps stating where each artifact was originally published. See the
+> namespace cutover tracker, `tesserafin/tesserafin#147`.
+
+
 > ## Update 2026-07-27 — hosted CI is back (tesserafin#94)
 >
 > GitHub allocates hosted runners for this organisation again. The July 2026

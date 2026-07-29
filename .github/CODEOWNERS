@@ -1,5 +1,5 @@
-*               @tesserafin
+*               @tesserafin/core
 # The repo owner must review all changes to bump_version
-bump_version    @tesserafin
+bump_version    @tesserafin/core
 # The repo owner must approve all changes within the repo config
-.github/        @tesserafin
+.github/        @tesserafin/core

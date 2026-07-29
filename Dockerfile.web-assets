@@ -89,7 +89,7 @@ RUN set -eux; \
     cp -a /src/dist/. /out/web/; \
     cp /src/LICENSE /out/licenses/LICENSE; \
     cp /src/CONTRIBUTORS.md /out/licenses/CONTRIBUTORS.md; \
-    printf '{\n  "repository": "https://github.com/tesserafin-project/tesserafin-web",\n  "revision": "%s",\n  "version": "%s",\n  "license": "GPL-2.0-or-later",\n  "sourceDateEpoch": "%s"\n}\n' \
+    printf '{\n  "repository": "https://github.com/tesserafin/tesserafin-web",\n  "revision": "%s",\n  "version": "%s",\n  "license": "GPL-2.0-or-later",\n  "sourceDateEpoch": "%s"\n}\n' \
         "${VCS_REF}" "${VERSION}" "${SOURCE_DATE_EPOCH}" > /out/metadata/web-revision.json; \
     # No sourcemaps and no stray source leakage in a production bundle.
     ! find /out/web -name '*.map' | grep -q .; \
@@ -107,8 +107,8 @@ COPY --from=build /out/ /
 
 LABEL org.opencontainers.image.title="Tesserafin Web assets" \
       org.opencontainers.image.description="Reproducible Tesserafin Web production bundle; build input for the Tesserafin server image" \
-      org.opencontainers.image.source="https://github.com/tesserafin-project/tesserafin-web" \
-      org.opencontainers.image.url="https://github.com/tesserafin-project/tesserafin-web" \
+      org.opencontainers.image.source="https://github.com/tesserafin/tesserafin-web" \
+      org.opencontainers.image.url="https://github.com/tesserafin/tesserafin-web" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.licenses="GPL-2.0-or-later" \
