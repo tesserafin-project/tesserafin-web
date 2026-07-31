@@ -1,6 +1,5 @@
 const fg = require('fast-glob');
 const path = require('path');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -14,7 +13,9 @@ const Assets = [
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker.js',
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker.wasm',
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker-legacy.js',
-    'pdfjs-dist/build/pdf.worker.js',
+    // pdfjs-dist 4+ ships the worker as an ES module only; it is loaded from
+    // this origin as `libraries/pdf.worker.mjs` (see src/plugins/pdfPlayer).
+    'pdfjs-dist/build/pdf.worker.mjs',
     'libpgs/dist/libpgs.worker.js'
 ];
 
@@ -68,7 +69,6 @@ const config = {
             ),
             __WEBPACK_SERVE__: !!JSON.parse(process.env.WEBPACK_SERVE || '0')
         }),
-        new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
             filename: 'index.html',
             template: 'index.html',
@@ -117,6 +117,9 @@ const config = {
         })
     ],
     output: {
+        // Webpack 5's own stale-output removal, replacing clean-webpack-plugin.
+        // Scoped to output.path (dist/) and nothing above it.
+        clean: true,
         filename: (pathData) =>
             pathData.chunk.name === 'serviceworker'
                 ? '[name].js'
@@ -363,26 +366,6 @@ const config = {
                         options: {
                             loader: 'tsx',
                             target: 'es2020'
-                        }
-                    }
-                ]
-            },
-            /* modules that Babel breaks when transforming to ESM */
-            {
-                test: /\.js$/,
-                include: [
-                    path.resolve(__dirname, 'node_modules/pdfjs-dist'),
-                    path.resolve(__dirname, 'node_modules/xmldom')
-                ],
-                use: [
-                    {
-                        loader: 'babel-loader',
-                        options: {
-                            cacheCompression: false,
-                            cacheDirectory: true,
-                            configFile: false,
-                            babelrc: false,
-                            plugins: ['@babel/plugin-transform-modules-umd']
                         }
                     }
                 ]

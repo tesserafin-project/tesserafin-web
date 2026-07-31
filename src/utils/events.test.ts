@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import eventsUtils from './events';
 
 describe('Utils: events', () => {
@@ -37,9 +37,9 @@ describe('Utils: events', () => {
 
     describe('Method: off', () => {
         let obj: object;
-        let initialCallback: ReturnType<typeof vi.fn>;
+        let initialCallback: Mock<(...args: unknown[]) => void>;
         beforeEach(() => {
-            initialCallback = vi.fn();
+            initialCallback = vi.fn<(...args: unknown[]) => void>();
             obj = {
                 _callbacks: {
                     testEvent: [initialCallback]

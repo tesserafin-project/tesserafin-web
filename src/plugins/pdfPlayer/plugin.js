@@ -57,6 +57,18 @@ export class PdfPlayer {
 
         // cancel page render
         this.cancellationToken = true;
+
+        // Release the document and terminate the pdf.js worker it owns.
+        // Without this the worker outlives the closed dialog. pdfjs-dist 4+
+        // dropped PDFDocumentProxy.destroy(); the loading task is what owns
+        // the worker, so that is what has to be destroyed.
+        if (this.downloadTask) {
+            this.downloadTask.destroy();
+            this.downloadTask = null;
+        }
+        this.book = null;
+        this.loaded = false;
+        this.pages = {};
     }
 
     destroy() {
@@ -232,8 +244,14 @@ export class PdfPlayer {
                 });
 
                 this.bindEvents();
+                // Served from this origin by the build (see the `Assets` list
+                // in webpack.common.js). pdfjs-dist 4+ publishes the worker as
+                // an ES module, so the extension is .mjs and pdf.js starts it
+                // with `new Worker(url, { type: 'module' })`. No CDN, and no
+                // `disableWorker` fallback: a worker that fails to load must
+                // surface, not degrade silently onto the main thread.
                 GlobalWorkerOptions.workerSrc =
-                    appRouter.baseUrl() + '/libraries/pdf.worker.js';
+                    appRouter.baseUrl() + '/libraries/pdf.worker.mjs';
 
                 const downloadTask = getDocument({
                     url: downloadHref,
@@ -241,6 +259,8 @@ export class PdfPlayer {
                     // https://github.com/mozilla/pdf.js/security/advisories/GHSA-wgrm-67xf-hhpq
                     isEvalSupported: false
                 });
+                // Kept so stop() can release the worker this task owns.
+                this.downloadTask = downloadTask;
                 return downloadTask.promise.then((book) => {
                     if (this.cancellationToken) return;
                     this.book = book;

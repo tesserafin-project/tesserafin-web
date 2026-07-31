@@ -47,10 +47,9 @@ jobs:
     # 6-hour default; these commands finish in a couple of minutes.
     timeout-minutes: 20
     strategy:
-      # Kept false on purpose: lint, stylelint, build:check and test fail for
-      # unrelated reasons and a developer wants all four verdicts in one run
-      # rather than four sequential pushes. The legs are cheap and identical
-      # in cost, so this costs at most three short jobs.
+      # Kept false on purpose: these commands fail for unrelated reasons and a
+      # developer wants every verdict in one run rather than one sequential push
+      # per failure. The legs are cheap and identical in cost.
       fail-fast: false
       matrix:
         command:
@@ -58,6 +57,11 @@ jobs:
           - stylelint
           - build:check
           - test
+          # Guards the epubjs-scoped `@xmldom/xmldom` override: the pin sits
+          # above the range EPUB.js declares, so the compatibility it depends on
+          # has to be re-proven on every change rather than once, at the moment
+          # the override was added.
+          - test:epub-xmldom-fallback
 
     steps:
       - name: Checkout ⬇️

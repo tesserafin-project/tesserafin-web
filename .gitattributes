@@ -33,3 +33,9 @@ LICENSE         text
 .gitignore      export-ignore
 
 *.gitattributes linguist-language=gitattributes
+
+# The Node xmldom fallback harness parses a document whose line endings really
+# are CRLF. `text=auto` above would normalise them away on commit, silently
+# deleting the property under test and leaving `make-fixtures.mjs` unable to
+# reproduce the file byte for byte.
+tests/reader/fixtures/xml/container-crlf.xml -text

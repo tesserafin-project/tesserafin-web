@@ -1,5 +1,13 @@
 import type { Api } from '@jellyfin/sdk';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock
+} from 'vitest';
 
 import type { ShadowPlaybackSessionParams } from './playbackSessionShadow';
 import { triggerShadowPlaybackSession } from './playbackSessionShadowTrigger';
@@ -21,10 +29,10 @@ const baseParams: ShadowPlaybackSessionParams = {
 };
 
 describe('triggerShadowPlaybackSession()', () => {
-    let logger: { debug: ReturnType<typeof vi.fn> };
+    let logger: { debug: Mock<(...args: unknown[]) => void> };
 
     beforeEach(() => {
-        logger = { debug: vi.fn() };
+        logger = { debug: vi.fn<(...args: unknown[]) => void>() };
     });
 
     afterEach(() => {

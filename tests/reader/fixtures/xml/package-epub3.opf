@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Tesserafin EPUB 3 Fixture &amp; Friends</dc:title>
+    <dc:creator>Tesserafin project &#8212; readers team</dc:creator>
+    <dc:language>en</dc:language>
+    <dc:identifier id="bookid">urn:uuid:tesserafin-epub3-fixture</dc:identifier>
+    <dc:description><![CDATA[Angle brackets <b>stay literal</b> inside CDATA.]]></dc:description>
+    <dc:rights>Written for this repository. No third-party content.</dc:rights>
+    <meta property="dcterms:modified">1980-01-01T00:00:00Z</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="css" href="style.css" media-type="text/css"/>
+    <item id="chapter1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="chapter2" href="chapter2.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine>
+    <itemref idref="chapter1"/>
+    <itemref idref="chapter2"/>
+  </spine>
+</package>
