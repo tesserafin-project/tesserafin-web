@@ -9,9 +9,7 @@ import { expect, type Page } from '@playwright/test';
  */
 
 export const HARNESS_PDF = '/__harness__/pdf.html';
-export const HARNESS_EPUB = '/__harness__/epub.html';
 export const FIXTURE_PDF = '/__fixtures__/sample.pdf';
-export const FIXTURE_EPUB = '/__fixtures__/sample.epub';
 
 interface SeenResponse {
     url: string;
