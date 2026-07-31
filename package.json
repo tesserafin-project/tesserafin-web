@@ -113,6 +113,9 @@
     "optionalDependencies": {
         "sass-embedded": "1.100.0"
     },
+    "overrides": {
+        "vite": "6.4.3"
+    },
     "browserslist": [
         "last 2 Chrome versions",
         "last 2 Firefox versions",

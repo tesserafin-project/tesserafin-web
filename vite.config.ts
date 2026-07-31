@@ -11,9 +11,10 @@ export default defineConfig({
             include: ['src']
         },
         environment: 'jsdom',
-        // Playwright E2E specs live under tests/e2e and run via `npm run
-        // test:e2e`, not vitest. Agent worktrees under .claude/ carry their
-        // own copies of the tree and must never be collected from here.
+        // Playwright specs live under tests/e2e (`npm run test:e2e`, needs a
+        // Reefin server) and tests/reader (`npm run test:readers`, server-free
+        // but still Playwright), not vitest. Agent worktrees under .claude/
+        // carry their own copies of the tree and must never be collected here.
         // scripts/ holds standalone Node control suites — dependency-audit
         // spawns the evaluator as a real process and asserts its exit status,
         // which is the whole point of it, so it runs via `npm run
@@ -21,6 +22,7 @@ export default defineConfig({
         exclude: [
             ...configDefaults.exclude,
             'tests/e2e/**',
+            'tests/reader/**',
             '**/.claude/**',
             'scripts/**'
         ],
