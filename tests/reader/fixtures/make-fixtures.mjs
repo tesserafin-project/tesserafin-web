@@ -43,8 +43,7 @@ function buildPdf() {
 
     const pageNums = [];
     for (const text of PAGE_TEXTS) {
-        const stream =
-            'BT\n/F1 24 Tf\n72 700 Td\n(' + text + ') Tj\nET\n';
+        const stream = 'BT\n/F1 24 Tf\n72 700 Td\n(' + text + ') Tj\nET\n';
         const contentNum = add(
             `<< /Length ${stream.length} >>\nstream\n${stream}endstream`
         );

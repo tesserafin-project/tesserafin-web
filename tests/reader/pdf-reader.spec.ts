@@ -44,7 +44,9 @@ test.describe('PDF reader against the production build', () => {
         expect(firstGeometry.width).toBeGreaterThan(0);
         expect(firstGeometry.height).toBeGreaterThan(0);
 
-        const firstInk = await page.evaluate(() => window.harness.inkedPixels());
+        const firstInk = await page.evaluate(() =>
+            window.harness.inkedPixels()
+        );
         expect(
             firstInk.inked,
             'the canvas must contain painted pixels, not just a blank bitmap'
@@ -90,9 +92,10 @@ test.describe('PDF reader against the production build', () => {
 
         // -- close releases the document and its worker --------------------
         const closed = await page.evaluate(() => window.harness.close());
-        expect(closed.destroyed, 'the loading task reports itself destroyed').toBe(
-            true
-        );
+        expect(
+            closed.destroyed,
+            'the loading task reports itself destroyed'
+        ).toBe(true);
         expect(
             closed.getPageRejected,
             'the document must be unusable once its worker is gone'
