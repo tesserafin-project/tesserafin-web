@@ -13,7 +13,9 @@ const Assets = [
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker.js',
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker.wasm',
     '@jellyfin/libass-wasm/dist/js/subtitles-octopus-worker-legacy.js',
-    'pdfjs-dist/build/pdf.worker.js',
+    // pdfjs-dist 4+ ships the worker as an ES module only; it is loaded from
+    // this origin as `libraries/pdf.worker.mjs` (see src/plugins/pdfPlayer).
+    'pdfjs-dist/build/pdf.worker.mjs',
     'libpgs/dist/libpgs.worker.js'
 ];
 
@@ -364,26 +366,6 @@ const config = {
                         options: {
                             loader: 'tsx',
                             target: 'es2020'
-                        }
-                    }
-                ]
-            },
-            /* modules that Babel breaks when transforming to ESM */
-            {
-                test: /\.js$/,
-                include: [
-                    path.resolve(__dirname, 'node_modules/pdfjs-dist'),
-                    path.resolve(__dirname, 'node_modules/xmldom')
-                ],
-                use: [
-                    {
-                        loader: 'babel-loader',
-                        options: {
-                            cacheCompression: false,
-                            cacheDirectory: true,
-                            configFile: false,
-                            babelrc: false,
-                            plugins: ['@babel/plugin-transform-modules-umd']
                         }
                     }
                 ]

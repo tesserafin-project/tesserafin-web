@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Tesserafin PDF reader harness</title>
+    </head>
+    <body>
+        <!--
+            Mirrors what src/plugins/pdfPlayer/plugin.js does: one canvas with
+            id="canvas", replaced as pages are loaded. The harness deliberately
+            imports pdfjs-dist the way the plugin does (module entry point, no
+            CDN) and points GlobalWorkerOptions at the worker the production
+            build copied into dist/libraries/.
+        -->
+        <canvas id="canvas"></canvas>
+        <script type="module">
+            import {
+                GlobalWorkerOptions,
+                getDocument
+            } from '/__vendor__/pdfjs/pdf.mjs';
+
+            // Same URL shape as appRouter.baseUrl() + '/libraries/pdf.worker.mjs'
+            GlobalWorkerOptions.workerSrc = '/libraries/pdf.worker.mjs';
+
+            const state = {
+                loadingTask: null,
+                book: null,
+                pages: {}
+            };
+
+            const replaceCanvas = (canvas) => {
+                const old = document.getElementById('canvas');
+                canvas.id = 'canvas';
+                old.parentNode.replaceChild(canvas, old);
+            };
+
+            /** The plugin's renderPage(), verbatim in its arithmetic. */
+            const renderPage = async (canvas, number) => {
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                const page = await state.book.getPage(number);
+                const original = page.getViewport({ scale: 1 });
+                const scale =
+                    Math.min(
+                        window.innerHeight / original.height,
+                        window.innerWidth / original.width
+                    ) * devicePixelRatio;
+                const viewport = page.getViewport({ scale });
+
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+
+                const context = canvas.getContext('2d');
+                await page.render({ canvasContext: context, viewport }).promise;
+
+                return { scale, width: viewport.width, height: viewport.height };
+            };
+
+            window.harness = {
+                async open(url) {
+                    state.loadingTask = getDocument({
+                        url,
+                        // Same hardening the plugin applies.
+                        isEvalSupported: false
+                    });
+                    state.book = await state.loadingTask.promise;
+                    return { numPages: state.book.numPages };
+                },
+
+                async loadPage(number) {
+                    const canvas = document.createElement('canvas');
+                    const geometry = await renderPage(canvas, number);
+                    state.pages[number] = canvas;
+                    replaceCanvas(canvas);
+                    return geometry;
+                },
+
+                /** Non-white pixel count: proof something was actually painted. */
+                inkedPixels() {
+                    const canvas = document.getElementById('canvas');
+                    const { width, height } = canvas;
+                    const data = canvas
+                        .getContext('2d')
+                        .getImageData(0, 0, width, height).data;
+
+                    let inked = 0;
+                    for (let i = 0; i < data.length; i += 4) {
+                        const opaque = data[i + 3] > 0;
+                        const dark =
+                            data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200;
+                        if (opaque && dark) inked++;
+                    }
+                    return { inked, width, height };
+                },
+
+                async textOf(number) {
+                    const page = await state.book.getPage(number);
+                    const content = await page.getTextContent();
+                    return content.items.map((item) => item.str).join(' ');
+                },
+
+                async metadata() {
+                    const { info } = await state.book.getMetadata();
+                    return { pdfFormatVersion: info.PDFFormatVersion ?? null };
+                },
+
+                /** Viewport geometry at an explicit zoom, as the UI's fit does. */
+                async viewportAt(number, scale) {
+                    const page = await state.book.getPage(number);
+                    const viewport = page.getViewport({ scale });
+                    return { width: viewport.width, height: viewport.height };
+                },
+
+                async close() {
+                    // pdfjs-dist 4+ dropped PDFDocumentProxy.destroy(); the
+                    // loading task owns the worker, exactly as the plugin's
+                    // stop() now assumes.
+                    const task = state.loadingTask;
+                    const book = state.book;
+
+                    await task.destroy();
+
+                    // The document must be unusable afterwards: that is what
+                    // "the transport and its worker were released" means.
+                    let getPageRejected = false;
+                    try {
+                        await book.getPage(1);
+                    } catch {
+                        getPageRejected = true;
+                    }
+
+                    state.book = null;
+                    state.loadingTask = null;
+                    state.pages = {};
+
+                    return { destroyed: task.destroyed === true, getPageRejected };
+                },
+
+                /**
+                 * pdf.js keeps its worker in a global port pool; after destroy()
+                 * the document's transport is gone, which is what "released"
+                 * means for the caller.
+                 */
+                isClosed() {
+                    return state.book === null;
+                }
+            };
+
+            window.harnessReady = true;
+        </script>
+    </body>
+</html>
