@@ -1,5 +1,13 @@
 import type { Api } from '@jellyfin/sdk';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock
+} from 'vitest';
 
 import type { V2PatchableStreamInfo } from './playbackSessionV2Url';
 import {
@@ -48,12 +56,15 @@ const legacyStreamInfo = (): V2PatchableStreamInfo => ({
 
 describe('applyV2PlaybackReplanIfEnabled()', () => {
     let logger: {
-        debug: ReturnType<typeof vi.fn>;
-        warn: ReturnType<typeof vi.fn>;
+        debug: Mock<(...args: unknown[]) => void>;
+        warn: Mock<(...args: unknown[]) => void>;
     };
 
     beforeEach(() => {
-        logger = { debug: vi.fn(), warn: vi.fn() };
+        logger = {
+            debug: vi.fn<(...args: unknown[]) => void>(),
+            warn: vi.fn<(...args: unknown[]) => void>()
+        };
     });
 
     afterEach(() => {

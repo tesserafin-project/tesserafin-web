@@ -1,5 +1,13 @@
 import type { Api } from '@jellyfin/sdk';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+    type Mock
+} from 'vitest';
 
 import type {
     PlaybackUrlResolvingApiClient,
@@ -72,10 +80,10 @@ const baseDeps = (
 });
 
 describe('resolveV2PlaybackUrl()', () => {
-    let logger: { debug: ReturnType<typeof vi.fn> };
+    let logger: { debug: Mock<(...args: unknown[]) => void> };
 
     beforeEach(() => {
-        logger = { debug: vi.fn() };
+        logger = { debug: vi.fn<(...args: unknown[]) => void>() };
     });
 
     afterEach(() => {
@@ -343,11 +351,11 @@ describe('resolveV2PlaybackUrl()', () => {
 });
 
 describe('applyV2PlaybackUrlToStreamInfo()', () => {
-    let logger: { debug: ReturnType<typeof vi.fn> };
+    let logger: { debug: Mock<(...args: unknown[]) => void> };
     let apiClient: PlaybackUrlResolvingApiClient;
 
     beforeEach(() => {
-        logger = { debug: vi.fn() };
+        logger = { debug: vi.fn<(...args: unknown[]) => void>() };
         apiClient = {
             getUrl: vi.fn((url: string) => `https://example.com${url}`)
         };
@@ -642,7 +650,7 @@ describe('applyV2PlaybackUrlToStreamInfo()', () => {
  * the same value even when a second attempt overlaps this one.
  */
 describe('resolveV2PlaybackUrl() PlaybackAttemptId (reefin #43)', () => {
-    const logger = { debug: vi.fn() };
+    const logger = { debug: vi.fn<(...args: unknown[]) => void>() };
 
     const succeedingRequest = () =>
         mockPostThenGet(
@@ -771,11 +779,11 @@ describe('resolveV2PlaybackUrl() PlaybackAttemptId (reefin #43)', () => {
  * only pass by consuming `MimeType`.
  */
 describe('applyV2PlaybackUrlToStreamInfo() - reefin #46 descriptor', () => {
-    let logger: { debug: ReturnType<typeof vi.fn> };
+    let logger: { debug: Mock<(...args: unknown[]) => void> };
     let apiClient: PlaybackUrlResolvingApiClient;
 
     beforeEach(() => {
-        logger = { debug: vi.fn() };
+        logger = { debug: vi.fn<(...args: unknown[]) => void>() };
         apiClient = {
             getUrl: vi.fn((url: string) => `https://example.com${url}`)
         };
@@ -1127,12 +1135,15 @@ describe('applyV2PlaybackUrlToStreamInfo() - reefin #46 descriptor', () => {
 
 describe('applyV2PlaybackReplanToStreamInfo()', () => {
     let logger: {
-        debug: ReturnType<typeof vi.fn>;
-        warn: ReturnType<typeof vi.fn>;
+        debug: Mock<(...args: unknown[]) => void>;
+        warn: Mock<(...args: unknown[]) => void>;
     };
 
     beforeEach(() => {
-        logger = { debug: vi.fn(), warn: vi.fn() };
+        logger = {
+            debug: vi.fn<(...args: unknown[]) => void>(),
+            warn: vi.fn<(...args: unknown[]) => void>()
+        };
     });
 
     afterEach(() => {
