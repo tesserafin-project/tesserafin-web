@@ -34,3 +34,23 @@ playwright-report/
 # summary (scripts/dependency-audit.mjs). The hosted job uploads these as a
 # short-retention artifact; they are never committed.
 dependency-audit-out/
+
+# Local environment overrides. Preventive: nothing secret belongs in a browser
+# build, and a build-time variable is public the moment it is bundled. There is
+# no committed `.env.example` in this repository, and the negation below is
+# there so that adding one later stays tracked.
+.env
+.env.*
+!.env.example
+
+# Private key material. There is no tracked .pem/.key/.p12/.pfx in this
+# repository (verified with `git ls-files`). No fixture or certificate directory
+# is excluded wholesale — hiding a directory to make a scan green would remove
+# real files from review.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ecdsa
+id_ed25519
