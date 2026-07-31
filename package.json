@@ -84,7 +84,7 @@
         "blurhash": "2.0.5",
         "classnames": "2.5.1",
         "date-fns": "2.30.0",
-        "dompurify": "2.5.9",
+        "dompurify": "3.4.12",
         "epubjs": "0.3.93",
         "escape-html": "1.0.3",
         "flv.js": "1.6.2",
