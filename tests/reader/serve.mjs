@@ -13,6 +13,8 @@
  *   /__harness__/...     -> tests/reader/harness/
  *   /__vendor__/pdf.mjs  -> node_modules/pdfjs-dist/build/pdf.mjs
  *   /__vendor__/epub.js  -> node_modules/epubjs/dist/epub.js
+ *   /__vendor__/jszip/   -> node_modules/jszip/dist/    (EPUB.js's UMD build
+ *                                                        externalises JSZip)
  *
  * The vendor mounts serve the exact module files the bundler consumes, so the
  * suite tests the installed package rather than a copy of it.
@@ -49,7 +51,8 @@ const MOUNTS = [
     ['/__fixtures__/', join(HERE, 'fixtures')],
     ['/__harness__/', join(HERE, 'harness')],
     ['/__vendor__/pdfjs/', join(REPO, 'node_modules', 'pdfjs-dist', 'build')],
-    ['/__vendor__/epubjs/', join(REPO, 'node_modules', 'epubjs', 'dist')]
+    ['/__vendor__/epubjs/', join(REPO, 'node_modules', 'epubjs', 'dist')],
+    ['/__vendor__/jszip/', join(REPO, 'node_modules', 'jszip', 'dist')]
 ];
 
 const DIST = join(REPO, 'dist');
@@ -86,8 +89,14 @@ const server = createServer((req, res) => {
         'cache-control': 'no-store',
         // The pdf.js worker is a module worker; nothing here needs COOP/COEP,
         // but the readers must never be able to reach off-origin.
+        // `style-src` allows blob: because an EPUB's own stylesheets reach the
+        // content iframe that way: EPUB.js rewrites each <link href> inside the
+        // archive to a blob URL of the extracted CSS. Without it the reader
+        // renders unstyled and reports a CSP violation. Nothing else is
+        // widened, and `connect-src 'self'` still keeps every reader on this
+        // origin - which is the containment this header exists to prove.
         'content-security-policy':
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'"
+            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline' blob:; img-src 'self' data: blob:; connect-src 'self'"
     });
     createReadStream(file).pipe(res);
 });

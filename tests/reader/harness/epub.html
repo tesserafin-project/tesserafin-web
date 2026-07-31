@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Tesserafin EPUB reader harness</title>
+        <style>
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            #bookPlayerContainer {
+                width: 800px;
+                height: 600px;
+            }
+        </style>
+    </head>
+    <body>
+        <!--
+            Mirrors what src/plugins/bookPlayer/plugin.js does: ePub(url, {
+            openAs: 'epub' }), renderTo a sized container with flow "paginated",
+            a registered-and-selected theme, rendition.display(), then
+            book.locations.generate(1024) and percentageFromCfi() for progress.
+
+            The counting wrappers below are the point of the parser probe.
+            EPUB.js resolves its parser at call time from the *global*
+            DOMParser/XMLSerializer -- `typeof DOMParser === "undefined"` picks
+            xmldom, otherwise the native one -- so subclassing the globals
+            before EPUB.js loads records which branch it actually took. That is
+            browser evidence about the browser; the Node fallback is proven
+            separately by scripts/epub-xmldom-fallback.test.mjs, and neither
+            substitutes for the other.
+        -->
+        <div id="bookPlayerContainer"></div>
+        <script>
+            // Everything shared across these <script> blocks hangs off `window`
+            // rather than a top-level binding: the blocks are separate scripts,
+            // and only the globals are visible to the ones that follow.
+            window.__epubNativeDOMParser = window.DOMParser;
+            window.__epubNativeXMLSerializer = window.XMLSerializer;
+
+            window.__epubParserProbe = {
+                domParserConstructions: 0,
+                xmlSerializerConstructions: 0,
+                // A subclass of the native constructor is still native
+                // machinery; what would not be native is xmldom, whose source
+                // is JavaScript and therefore prints its body.
+                nativeDOMParserIsNative: /\[native code\]/.test(
+                    window.__epubNativeDOMParser.toString()
+                ),
+                nativeXMLSerializerIsNative: /\[native code\]/.test(
+                    window.__epubNativeXMLSerializer.toString()
+                )
+            };
+
+            window.DOMParser = class extends window.__epubNativeDOMParser {
+                constructor(...args) {
+                    super(...args);
+                    window.__epubParserProbe.domParserConstructions += 1;
+                }
+            };
+
+            window.XMLSerializer = class extends window.__epubNativeXMLSerializer {
+                constructor(...args) {
+                    super(...args);
+                    window.__epubParserProbe.xmlSerializerConstructions += 1;
+                }
+            };
+        </script>
+        <!-- EPUB.js's UMD build externalises JSZip, so it must be global first. -->
+        <script src="/__vendor__/jszip/jszip.min.js"></script>
+        <script src="/__vendor__/epubjs/epub.js"></script>
+        <script>
+            /** The plugin's theme shape, with a colour nothing else uses. */
+            const THEME = { body: { color: 'rgb(1, 2, 3)' } };
+
+            const state = {
+                book: null,
+                rendition: null,
+                destroyed: { rendition: false, book: false }
+            };
+
+            /** The text of whatever the rendition is currently showing. */
+            const visibleText = () => {
+                const contents = state.rendition.getContents();
+                return contents
+                    .map((c) => c.document.body.textContent.trim())
+                    .join(' ')
+                    .replace(/\s+/g, ' ');
+            };
+
+            const locationNow = () => {
+                const location = state.rendition.currentLocation();
+                const cfi = location?.start?.cfi ?? null;
+                return {
+                    cfi,
+                    href: location?.start?.href ?? null,
+                    index: location?.start?.index ?? null,
+                    percentage:
+                        cfi && state.book.locations.length()
+                            ? state.book.locations.percentageFromCfi(cfi)
+                            : null
+                };
+            };
+
+            window.epubHarness = {
+                async open(url) {
+                    state.book = window.ePub(url, { openAs: 'epub' });
+                    await state.book.opened;
+
+                    return {
+                        title: state.book.packaging.metadata.title,
+                        creator: state.book.packaging.metadata.creator,
+                        spine: state.book.packaging.spine.map((i) => i.idref),
+                        manifest: Object.keys(
+                            state.book.packaging.manifest
+                        ).sort(),
+                        ncxPath: state.book.packaging.ncxPath,
+                        archived: state.book.archived === true
+                    };
+                },
+
+                async navigation() {
+                    const navigation = await state.book.loaded.navigation;
+                    return navigation.toc.map((item) => ({
+                        label: item.label.trim(),
+                        href: item.href
+                    }));
+                },
+
+                /** renderTo + themes + display(), exactly as the plugin does. */
+                async render() {
+                    state.rendition = state.book.renderTo(
+                        'bookPlayerContainer',
+                        { width: '100%', height: '100%', flow: 'paginated' }
+                    );
+                    state.rendition.themes.register('default', THEME);
+                    state.rendition.themes.select('default');
+
+                    await state.rendition.display();
+                    await state.book.locations.generate(1024);
+
+                    return { text: visibleText(), ...locationNow() };
+                },
+
+                async next() {
+                    await state.rendition.next();
+                    return { text: visibleText(), ...locationNow() };
+                },
+
+                async prev() {
+                    await state.rendition.prev();
+                    return { text: visibleText(), ...locationNow() };
+                },
+
+                /**
+                 * The registered theme must apply inside the content iframe and
+                 * must not escape into the host document -- that containment is
+                 * the reason the reader is allowed to inject CSS at all.
+                 */
+                containment() {
+                    const contents = state.rendition.getContents();
+                    const inside = contents.map((c) =>
+                        c.window.getComputedStyle(c.document.body).color
+                    );
+                    const outside = window.getComputedStyle(
+                        document.body
+                    ).color;
+                    const iframes = [
+                        ...document.querySelectorAll(
+                            '#bookPlayerContainer iframe'
+                        )
+                    ];
+
+                    return {
+                        inside,
+                        outside,
+                        iframeCount: iframes.length,
+                        sandbox: iframes.map((f) => f.getAttribute('sandbox')),
+                        // "srcdoc" is EPUB.js's default where it is supported;
+                        // recorded so a silent fall back to blobUrl or
+                        // document.write is visible rather than inferred.
+                        srcdoc: iframes.map((f) => f.hasAttribute('srcdoc'))
+                    };
+                },
+
+                parser() {
+                    const probe = window.__epubParserProbe;
+
+                    // Read the counters before this method constructs anything
+                    // itself, so what is reported is EPUB.js's use and only
+                    // EPUB.js's use.
+                    const byEpubjs = {
+                        domParserConstructions: probe.domParserConstructions,
+                        xmlSerializerConstructions:
+                            probe.xmlSerializerConstructions
+                    };
+
+                    const parsed =
+                        new window.__epubNativeDOMParser().parseFromString(
+                            '<a/>',
+                            'application/xml'
+                        );
+
+                    return {
+                        ...byEpubjs,
+                        nativeDOMParserIsNative: probe.nativeDOMParserIsNative,
+                        nativeXMLSerializerIsNative:
+                            probe.nativeXMLSerializerIsNative,
+                        parsedIsNativeDocument: parsed instanceof window.Document
+                    };
+                },
+
+                async close() {
+                    state.rendition.destroy();
+                    state.destroyed.rendition = true;
+                    state.book.destroy();
+                    state.destroyed.book = true;
+
+                    const leftover = document.querySelectorAll(
+                        '#bookPlayerContainer iframe'
+                    ).length;
+
+                    const bookGone =
+                        state.book.spine === undefined ||
+                        state.book.spine === null;
+
+                    state.rendition = null;
+                    state.book = null;
+
+                    return { ...state.destroyed, leftover, bookGone };
+                },
+
+                isClosed() {
+                    return state.book === null && state.rendition === null;
+                }
+            };
+
+            window.harnessReady = true;
+        </script>
+    </body>
+</html>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doc xmlns="urn:tesserafin:fixture" xmlns:x="urn:tesserafin:fixture:x">
+  <predefined>&amp; &lt; &gt; &quot; &apos;</predefined>
+  <numeric>&#233; &#xE9; &#8212;</numeric>
+  <cdata><![CDATA[a < b && c > d]]></cdata>
+  <attributes plain="one" escaped="a &amp; b &lt; c &quot;quoted&quot;" x:qualified="ns value"/>
+  <whitespace keep="  two  spaces  ">  text  </whitespace>
+</doc>

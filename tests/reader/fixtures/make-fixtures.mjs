@@ -11,9 +11,15 @@
  * sample.pdf  -- 3 pages, Helvetica text, no images, no fonts embedded.
  * sample.epub -- EPUB 2 archive, 2 chapters, uncompressed (stored) entries so
  *                the byte output does not depend on a zlib version.
+ * xml/*       -- loose XML documents for the Node xmldom fallback harness
+ *                (scripts/epub-xmldom-fallback.test.mjs). They are the same
+ *                document shapes an EPUB carries, kept outside the archive
+ *                because that harness drives EPUB.js's XML layer directly:
+ *                EPUB.js cannot open an archive off a browser (see the
+ *                harness header).
  */
 import { createHash } from 'node:crypto';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -200,72 +206,75 @@ function chapterXhtml({ title, body }) {
     );
 }
 
-function buildEpub() {
-    const manifest = CHAPTERS.map(
-        (c) =>
-            `    <item id="${c.id}" href="${c.href}" media-type="application/xhtml+xml"/>`
-    ).join('\n');
-    const spine = CHAPTERS.map((c) => `    <itemref idref="${c.id}"/>`).join(
-        '\n'
-    );
-    const navPoints = CHAPTERS.map(
-        (c, i) =>
-            `    <navPoint id="nav-${c.id}" playOrder="${i + 1}">\n` +
-            `      <navLabel><text>${c.title}</text></navLabel>\n` +
-            `      <content src="${c.href}"/>\n` +
-            `    </navPoint>`
-    ).join('\n');
+const MANIFEST_ITEMS = CHAPTERS.map(
+    (c) =>
+        `    <item id="${c.id}" href="${c.href}" media-type="application/xhtml+xml"/>`
+).join('\n');
 
+const SPINE_ITEMS = CHAPTERS.map((c) => `    <itemref idref="${c.id}"/>`).join(
+    '\n'
+);
+
+const NAV_POINTS = CHAPTERS.map(
+    (c, i) =>
+        `    <navPoint id="nav-${c.id}" playOrder="${i + 1}">\n` +
+        `      <navLabel><text>${c.title}</text></navLabel>\n` +
+        `      <content src="${c.href}"/>\n` +
+        `    </navPoint>`
+).join('\n');
+
+/**
+ * The three XML documents an EPUB 2 reader parses. They are module-level
+ * constants rather than inline literals so the loose `xml/` fixtures the Node
+ * fallback harness reads are byte-identical to the archive's own entries -
+ * a harness that parsed a different document than the reader would prove
+ * nothing about the reader.
+ */
+const CONTAINER_XML =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n` +
+    `  <rootfiles>\n` +
+    `    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n` +
+    `  </rootfiles>\n` +
+    `</container>\n`;
+
+const PACKAGE_OPF =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">\n` +
+    `  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n` +
+    `    <dc:title>Tesserafin EPUB Fixture</dc:title>\n` +
+    `    <dc:creator>Tesserafin project</dc:creator>\n` +
+    `    <dc:language>en</dc:language>\n` +
+    `    <dc:identifier id="bookid">urn:uuid:tesserafin-epub-fixture</dc:identifier>\n` +
+    `    <dc:rights>Written for this repository. No third-party content.</dc:rights>\n` +
+    `  </metadata>\n` +
+    `  <manifest>\n` +
+    `    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n` +
+    `    <item id="css" href="style.css" media-type="text/css"/>\n` +
+    `${MANIFEST_ITEMS}\n` +
+    `  </manifest>\n` +
+    `  <spine toc="ncx">\n` +
+    `${SPINE_ITEMS}\n` +
+    `  </spine>\n` +
+    `</package>\n`;
+
+const TOC_NCX =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n` +
+    `  <head><meta name="dtb:uid" content="urn:uuid:tesserafin-epub-fixture"/></head>\n` +
+    `  <docTitle><text>Tesserafin EPUB Fixture</text></docTitle>\n` +
+    `  <navMap>\n` +
+    `${NAV_POINTS}\n` +
+    `  </navMap>\n` +
+    `</ncx>\n`;
+
+function buildEpub() {
     const entries = [
         // MUST be first and stored -- EPUB OCF requirement.
         { name: 'mimetype', data: utf8('application/epub+zip') },
-        {
-            name: 'META-INF/container.xml',
-            data: utf8(
-                `<?xml version="1.0" encoding="UTF-8"?>\n` +
-                    `<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n` +
-                    `  <rootfiles>\n` +
-                    `    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n` +
-                    `  </rootfiles>\n` +
-                    `</container>\n`
-            )
-        },
-        {
-            name: 'OEBPS/content.opf',
-            data: utf8(
-                `<?xml version="1.0" encoding="UTF-8"?>\n` +
-                    `<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="bookid">\n` +
-                    `  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n` +
-                    `    <dc:title>Tesserafin EPUB Fixture</dc:title>\n` +
-                    `    <dc:creator>Tesserafin project</dc:creator>\n` +
-                    `    <dc:language>en</dc:language>\n` +
-                    `    <dc:identifier id="bookid">urn:uuid:tesserafin-epub-fixture</dc:identifier>\n` +
-                    `    <dc:rights>Written for this repository. No third-party content.</dc:rights>\n` +
-                    `  </metadata>\n` +
-                    `  <manifest>\n` +
-                    `    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>\n` +
-                    `    <item id="css" href="style.css" media-type="text/css"/>\n` +
-                    `${manifest}\n` +
-                    `  </manifest>\n` +
-                    `  <spine toc="ncx">\n` +
-                    `${spine}\n` +
-                    `  </spine>\n` +
-                    `</package>\n`
-            )
-        },
-        {
-            name: 'OEBPS/toc.ncx',
-            data: utf8(
-                `<?xml version="1.0" encoding="UTF-8"?>\n` +
-                    `<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">\n` +
-                    `  <head><meta name="dtb:uid" content="urn:uuid:tesserafin-epub-fixture"/></head>\n` +
-                    `  <docTitle><text>Tesserafin EPUB Fixture</text></docTitle>\n` +
-                    `  <navMap>\n` +
-                    `${navPoints}\n` +
-                    `  </navMap>\n` +
-                    `</ncx>\n`
-            )
-        },
+        { name: 'META-INF/container.xml', data: utf8(CONTAINER_XML) },
+        { name: 'OEBPS/content.opf', data: utf8(PACKAGE_OPF) },
+        { name: 'OEBPS/toc.ncx', data: utf8(TOC_NCX) },
         {
             name: 'OEBPS/style.css',
             data: utf8('body { font-family: serif; margin: 1em; }\n')
@@ -279,11 +288,103 @@ function buildEpub() {
     return buildZip(entries);
 }
 
+/* ----------------------------------------------- XML fallback fixtures -- */
+
+/**
+ * An EPUB 3 package document: `properties="nav"` on the navigation item, the
+ * EPUB 3 `<meta property="dcterms:modified">` refinement, and metadata that
+ * carries the four things a parser can get wrong independently of structure -
+ * a predefined entity, a numeric character reference, an escaped attribute
+ * value, and a CDATA section.
+ */
+const PACKAGE_OPF3 =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">\n` +
+    `  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n` +
+    `    <dc:title>Tesserafin EPUB 3 Fixture &amp; Friends</dc:title>\n` +
+    `    <dc:creator>Tesserafin project &#8212; readers team</dc:creator>\n` +
+    `    <dc:language>en</dc:language>\n` +
+    `    <dc:identifier id="bookid">urn:uuid:tesserafin-epub3-fixture</dc:identifier>\n` +
+    `    <dc:description><![CDATA[Angle brackets <b>stay literal</b> inside CDATA.]]></dc:description>\n` +
+    `    <dc:rights>Written for this repository. No third-party content.</dc:rights>\n` +
+    `    <meta property="dcterms:modified">1980-01-01T00:00:00Z</meta>\n` +
+    `  </metadata>\n` +
+    `  <manifest>\n` +
+    `    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>\n` +
+    `    <item id="css" href="style.css" media-type="text/css"/>\n` +
+    `${MANIFEST_ITEMS}\n` +
+    `  </manifest>\n` +
+    `  <spine>\n` +
+    `${SPINE_ITEMS}\n` +
+    `  </spine>\n` +
+    `</package>\n`;
+
+/** The EPUB 3 navigation document matching PACKAGE_OPF3. */
+const NAV_XHTML =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">\n` +
+    `<head><title>Contents</title></head>\n` +
+    `<body>\n` +
+    `  <nav epub:type="toc" id="toc">\n` +
+    `    <h1>Contents</h1>\n` +
+    `    <ol>\n` +
+    CHAPTERS.map(
+        (c) =>
+            `      <li id="nav-${c.id}"><a href="${c.href}">${c.title}</a></li>`
+    ).join('\n') +
+    `\n` +
+    `    </ol>\n` +
+    `  </nav>\n` +
+    `</body>\n` +
+    `</html>\n`;
+
+/**
+ * Escaping and entity surface, isolated from EPUB structure so a difference
+ * here cannot be confused with a manifest or spine difference. Every entity
+ * used is XML-predefined or a numeric character reference: no DTD-declared
+ * entity, which neither xmldom 0.7 nor 0.8 expands, and which a fixture has
+ * no business depending on.
+ */
+const ENTITIES_XML =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<doc xmlns="urn:tesserafin:fixture" xmlns:x="urn:tesserafin:fixture:x">\n` +
+    `  <predefined>&amp; &lt; &gt; &quot; &apos;</predefined>\n` +
+    `  <numeric>&#233; &#xE9; &#8212;</numeric>\n` +
+    `  <cdata><![CDATA[a < b && c > d]]></cdata>\n` +
+    `  <attributes plain="one" escaped="a &amp; b &lt; c &quot;quoted&quot;" x:qualified="ns value"/>\n` +
+    `  <whitespace keep="  two  spaces  ">  text  </whitespace>\n` +
+    `</doc>\n`;
+
+/** Not well formed: `<rootfiles>` is never closed. */
+const MALFORMED_XML =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n` +
+    `  <rootfiles>\n` +
+    `    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n` +
+    `</container>\n`;
+
+const XML_FIXTURES = [
+    ['container.xml', CONTAINER_XML],
+    // Same document, CRLF line endings. xmldom 0.8 normalises XML line
+    // endings the way the spec requires and 0.7 did not, so this pair is what
+    // makes that difference visible instead of hidden.
+    ['container-crlf.xml', CONTAINER_XML.replace(/\n/g, '\r\n')],
+    ['package-epub2.opf', PACKAGE_OPF],
+    ['package-epub3.opf', PACKAGE_OPF3],
+    ['toc.ncx', TOC_NCX],
+    ['nav.xhtml', NAV_XHTML],
+    ['entities.xml', ENTITIES_XML],
+    ['malformed.xml', MALFORMED_XML]
+];
+
 /* ---------------------------------------------------------------- write -- */
+
+mkdirSync(join(HERE, 'xml'), { recursive: true });
 
 for (const [name, data] of [
     ['sample.pdf', buildPdf()],
-    ['sample.epub', buildEpub()]
+    ['sample.epub', buildEpub()],
+    ...XML_FIXTURES.map(([name, text]) => [join('xml', name), utf8(text)])
 ]) {
     const target = join(HERE, name);
     writeFileSync(target, data);

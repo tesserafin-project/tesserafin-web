@@ -10,6 +10,8 @@ import { expect, type Page } from '@playwright/test';
 
 export const HARNESS_PDF = '/__harness__/pdf.html';
 export const FIXTURE_PDF = '/__fixtures__/sample.pdf';
+export const HARNESS_EPUB = '/__harness__/epub.html';
+export const FIXTURE_EPUB = '/__fixtures__/sample.epub';
 
 interface SeenResponse {
     url: string;
@@ -24,8 +26,20 @@ export interface OriginWatch {
     pageErrors(): string[];
     failedRequests(): string[];
     abortedRequests(): string[];
+    sandboxNotices(): string[];
     assertClean(): void;
 }
+
+/**
+ * Chromium logs this once per sandboxed frame that would have been allowed to
+ * run script had the sandbox permitted it. EPUB.js renders every section in an
+ * iframe with `sandbox="allow-same-origin"` and no `allow-scripts`, so the
+ * message is the sandbox reporting that it is doing its job - the content
+ * documents themselves carry no script at all. Counting it as a reader defect
+ * would mean the stricter the sandbox, the redder the suite.
+ */
+const SANDBOX_NOTICE =
+    /Blocked script execution in .* because the document's frame is sandboxed/;
 
 export function watchOrigin(page: Page): OriginWatch {
     const responses: SeenResponse[] = [];
@@ -34,6 +48,7 @@ export function watchOrigin(page: Page): OriginWatch {
     const pageErrors: string[] = [];
     const failed: string[] = [];
     const aborted: string[] = [];
+    const sandboxNotices: string[] = [];
 
     page.on('request', (request) => requested.push(request.url()));
     page.on('response', (response) => {
@@ -55,7 +70,13 @@ export function watchOrigin(page: Page): OriginWatch {
         failed.push(`${request.url()} (${reason})`);
     });
     page.on('console', (message) => {
-        if (message.type() === 'error') consoleErrors.push(message.text());
+        if (message.type() !== 'error') return;
+        const text = message.text();
+        if (SANDBOX_NOTICE.test(text)) {
+            sandboxNotices.push(text);
+            return;
+        }
+        consoleErrors.push(text);
     });
     page.on('pageerror', (error) => pageErrors.push(String(error)));
 
@@ -76,6 +97,7 @@ export function watchOrigin(page: Page): OriginWatch {
         pageErrors: () => [...pageErrors],
         failedRequests: () => [...failed],
         abortedRequests: () => [...aborted],
+        sandboxNotices: () => [...sandboxNotices],
         assertClean() {
             expect(pageErrors, 'page errors').toEqual([]);
             expect(consoleErrors, 'console errors').toEqual([]);

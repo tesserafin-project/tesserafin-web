@@ -114,6 +114,9 @@
         "sass-embedded": "1.100.0"
     },
     "overrides": {
+        "epubjs": {
+            "@xmldom/xmldom": "0.8.13"
+        },
         "vite": "6.4.3"
     },
     "browserslist": [
@@ -146,6 +149,7 @@
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --summary dependency-audit-out/summary.md",
         "test:dependency-audit": "node scripts/dependency-audit.test.mjs",
+        "test:epub-xmldom-fallback": "node scripts/epub-xmldom-fallback.test.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
         "test": "vitest --watch=false --config vite.config.ts",
@@ -153,7 +157,7 @@
         "test:readers": "playwright test --config playwright.reader.config.ts",
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
-        "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test",
+        "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback",
         "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source"
     },
     "engines": {
