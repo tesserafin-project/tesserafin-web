@@ -1,0 +1,34 @@
+# Exact historical Gitleaks fingerprints accepted for tesserafin-web.
+#
+# Every line is one `<commit>:<path>:<rule>:<line>` fingerprint for one observed
+# historical finding. There is no glob, no path prefix, no rule name on its own
+# and no regular expression, because each of those would suppress findings that
+# have not happened yet.
+#
+# ci/secret-history-baseline.json carries the provenance, classification and
+# disposition of every fingerprint below. ci/secret-scan.sh refuses to reach a
+# verdict unless the two files describe exactly the same set, sorted and unique,
+# and unless every entry still matches an observed finding.
+#
+# This file is NOT applied to the current-tree scan. A historical fingerprint
+# must never excuse a secret committed today, and a control proves it cannot.
+154f6b5fd8cb6b5f6848a3618d4d1a92ce45d895:dashboard-ui/connectlogin.html:generic-api-key:87
+1c06eed0985da6bded90c3c26fb99a8ef61c3f86:dashboard-ui/scripts/connectlogin.js:generic-api-key:1
+1dd2833ed701ec639bdf6e0c6756f1134c76a892:dashboard-ui/scripts/mediaplayer-video.js:generic-api-key:1112
+319d838d6e183e7f057b79c81622666e2b265a75:dashboard-ui/scripts/htmlmediarenderer.js:generic-api-key:63
+46776f1eac155c23ce40b301ac66118004db4d8a:dashboard-ui/connectlogin.html:generic-api-key:110
+479e31b444412cf4959eae9718874a7792628f05:dashboard-ui/scripts/connectlogin.js:generic-api-key:1
+53a20e42c55b904d6ebe566d9fcdeae0d2820bfb:tests/e2e/auth-session.spec.ts:generic-api-key:46
+661eeac16eccccdc776e38b77982f6cedc5be4b1:dashboard-ui/scripts/connectlogin.js:generic-api-key:1
+6bfd795635f0f06e8734745020a4a0a702a403ac:dashboard-ui/scripts/connectlogin.js:generic-api-key:81
+99f5167804b19b104e00752d7de12a87428160ac:dashboard-ui/scripts/mediaplayer-video.js:generic-api-key:1113
+99f5167804b19b104e00752d7de12a87428160ac:dashboard-ui/scripts/mediaplayer-video.js:generic-api-key:1118
+a54146dd0c4306485523f5c7336789289c629d31:dashboard-ui/scripts/htmlmediarenderer.js:generic-api-key:258
+a6c9cc632b7348edc36a53e7f533c109646ac018:dashboard-ui/scripts/connectlogin.js:generic-api-key:162
+adfc48650810a85ffbd1bf1f684a510019c75cb1:dashboard-ui/scripts/htmlmediarenderer.js:generic-api-key:120
+bbe70b8d3bfb69adc11dc55f48e7b182edf53b22:dashboard-ui/scripts/connectlogin.js:generic-api-key:1
+c0d51d50dd640db5e5dc522ebda3ac49feec9801:tests/e2e/auth-session.spec.ts:generic-api-key:46
+dc9dd4a149f61f916e3d23f778ac7b04c30fcd79:dashboard-ui/scripts/connectlogin.js:generic-api-key:1
+eb3e3bfaed39a73dae7d512a20fbb6c7c0e1cdcc:dashboard-ui/thirdparty/social-share-kit-1.0.4/dist/js/social-share-kit.js:gcp-api-key:254
+eb3e3bfaed39a73dae7d512a20fbb6c7c0e1cdcc:dashboard-ui/thirdparty/social-share-kit-1.0.4/dist/js/social-share-kit.min.js:gcp-api-key:8
+ec469a7b05cc9bb430393c3e73c8af0d09fe90f1:dashboard-ui/scripts/mediaplayer-video.js:generic-api-key:1113

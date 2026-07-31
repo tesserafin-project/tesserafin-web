@@ -185,3 +185,89 @@ All five conditions must hold before this document is removed:
 The server repository `all3f0r1/reefin` was hit by the same account-wide
 outage and received the same treatment (parking PR #66, issue #62). Its
 equivalent document is `docs/local-ci.md` in that repository.
+
+---
+
+## 7. Secret scanning (fail-closed) — tesserafin-project/tesserafin#172 / [C3]
+
+Unlike everything above, this gate **does run on GitHub Actions**
+(`.github/workflows/secret-scan.yml`). It needs no CodeQL, no GitHub Advanced Security, no
+self-hosted runner and no secret of any kind. It is still not a *required* check — no branch
+protection is available on this plan (§1) — so it reports automatically without being able to
+block.
+
+It **detects** a committed secret. It does not **prevent** one: by the time it starts, GitHub
+has already accepted the push. Prevention needs native push protection, which needs GitHub
+Secret Protection, which is unavailable here. tesserafin-project/tesserafin#96 and #94 stay
+open for that.
+
+### Running it locally
+
+```bash
+# 1. install the pinned scanner (archive verified BEFORE it is executed)
+./ci/install-gitleaks.sh
+
+# 2. the deterministic controls — these are what prove the gate knows how to refuse
+./ci/tests/secret-scan.test.sh          # add --no-live to skip the real scans
+
+# 3. the current tree (the historical baseline does not apply here)
+./ci/secret-scan.sh --mode tree --repo-name tesserafin-web
+
+# 4. the complete history, compared against the committed baseline
+./ci/secret-scan.sh --mode history --repo-name tesserafin-web \
+  --default-branch main --min-commits 25000 --min-refs 10
+
+# 5. the baseline artefacts alone
+./ci/secret-scan.sh --mode baseline --repo-name tesserafin-web
+```
+
+npm equivalents are wired for convenience:
+
+```bash
+npm run secret-scan:controls
+npm run secret-scan:tree
+npm run secret-scan:history
+```
+
+Two deliberate choices. The scanner installs **outside the working tree** (`$TMPDIR`), so
+`git status` stays clean and the tree scan does not scan the scanner. And the tree scan must
+run on a **pristine checkout** — `ci/secret-scan.sh` refuses outright if `node_modules` is
+present, because scanning a dependency tree answers a different question. Run it before
+`npm ci`, or from a clean clone.
+
+The secret scan is deliberately **not** part of `npm run validate:full`: it is an independent
+gate with its own workflow, and folding it in would change that command's test count for a
+reason unrelated to the application.
+
+### Three verdicts, not two
+
+| Code | Verdict | Meaning |
+| --- | --- | --- |
+| `0` | CLEAN | the question was asked and the answer is "no secret" |
+| `1` | FINDINGS | the question was asked and the answer is "a secret" |
+| `2` | INDETERMINATE | the question was **not** asked |
+
+The third is the point. A missing scanner, a wrong version, a bad checksum, a shallow clone, a
+missing default-branch ref, a crash, a timeout, an unknown flag, an absent or unparseable
+report, an exit code contradicted by its report, and every invalid, duplicate, unsorted or
+stale baseline — all of those produce "no findings" from a naive wrapper, and all of them exit
+`2` here. Both `1` and `2` are red.
+
+Gitleaks runs with `--exit-code 7`, because its default `1` is also what Cobra returns for an
+unknown flag: with the default, "you typed an option this version does not have" and "there is
+a secret in your repository" would be the same integer.
+
+### Historical baseline
+
+`.gitleaksignore` and `ci/secret-history-baseline.json` describe **exactly the same set**: 20
+exact `<commit>:<path>:<rule>:<line>` fingerprints, sorted, unique, no glob, no path-wide
+exception, no rule-wide exception, no regex. The JSON adds each one's provenance,
+classification and disposition, and stores no value.
+
+Eighteen are inherited pre-fork `dashboard-ui` history. **Two are not**, and are classified
+separately rather than being folded into "inherited": they are the two commits of the
+negative-login end-to-end fixture, conclusively a non-secret, removed from the current tree by
+[PR #96](https://github.com/tesserafin-project/tesserafin-web/pull/96) by assembling the value
+from fragments at run time rather than by suppressing the rule.
+
+Editing either file to make CI green is not a fix. A new finding needs an owner disposition.
