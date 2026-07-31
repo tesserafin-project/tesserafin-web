@@ -106,7 +106,7 @@
         "react-router-dom": "6.30.4",
         "screenfull": "6.0.2",
         "sortablejs": "1.15.7",
-        "swiper": "12.2.0",
+        "swiper": "14.0.6",
         "usehooks-ts": "3.1.1",
         "webcomponents.js": "0.7.24"
     },
