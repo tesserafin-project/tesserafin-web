@@ -1,0 +1,50 @@
+# Dependabot version updates for the npm graph — repository-local slice of
+# tesserafin-project/tesserafin#95 (C2).
+#
+# This file is the *proposal* half of dependency hygiene. The *enforcement* half
+# is `.github/workflows/dependency-audit.yml`, which fails closed on any
+# unresolved high or critical advisory whether or not Dependabot ever opens a
+# pull request. Neither depends on the other.
+#
+# Dependabot vulnerability alerts and automated security fixes are repository
+# settings rather than configuration, and both were OFF until this slice turned
+# them on (PUT /repos/.../vulnerability-alerts and .../automated-security-fixes,
+# both 204, both re-read as enabled). Committing this file does not turn them
+# on and turning them on does not configure version updates — the two halves are
+# independent, which is why both are part of the same change.
+#
+# GitHub's own alerts do see this graph: package-lock.json gives the dependency
+# graph 1464 packages and 51 open alerts appeared as soon as alerts were
+# enabled. The workflow is still not redundant — alerts notify, they do not
+# block, and nothing in a notification stops a release.
+#
+# CodeQL and GitHub's dependency-review action remain unavailable: both need
+# GitHub Advanced Security, which a private repository on a free organisation
+# plan does not have. That is tracked separately by
+# tesserafin-project/tesserafin#94 (C1).
+#
+# `.github/renovate.json` is inherited from the upstream Jellyfin tree and is
+# inert: it extends a preset from a `tesserafin` org that is not this one, and
+# the Renovate app is not installed on `tesserafin-project`. It is left
+# untouched here rather than deleted, which is a separate decision.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: main
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Etc/UTC
+    # Bounded on purpose: this lockfile resolves 1654 packages, and an unbounded
+    # bot can bury the review queue faster than a solo maintainer can drain it.
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      prefix-development: build
+      include: scope
+    # No auto-merge, no reviewers, no assignees and no labels. Every proposal is
+    # reviewed by a human, and this repository has no verified label set or
+    # reviewer group to point at.

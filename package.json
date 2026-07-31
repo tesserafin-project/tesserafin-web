@@ -144,6 +144,8 @@
         "verify:runtime-origins": "node scripts/verify-runtime-origins.mjs",
         "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
+        "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --summary dependency-audit-out/summary.md",
+        "test:dependency-audit": "node scripts/dependency-audit.test.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
         "test": "vitest --watch=false --config vite.config.ts",

@@ -29,3 +29,8 @@ config.json
 # playwright
 test-results/
 playwright-report/
+
+# dependency-audit evidence: the full `npm audit --json` report and its Markdown
+# summary (scripts/dependency-audit.mjs). The hosted job uploads these as a
+# short-retention artifact; they are never committed.
+dependency-audit-out/
