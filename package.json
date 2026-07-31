@@ -70,7 +70,7 @@
         "@jellyfin/libass-wasm": "4.2.4",
         "@jellyfin/sdk": "0.0.0-unstable.202607090422",
         "@jellyfin/ux-web": "1.0.0",
-        "@mui/icons-material": "6.5.0",
+        "@mui/icons-material": "9.2.0",
         "@mui/material": "6.5.0",
         "@mui/x-date-pickers": "7.29.4",
         "@react-hook/resize-observer": "2.0.2",
