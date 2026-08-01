@@ -1,5 +1,5 @@
 <h1 align="center">Tesserafin Web</h1>
-<h3 align="center">Web client for the <a href="https://github.com/tesserafin/tesserafin">Tesserafin</a> media server</h3>
+<h3 align="center">Web client for the <a href="https://github.com/tesserafin-project/tesserafin">Tesserafin</a> media server</h3>
 
 ---
 
@@ -21,7 +21,7 @@ Tesserafin Web is a fork of [Jellyfin Web](https://github.com/jellyfin/jellyfin-
 1. Clone or download this repository.
 
    ```sh
-   git clone https://github.com/tesserafin/tesserafin-web.git
+   git clone https://github.com/tesserafin-project/tesserafin-web.git
    cd tesserafin-web
    ```
 

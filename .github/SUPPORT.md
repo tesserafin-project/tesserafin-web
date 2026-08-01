@@ -7,11 +7,11 @@ before reporting a problem.
 When looking for help or information, please first search the existing
 issues:
 
-* [Open or closed issues](https://github.com/tesserafin/tesserafin-web/issues?q=is%3Aissue)
+* [Open or closed issues](https://github.com/tesserafin-project/tesserafin-web/issues?q=is%3Aissue)
 
 If you cannot find an answer, open a new issue using the appropriate template:
 
-* [New issue](https://github.com/tesserafin/tesserafin-web/issues/new/choose)
+* [New issue](https://github.com/tesserafin-project/tesserafin-web/issues/new/choose)
 
 GitHub issues are for tracking bugs and enhancements, not general support.
 
