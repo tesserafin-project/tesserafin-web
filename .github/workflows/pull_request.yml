@@ -93,6 +93,8 @@ jobs:
     name: Build 🏗️
     if: ${{ always() && !cancelled() }}
     uses: ./.github/workflows/__package.yml
+    permissions:
+      contents: read
     with:
       commit: ${{ github.event.pull_request.head.sha }}
 

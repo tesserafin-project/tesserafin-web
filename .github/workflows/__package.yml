@@ -11,6 +11,11 @@ jobs:
   run-build-prod:
     name: Run production build 🏗️
     runs-on: ubuntu-latest
+    # Explicit. CodeQL's `actions/missing-workflow-permissions` flags an absent
+    # block, because absent means "whatever the repository default happens to
+    # be" rather than a decision. This job only reads the repository.
+    permissions:
+      contents: read
     # Minute economy: a hard ceiling instead of the 6-hour default.
     timeout-minutes: 25
 
