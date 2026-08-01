@@ -97,6 +97,8 @@ jobs:
   main:
     name: 'Unstable release 🚀⚠️'
     uses: ./.github/workflows/__package.yml
+    permissions:
+      contents: read
     with:
       commit: ${{ github.sha }}
 

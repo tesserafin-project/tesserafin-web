@@ -25,6 +25,11 @@ jobs:
     # This is visible, unmitigated security debt, not a fix.
     if: ${{ vars.ENABLE_DEPENDENCY_REVIEW == 'true' }}
     runs-on: ubuntu-latest
+    # Explicit. CodeQL's `actions/missing-workflow-permissions` flags an absent
+    # block, because absent means "whatever the repository default happens to
+    # be" rather than a decision. This job only reads the repository.
+    permissions:
+      contents: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -43,6 +48,11 @@ jobs:
   quality:
     name: Run ${{ matrix.command }} 🕵️‍♂️
     runs-on: ubuntu-latest
+    # Explicit. CodeQL's `actions/missing-workflow-permissions` flags an absent
+    # block, because absent means "whatever the repository default happens to
+    # be" rather than a decision. This job only reads the repository.
+    permissions:
+      contents: read
     # Minute economy: a hard ceiling. Without it a hung job bills up to the
     # 6-hour default; these commands finish in a couple of minutes.
     timeout-minutes: 20
