@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Feature Request
-    url: https://github.com/tesserafin/tesserafin-web/issues/new/choose
+    url: https://github.com/tesserafin-project/tesserafin-web/issues/new/choose
     about: Open a feature request issue to propose an enhancement.
   - name: Help Or Question
-    url: https://github.com/tesserafin/tesserafin-web/issues
+    url: https://github.com/tesserafin-project/tesserafin-web/issues
     about: Search existing issues for help before opening a new one.
