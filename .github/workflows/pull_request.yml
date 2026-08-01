@@ -78,10 +78,11 @@ concurrency:
 
 on:
   pull_request:
-    # paths-ignore is deliberately NOT restored — see the header. With CodeQL
-    # gated off this workflow no longer carries security analysis, but the
-    # exclusion stays out so that re-enabling ENABLE_CODE_SCANNING does not
-    # silently reintroduce a documentation blind spot.
+    # paths-ignore is deliberately NOT restored. Security analysis now lives in
+    # the standalone `codeql.yml`, which carries no exclusion either, and the
+    # jobs below are about to become required status checks on a protected
+    # `main`: a path-filtered trigger never starts the workflow, so no check run
+    # is created and a required check waits forever. The exclusion stays out.
     branches:
       - main
       - release*
@@ -111,26 +112,10 @@ jobs:
     with:
       commit: ${{ github.event.pull_request.head.sha }}
 
-  codeql:
-    name: GitHub CodeQL 🔬
-    # GATED OFF. Code scanning requires GitHub Advanced Security, which a
-    # private repository on a free organisation plan does not have. The
-    # analysis runs fine and then the upload is refused — proven by run
-    # 30230774481, where "Initialize CodeQL" and "Autobuild" both succeeded
-    # and the job then failed with:
-    #   ##[error]Please verify that the necessary features are enabled:
-    #   Advanced Security must be enabled for this repository to use code
-    #   scanning.
-    # Left armed it burns a full analysis on every event and then goes red at
-    # the last step, every time. The job is kept intact and gated on a
-    # repository variable rather than deleted: set ENABLE_CODE_SCANNING=true
-    # once Advanced Security is available. LOSS OF COVERAGE IS REAL AND
-    # UNMITIGATED — nothing else performs static security analysis here.
-    if: ${{ vars.ENABLE_CODE_SCANNING == 'true' }}
-    uses: ./.github/workflows/__codeql.yml
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-    with:
-      commit: ${{ github.event.pull_request.head.sha }}
+  # CodeQL is no longer called from here. It moved to a standalone
+  # `.github/workflows/codeql.yml` with its own `push`, `pull_request`,
+  # weekly `schedule` and `workflow_dispatch` triggers, and with the
+  # `security-extended` suite. A `workflow_call` file cannot carry its own
+  # schedule, and the nested check-run name it produced here was a fragile
+  # thing to name in a required-status-check list. See
+  # tesserafin-project/tesserafin#94.
