@@ -179,22 +179,33 @@ const Choice: FC<ChoiceProps> = ({
     options,
     disabled,
     onChange
-}) => (
-    <FormControl fullWidth size='small' disabled={disabled}>
-        <InputLabel id={`presentation-${label}`}>{label}</InputLabel>
-        <Select
-            labelId={`presentation-${label}`}
-            label={label}
-            value={value}
-            onChange={(event) => onChange(String(event.target.value))}
-        >
-            {options.map((option) => (
-                <MenuItem key={option} value={option}>
-                    {option}
-                </MenuItem>
-            ))}
-        </Select>
-    </FormControl>
-);
+}) => {
+    /*
+     * Slugified, because these labels contain spaces ("Image aspect") and an id with a space is
+     * two id tokens to `aria-labelledby` — neither of which exists. MUI wires the label through
+     * `labelId`, so the combobox was left with no accessible name at all: WCAG 4.1.2, and exactly
+     * the class of defect the automated scan exists to catch and the hand-written assertions did
+     * not.
+     */
+    const labelId = `presentation-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+    return (
+        <FormControl fullWidth size='small' disabled={disabled}>
+            <InputLabel id={labelId}>{label}</InputLabel>
+            <Select
+                labelId={labelId}
+                label={label}
+                value={value}
+                onChange={(event) => onChange(String(event.target.value))}
+            >
+                {options.map((option) => (
+                    <MenuItem key={option} value={option}>
+                        {option}
+                    </MenuItem>
+                ))}
+            </Select>
+        </FormControl>
+    );
+};
 
 export default PresentationEditor;
