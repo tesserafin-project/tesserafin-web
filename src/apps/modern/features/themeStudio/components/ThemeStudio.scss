@@ -1,0 +1,44 @@
+/**
+ * Studio chrome. Deliberately NOT token-driven, unlike `PreviewCanvas.scss`: this is the app's own
+ * UI and must keep the user's real active theme, so that editing a draft to something unreadable
+ * never makes the editor itself unreadable.
+ */
+
+.rf-theme-studio {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.rf-theme-studio__layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(0, 1.35fr);
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .rf-theme-studio__layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rf-theme-studio__preview {
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 1100px) {
+    .rf-theme-studio__preview {
+        position: static;
+    }
+}
+
+.rf-theme-studio__start {
+    max-width: 40rem;
+}
+
+.rf-theme-studio__editor ul,
+.rf-theme-studio__preview ul {
+    margin: 0.5rem 0 0;
+    padding-inline-start: 1.25rem;
+}
