@@ -1,0 +1,23 @@
+// Figtree — Tesserafin Classic's body face (#114).
+//
+// Self-hosted through `@fontsource/figtree`, like Noto Sans already is. No Google Fonts URL: a
+// remote font is a third-party request on every page load and a dependency on a host the server
+// operator did not choose, and `verify:runtime-origins` exists to keep exactly that out.
+//
+// SUBSET AND WEIGHTS ARE DELIBERATE. `@fontsource/figtree` ships 28 woff2 files — seven weights ×
+// normal/italic × latin/latin-ext. This declares three weights, upright only, latin and latin-ext:
+//
+//   400 regular · 500 medium · 700 bold
+//
+// which is exactly `tokens.json`'s `typography.fontWeight`. Nothing reads 300, 600, 800 or 900, and
+// italic is synthesised by the browser where it is needed at all. Declaring a face the design system
+// cannot ask for would ship bytes no page can use.
+//
+// Figtree is LATIN-ONLY. It is prepended to the family stack rather than replacing it: Noto Sans
+// and its CJK siblings stay behind it and keep covering everything Figtree does not. A page in
+// Japanese renders in Noto Sans JP exactly as before, because `unicode-range` never matches Figtree
+// for those code points.
+
+@use "./latin-400-normal";
+@use "./latin-500-normal";
+@use "./latin-700-normal";

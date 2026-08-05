@@ -40,7 +40,7 @@ export const officialClassicTokens: TesserafinTokens = {
     },
     typography: {
         fontFamily: {
-            base: '"Noto Sans", sans-serif',
+            base: '"Figtree", "Noto Sans", sans-serif',
             mono: 'ui-monospace, monospace'
         },
         fontSize: {

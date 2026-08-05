@@ -11,7 +11,7 @@
  */
 
 [data-rf-theme="official.classic"] {
-    --rf-typography-font-family-base: "Noto Sans", sans-serif;
+    --rf-typography-font-family-base: "Figtree", "Noto Sans", sans-serif;
     --rf-typography-font-family-mono: ui-monospace, monospace;
     --rf-typography-font-size-xs: 0.72rem;
     --rf-typography-font-size-sm: 0.82rem;

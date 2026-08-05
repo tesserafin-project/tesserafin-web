@@ -1,7 +1,7 @@
 {
     "contractVersion": 2,
     "id": "official.classic",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "name": "Tesserafin Classic",
     "description": "The default Tesserafin experience: the canonical paper-and-ink palette, the four elements as semantic accents, opaque surfaces, no frosted treatment.",
     "author": "Tesserafin Project",
