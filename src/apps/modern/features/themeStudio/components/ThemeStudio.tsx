@@ -254,8 +254,8 @@ export const ThemeStudio: FC = () => {
                                                 )} under "capabilities.required", and this renderer does not implement it. A required capability is a refusal, not a downgrade — falling back would render a theme its author did not design.`}
                                         </p>
                                         <p>
-                                            Move it to
-                                            <code>capabilities.optional</code>
+                                            Move it to{' '}
+                                            <code>capabilities.optional</code>{' '}
                                             to let it fall back to the platform
                                             default here while still being
                                             honoured by a renderer that
