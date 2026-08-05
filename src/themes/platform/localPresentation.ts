@@ -22,6 +22,41 @@ import type { ThemePresentation } from './contract';
 
 const KEY = 'tesserafin.themeStudio.appliedPresentation';
 
+/**
+ * Subscribers notified when the applied presentation changes.
+ *
+ * Needed because Apply is imperative: `applyLocalThemeOverlay` mutates `document.head` and
+ * `localStorage`, neither of which re-renders React, and the user's saved theme preference is
+ * deliberately untouched — so `activeThemeId` does not change either. Without a signal the tokens
+ * would change instantly and the presentation only on the next full page load, which is the
+ * "preview-only" state this whole binding exists to remove.
+ *
+ * A module-level set rather than an event on `window`: the two sides are already coupled through
+ * this module, and a DOM event would be a second, observable channel that anything could fire.
+ */
+const listeners = new Set<() => void>();
+
+/** Subscribe to applied-presentation changes. Returns an unsubscribe function. */
+export function subscribeAppliedPresentation(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+}
+
+function notify(): void {
+    for (const listener of [...listeners]) listener();
+}
+
+/**
+ * Snapshot identity for `useSyncExternalStore`, which compares snapshots with `Object.is`.
+ * `loadAppliedPresentation` parses JSON and would return a NEW object every call, so using it
+ * directly as the snapshot would re-render on every check forever. The cache is invalidated by
+ * {@link notify}'s callers instead.
+ */
+let cachedRaw: string | null | undefined;
+let cachedValue: ThemePresentation | null = null;
+
 function storage(): Storage | null {
     try {
         return window.localStorage;
@@ -39,6 +74,8 @@ export function saveAppliedPresentation(
     if (!store) return;
     try {
         store.setItem(KEY, JSON.stringify(presentation ?? {}));
+        cachedRaw = undefined;
+        notify();
     } catch {
         // Quota. The overlay's tokens are what matter most; losing the presentation record
         // degrades to the theme's own presentation rather than breaking the apply.
@@ -48,6 +85,8 @@ export function saveAppliedPresentation(
 /** Forgets it. Called when the overlay is cleared, so the two can never disagree. */
 export function clearAppliedPresentation(): void {
     storage()?.removeItem(KEY);
+    cachedRaw = undefined;
+    notify();
 }
 
 /**
@@ -57,7 +96,14 @@ export function clearAppliedPresentation(): void {
  * keys it does not know.
  */
 export function loadAppliedPresentation(): ThemePresentation | null {
-    const raw = storage()?.getItem(KEY);
+    const raw = storage()?.getItem(KEY) ?? null;
+    if (raw === cachedRaw) return cachedValue;
+    cachedRaw = raw;
+    cachedValue = parse(raw);
+    return cachedValue;
+}
+
+function parse(raw: string | null): ThemePresentation | null {
     if (!raw) return null;
     try {
         const parsed: unknown = JSON.parse(raw);

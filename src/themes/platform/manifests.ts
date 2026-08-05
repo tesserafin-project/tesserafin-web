@@ -49,5 +49,10 @@ export function getManifestForThemeId(
     return MANIFESTS[entry?.tokenThemeId ?? themeId];
 }
 
-/** Every theme id that declares a manifest. Used by the parity test, not by the app. */
+/**
+ * Every theme id that declares a manifest. Read by the parity assertions in
+ * `ui/presentation/PresentationContext.test.tsx`, not by the app: a registry rename would otherwise
+ * orphan a manifest silently — the theme would keep its palette and quietly lose its presentation,
+ * with nothing failing.
+ */
 export const MANIFEST_THEME_IDS = Object.keys(MANIFESTS);

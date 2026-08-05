@@ -2,6 +2,7 @@ import React, {
     createContext,
     useContext,
     useMemo,
+    useSyncExternalStore,
     type FC,
     type ReactNode
 } from 'react';
@@ -12,7 +13,10 @@ import React, {
  * dependencies of the Theme Studio's lazy chunk, and ~24 KB the MAIN bundle has no use for. A
  * barrel import here would have dragged all of it in for two functions.
  */
-import { loadAppliedPresentation } from 'themes/platform/localPresentation';
+import {
+    loadAppliedPresentation,
+    subscribeAppliedPresentation
+} from 'themes/platform/localPresentation';
 import { getManifestForThemeId } from 'themes/platform/manifests';
 import {
     PLATFORM_DEFAULT_PRESENTATION,
@@ -69,19 +73,28 @@ export const PresentationProvider: FC<PresentationProviderProps> = ({
     value,
     children
 }) => {
+    /*
+     * Subscribed, not read once. Apply is imperative — it mutates `document.head` and
+     * `localStorage`, and it deliberately leaves the user's saved theme preference alone, so
+     * `themeId` does not change either. Reading at mount would mean the tokens changed instantly
+     * and the presentation only on the next full page load, which is the preview-only state this
+     * binding exists to remove.
+     *
+     * `getServerSnapshot` returns `null` because there is no applied draft during SSR/prerender:
+     * it is a purely local, per-browser choice.
+     */
+    const localPresentation = useSyncExternalStore(
+        subscribeAppliedPresentation,
+        loadAppliedPresentation,
+        () => null
+    );
+
     const resolved = useMemo<PresentationContextValue>(() => {
         if (value) return value;
 
-        /*
-         * A locally applied Theme Studio draft wins over the official theme's manifest, because
-         * that is what "Apply" means. It is a presentation-only record rather than the whole draft
-         * (see `themes/platform/localPresentation.ts`), so reading it here costs no bundle.
-         *
-         * Read once at mount rather than subscribed to: Apply already reloads nothing and changes
-         * the overlay stylesheet imperatively, and a live subscription here would be a second,
-         * differently-timed path to the same state.
-         */
-        const localPresentation = loadAppliedPresentation();
+        // A locally applied Theme Studio draft wins over the official theme's manifest, because
+        // that is what "Apply" means. It is a presentation-only record rather than the whole draft
+        // (see `themes/platform/localPresentation.ts`), so reading it here costs no bundle.
         const manifest = themeId ? getManifestForThemeId(themeId) : undefined;
 
         if (localPresentation) {
@@ -110,7 +123,7 @@ export const PresentationProvider: FC<PresentationProviderProps> = ({
             fallbacks: resolution.fallbacks,
             activatable: true
         };
-    }, [themeId, value]);
+    }, [themeId, value, localPresentation]);
 
     return (
         <PresentationContext.Provider value={resolved}>

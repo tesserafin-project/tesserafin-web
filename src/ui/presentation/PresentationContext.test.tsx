@@ -4,9 +4,16 @@ import { act } from 'react-dom/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
+    MANIFEST_THEME_IDS,
     PLATFORM_DEFAULT_PRESENTATION,
     getManifestForThemeId
 } from 'themes/platform';
+import { THEME_REGISTRY, getThemeEntry } from 'themes/registry';
+import {
+    clearAppliedPresentation,
+    loadAppliedPresentation,
+    saveAppliedPresentation
+} from 'themes/platform/localPresentation';
 
 import {
     PresentationProvider,
@@ -200,6 +207,85 @@ describe('an applied Theme Studio draft', () => {
             // Hand-edited or truncated storage must degrade to the theme's own presentation, never
             // throw on boot.
             expect(read().presentation.surface.variant).toBe('opaque');
+        }
+    });
+});
+
+describe('applying a draft takes effect without a reload', () => {
+    const KEY = 'tesserafin.themeStudio.appliedPresentation';
+
+    afterEach(() => {
+        clearAppliedPresentation();
+    });
+
+    it('updates a mounted tree when Apply writes the record', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider themeId='official.classic'>
+                    <Probe />
+                </PresentationProvider>
+            );
+        });
+        expect(read().presentation.surface.variant).toBe('opaque');
+
+        // Exactly what Apply does — no remount, no reload, no theme-preference change.
+        act(() => {
+            saveAppliedPresentation({ surface: { variant: 'glass' } });
+        });
+
+        expect(read().presentation.surface.variant).toBe('glass');
+    });
+
+    it('reverts a mounted tree when the overlay is cleared', () => {
+        window.localStorage.setItem(
+            KEY,
+            JSON.stringify({ surface: { variant: 'glass' } })
+        );
+        act(() => {
+            root.render(
+                <PresentationProvider themeId='official.classic'>
+                    <Probe />
+                </PresentationProvider>
+            );
+        });
+        expect(read().presentation.surface.variant).toBe('glass');
+
+        act(() => {
+            clearAppliedPresentation();
+        });
+
+        expect(read().presentation.surface.variant).toBe('opaque');
+    });
+
+    it('does not re-render forever on an unchanged record', () => {
+        // `useSyncExternalStore` compares snapshots with Object.is, and `loadAppliedPresentation`
+        // parses JSON. Without the identity cache this would loop.
+        window.localStorage.setItem(KEY, JSON.stringify({}));
+        expect(loadAppliedPresentation()).toBe(loadAppliedPresentation());
+    });
+});
+
+describe('manifest / registry parity', () => {
+    it('every manifest still resolves through the registry', () => {
+        // `getManifestForThemeId` keys on `tokenThemeId ?? id`. A registry rename would silently
+        // orphan a manifest — the theme would keep its palette and quietly lose its presentation,
+        // with nothing failing. This is what makes that impossible.
+        for (const manifestId of MANIFEST_THEME_IDS) {
+            expect(getThemeEntry(manifestId)).toBeDefined();
+            expect(getManifestForThemeId(manifestId)?.id).toBe(manifestId);
+        }
+    });
+
+    it('covers every official theme the registry offers', () => {
+        // Any `official.*` entry must resolve to a manifest. A new official theme added to the
+        // registry without one would fall back to the platform default and look like a design
+        // decision rather than an omission.
+        const officialIds = THEME_REGISTRY.filter((entry) =>
+            entry.id.startsWith('official.')
+        ).map((entry) => entry.id);
+        expect(officialIds.length).toBeGreaterThan(0);
+        for (const id of officialIds) {
+            expect(getManifestForThemeId(id)).toBeDefined();
         }
     });
 });
