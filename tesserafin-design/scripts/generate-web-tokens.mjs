@@ -88,9 +88,41 @@ function cssVarLine(name, value) {
     return `    --rf-${name}: ${value};`;
 }
 
+/**
+ * Normalises a colour to the spelling this repo's stylelint config requires.
+ *
+ * The generator used to copy token values through verbatim, which made a perfectly schema-valid
+ * `tokens.json` able to produce a RED `npm run stylelint` — on a GENERATED file, where the obvious
+ * fix (edit the file) is undone by the next `generate:tokens`. `#ffffff` tripping `color-hex-length`
+ * is the case that actually happened.
+ *
+ * Two rules, both `color-hex-length: short` and `color-hex-case: lower`:
+ *
+ *   - lowercase the hex digits;
+ *   - collapse `#rrggbb` to `#rgb` and `#rrggbbaa` to `#rgba` when every pair repeats.
+ *
+ * Only hex is touched. `rgb()`, `rgba()`, `hsl()` and `hsla()` are passed through unchanged: their
+ * canonical spelling is a matter of taste rather than of a lint rule this repo enforces, and
+ * rewriting them would change token values a theme author wrote deliberately.
+ *
+ * @param {string} value A colour matching tokens.schema.json's `colorValue`.
+ * @returns {string} The same colour, spelled the way stylelint wants it.
+ */
+export function normaliseColor(value) {
+    const match = /^#([0-9a-fA-F]+)$/.exec(value);
+    if (!match) return value;
+
+    const hex = match[1].toLowerCase();
+    if (hex.length !== 6 && hex.length !== 8) return `#${hex}`;
+
+    const pairs = hex.match(/../g) ?? [];
+    const collapsible = pairs.every((pair) => pair[0] === pair[1]);
+    return `#${collapsible ? pairs.map((pair) => pair[0]).join('') : hex}`;
+}
+
 function colorVarLines(colorGroup) {
     return COLOR_KEYS.map((key) =>
-        cssVarLine(`color-${toKebabCase(key)}`, colorGroup[key])
+        cssVarLine(`color-${toKebabCase(key)}`, normaliseColor(colorGroup[key]))
     );
 }
 
@@ -336,4 +368,14 @@ function main() {
     );
 }
 
-main();
+/*
+ * Only when run as a script. `normaliseColor` is exported and imported by the test suite, and an
+ * unguarded `main()` would mean importing this module writes files as a side effect — a test that
+ * merely wanted the pure function would silently regenerate `src/ui/tokens/`.
+ */
+if (
+    process.argv[1] &&
+    resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+    main();
+}

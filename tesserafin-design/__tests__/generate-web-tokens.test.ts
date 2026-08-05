@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+import { normaliseColor } from '../scripts/generate-web-tokens.mjs';
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..', '..');
 const GENERATOR_PATH = join(
@@ -115,5 +117,83 @@ describe('generate-web-tokens.mjs', () => {
 
         expect(secondCss).toBe(firstCss);
         expect(secondTs).toBe(firstTs);
+    });
+});
+
+describe('normaliseColor', () => {
+    it.each([
+        // The case that actually happened: schema-valid source, stylelint-red generated file.
+        ['#ffffff', '#fff'],
+        ['#FFFFFF', '#fff'],
+        ['#000000', '#000'],
+        ['#ffffffff', '#ffff'],
+        ['#AABBCC', '#abc']
+    ])('collapses and lowercases %s to %s', (input, expected) => {
+        expect(normaliseColor(input)).toBe(expected);
+    });
+
+    it.each(['#101010', '#202020', '#00a4dc', '#f2f2f2', '#0b0e14'])(
+        'leaves %s alone — its pairs do not repeat',
+        (input) => {
+            expect(normaliseColor(input)).toBe(input);
+        }
+    );
+
+    it.each([
+        'rgba(255, 255, 255, 0.7)',
+        'rgb(1, 2, 3)',
+        'hsl(0, 0%, 100%)',
+        'hsla(0, 0%, 100%, 0.5)'
+    ])('passes %s through unchanged', (input) => {
+        // Their canonical spelling is taste, not a lint rule this repo enforces, and rewriting them
+        // would change a value a theme author wrote deliberately.
+        expect(normaliseColor(input)).toBe(input);
+    });
+
+    it('lowercases a 3-digit hex without touching its length', () => {
+        expect(normaliseColor('#ABC')).toBe('#abc');
+    });
+
+    it('is idempotent', () => {
+        for (const input of ['#ffffff', '#101010', '#ABC', 'rgb(1, 2, 3)']) {
+            expect(normaliseColor(normaliseColor(input))).toBe(
+                normaliseColor(input)
+            );
+        }
+    });
+});
+
+describe('the generated CSS is spelled the way stylelint requires', () => {
+    it('emits normalised colours even when the source is not normalised', () => {
+        runGenerator();
+        const css = readFileSync(OUTPUT_CSS, 'utf8');
+        // Every hex in the generated stylesheet is already in its shortest lowercase form, so
+        // `npm run stylelint` cannot go red on a file nobody can usefully edit.
+        const hexes = css.match(/#[0-9a-fA-F]{3,8}\b/g) ?? [];
+        expect(hexes.length).toBeGreaterThan(0);
+        for (const hex of hexes) {
+            expect(hex).toBe(normaliseColor(hex));
+        }
+    });
+
+    it('leaves the generated TypeScript mirroring the source verbatim', () => {
+        runGenerator();
+        const ts = readFileSync(OUTPUT_TS, 'utf8');
+        const tokens = JSON.parse(
+            readFileSync(
+                join(
+                    REPO_ROOT,
+                    'tesserafin-design',
+                    'themes',
+                    'classic',
+                    'tokens.json'
+                ),
+                'utf8'
+            )
+        );
+        // Normalisation is a CSS-spelling concern. `TesserafinTokens` consumers compare against the
+        // source token set, so the .ts must keep the source's exact strings — otherwise a theme's
+        // declared value and the value the app reads back would differ by spelling.
+        expect(ts).toContain(`primary: '${tokens.color.dark.primary}'`);
     });
 });
