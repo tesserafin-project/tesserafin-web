@@ -26,6 +26,17 @@
             "shell": "sidebar",
             "labels": "always",
             "position": "start"
+        },
+        "page": {
+            "home": {
+                "sections": [
+                    "libraries",
+                    "continueWatching",
+                    "nextUp",
+                    "latestMedia"
+                ],
+                "shelfDensity": "comfortable"
+            }
         }
     },
     "capabilities": {
@@ -33,7 +44,8 @@
         "optional": [
             "presentation.surface",
             "presentation.mediaCard",
-            "presentation.navigation"
+            "presentation.navigation",
+            "presentation.page.home"
         ]
     },
     "renderers": {
@@ -43,7 +55,8 @@
                 "tokens.profiles",
                 "presentation.surface",
                 "presentation.mediaCard",
-                "presentation.navigation"
+                "presentation.navigation",
+                "presentation.page.home"
             ],
             "source": {
                 "kind": "none"

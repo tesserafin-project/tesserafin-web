@@ -2,6 +2,13 @@ import React, { type FC, type ReactNode } from 'react';
 
 import './MediaShelf.scss';
 
+/**
+ * The three densities of the published contract. Exactly `presentation.page.home.shelfDensity`'s
+ * vocabulary (`theme.schema.json` `$defs.pageRecipes.home.shelfDensity`), so a resolved recipe can
+ * be handed to this prop without a translation table that could drift from the schema.
+ */
+export type MediaShelfDensity = 'compact' | 'comfortable' | 'spacious';
+
 export interface MediaShelfProps {
     title: string;
     /** Renders a "view all" link next to the title when set. */
@@ -9,7 +16,7 @@ export interface MediaShelfProps {
     /** Label for the "view all" link; required together with `viewAllHref`. */
     viewAllLabel?: string;
     /** Maps to `--rf-spacing-*` gap/padding between cards. */
-    density?: 'comfortable' | 'compact';
+    density?: MediaShelfDensity;
     /** `MediaCard` elements (or any content) to lay out in the horizontal scroller. */
     children: ReactNode;
     className?: string;

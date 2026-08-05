@@ -119,3 +119,20 @@
     gap: var(--rf-spacing-sm);
     padding: var(--rf-spacing-sm);
 }
+
+/*
+ * The `hero` Home section, previewed. Fixtures carry no image URLs on purpose (see `fixtures.ts`),
+ * so this is the artwork-free equivalent of the live `HomeHero`: same slot in the composition, same
+ * tokens, no network.
+ */
+.rf-studio-preview__home-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-xs);
+    min-height: 6rem;
+    justify-content: flex-end;
+    padding: var(--rf-spacing-lg);
+    border-radius: var(--rf-shape-radius-lg);
+    background-color: var(--rf-color-surface-variant);
+    box-shadow: var(--rf-elevation-level2);
+}

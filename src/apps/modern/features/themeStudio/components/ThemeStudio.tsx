@@ -233,6 +233,37 @@ export const ThemeStudio: FC = () => {
                                 </Alert>
                             )}
 
+                            {state.resolution &&
+                                !state.resolution.activatable && (
+                                    <Alert
+                                        severity='error'
+                                        data-testid='theme-studio-required-unsupported'
+                                    >
+                                        <AlertTitle>
+                                            This theme cannot be applied to the
+                                            Web renderer
+                                        </AlertTitle>
+                                        <p>
+                                            {`It lists ${state.resolution.missingRequired
+                                                .map(
+                                                    (capability) =>
+                                                        `"${capability}"`
+                                                )
+                                                .join(
+                                                    ', '
+                                                )} under "capabilities.required", and this renderer does not implement it. A required capability is a refusal, not a downgrade — falling back would render a theme its author did not design.`}
+                                        </p>
+                                        <p>
+                                            Move it to{' '}
+                                            <code>capabilities.optional</code>{' '}
+                                            to let it fall back to the platform
+                                            default here while still being
+                                            honoured by a renderer that
+                                            implements it.
+                                        </p>
+                                    </Alert>
+                                )}
+
                             {(state.resolution?.fallbacks.length ?? 0) > 0 && (
                                 <Alert severity='info'>
                                     <AlertTitle>
@@ -418,7 +449,10 @@ export const ThemeStudio: FC = () => {
                                 <Button
                                     variant='contained'
                                     onClick={apply}
-                                    disabled={state.issues.length > 0}
+                                    disabled={
+                                        state.issues.length > 0 ||
+                                        state.resolution?.activatable === false
+                                    }
                                     data-testid='theme-studio-apply'
                                 >
                                     Apply to Tesserafin

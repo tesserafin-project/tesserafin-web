@@ -52,7 +52,7 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
 /**
  * What the WEB renderer implements today.
  *
- * Deliberately narrower than {@link THEME_CAPABILITIES}. The five capabilities absent here are
+ * Deliberately narrower than {@link THEME_CAPABILITIES}. The four capabilities absent here are
  * DEFINED by the contract and NOT YET BOUND by this renderer, and the honest way to say that is to
  * leave them out of this list and let the resolver fall back, rather than to omit them from the
  * contract and pretend the vocabulary is smaller than the product direction requires.
@@ -64,6 +64,10 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
  * #117, not a loader, so it moved from "declared" to "declared and not yet bound" — the same
  * correction #122 made in the other direction for `presentation.*`.
  *
+ * `presentation.page.home` joined this list once the modern Home route actually read the resolved
+ * recipe (`apps/modern/features/home`), and not before. `.library` and `.itemDetails` stay off it
+ * for exactly the reason `.home` used to: their routes do not read a recipe yet.
+ *
  * `source.web.css` in particular is the advanced CSS/SCSS/LESS/Sass authoring layer: the manifest
  * reserves its shape (`renderers.web.source`) so the package format is already right, while the
  * schema accepts only `kind: "none"` until an isolated compiler boundary exists (RFC-0007 §7).
@@ -73,7 +77,8 @@ export const WEB_RENDERER_CAPABILITIES: readonly ThemeCapability[] = [
     'tokens.profiles',
     'presentation.surface',
     'presentation.mediaCard',
-    'presentation.navigation'
+    'presentation.navigation',
+    'presentation.page.home'
 ] as const;
 
 export type ThemeMode = 'light' | 'dark';
@@ -122,13 +127,48 @@ export interface NavigationPresentation {
     position?: 'start' | 'end';
 }
 
-export type HomeSection =
-    | 'hero'
-    | 'continueWatching'
-    | 'nextUp'
-    | 'latestMedia'
-    | 'libraries'
-    | 'recommendations';
+/**
+ * The sections a Home recipe may order. UNIVERSAL vocabulary: it names sections every renderer
+ * could offer, not the ones the Web renderer happens to have built.
+ *
+ * A recipe SELECTS AND ORDERS sections. It never decides what a section contains, and it never
+ * decides whether a section's data is requested — the Home route issues the same queries under
+ * every recipe (RFC-0007 §6.1). Omitting a section from a recipe is a presentation choice about
+ * what is shown, and is deliberately NOT a way to influence ranking or fetching.
+ *
+ * `latestMedia` is the one 1:N token: it expands to one shelf per eligible user view, so a recipe
+ * cannot address an individual library — which libraries exist is authorization state.
+ *
+ * `recommendations` is DECLARED and NOT RENDERED by the Web renderer. It would need the
+ * `/Movies/Recommendations` query, and a recipe token that makes a request fire is a theme
+ * controlling API queries. Web therefore renders nothing for it; see
+ * `apps/modern/features/home/utils/homeRecipe.ts` and
+ * `docs/tesserafin/presentation-boundary.md`. It is kept in the vocabulary because dropping a
+ * universal-layer name for a Web gap is precisely how the universal layer becomes Web-only.
+ */
+export const HOME_SECTIONS = [
+    'hero',
+    'continueWatching',
+    'nextUp',
+    'latestMedia',
+    'libraries',
+    'recommendations'
+] as const;
+
+export type HomeSection = (typeof HOME_SECTIONS)[number];
+
+/**
+ * A runtime list, not only a type, because the applied-presentation record in `localStorage` is
+ * hand-editable: the resolver has to be able to reject a section name at runtime, and a TypeScript
+ * union cannot do that. Same reason for {@link HOME_SHELF_DENSITIES}.
+ */
+export const HOME_SHELF_DENSITIES = [
+    'compact',
+    'comfortable',
+    'spacious'
+] as const;
+
+export type HomeShelfDensity = (typeof HOME_SHELF_DENSITIES)[number];
 
 export type ItemDetailsSection =
     | 'overview'
@@ -137,11 +177,13 @@ export type ItemDetailsSection =
     | 'related'
     | 'mediaInfo';
 
+export interface HomeRecipe {
+    sections?: readonly HomeSection[];
+    shelfDensity?: HomeShelfDensity;
+}
+
 export interface PageRecipes {
-    home?: {
-        sections?: readonly HomeSection[];
-        shelfDensity?: 'compact' | 'comfortable' | 'spacious';
-    };
+    home?: HomeRecipe;
     library?: {
         layout?: 'grid' | 'shelf';
         cardAspect?: 'poster' | 'backdrop' | 'square';

@@ -36,9 +36,15 @@ describe('resolvePresentation — defaults', () => {
 });
 
 describe('resolvePresentation — capability fallback', () => {
+    /*
+     * Re-pointed from `presentation.page.home` to `.itemDetails` when the Home binding landed:
+     * these two cases need a capability the Web renderer does NOT implement, and `.home` stopped
+     * being one. Re-pointing keeps the assertions exactly as strong; relaxing them to accommodate
+     * the new support would have deleted the only coverage of the fallback path.
+     */
     const pageTheme: PresentationInput = {
         presentation: {
-            page: { home: { sections: ['hero', 'continueWatching'] } }
+            page: { itemDetails: { hero: 'minimal', sections: ['overview'] } }
         }
     };
 
@@ -47,13 +53,14 @@ describe('resolvePresentation — capability fallback', () => {
             pageTheme,
             WEB_RENDERER_CAPABILITIES
         );
-        // presentation.page.home is DEFINED by the contract and NOT YET BOUND by the Web renderer.
-        expect(presentation.page.home.sections).toEqual(
-            PLATFORM_DEFAULT_PRESENTATION.page.home.sections
+        // presentation.page.itemDetails is DEFINED by the contract and NOT YET BOUND by the Web
+        // renderer — its route does not read a recipe.
+        expect(presentation.page.itemDetails).toEqual(
+            PLATFORM_DEFAULT_PRESENTATION.page.itemDetails
         );
         expect(fallbacks).toEqual([
             {
-                capability: 'presentation.page.home',
+                capability: 'presentation.page.itemDetails',
                 reason: 'unsupported-by-renderer'
             }
         ]);
@@ -62,16 +69,36 @@ describe('resolvePresentation — capability fallback', () => {
     it('applies the theme value once a renderer declares the capability', () => {
         const future: readonly ThemeCapability[] = [
             ...WEB_RENDERER_CAPABILITIES,
-            'presentation.page.home'
+            'presentation.page.itemDetails'
         ];
         const { presentation, fallbacks } = resolvePresentation(
             pageTheme,
             future
         );
+        expect(presentation.page.itemDetails.hero).toBe('minimal');
+        expect(presentation.page.itemDetails.sections).toEqual(['overview']);
+        expect(fallbacks).toEqual([]);
+    });
+
+    it('honours a Home recipe, because the Web renderer now implements it', () => {
+        const { presentation, fallbacks } = resolvePresentation(
+            {
+                presentation: {
+                    page: {
+                        home: {
+                            sections: ['hero', 'continueWatching'],
+                            shelfDensity: 'spacious'
+                        }
+                    }
+                }
+            },
+            WEB_RENDERER_CAPABILITIES
+        );
         expect(presentation.page.home.sections).toEqual([
             'hero',
             'continueWatching'
         ]);
+        expect(presentation.page.home.shelfDensity).toBe('spacious');
         expect(fallbacks).toEqual([]);
     });
 

@@ -76,6 +76,10 @@
     gap: var(--rf-spacing-xs, 4px);
 }
 
+.rf-media-shelf__scroller--spacious {
+    gap: var(--rf-spacing-xl, 32px);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .rf-media-shelf__scroller {
         scroll-behavior: auto;

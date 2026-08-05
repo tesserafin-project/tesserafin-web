@@ -12,12 +12,15 @@ import {
 } from 'ui/tokens/profiles';
 import { toCustomProperties } from 'ui/tokens/projectTokens';
 
+import { toRenderedHomeSections } from 'apps/modern/features/home/utils/homeRecipe';
+
 import type { ThemeDraft } from '../draftFormat';
 import {
     PREVIEW_DETAIL,
+    PREVIEW_HERO_ITEM,
+    PREVIEW_HOME_SHELVES,
     PREVIEW_LIBRARY_ITEMS,
-    PREVIEW_NAV_ITEMS,
-    PREVIEW_SHELVES
+    PREVIEW_NAV_ITEMS
 } from '../fixtures';
 
 import './PreviewCanvas.scss';
@@ -85,10 +88,23 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
         return toCustomProperties(resolved, mode) as React.CSSProperties;
     }, [draft.tokens, activeProfiles, mode]);
 
-    const density =
-        presentation.page.home.shelfDensity === 'compact'
-            ? 'compact'
-            : 'comfortable';
+    /*
+     * The recipe's own density, not a two-value approximation of it: `MediaShelf` speaks the full
+     * `compact | comfortable | spacious` vocabulary, and clamping `spacious` here would have made
+     * the Studio's density control look inert in its own preview.
+     *
+     * `MediaGrid` (the library surface) still has only two densities, so `spacious` maps to
+     * `comfortable` there — the library recipe is not bound yet, and widening a second primitive is
+     * not this change's business.
+     */
+    const density = presentation.page.home.shelfDensity;
+    const gridDensity = density === 'compact' ? 'compact' : 'comfortable';
+
+    // The SAME function the live Home route calls, deliberately. A preview that ordered sections
+    // its own way would be a picture of a Home that does not exist.
+    const homeSections = toRenderedHomeSections(
+        presentation.page.home.sections
+    );
 
     return (
         <div
@@ -119,37 +135,62 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
 
             <div className='rf-studio-preview__body'>
                 {surface === 'home' && (
-                    <>
-                        {PREVIEW_SHELVES.map((shelf) => (
-                            <MediaShelf
-                                key={shelf.id}
-                                title={shelf.title}
-                                density={density}
-                            >
-                                {shelf.items.map((item) => (
-                                    <MediaCard
-                                        key={item.id}
-                                        title={item.title}
-                                        subtitle={item.subtitle}
-                                        imageAspect={
-                                            presentation.mediaCard.imageAspect
-                                        }
-                                        progressPercent={
-                                            presentation.mediaCard
-                                                .progressStyle === 'bar'
-                                                ? item.progressPercent
-                                                : undefined
-                                        }
-                                        placeholderIcon={
-                                            <span aria-hidden='true'>
-                                                {item.title.charAt(0)}
-                                            </span>
-                                        }
-                                    />
-                                ))}
-                            </MediaShelf>
-                        ))}
-                    </>
+                    <div data-testid='theme-studio-preview-home'>
+                        {homeSections.map((section) => {
+                            if (section === 'hero') {
+                                return (
+                                    <div
+                                        key='hero'
+                                        className='rf-studio-preview__home-hero'
+                                        data-rf-preview-section='hero'
+                                    >
+                                        <span className='rf-studio-preview__title'>
+                                            {PREVIEW_HERO_ITEM.title}
+                                        </span>
+                                        <span className='rf-studio-preview__tagline'>
+                                            {PREVIEW_HERO_ITEM.subtitle}
+                                        </span>
+                                    </div>
+                                );
+                            }
+
+                            const shelf = PREVIEW_HOME_SHELVES[section];
+                            return (
+                                <div
+                                    key={section}
+                                    data-rf-preview-section={section}
+                                >
+                                    <MediaShelf
+                                        title={shelf.title}
+                                        density={density}
+                                    >
+                                        {shelf.items.map((item) => (
+                                            <MediaCard
+                                                key={item.id}
+                                                title={item.title}
+                                                subtitle={item.subtitle}
+                                                imageAspect={
+                                                    presentation.mediaCard
+                                                        .imageAspect
+                                                }
+                                                progressPercent={
+                                                    presentation.mediaCard
+                                                        .progressStyle === 'bar'
+                                                        ? item.progressPercent
+                                                        : undefined
+                                                }
+                                                placeholderIcon={
+                                                    <span aria-hidden='true'>
+                                                        {item.title.charAt(0)}
+                                                    </span>
+                                                }
+                                            />
+                                        ))}
+                                    </MediaShelf>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
 
                 {surface === 'library' && (
@@ -170,7 +211,7 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
                             aria-label='Preview library sections'
                         />
                         <MediaGrid
-                            density={density}
+                            density={gridDensity}
                             aria-label='Preview library items'
                         >
                             {PREVIEW_LIBRARY_ITEMS.map((item) => (

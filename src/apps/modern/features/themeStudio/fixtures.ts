@@ -34,8 +34,20 @@ function item(
     return { id, title, subtitle, progressPercent };
 }
 
-export const PREVIEW_SHELVES: readonly PreviewShelf[] = [
-    {
+/**
+ * One synthetic shelf per Home recipe section the Web renderer draws, keyed by the CONTRACT's
+ * section token rather than by a preview-only id.
+ *
+ * Keyed that way on purpose: `PreviewCanvas` orders these with the same
+ * `toRenderedHomeSections()` the live Home route uses, so the preview cannot end up understanding
+ * a recipe differently from the app. A separate preview-only shelf list is precisely how the two
+ * would drift.
+ *
+ * `hero` has no shelf — it previews {@link PREVIEW_HERO_ITEM}, the same "first resumable item"
+ * shape the live hero composes from Continue Watching.
+ */
+export const PREVIEW_HOME_SHELVES = {
+    continueWatching: {
         id: 'continue-watching',
         title: 'Continue watching',
         items: [
@@ -45,7 +57,16 @@ export const PREVIEW_SHELVES: readonly PreviewShelf[] = [
             item('cw-4', 'Meridian', '2h 07m', 4)
         ]
     },
-    {
+    nextUp: {
+        id: 'next-up',
+        title: 'Next up',
+        items: [
+            item('nu-1', 'The Quiet Harbour', 'S2 · E5'),
+            item('nu-2', 'Glasshouse', 'S1 · E10'),
+            item('nu-3', 'Signal Hill', 'S3 · E1')
+        ]
+    },
+    latestMedia: {
         id: 'latest-media',
         title: 'Recently added',
         items: [
@@ -56,8 +77,22 @@ export const PREVIEW_SHELVES: readonly PreviewShelf[] = [
             item('lm-5', 'Tessera', '2024'),
             item('lm-6', 'Ninth Wave', '2021')
         ]
+    },
+    libraries: {
+        id: 'libraries',
+        title: 'My media',
+        items: [
+            item('mv-1', 'Movies', ''),
+            item('mv-2', 'Shows', ''),
+            item('mv-3', 'Music', ''),
+            item('mv-4', 'Books', '')
+        ]
     }
-];
+} as const satisfies Readonly<Record<string, PreviewShelf>>;
+
+/** The item the `hero` section previews. Same first-resumable-item rule as the live hero. */
+export const PREVIEW_HERO_ITEM: PreviewItem = PREVIEW_HOME_SHELVES
+    .continueWatching.items[0] as PreviewItem;
 
 export const PREVIEW_LIBRARY_ITEMS: readonly PreviewItem[] = [
     item('lib-1', 'Aurora Bay', '2024'),

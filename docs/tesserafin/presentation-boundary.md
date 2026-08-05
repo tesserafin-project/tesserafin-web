@@ -11,13 +11,15 @@ server capability — see [§1](#1-this-is-a-renderer-boundary-not-a-server-gap)
 
 ## 1. This is a renderer boundary, not a server gap
 
-`presentation.page.home`, `.library` and `.itemDetails` are unbound because **their routes do not
-read a recipe**, not because the server cannot answer something.
+`presentation.page.library` and `.itemDetails` are unbound because **their routes do not read a
+recipe**, not because the server cannot answer something.
 
-The evidence is direct. A page recipe orders and selects sections the route ALREADY renders from
-data it ALREADY fetches — Home issues `getUserViews`, `getResumeItems`, `getNextUp` and
-`getLatestMedia` today, under every theme, and a recipe that reorders those sections needs no fifth
-request. Composition is a client-side ordering of data the client already has.
+The evidence is now direct rather than argued: `presentation.page.home` was bound with **no server
+change at all**. Home issues `getUserViews`, `getResumeItems`, `getNextUp` and `getLatestMedia`
+today, under every theme, and `HomeTab.recipe.test.tsx` asserts that request set is identical under
+every recipe — including one that omits a section entirely. Composition is a client-side ordering of
+data the client already has, and Library and Item Details are the same shape of problem: React work
+inside `src/apps/modern`, not API work.
 
 Nothing in the theme contract reaches the server either. `theme.json` is a static document; the
 manifest lookup (`src/themes/platform/manifests.ts`) imports it at build time; the applied local
@@ -72,7 +74,7 @@ Three outcomes:
 
 | Route family | Paths | `src/ui` | `Presentation Context` | `--rf-*` | Prohibited | Outcome |
 |---|---|---|---|---|---|---|
-| **Home** | `/home` | yes (4 files) | **yes** | yes | none | **1 — ready, recipe unbound** |
+| **Home** | `/home` | yes (5 files) | **yes** | yes | none | **1 — ready, and BOUND** |
 | Library | `/library/:libraryId[/:destination]` | yes (6 files) | no | yes | none | 1 — ready, recipe unbound |
 | Theme Studio | `/themestudio` | via direct component imports | no (renders its own resolution) | yes (5 files) | none | 1 — ready |
 | Libraries (`movies`, `music`, `tv`, `books`, `boxsets`, `playlists`, `musicvideos`, `mixed`, `livetv`, `homevideos`) | 10 paths | no | no | no | `cardbuilder` (5 files), `mui-internals` (1 file) | **2 — hybrid** |
@@ -128,11 +130,23 @@ needs a package format and an integrity model first — see §5.
 
 ---
 
-## 5. What is still open
+## 5. What the Home vertical proves, and what is still open
 
-Four things, and none of them is a server gap:
+**Proves.** A theme can order and select a live page's sections and set its shelf density, and that
+choice survives Apply → reload → reset. Demonstrated in a real browser against a seeded Tesserafin
+server (`tests/e2e/home-composition.spec.ts`):
 
-1. `presentation.page.home`, `.library` and `.itemDetails` — declared, resolved, read by no route.
+```
+official  My Media · Continue Watching · Next Up · Recently Added in Movies · Recently Added in Shows
+applied   Harbour Lights (hero) · Continue Watching · Next Up · Recently Added x2 · My Media
+```
+
+with no server change, no `if (themeId === …)` anywhere in `ui/` or `apps/modern/features/home/`,
+no legacy selector exposed as public theme API, and no change to the requests the page issues.
+
+**Still open.** Four things, and none of them is a server gap:
+
+1. `presentation.page.library` and `.itemDetails` — declared, resolved, read by no route.
 2. `assets.roles` — declared, unbound, blocked on #117's package format and integrity model. It maps
    a role to a PACKAGE-RELATIVE path, and there is no theme package yet, so there is no file a
    loader could resolve.
@@ -142,12 +156,18 @@ Four things, and none of them is a server gap:
    would be a theme controlling API queries — forbidden by RFC-0007 §6.1. Offering it always, for
    every theme, is a **product** decision about what Home contains, not a theming one.
 
-### 5.1 The line a page binding must not cross
+### 5.1 Composition is not a ranking engine
 
-Whichever route is bound first, the same rule applies: a recipe hides a section; it must never stop
-that section's fetch. Home fetches `latestMedia` per library view from a child component, so
-"omit the section" and "do not mount the child" are one keystroke apart — and taking that keystroke
-would let a theme decide what the client asks the server for.
+A recipe hides a section; it never stops that section's fetch. Home fetches `latestMedia` per
+library view from a child component, so "omit the section" and "do not mount the child" are one
+keystroke apart — and taking that keystroke would let a theme decide what the client asks the server
+for. `LatestMediaSection` is therefore mounted even when the recipe omits it, `hidden`: it renders
+nothing and still issues its per-view query.
+
+The hero follows the same rule in the other direction. It is composed from Continue Watching / Next
+Up data the page already has, it issues no query of its own, and the featured item is **not** removed
+from its shelf — de-duplicating would mean the presence of `hero` in a recipe changed the contents
+of another section.
 
 **Omitting a section is a presentation choice about what is shown; the data-fetch and business
 semantics behind it stay unchanged.** If a section should ever stop being fetched, that is a product
@@ -155,17 +175,15 @@ decision recorded as such, not a side effect of a theme.
 
 ---
 
-## 6. The next vertical: Home, then Library — and Item Details last
+## 6. The next vertical: Library, not Item Details
 
-**Home** first. It is the only route family already reading `PresentationContext`, its slice has an
-empty baseline, and `presentation.page.home`'s vocabulary (section order, shelf density) maps onto
-sections `HomeTab` already renders. Binding it needs no migration at all.
+**Home** is done — it needed no migration at all.
 
-**Library** second. Its slice is also outcome 1 — six files on `src/ui`, `--rf-*` tokens, zero
+**Library** next. Its slice is also outcome 1 — six files on `src/ui`, `--rf-*` tokens, zero
 prohibited dependencies — and `presentation.page.library`'s vocabulary (`layout`, `cardAspect`,
 `filters`) maps onto controls `LibraryView` already has.
 
-**Item Details** last. It is a legacy `controller` + `view.html` route (§3.2), so binding
+**Item Details** after that. It is a legacy `controller` + `view.html` route (§3.2), so binding
 `presentation.page.itemDetails` means first rewriting it in modern React on `src/ui` — a migration,
 not a binding, and a much larger change with a different risk profile.
 
