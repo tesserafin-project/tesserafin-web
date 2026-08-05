@@ -76,6 +76,15 @@ export const MediaCard: FC<MediaCardProps> = ({
                     <span
                         className='rf-media-card__progress'
                         role='progressbar'
+                        /*
+                         * A `role="progressbar"` with no accessible name is announced as a bare
+                         * percentage — "62%", of nothing. Naming it after the card's title is the
+                         * only information that makes the number mean anything, and it is WCAG
+                         * 4.1.2. `aria-label` rather than `aria-labelledby` pointing at the title
+                         * element: the title has no id, and minting one per card would put an id
+                         * collision one duplicate title away.
+                         */
+                        aria-label={title}
                         aria-valuenow={progressPercent}
                         aria-valuemin={0}
                         aria-valuemax={100}
