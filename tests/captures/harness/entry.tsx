@@ -32,15 +32,44 @@ import './harness.scss';
 
 const params = new URLSearchParams(window.location.search);
 
-function param<T extends string>(name: string, fallback: T): T {
-    return (params.get(name) as T | null) ?? fallback;
+/**
+ * Reads a URL parameter, accepting ONLY a value from `allowed`.
+ *
+ * Every knob here comes from the query string, and CodeQL was right to flag the first version:
+ * the token side was interpolated straight into a fetch path, so any string in the URL became part
+ * of a request URL — client-side request forgery, even in a test harness served from a throwaway
+ * static server.
+ *
+ * Validating against a closed list rather than escaping the value is the fix that generalises: an
+ * unrecognised value cannot reach the URL at all, and adding a new option means adding it to the
+ * list rather than remembering to sanitise a new call site.
+ */
+function param<T extends string>(
+    name: string,
+    allowed: readonly T[],
+    fallback: T
+): T {
+    const raw = params.get(name);
+    return allowed.find((candidate) => candidate === raw) ?? fallback;
 }
 
+/** The two token sets `prepare-tokens.mjs` writes. Nothing else is fetchable. */
+const TOKEN_SIDES = ['before', 'after'] as const;
+const PROFILES = ['pointer', 'touch', 'remote'] as const;
+const SURFACES = ['home', 'library', 'itemDetails'] as const;
+const MODES = ['dark', 'light'] as const;
+
+/** The fetch URLs, chosen by lookup rather than built by interpolation. */
+const TOKEN_URLS: Record<(typeof TOKEN_SIDES)[number], string> = {
+    before: '/__tokens__/classic.before.json',
+    after: '/__tokens__/classic.after.json'
+};
+
 async function main() {
-    const side = param('tokens', 'after');
+    const side = param('tokens', TOKEN_SIDES, 'after');
 
     const [tokens, manifest] = await Promise.all([
-        fetch(`/__tokens__/classic.${side}.json`).then(
+        fetch(TOKEN_URLS[side]).then(
             (response) => response.json() as Promise<TesserafinTokens>
         ),
         fetch('/__tokens__/classic.manifest.json').then(
@@ -69,11 +98,11 @@ async function main() {
         <PreviewCanvas
             draft={draft}
             presentation={resolution.presentation}
-            profile={param<PreviewProfile>('profile', 'pointer')}
-            mode={param<'light' | 'dark'>('mode', 'dark')}
+            profile={param<PreviewProfile>('profile', PROFILES, 'pointer')}
+            mode={param('mode', MODES, 'dark')}
             reducedMotion={params.get('reducedMotion') === '1'}
             reducedTransparency={params.get('reducedTransparency') === '1'}
-            surface={param<PreviewSurface>('surface', 'home')}
+            surface={param<PreviewSurface>('surface', SURFACES, 'home')}
         />
     );
 
