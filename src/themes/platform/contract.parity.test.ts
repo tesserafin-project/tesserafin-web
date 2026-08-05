@@ -27,12 +27,37 @@ describe('contract.ts <-> theme.schema.json', () => {
         }
     });
 
-    it('leaves the not-yet-bound capabilities out of the Web renderer list', () => {
-        // The point of the capability mechanism is that "defined" and "implemented" are different
-        // statements. If these ever appear here, the renderer must really implement them.
-        expect(WEB_RENDERER_CAPABILITIES).not.toContain('source.web.css');
-        expect(WEB_RENDERER_CAPABILITIES).not.toContain(
-            'presentation.page.home'
+    it.each([
+        'source.web.css',
+        'presentation.page.home',
+        'presentation.page.library',
+        'presentation.page.itemDetails',
+        // Removed once it was checked: a theme's `assets` block names a package-relative path, and
+        // there is no theme package, so nothing could have resolved one. Binding it needs the
+        // package format (#117), not a loader.
+        'assets.roles'
+    ])(
+        'leaves the not-yet-bound capability %s out of the Web renderer list',
+        (capability) => {
+            // The point of the capability mechanism is that "defined" and "implemented" are
+            // different statements. If one of these appears here, the renderer must really
+            // implement it — and there must be code reading it, not just a name in a list.
+            expect(WEB_RENDERER_CAPABILITIES).not.toContain(capability);
+        }
+    );
+
+    it('names every capability as either implemented or not-yet-bound, with none unaccounted for', () => {
+        // A new capability added to the vocabulary and to neither list would be invisible: no
+        // renderer support, no record that it is pending. This forces the choice to be made.
+        const notYetBound = [
+            'source.web.css',
+            'presentation.page.home',
+            'presentation.page.library',
+            'presentation.page.itemDetails',
+            'assets.roles'
+        ];
+        expect([...WEB_RENDERER_CAPABILITIES, ...notYetBound].sort()).toEqual(
+            [...THEME_CAPABILITIES].sort()
         );
     });
 

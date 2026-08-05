@@ -190,7 +190,7 @@ The capability vocabulary is **closed**:
 |---|---|---|
 | `tokens.core` | The eight token groups | **implemented** |
 | `tokens.profiles` | Per-profile token overrides | **implemented** |
-| `assets.roles` | Asset roles (§4.5) | **implemented** |
+| `assets.roles` | Asset roles (§4.5) | defined, not yet bound |
 | `presentation.surface` | Surface variants | **implemented** |
 | `presentation.mediaCard` | Media-card variants | **implemented** |
 | `presentation.navigation` | Navigation presentation | **implemented** |
@@ -220,7 +220,15 @@ declaration meet:
   or it does not; partially honouring it would produce a presentation neither the theme author nor
   the platform designed.
 
-The four "defined, not yet bound" rows above are the honest half of this design. The alternative —
+**Amended 2026-08-05.** `assets.roles` was originally listed as implemented. It was not: a theme's
+`assets` block names a package-relative path, and there is no theme package — an official theme
+ships no asset files and a local draft is one JSON document with nothing attached. There was no file
+any loader could resolve. Binding it needs the package format (§9, deferred), not a loader, so the
+row was corrected rather than a loader written against nothing. `presentation.surface`,
+`.mediaCard` and `.navigation` moved the other way at the same time: declared before they were read,
+and now genuinely read by `Surface`, `MediaCard` and `FloatingSidebar`.
+
+The five "defined, not yet bound" rows above are the honest half of this design. The alternative —
 leaving page composition and the source layer out of the contract until they are implemented —
 would make the vocabulary look complete when it is not, and would force a breaking contract change
 later. Declaring them and letting them fall back says the true thing, and

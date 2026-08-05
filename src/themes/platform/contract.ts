@@ -52,11 +52,17 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
 /**
  * What the WEB renderer implements today.
  *
- * Deliberately narrower than {@link THEME_CAPABILITIES}. The four capabilities absent here —
- * `presentation.page.*` and `source.web.css` — are DEFINED by the contract and NOT YET BOUND by
- * this renderer, and the honest way to say that is to leave them out of this list and let
- * {@link resolveCapability} fall back, rather than to omit them from the contract and pretend the
- * vocabulary is smaller than the product direction requires.
+ * Deliberately narrower than {@link THEME_CAPABILITIES}. The five capabilities absent here are
+ * DEFINED by the contract and NOT YET BOUND by this renderer, and the honest way to say that is to
+ * leave them out of this list and let the resolver fall back, rather than to omit them from the
+ * contract and pretend the vocabulary is smaller than the product direction requires.
+ *
+ * `assets.roles` was on this list until it was checked. Nothing read it: a theme's `assets` block
+ * maps a role to a PACKAGE-RELATIVE path, and there is no theme package — an official theme ships
+ * no asset files and a local draft is one JSON document with nothing attached to it. There was
+ * therefore no file any loader could have resolved. Binding it needs the package format from
+ * #117, not a loader, so it moved from "declared" to "declared and not yet bound" — the same
+ * correction #122 made in the other direction for `presentation.*`.
  *
  * `source.web.css` in particular is the advanced CSS/SCSS/LESS/Sass authoring layer: the manifest
  * reserves its shape (`renderers.web.source`) so the package format is already right, while the
@@ -65,7 +71,6 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
 export const WEB_RENDERER_CAPABILITIES: readonly ThemeCapability[] = [
     'tokens.core',
     'tokens.profiles',
-    'assets.roles',
     'presentation.surface',
     'presentation.mediaCard',
     'presentation.navigation'
