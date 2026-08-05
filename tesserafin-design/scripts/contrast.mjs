@@ -153,6 +153,20 @@ export function contrastRatio(foreground, background) {
  * applies to the focus indicator and to colour that carries meaning in a UI component, not to a
  * decorative hairline, which is why `divider` is not on this list at all: a divider that met 3:1
  * would be a rule, not a divider, and WCAG does not ask for it.
+ *
+ * ## Why `focus` is measured against `background` and `surface`, and NOT against `primary`
+ *
+ * SC 1.4.11 asks for 3:1 against *adjacent* colours, so the right pairs depend on where the ring is
+ * actually drawn. Every focus ring in this codebase is
+ * `outline: 2px solid var(--rf-color-focus); outline-offset: 2px` — all ten sites, from
+ * `src/styles/focus-visible.scss` to each `src/ui` primitive. A positive offset draws the ring
+ * OUTSIDE the border box, with a background-coloured gap between it and the element's own fill, so
+ * the ring's neighbours on both sides are the background. It never sits on `--rf-color-primary`.
+ *
+ * This is load-bearing, and it is a fact about the STYLESHEETS rather than about the tokens:
+ * `focus` and `primary` may legitimately hold the same value. Introducing a zero or negative
+ * `outline-offset` anywhere would put the ring on top of the element's fill and silently invalidate
+ * this requirement list — at which point `focus/primary` would have to be added here.
  */
 export const CONTRAST_REQUIREMENTS = [
     { foreground: 'text', background: 'background', min: 4.5, sc: '1.4.3' },

@@ -290,6 +290,13 @@ the canonical Tesserafin water accent `#18b8b2` (7.74:1), light Classic a darker
 hue `#0d7a76` (4.62:1), and light Glass the opaque form of its own existing primary `#0a6689`
 (5.71:1).
 
+**Which pairs the gate measures is a fact about the stylesheets, not about the tokens.** Every focus
+ring in this codebase is `outline: 2px solid var(--rf-color-focus); outline-offset: 2px` — all ten
+sites. A positive offset draws the ring outside the border box with a background-coloured gap, so
+its adjacent colours are `background` and `surface`, never the element's own `primary` fill. `focus`
+and `primary` may therefore legitimately hold the same value. A zero or negative `outline-offset`
+introduced later would put the ring on the fill and silently invalidate that requirement list.
+
 Four contrast failures remain, all in Classic's inherited `#00a4dc` primary and `#ed6c02` warning.
 They are recorded in `KNOWN_INSUFFICIENT` and the recording is a **ratchet, not a snapshot**: the
 list is asserted to be exactly the set of current failures, so a pair that starts passing fails the

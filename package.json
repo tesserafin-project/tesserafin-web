@@ -156,6 +156,8 @@
         "test": "vitest --watch=false --config vite.config.ts",
         "test:e2e": "playwright test",
         "test:readers": "playwright test --config playwright.reader.config.ts",
+        "build:captures": "webpack --config webpack.captures.js",
+        "captures": "npm run build:captures && node tests/captures/prepare-tokens.mjs && playwright test --config playwright.captures.config.ts",
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback",

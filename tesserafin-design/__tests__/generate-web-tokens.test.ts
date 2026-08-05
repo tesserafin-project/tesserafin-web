@@ -34,13 +34,46 @@ describe('generate-web-tokens.mjs', () => {
         expect(css).toContain(
             '[data-rf-theme="official.classic"][data-rf-mode="light"]'
         );
-        expect(css).toContain('--rf-color-background: #101010;');
-        expect(css).toContain('--rf-color-primary: #00a4dc;');
-        expect(css).toContain('--rf-shape-radius-md: 0.2em;');
-        expect(css).toContain('--rf-motion-duration-fast: 150ms;');
-        expect(css).toContain('--rf-density: comfortable;');
+        // Read from the source tokens rather than restated as literals. What this test is for is
+        // that the generator emits THE SOURCE VALUE under the right custom-property name — not
+        // that Classic happens to be a particular colour. Hard-coding the palette made a theme
+        // refresh look like a generator regression, and made this assertion something to update
+        // rather than something to satisfy.
+        const tokens = JSON.parse(
+            readFileSync(
+                join(
+                    REPO_ROOT,
+                    'tesserafin-design',
+                    'themes',
+                    'classic',
+                    'tokens.json'
+                ),
+                'utf8'
+            )
+        );
+
+        expect(css).toContain(
+            `--rf-color-background: ${tokens.color.dark.background};`
+        );
+        expect(css).toContain(
+            `--rf-color-primary: ${tokens.color.dark.primary};`
+        );
+        expect(css).toContain(
+            `--rf-shape-radius-md: ${tokens.shape.radius.md};`
+        );
+        expect(css).toContain(
+            `--rf-motion-duration-fast: ${tokens.motion.duration.fast};`
+        );
+        expect(css).toContain(`--rf-density: ${tokens.density};`);
         // Light-mode override block only redeclares the color group, not shared tokens.
-        expect(css).toContain('--rf-color-background: #f2f2f2;');
+        expect(css).toContain(
+            `--rf-color-background: ${tokens.color.light.background};`
+        );
+        // ...and the two modes really are different values, so the assertions above cannot both
+        // be satisfied by a generator that ignored the mode tiers entirely.
+        expect(tokens.color.light.background).not.toBe(
+            tokens.color.dark.background
+        );
     });
 
     it('derives --rf-backdrop-filter-* as "none" (not "blur(0)") for Tesserafin Classic', () => {

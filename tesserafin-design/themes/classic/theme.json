@@ -1,9 +1,9 @@
 {
     "contractVersion": 2,
     "id": "official.classic",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "name": "Tesserafin Classic",
-    "description": "The default Tesserafin experience: opaque surfaces, calm hierarchy, no frosted treatment.",
+    "description": "The default Tesserafin experience: the canonical paper-and-ink palette, the four elements as semantic accents, opaque surfaces, no frosted treatment.",
     "author": "Tesserafin Project",
     "license": "GPL-2.0-or-later",
     "compatibility": {
