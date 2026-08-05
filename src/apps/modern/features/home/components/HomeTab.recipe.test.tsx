@@ -246,7 +246,7 @@ describe('Home composition — two shipped themes, two compositions', () => {
     });
 
     // "No component names a theme id" is asserted over the source of the whole Home vertical by
-    // `apps/modern/routes/presentationBoundary.ratchet.test.ts`, which reads files from disk. It
+    // `tests/boundary/presentationBoundary.ratchet.test.ts`, which reads files from disk. It
     // lives there rather than here because it is a source-level gate, not a render-level one, and
     // because that file is where the rest of the boundary ratchet already lives.
 });
