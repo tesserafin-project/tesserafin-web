@@ -137,6 +137,11 @@ function loadFonts() {
         console.debug('using default fonts');
         import('./styles/fonts.scss');
         import('./styles/fonts.noto.scss');
+        // Figtree, Tesserafin Classic's body face (#114). Loaded beside Noto rather than instead
+        // of it: Figtree is latin-only and the theme token names it FIRST in a stack that still
+        // ends in Noto Sans and its CJK siblings, so non-latin text is unaffected. `unicode-range`
+        // means a subset is fetched only when a glyph in that range is actually rendered.
+        import('./styles/fonts.figtree.scss');
     }
 }
 

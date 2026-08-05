@@ -1,0 +1,14 @@
+// Figtree face declarations only — no `html { font-family }` here, unlike `fonts.noto.scss`.
+//
+// Which family the app uses is a THEME decision now: it comes from
+// `tokens.json`'s `typography.fontFamily.base`, projected as `--rf-typography-font-family-base`.
+// A global `html` rule here would sit outside that contract and quietly win over any theme that
+// chose differently — including a community theme, which is exactly the authority RFC-0007 gives
+// themes and this file must not take back.
+//
+// Loading the faces unconditionally while only Classic's token names Figtree is deliberate and
+// cheap: `unicode-range` plus `font-display: swap` means a browser fetches a subset only when a
+// glyph in that range is actually rendered in that family. A theme that does not name Figtree
+// downloads none of it.
+
+@use "./figtree/index.scss" as *;
