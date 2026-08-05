@@ -42,3 +42,26 @@
     margin: 0.5rem 0 0;
     padding-inline-start: 1.25rem;
 }
+
+/*
+ * The Home composition list. Unstyled markers and a row layout only — every visual decision that a
+ * theme could reasonably want to make is already a token or a recipe value, and the Studio's own
+ * chrome deliberately follows the APP's active theme rather than the draft's (that is what keeps
+ * the preview the only place a draft is visible before Apply).
+ */
+.rf-theme-studio__editor ul.rf-theme-studio__home-sections {
+    margin: 0;
+    padding-inline-start: 0;
+    list-style: none;
+
+    > li {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    > li > :first-child {
+        flex: 1 1 14rem;
+    }
+}

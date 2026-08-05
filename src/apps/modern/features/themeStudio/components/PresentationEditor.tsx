@@ -1,5 +1,8 @@
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -8,7 +11,16 @@ import Typography from '@mui/material/Typography';
 import React, { type FC } from 'react';
 
 import {
+    WEB_RENDERED_HOME_SECTIONS,
+    WEB_UNRENDERED_HOME_SECTIONS
+} from 'apps/modern/features/home/utils/homeRecipe';
+import {
+    HOME_SECTIONS,
+    HOME_SHELF_DENSITIES,
+    PLATFORM_DEFAULT_PRESENTATION,
     WEB_RENDERER_CAPABILITIES,
+    type HomeRecipe,
+    type HomeSection,
     type ThemeCapability,
     type ThemePresentation
 } from 'themes/platform';
@@ -53,6 +65,12 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
         onChange({
             ...presentation,
             navigation: { ...presentation.navigation, [key]: value }
+        });
+
+    const setHome = (home: HomeRecipe) =>
+        onChange({
+            ...presentation,
+            page: { ...presentation.page, home }
         });
 
     return (
@@ -131,24 +149,184 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
                 </Alert>
             </Section>
 
-            <Section title='Page composition'>
+            <Section title='Home composition'>
+                {supports('presentation.page.home') ? (
+                    <HomeCompositionEditor
+                        recipe={presentation.page?.home}
+                        onChange={setHome}
+                    />
+                ) : (
+                    <Alert severity='warning' variant='outlined'>
+                        The Home composition recipe is defined by the contract
+                        and <strong>not bound</strong> by this renderer, so
+                        editing it here is disabled.
+                    </Alert>
+                )}
+            </Section>
+
+            <Section title='Other page composition'>
                 <Alert severity='warning' variant='outlined'>
-                    Home, Library and Item Details composition recipes are
-                    defined by the contract and <strong>not yet bound</strong>{' '}
-                    by the Web renderer. A theme may declare them today; this
-                    renderer falls back to the platform default and reports the
-                    fallback. Editing them here is disabled until the binding
-                    lands, so the Studio does not offer a control that would do
+                    Library and Item Details composition recipes are defined by
+                    the contract and <strong>not yet bound</strong> by the Web
+                    renderer. A theme may declare them today; this renderer
+                    falls back to the platform default and reports the fallback.
+                    Editing them here is disabled until their routes read a
+                    recipe, so the Studio does not offer a control that would do
                     nothing.
                 </Alert>
-                <Choice
-                    label='Home sections'
-                    value='platform default'
-                    options={['platform default']}
-                    disabled={!supports('presentation.page.home')}
-                    onChange={() => undefined}
-                />
             </Section>
+        </Stack>
+    );
+};
+
+const DEFAULT_HOME = PLATFORM_DEFAULT_PRESENTATION.page.home;
+
+const RENDERED_BY_WEB: ReadonlySet<string> = new Set(
+    WEB_RENDERED_HOME_SECTIONS
+);
+
+const SECTION_LABELS: Record<HomeSection, string> = {
+    hero: 'Hero',
+    continueWatching: 'Continue watching',
+    nextUp: 'Next up',
+    latestMedia: 'Latest from each library',
+    libraries: 'My media',
+    recommendations: 'Recommendations'
+};
+
+interface HomeCompositionEditorProps {
+    recipe: HomeRecipe | undefined;
+    onChange: (recipe: HomeRecipe) => void;
+}
+
+/**
+ * The Home composition control — a REAL one.
+ *
+ * It edits the same `presentation.page.home` object the live renderer resolves, through the same
+ * `themes/platform` contract, and it lists exactly the sections
+ * `apps/modern/features/home/utils/homeRecipe.ts` renders — imported from that module rather than
+ * re-typed here, so the Studio cannot offer a section the Home route would silently drop. Applying
+ * a draft changes the live route, not only `PreviewCanvas`.
+ *
+ * Three states are shown distinctly, because a contract with a capability mechanism is only honest
+ * if the author can see which of the three they are in:
+ *
+ *   - **rendered** — the section appears on Home when included;
+ *   - **declared, not rendered by this renderer** (`recommendations`) — selectable, because it is
+ *     valid universal vocabulary another renderer may honour, and labelled so nobody expects it to
+ *     appear here;
+ *   - **capability unsupported** — the whole editor is replaced by the notice above, which is what
+ *     Library and Item Details still get.
+ *
+ * Ordering is expressed with explicit Move up/Move down buttons rather than drag-and-drop: drag is
+ * not operable by keyboard or by a remote, and both are gates rather than follow-ups here.
+ */
+const HomeCompositionEditor: FC<HomeCompositionEditorProps> = ({
+    recipe,
+    onChange
+}) => {
+    const selected: readonly HomeSection[] =
+        recipe?.sections ?? DEFAULT_HOME.sections;
+    const density = recipe?.shelfDensity ?? DEFAULT_HOME.shelfDensity;
+
+    // Selected first, in recipe order; then everything still available, in contract order. Derived
+    // rather than stored, so the control has no state of its own that could disagree with the draft.
+    const rows = [
+        ...selected,
+        ...HOME_SECTIONS.filter((section) => !selected.includes(section))
+    ];
+
+    const setSections = (sections: readonly HomeSection[]) =>
+        onChange({ sections, shelfDensity: density });
+
+    const toggle = (section: HomeSection) => {
+        if (selected.includes(section)) {
+            // `theme.schema.json` requires `minItems: 1`; the last one is disabled below, so this
+            // cannot empty the recipe.
+            setSections(selected.filter((entry) => entry !== section));
+        } else {
+            setSections([...selected, section]);
+        }
+    };
+
+    const move = (section: HomeSection, delta: -1 | 1) => {
+        const from = selected.indexOf(section);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= selected.length) return;
+        const next = [...selected];
+        next.splice(from, 1);
+        next.splice(to, 0, section);
+        setSections(next);
+    };
+
+    return (
+        <Stack spacing={2} data-testid='theme-studio-home-composition'>
+            <Typography variant='body2'>
+                A recipe orders and selects Home sections. It never changes what
+                a section contains, and Home issues the same requests under
+                every recipe — composition is presentation, not data access.
+            </Typography>
+
+            <ul className='rf-theme-studio__home-sections'>
+                {rows.map((section) => {
+                    const index = selected.indexOf(section);
+                    const isSelected = index >= 0;
+                    const rendered = RENDERED_BY_WEB.has(section);
+
+                    return (
+                        <li key={section}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isSelected}
+                                        disabled={
+                                            isSelected && selected.length === 1
+                                        }
+                                        onChange={() => toggle(section)}
+                                    />
+                                }
+                                label={
+                                    rendered
+                                        ? SECTION_LABELS[section]
+                                        : `${SECTION_LABELS[section]} — declared, not rendered by this renderer`
+                                }
+                            />
+                            <Button
+                                size='small'
+                                disabled={!isSelected || index === 0}
+                                onClick={() => move(section, -1)}
+                            >
+                                {`Move ${SECTION_LABELS[section]} up`}
+                            </Button>
+                            <Button
+                                size='small'
+                                disabled={
+                                    !isSelected || index === selected.length - 1
+                                }
+                                onClick={() => move(section, 1)}
+                            >
+                                {`Move ${SECTION_LABELS[section]} down`}
+                            </Button>
+                        </li>
+                    );
+                })}
+            </ul>
+
+            <Choice
+                label='Shelf density'
+                value={density}
+                options={HOME_SHELF_DENSITIES}
+                onChange={(value) =>
+                    onChange({
+                        sections: selected,
+                        shelfDensity: value as HomeRecipe['shelfDensity']
+                    })
+                }
+            />
+
+            <Alert severity='info' variant='outlined'>
+                {`Declared by the contract and not rendered by the Web renderer: ${WEB_UNRENDERED_HOME_SECTIONS.join(', ')}. Including one is valid — another renderer may honour it — but it will not appear on Home here.`}
+            </Alert>
         </Stack>
     );
 };

@@ -6,7 +6,9 @@
  */
 
 export type {
+    HomeRecipe,
     HomeSection,
+    HomeShelfDensity,
     ItemDetailsSection,
     MediaCardPresentation,
     NavigationPresentation,
@@ -24,6 +26,8 @@ export type {
     WebRendererDeclaration
 } from './contract';
 export {
+    HOME_SECTIONS,
+    HOME_SHELF_DENSITIES,
     THEME_CAPABILITIES,
     THEME_CONTRACT_VERSION,
     WEB_RENDERER_CAPABILITIES

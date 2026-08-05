@@ -137,11 +137,20 @@ export function useThemeStudio(mode: 'light' | 'dark') {
         // Guarded rather than merely discouraged: applying a draft that fails validation would put
         // values the contract rejects onto the live document.
         if (!draft || issues.length > 0) return false;
+        /*
+         * A draft that REQUIRES a capability this renderer does not implement must not activate —
+         * the same rule `PresentationProvider` enforces for an official theme's manifest, applied
+         * here because the applied-presentation record carries no `capabilities` block and so
+         * cannot be re-checked on the read side. `ThemeStudio` turns this into an actionable
+         * message naming the missing capabilities; returning `false` alone would look like a dead
+         * button.
+         */
+        if (resolution && !resolution.activatable) return false;
         applyLocalThemeOverlay(draft, mode);
         saveAppliedDraft(draft);
         setAppliedThemeId(draft.manifest.id);
         return true;
-    }, [draft, issues, mode]);
+    }, [draft, issues, mode, resolution]);
 
     const revert = useCallback(() => {
         clearLocalThemeOverlay();

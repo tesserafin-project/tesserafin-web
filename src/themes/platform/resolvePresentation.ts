@@ -18,7 +18,11 @@
  */
 
 import {
+    HOME_SECTIONS,
+    HOME_SHELF_DENSITIES,
+    type HomeRecipe,
     type HomeSection,
+    type HomeShelfDensity,
     type ItemDetailsSection,
     type MediaCardPresentation,
     type NavigationPresentation,
@@ -40,7 +44,7 @@ export interface ResolvedPresentation {
     page: {
         home: {
             sections: readonly HomeSection[];
-            shelfDensity: 'compact' | 'comfortable' | 'spacious';
+            shelfDensity: HomeShelfDensity;
         };
         library: {
             layout: 'grid' | 'shelf';
@@ -83,11 +87,21 @@ export const PLATFORM_DEFAULT_PRESENTATION: ResolvedPresentation = {
     },
     page: {
         home: {
+            /*
+             * The order the modern Home route rendered BEFORE `presentation.page.home` was bound
+             * (`apps/modern/features/home/components/HomeTab.tsx`): My media, Continue watching,
+             * Next up, then one "Latest from <library>" shelf per eligible view.
+             *
+             * It was `continueWatching, nextUp, latestMedia, libraries` while nothing read it,
+             * which was harmless only for as long as it was unread. Binding the capability without
+             * correcting it would have silently reordered Home for every user who has never
+             * touched a theme — a default must reproduce current behaviour, not impose a new one.
+             */
             sections: [
+                'libraries',
                 'continueWatching',
                 'nextUp',
-                'latestMedia',
-                'libraries'
+                'latestMedia'
             ],
             shelfDensity: 'comfortable'
         },
@@ -138,6 +152,63 @@ const CAPABILITY_FOR_PAGE_KEY = {
     'home' | 'library' | 'itemDetails',
     ThemeCapability
 >;
+
+const HOME_SECTION_NAMES: ReadonlySet<string> = new Set(HOME_SECTIONS);
+const HOME_SHELF_DENSITY_NAMES: ReadonlySet<string> = new Set(
+    HOME_SHELF_DENSITIES
+);
+
+/**
+ * The Home recipe is the first presentation value that is an ARRAY, and the first that reaches the
+ * resolver from a hand-editable place: `localPresentation.ts` reads a `localStorage` record whose
+ * *values* were schema-validated when the draft was applied, but which a user can edit afterwards.
+ * The existing shape check there rejects a non-object record; it cannot reject
+ * `{"page":{"home":{"sections":"latestMedia"}}}`, and `sections.map` on a string would throw
+ * during render — from a provider that sits above the whole app.
+ *
+ * The rule is deterministic and stated once here so both callers get it:
+ *
+ *   - a `sections` that is not an array is ignored entirely;
+ *   - unknown section names are dropped (an older theme naming a section this build has retired
+ *     should lose that section, not the whole recipe);
+ *   - duplicates are dropped, keeping the first occurrence, because a section rendered twice is
+ *     never what a recipe meant;
+ *   - if nothing survives, `sections` is ignored and the platform default order applies — an empty
+ *     Home is not a composition anyone chose;
+ *   - an unknown `shelfDensity` is ignored independently, so one bad key cannot cost the other.
+ *
+ * Note this is sanitisation, not validation: it never throws and never reports. A theme author
+ * gets a real error from `validateManifest`; this path exists so that a corrupted browser record
+ * degrades to the default instead of preventing boot.
+ */
+function sanitizeHomeRecipe(override: HomeRecipe | undefined): HomeRecipe {
+    if (!override || typeof override !== 'object') return {};
+
+    const clean: HomeRecipe = {};
+
+    if (Array.isArray(override.sections)) {
+        const seen = new Set<string>();
+        const sections = override.sections.filter(
+            (section): section is HomeSection => {
+                if (typeof section !== 'string') return false;
+                if (!HOME_SECTION_NAMES.has(section)) return false;
+                if (seen.has(section)) return false;
+                seen.add(section);
+                return true;
+            }
+        );
+        if (sections.length > 0) clean.sections = sections;
+    }
+
+    if (
+        typeof override.shelfDensity === 'string' &&
+        HOME_SHELF_DENSITY_NAMES.has(override.shelfDensity)
+    ) {
+        clean.shelfDensity = override.shelfDensity;
+    }
+
+    return clean;
+}
 
 function mergeGroup<T extends object>(
     defaults: T,
@@ -201,7 +272,7 @@ export function resolvePresentation(
         page: {
             home: mergeGroup(
                 defaults.page.home,
-                themePresentation.page?.home,
+                sanitizeHomeRecipe(themePresentation.page?.home),
                 supports(CAPABILITY_FOR_PAGE_KEY.home),
                 CAPABILITY_FOR_PAGE_KEY.home,
                 fallbacks
