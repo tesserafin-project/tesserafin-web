@@ -1,6 +1,6 @@
 # The modern/legacy presentation boundary
 
-**Status:** maintained. Paired with `src/apps/modern/routes/presentationBoundary.ratchet.test.ts`,
+**Status:** maintained. Paired with `tests/boundary/presentationBoundary.ratchet.test.ts`,
 which fails when a slice on this map gains a prohibited dependency **or** keeps a recorded one it no
 longer has. The numbers below are that test's baseline; the two change together or CI is red.
 
@@ -176,7 +176,7 @@ item rather than folding an unrelated `cardbuilder` migration into a composition
 
 ## 7. Keeping this document true
 
-`presentationBoundary.ratchet.test.ts` enforces §2 and §3.1 mechanically. It scans **each slice's own
+`tests/boundary/presentationBoundary.ratchet.test.ts` enforces §2 and §3.1 mechanically. It scans **each slice's own
 source and its direct imports**, not the transitive graph — the module graph is cyclic through the
 app shell (`lib/globalize` → `userSettings` → `jellyfin-apiclient` → `dashboard` → `appRouter` →
 `RootAppRouter` → every route), so transitive reachability distinguishes nothing. Bundle-graph

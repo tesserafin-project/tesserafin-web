@@ -46,8 +46,17 @@ import { describe, expect, it } from 'vitest';
  * than implying this test covers it.
  */
 
+/*
+ * Lives under `tests/` and not beside the routes it maps, which would have read better. It cannot:
+ * webpack builds a lazy context over `src/apps/modern/routes/` (`./apps/modern/routes/ lazy
+ * ^\.\/.*$`) to code-split the route modules, so EVERY file in that directory is pulled into the
+ * production bundle — including a test. This file imports `node:fs`, which webpack cannot resolve
+ * for the browser, and `npm run build:production` failed with three `Module not found` errors while
+ * `npm run test` stayed green. `tests/` is outside every webpack context and still collected by
+ * vitest (`vite.config.ts` excludes only the Playwright suites and `scripts/`).
+ */
 const HERE = dirname(fileURLToPath(import.meta.url));
-const SRC = resolve(HERE, '../../..');
+const SRC = resolve(HERE, '../../src');
 
 /**
  * The dependencies a modern, theme-composable route must not have.
