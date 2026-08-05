@@ -39,14 +39,9 @@ const THEME_SLUGS = ['classic', 'glass'] as const;
  * removes it. `${slug}/${mode} ${pair}`.
  */
 const KNOWN_INSUFFICIENT: Readonly<Record<string, string>> = {
-    'classic/dark onPrimary/primary':
-        'Inherited #00a4dc primary with white text — 2.86:1. Removed by the Tesserafin Classic palette refresh.',
-    'classic/light onPrimary/primary':
-        'Inherited #00a4dc primary with white text — 2.86:1. Removed by the Tesserafin Classic palette refresh.',
-    'classic/light primary/background':
-        'Inherited #00a4dc primary on the light background — 2.55:1. Removed by the Tesserafin Classic palette refresh.',
-    'classic/light warning/background':
-        'Inherited #ed6c02 warning on the light background — 2.78:1. Removed by the Tesserafin Classic palette refresh.'
+    // Empty, and the four assertions below keep it that way: the Tesserafin Classic palette
+    // refresh replaced the inherited #00a4dc primary and #ed6c02 warning that were the only
+    // entries. A new failure now fails the build instead of being written down here.
 };
 
 function readTokens(slug: string) {
