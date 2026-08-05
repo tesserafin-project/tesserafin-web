@@ -1,11 +1,58 @@
 {
+    "contractVersion": 2,
     "id": "official.glass",
-    "version": "1.0.0",
-    "name": "Reefin Glass",
-    "author": "Reefin Team",
+    "version": "1.1.0",
+    "name": "Tesserafin Glass",
+    "description": "A frosted-glass experience: translucent surfaces, blur-backed panels, softened elevation.",
+    "author": "Tesserafin Project",
     "license": "GPL-2.0-or-later",
     "compatibility": {
         "web": ">=13.0"
     },
-    "modes": ["dark", "light"]
+    "modes": ["dark", "light"],
+    "presentation": {
+        "surface": {
+            "variant": "glass",
+            "border": "hairline",
+            "elevation": "level2"
+        },
+        "mediaCard": {
+            "imageAspect": "poster",
+            "titlePlacement": "below",
+            "hoverEffect": "lift",
+            "progressStyle": "bar"
+        },
+        "navigation": {
+            "shell": "sidebar",
+            "labels": "always",
+            "position": "start"
+        }
+    },
+    "capabilities": {
+        "required": ["tokens.core"],
+        "optional": [
+            "tokens.profiles",
+            "presentation.surface",
+            "presentation.mediaCard",
+            "presentation.navigation"
+        ]
+    },
+    "renderers": {
+        "web": {
+            "supports": [
+                "tokens.core",
+                "tokens.profiles",
+                "presentation.surface",
+                "presentation.mediaCard",
+                "presentation.navigation"
+            ],
+            "source": {
+                "kind": "none"
+            }
+        }
+    },
+    "lineage": {
+        "remixable": true,
+        "attribution": "Based on Tesserafin Glass by the Tesserafin Project."
+    }
 }

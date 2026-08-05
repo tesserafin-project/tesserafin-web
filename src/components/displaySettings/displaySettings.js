@@ -31,7 +31,7 @@ function fillThemes(select, selectedTheme) {
     skinManager.getSelectableThemes().then((themes) => {
         select.innerHTML = themes
             .map((t) => {
-                // An `<option>` can carry no markup, so `experimental` entries (Reefin Glass —
+                // An `<option>` can carry no markup, so `experimental` entries (Tesserafin Glass —
                 // opt-in and badged since issue #18's G18b-1 slice) are marked by suffixing the
                 // label. The modern picker renders a real badge instead; see
                 // `apps/modern/features/preferences/components/DisplayPreferences.tsx`.

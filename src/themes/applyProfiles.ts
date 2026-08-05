@@ -23,7 +23,7 @@ import {
 /**
  * The only theme interaction profiles apply to. Glass is the theme whose identity *is* compositing
  * — translucency and blur — so flattening that compositing is an adaptation of Glass rather than a
- * redesign of it. The profile partials are not no-ops against Reefin Classic
+ * redesign of it. The profile partials are not no-ops against Tesserafin Classic
  * (`reducedTransparency` would repaint its opaque `#202020` surface, `remote` would give it a blur
  * it deliberately does not have), so this constant guards correctness, not merely scope.
  *

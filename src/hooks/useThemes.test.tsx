@@ -11,7 +11,7 @@ import { useThemes } from './useThemes';
  * The picker-facing view of the theme catalog (issue #18 G18b-1).
  *
  * `registry.test.ts` pins what the registry decides; this pins what actually reaches a picker
- * through the hook `DisplayPreferences.tsx` renders from — specifically that Reefin Glass is
+ * through the hook `DisplayPreferences.tsx` renders from — specifically that Tesserafin Glass is
  * offered at all (it was withheld before this slice) and that it arrives carrying the
  * `experimental` marker the badge is driven from. Without the second assertion the theme could be
  * selectable but silently unbadged, which is the outcome the product decision rules out.
@@ -51,19 +51,19 @@ afterEach(() => {
 });
 
 describe('useThemes()', () => {
-    it('offers Reefin Glass as a selectable theme', () => {
+    it('offers Tesserafin Glass as a selectable theme', () => {
         const { themes } = renderThemes();
 
         expect(themes.map((theme) => theme.id)).toContain('official.glass');
     });
 
-    it('marks Reefin Glass experimental so the picker can badge it', () => {
+    it('marks Tesserafin Glass experimental so the picker can badge it', () => {
         const { themes } = renderThemes();
         const glass = themes.find((theme) => theme.id === 'official.glass');
 
         expect(glass).toBeDefined();
         expect(glass?.experimental).toBe(true);
-        expect(glass?.name).toBe('Reefin Glass');
+        expect(glass?.name).toBe('Tesserafin Glass');
     });
 
     it('badges only the two Glass modes, leaving every other offered theme unmarked', () => {
@@ -78,7 +78,7 @@ describe('useThemes()', () => {
         ]);
     });
 
-    it('keeps Reefin Classic the default, so Glass is opt-in only', () => {
+    it('keeps Tesserafin Classic the default, so Glass is opt-in only', () => {
         const { themes, defaultTheme } = renderThemes();
 
         expect(defaultTheme?.id).toBe('official.classic');

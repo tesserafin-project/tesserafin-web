@@ -5,7 +5,7 @@ import { expect, test } from './support/origin-inventory';
 import { request, type Page } from '@playwright/test';
 
 /**
- * Reefin Glass activation journey and captures (RFC-0005 §8.2, issue #18 / W13.8b).
+ * Tesserafin Glass activation journey and captures (RFC-0005 §8.2, issue #18 / W13.8b).
  *
  * This is the half of the Glass proof that a real Reefin server is required for. Its companions —
  * `./glass-interaction-profiles.spec.ts` and `./glass-light-and-sidebar.spec.ts` — prove what the
@@ -44,7 +44,7 @@ const capturePath = (name: string): string => {
     return path;
 };
 
-test.describe('Reefin Glass: activation', () => {
+test.describe('Tesserafin Glass: activation', () => {
     let userId = '';
 
     test.beforeAll(async () => {
@@ -155,11 +155,11 @@ test.describe('Reefin Glass: activation', () => {
         // The visible label carries the experimental badge's text ("Experimental") appended by
         // the picker — G18b-1 ships Glass badged, not bare — so match on the leading name.
         const labels = options.map((option) => option.label ?? '');
-        expect(labels.some((label) => label.startsWith('Reefin Glass'))).toBe(
-            true
-        );
         expect(
-            labels.some((label) => label.startsWith('Reefin Glass Light'))
+            labels.some((label) => label.startsWith('Tesserafin Glass'))
+        ).toBe(true);
+        expect(
+            labels.some((label) => label.startsWith('Tesserafin Glass Light'))
         ).toBe(true);
     });
 
@@ -260,7 +260,7 @@ test.describe('Reefin Glass: activation', () => {
     });
 });
 
-test.describe('Reefin Glass: desktop / mobile / TV captures', () => {
+test.describe('Tesserafin Glass: desktop / mobile / TV captures', () => {
     let userId = '';
     let libraryId = '';
 

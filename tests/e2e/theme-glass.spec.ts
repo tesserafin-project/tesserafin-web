@@ -5,7 +5,7 @@ import { expect, test } from './support/origin-inventory';
 import { request } from '@playwright/test';
 
 /**
- * Reefin Glass (RFC-0005 §8.2) capture + regression journey (W13.8a).
+ * Tesserafin Glass (RFC-0005 §8.2) capture + regression journey (W13.8a).
  *
  * Proves that selecting the lazy-loaded `official.glass` theme actually pushes its `--rf-*`
  * frosted tokens onto `/home` and `/library` — not just that the theme is registered. The
@@ -44,7 +44,7 @@ const capturePath = (name: string): string => {
     return path;
 };
 
-test.describe('theme: Reefin Glass', () => {
+test.describe('theme: Tesserafin Glass', () => {
     let userId = '';
     let libraryId = '';
 

@@ -11,7 +11,7 @@ import type { Theme } from 'types/webConfig';
  * one decision in one place.
  *
  * `experimental` is carried through to the picker (`DisplayPreferences.tsx`), which renders a badge
- * on those entries — since issue #18's G18b-1 slice, Reefin Glass is selectable rather than hidden.
+ * on those entries — since issue #18's G18b-1 slice, Tesserafin Glass is selectable rather than hidden.
  * `defaultTheme` still resolves to Classic, so nothing here changes what an unset preference gets.
  */
 export function useThemes() {

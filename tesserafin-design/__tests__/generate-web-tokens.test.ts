@@ -26,7 +26,7 @@ function runGenerator() {
 }
 
 describe('generate-web-tokens.mjs', () => {
-    it('emits the expected --rf-* custom properties for Reefin Classic', () => {
+    it('emits the expected --rf-* custom properties for Tesserafin Classic', () => {
         runGenerator();
         const css = readFileSync(OUTPUT_CSS, 'utf8');
 
@@ -43,7 +43,7 @@ describe('generate-web-tokens.mjs', () => {
         expect(css).toContain('--rf-color-background: #f2f2f2;');
     });
 
-    it('derives --rf-backdrop-filter-* as "none" (not "blur(0)") for Reefin Classic', () => {
+    it('derives --rf-backdrop-filter-* as "none" (not "blur(0)") for Tesserafin Classic', () => {
         runGenerator();
         const css = readFileSync(OUTPUT_CSS, 'utf8');
 

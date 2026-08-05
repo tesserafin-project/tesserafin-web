@@ -8,7 +8,7 @@ import {
 } from './support/glassProfileFixture';
 
 /**
- * Reefin Glass interaction profiles — **computed-style** proof (RFC-0005 §7.2, issue #18).
+ * Tesserafin Glass interaction profiles — **computed-style** proof (RFC-0005 §7.2, issue #18).
  *
  * The defect this suite exists to pin down: a profile used to change `blur.*` in the resolved
  * `TesserafinTokens` object while the page kept painting the build-time blur, because
@@ -253,7 +253,7 @@ test.describe('Glass interaction profiles: computed styles', () => {
     });
 });
 
-test.describe('Reefin Classic is untouched by Glass profiles', () => {
+test.describe('Tesserafin Classic is untouched by Glass profiles', () => {
     test.beforeEach(async ({ page }) => {
         await page.setContent(await buildFixtureHtml('official.classic'));
     });

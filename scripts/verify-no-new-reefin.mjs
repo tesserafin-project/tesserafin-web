@@ -8,9 +8,15 @@
  *
  * It is a DENYLIST of concrete identifier shapes, NOT a blanket "no reefin" scan:
  * historical provenance in comments (`reefin` #46, all3f0r1/reefin#43, reefin@<sha>),
- * the functional sibling server-checkout path (`../reefin`), inherited `@jellyfin/*`
- * / `jellyfin-apiclient` names, and the deferred `Reefin Glass`/`Reefin Classic` theme
- * branding are intentionally NOT matched — they are classified, frozen residue.
+ * the functional sibling server-checkout path (`../reefin`) and inherited `@jellyfin/*`
+ * / `jellyfin-apiclient` names are intentionally NOT matched — they are classified,
+ * frozen residue.
+ *
+ * `Reefin Classic` / `Reefin Glass` USED to be on that exemption list, as deferred theme
+ * branding. RFC-0007 closed the deferral: both official themes are now displayed as
+ * `Tesserafin Classic` and `Tesserafin Glass` in every picker, manifest and comment, so
+ * the two strings moved from "exempt" to DENY below. That is a strengthening of this
+ * gate, not a relaxation — nothing that was matched before is unmatched now.
  *
  * SCOPE: src/, scripts/, tests/, root config. EXCLUDES node_modules, the generated
  * SDK tree and pinned spec (regenerated artifacts), docs/ and .github/workflows/.
@@ -50,7 +56,10 @@ const DENY = [
     /Reefin Web E2E/,
     /generate[:-]reefin-sdk/i,
     /verify[:-]reefin-sdk-fresh/i,
-    /docs\/reefin\b/
+    /docs\/reefin\b/,
+    // Theme branding, un-deferred by RFC-0007. See the header note.
+    /Reefin Classic/,
+    /Reefin Glass/
 ];
 
 const files = execSync('git ls-files', { encoding: 'utf-8' })

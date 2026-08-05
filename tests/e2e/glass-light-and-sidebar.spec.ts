@@ -10,7 +10,7 @@ import {
 } from './support/glassProfileFixture';
 
 /**
- * Reefin Glass light frosted mode and the floating sidebar — **computed-style** proof
+ * Tesserafin Glass light frosted mode and the floating sidebar — **computed-style** proof
  * (RFC-0005 §8.2, issue #18 / W13.8b).
  *
  * Same discipline as `./glass-interaction-profiles.spec.ts`, and for the same reason: a light

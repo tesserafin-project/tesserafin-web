@@ -19,7 +19,7 @@ export const officialClassicTokens: TesserafinTokens = {
             error: '#c62828',
             warning: '#ffa726',
             success: '#66bb6a',
-            focus: 'rgba(255, 255, 255, 0.12)',
+            focus: '#18b8b2',
             divider: 'rgba(255, 255, 255, 0.12)'
         },
         light: {
@@ -34,7 +34,7 @@ export const officialClassicTokens: TesserafinTokens = {
             error: '#c62828',
             warning: '#ed6c02',
             success: '#2e7d32',
-            focus: '#bbb',
+            focus: '#0d7a76',
             divider: 'rgba(0, 0, 0, 0.14)'
         }
     },

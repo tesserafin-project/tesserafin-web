@@ -1,11 +1,12 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "urn:tesserafin-design:schema:theme",
-    "title": "Reefin theme manifest",
-    "description": "Universal theme manifest (RFC-0005 §7.3). Identity + compatibility + profile overrides + available modes. One theme.json per theme directory under tesserafin-design/themes/<id>/.",
+    "title": "Tesserafin theme manifest (Theme Platform v2)",
+    "description": "Universal theme manifest (RFC-0007 §4). One theme.json per theme directory under tesserafin-design/themes/<id>/. The manifest is a CLOSED declarative vocabulary: every object below sets additionalProperties:false and every leaf is an enum, a bounded pattern or a token value. That closure is the mechanism by which an imported theme cannot carry executable code, a network reference or a credential — there is no key it could arrive under. See RFC-0007 §6.",
     "type": "object",
     "additionalProperties": false,
     "required": [
+        "contractVersion",
         "id",
         "version",
         "name",
@@ -15,20 +16,30 @@
         "modes"
     ],
     "properties": {
+        "contractVersion": {
+            "type": "integer",
+            "enum": [2],
+            "description": "Theme Platform contract this manifest is written against. v1 (RFC-0005 §7.3) manifests omitted this key entirely; they are migrated, not silently accepted — see RFC-0007 §8."
+        },
         "id": {
             "type": "string",
-            "description": "namespace.name — e.g. \"official.classic\", \"community.abyss-remix\".",
+            "description": "namespace.name — e.g. \"official.classic\", \"community.abyss-remix\". STABLE IDENTITY: this value is the persisted user setting, the MUI color-scheme key and the generated stylesheet selector. Renaming a theme changes `name`, never `id`.",
             "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
         },
         "version": {
             "type": "string",
-            "description": "Semver of the theme itself.",
+            "description": "SemVer of the theme itself.",
             "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
         },
         "name": {
             "type": "string",
             "minLength": 1,
-            "description": "Human-readable display name, e.g. \"Reefin Classic\"."
+            "description": "Human-readable display name, e.g. \"Tesserafin Classic\". This is the only user-facing name; `id` is not."
+        },
+        "description": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One-line description shown in pickers and in the Theme Studio."
         },
         "author": {
             "type": "string",
@@ -37,11 +48,11 @@
         "license": {
             "type": "string",
             "minLength": 1,
-            "description": "SPDX license identifier (RFC-0005 §7.3/§10.3, e.g. \"GPL-2.0-or-later\", \"MIT\")."
+            "description": "SPDX license identifier (e.g. \"GPL-2.0-or-later\", \"MIT\")."
         },
         "compatibility": {
             "type": "object",
-            "description": "Per-platform Reefin version range this theme targets (RFC-0005 §7.3). At least one platform is required; tier attribution (§10.2) is derived from coverage.",
+            "description": "Per-platform Tesserafin version range this theme targets. At least one platform is required.",
             "additionalProperties": false,
             "minProperties": 1,
             "properties": {
@@ -51,28 +62,106 @@
                 "tv": { "$ref": "#/$defs/semverRange" }
             }
         },
-        "profiles": {
-            "type": "object",
-            "description": "Optional per-profile token overrides (RFC-0005 §7.2). Absent or empty for a theme that does not differentiate by profile.",
-            "additionalProperties": false,
-            "properties": {
-                "pointer": { "$ref": "#/$defs/profileOverride" },
-                "touch": { "$ref": "#/$defs/profileOverride" },
-                "remote": { "$ref": "#/$defs/profileOverride" },
-                "compact": { "$ref": "#/$defs/profileOverride" },
-                "medium": { "$ref": "#/$defs/profileOverride" },
-                "expanded": { "$ref": "#/$defs/profileOverride" },
-                "reducedMotion": { "$ref": "#/$defs/profileOverride" },
-                "reducedTransparency": { "$ref": "#/$defs/profileOverride" },
-                "lowPower": { "$ref": "#/$defs/profileOverride" }
-            }
-        },
         "modes": {
             "type": "array",
-            "description": "Modes this theme provides tokens for (tokens.json's color group, RFC-0005 §7.1).",
+            "description": "Modes this theme provides color tokens for (tokens.json's `color` group).",
             "items": { "enum": ["light", "dark"] },
             "minItems": 1,
             "uniqueItems": true
+        },
+        "profiles": {
+            "type": "object",
+            "description": "Per-profile token overrides (RFC-0007 §4.3). Each value is a DEEP-PARTIAL of tokens.schema.json — the same closed vocabulary, with nothing required. v1 typed this as additionalProperties:true, which let an imported theme smuggle arbitrary keys through a profile; v2 closes it (RFC-0007 §6.2).",
+            "additionalProperties": false,
+            "properties": {
+                "pointer": { "$ref": "#/$defs/tokensPartial" },
+                "touch": { "$ref": "#/$defs/tokensPartial" },
+                "remote": { "$ref": "#/$defs/tokensPartial" },
+                "compact": { "$ref": "#/$defs/tokensPartial" },
+                "medium": { "$ref": "#/$defs/tokensPartial" },
+                "expanded": { "$ref": "#/$defs/tokensPartial" },
+                "reducedMotion": { "$ref": "#/$defs/tokensPartial" },
+                "reducedTransparency": { "$ref": "#/$defs/tokensPartial" },
+                "lowPower": { "$ref": "#/$defs/tokensPartial" }
+            }
+        },
+        "assets": {
+            "type": "object",
+            "description": "Asset ROLES (RFC-0007 §4.5). A role maps to a package-relative path, never to a URL: the pattern forbids ':' and '//', so 'https://…', 'data:…' and 'javascript:…' are all unrepresentable. A renderer that has no asset for a role falls back to the built-in asset for that role.",
+            "additionalProperties": false,
+            "properties": {
+                "logo": { "$ref": "#/$defs/assetPath" },
+                "wordmark": { "$ref": "#/$defs/assetPath" },
+                "monogram": { "$ref": "#/$defs/assetPath" },
+                "favicon": { "$ref": "#/$defs/assetPath" },
+                "backdrop": { "$ref": "#/$defs/assetPath" },
+                "loginBackdrop": { "$ref": "#/$defs/assetPath" },
+                "placeholderPoster": { "$ref": "#/$defs/assetPath" },
+                "placeholderBackdrop": { "$ref": "#/$defs/assetPath" }
+            }
+        },
+        "presentation": {
+            "type": "object",
+            "description": "Semantic component variants and declarative composition recipes (RFC-0007 §4.6/§4.7). These are SEMANTIC choices over published presentation primitives — never selectors, never DOM structure. A theme that omits a key gets the platform default for it.",
+            "additionalProperties": false,
+            "properties": {
+                "surface": { "$ref": "#/$defs/surfaceVariant" },
+                "mediaCard": { "$ref": "#/$defs/mediaCardVariant" },
+                "navigation": { "$ref": "#/$defs/navigationVariant" },
+                "page": { "$ref": "#/$defs/pageRecipes" }
+            }
+        },
+        "capabilities": {
+            "type": "object",
+            "description": "Capabilities this theme uses (RFC-0007 §5.2). `required` means the theme is not renderable without them and a renderer lacking one must refuse to activate the theme and say why. `optional` means the theme degrades gracefully — the renderer falls back to the platform default for that capability.",
+            "additionalProperties": false,
+            "properties": {
+                "required": { "$ref": "#/$defs/capabilityList" },
+                "optional": { "$ref": "#/$defs/capabilityList" }
+            }
+        },
+        "renderers": {
+            "type": "object",
+            "description": "Platform renderer layer (RFC-0007 §5). The universal layer above is platform-neutral; everything platform-specific is confined here, so adding a renderer never makes the universal contract Web-only.",
+            "additionalProperties": false,
+            "properties": {
+                "web": { "$ref": "#/$defs/webRenderer" },
+                "android": { "$ref": "#/$defs/reservedRenderer" },
+                "ios": { "$ref": "#/$defs/reservedRenderer" },
+                "tv": { "$ref": "#/$defs/reservedRenderer" }
+            }
+        },
+        "lineage": {
+            "type": "object",
+            "description": "Remix and source lineage (RFC-0007 §4.8). Recorded so a derived theme can always name what it derives from. This loop implements the metadata only — marketplace upload, signing, payment and source protection are out of scope (RFC-0007 §9).",
+            "additionalProperties": false,
+            "required": ["remixable"],
+            "properties": {
+                "basedOn": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["id", "version"],
+                    "properties": {
+                        "id": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+                        },
+                        "version": {
+                            "type": "string",
+                            "pattern": "^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?(\\+[0-9A-Za-z-]+(\\.[0-9A-Za-z-]+)*)?$"
+                        }
+                    }
+                },
+                "remixable": {
+                    "type": "boolean",
+                    "description": "Whether this theme's author permits derived themes. Declarative intent recorded in the manifest; it is not, and must not be presented as, a technical enforcement mechanism."
+                },
+                "attribution": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Attribution line a derived theme is asked to carry."
+                }
+            }
         }
     },
     "$defs": {
@@ -82,10 +171,277 @@
             "description": "Loose semver range, e.g. \">=13.0\", \"^1.0.0\", \"~1.2.0\".",
             "pattern": "^(>=|<=|>|<|\\^|~)?\\d+(\\.(\\d+|x|\\*)){0,2}([ \\t]*(-|\\|\\|)[ \\t]*(>=|<=|>|<|\\^|~)?\\d+(\\.(\\d+|x|\\*)){0,2})*$"
         },
-        "profileOverride": {
+        "assetPath": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Package-relative path. No scheme, no protocol, no parent traversal — a theme can only name a file it ships.",
+            "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*(/[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*)*$"
+        },
+        "capabilityName": {
+            "type": "string",
+            "description": "A capability defined by RFC-0007 §5.2. The list is closed: an unknown capability name is a validation error, not an ignored extension, so a theme cannot claim a capability the platform has never defined.",
+            "enum": [
+                "tokens.core",
+                "tokens.profiles",
+                "assets.roles",
+                "presentation.surface",
+                "presentation.mediaCard",
+                "presentation.navigation",
+                "presentation.page.home",
+                "presentation.page.library",
+                "presentation.page.itemDetails",
+                "source.web.css"
+            ]
+        },
+        "capabilityList": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/capabilityName" },
+            "uniqueItems": true
+        },
+        "surfaceVariant": {
             "type": "object",
-            "description": "Partial token overrides applied when the profile is active (RFC-0005 §7.2). Deliberately loosely typed here: it is a deep-partial of tokens.schema.json, validated structurally by consumers rather than by this manifest schema.",
-            "additionalProperties": true
+            "additionalProperties": false,
+            "description": "Variants of the published `Surface` primitive (data-rf-slot=\"surface\").",
+            "properties": {
+                "variant": { "enum": ["glass", "opaque"] },
+                "border": { "enum": ["none", "hairline"] },
+                "elevation": {
+                    "enum": ["level0", "level1", "level2", "level3"]
+                }
+            }
+        },
+        "mediaCardVariant": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Variants of the published `MediaCard` primitive (data-rf-slot=\"media-card\").",
+            "properties": {
+                "imageAspect": { "enum": ["poster", "backdrop", "square"] },
+                "titlePlacement": { "enum": ["below", "overlay"] },
+                "hoverEffect": { "enum": ["none", "lift", "zoom"] },
+                "progressStyle": { "enum": ["bar", "none"] }
+            }
+        },
+        "navigationVariant": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Presentation of the primary navigation shell. It changes how navigation LOOKS, never what a user is allowed to reach: the set of destinations is authorization state, not theme state (RFC-0007 §6.1).",
+            "properties": {
+                "shell": { "enum": ["sidebar", "rail", "topbar"] },
+                "labels": { "enum": ["always", "active", "never"] },
+                "position": { "enum": ["start", "end"] }
+            }
+        },
+        "pageRecipes": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Declarative composition recipes. A recipe orders and selects PUBLISHED sections; it cannot introduce a section the renderer does not implement, because the section vocabulary is a closed enum.",
+            "properties": {
+                "home": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "sections": {
+                            "type": "array",
+                            "minItems": 1,
+                            "uniqueItems": true,
+                            "items": {
+                                "enum": [
+                                    "hero",
+                                    "continueWatching",
+                                    "nextUp",
+                                    "latestMedia",
+                                    "libraries",
+                                    "recommendations"
+                                ]
+                            }
+                        },
+                        "shelfDensity": {
+                            "enum": ["compact", "comfortable", "spacious"]
+                        }
+                    }
+                },
+                "library": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "layout": { "enum": ["grid", "shelf"] },
+                        "cardAspect": {
+                            "enum": ["poster", "backdrop", "square"]
+                        },
+                        "filters": { "enum": ["inline", "drawer"] }
+                    }
+                },
+                "itemDetails": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "hero": { "enum": ["backdrop", "poster", "minimal"] },
+                        "sections": {
+                            "type": "array",
+                            "minItems": 1,
+                            "uniqueItems": true,
+                            "items": {
+                                "enum": [
+                                    "overview",
+                                    "cast",
+                                    "episodes",
+                                    "related",
+                                    "mediaInfo"
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "webRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Web renderer declaration. `supports` is the renderer's own capability list, read by the resolver to decide fallback. `source` is the RESERVED extension point for the advanced CSS/SCSS/LESS/Sass authoring layer (RFC-0007 §7): its shape is fixed here so the package format does not have to change when a compiler boundary is proven, but the only value this contract accepts today is kind \"none\". Nothing in the universal layer above depends on this object, which is what keeps the contract from becoming Web-only.",
+            "properties": {
+                "supports": { "$ref": "#/$defs/capabilityList" },
+                "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind"],
+                    "properties": {
+                        "kind": {
+                            "enum": ["none"],
+                            "description": "RESERVED. \"scss\"/\"less\"/\"sass\" are deliberately NOT accepted yet: accepting them before an isolated compiler boundary exists would publish a promise the renderer cannot keep. Widening this enum is the single schema change that opens §7."
+                        }
+                    }
+                }
+            }
+        },
+        "reservedRenderer": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "RESERVED for a future native renderer (Android/TV, Apple). Only `supports` is meaningful today; a renderer that does not exist declares nothing.",
+            "properties": {
+                "supports": { "$ref": "#/$defs/capabilityList" }
+            }
+        },
+        "tokensPartial": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Deep-partial of tokens.schema.json: same groups, same leaf constraints, nothing required. Kept structurally in step with tokens.schema.json by tesserafin-design/__tests__/schema-partial-parity.test.ts, which fails if a token group is added there and not here.",
+            "properties": {
+                "color": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "light": { "$ref": "#/$defs/colorGroupPartial" },
+                        "dark": { "$ref": "#/$defs/colorGroupPartial" }
+                    }
+                },
+                "typography": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "fontFamily": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "base": { "type": "string", "minLength": 1 },
+                                "mono": { "type": "string", "minLength": 1 }
+                            }
+                        },
+                        "fontSize": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/$defs/cssLength"
+                            }
+                        },
+                        "fontWeight": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "integer",
+                                "minimum": 100,
+                                "maximum": 900
+                            }
+                        }
+                    }
+                },
+                "shape": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "radius": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/$defs/cssLength"
+                            }
+                        }
+                    }
+                },
+                "spacing": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/$defs/cssLength" }
+                },
+                "elevation": {
+                    "type": "object",
+                    "additionalProperties": { "type": "string", "minLength": 1 }
+                },
+                "motion": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "duration": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/$defs/cssDuration"
+                            }
+                        },
+                        "easing": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string",
+                                "minLength": 1
+                            }
+                        }
+                    }
+                },
+                "density": {
+                    "type": "string",
+                    "enum": ["compact", "comfortable", "spacious"]
+                },
+                "blur": {
+                    "type": "object",
+                    "additionalProperties": { "$ref": "#/$defs/cssLength" }
+                }
+            }
+        },
+        "colorGroupPartial": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "background": { "$ref": "#/$defs/colorValue" },
+                "surface": { "$ref": "#/$defs/colorValue" },
+                "surfaceVariant": { "$ref": "#/$defs/colorValue" },
+                "text": { "$ref": "#/$defs/colorValue" },
+                "textMuted": { "$ref": "#/$defs/colorValue" },
+                "primary": { "$ref": "#/$defs/colorValue" },
+                "onPrimary": { "$ref": "#/$defs/colorValue" },
+                "accent": { "$ref": "#/$defs/colorValue" },
+                "error": { "$ref": "#/$defs/colorValue" },
+                "warning": { "$ref": "#/$defs/colorValue" },
+                "success": { "$ref": "#/$defs/colorValue" },
+                "focus": { "$ref": "#/$defs/colorValue" },
+                "divider": { "$ref": "#/$defs/colorValue" }
+            }
+        },
+        "colorValue": {
+            "type": "string",
+            "pattern": "^(#[0-9a-fA-F]{3,8}|rgba?\\([^)]+\\)|hsla?\\([^)]+\\))$"
+        },
+        "cssLength": {
+            "type": "string",
+            "description": "A CSS length with a unit, or the bare unitless zero (\"0\") that stylelint's length-zero-no-unit rule requires.",
+            "pattern": "^0$|^-?\\d*\\.?\\d+(px|em|rem|%)$"
+        },
+        "cssDuration": {
+            "type": "string",
+            "pattern": "^\\d+(\\.\\d+)?(ms|s)$"
         }
     }
 }
