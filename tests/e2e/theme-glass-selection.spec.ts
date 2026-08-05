@@ -3,7 +3,7 @@ import { request } from '@playwright/test';
 import type { CDPSession, Page } from '@playwright/test';
 
 /**
- * Reefin Glass selection journey (issue #18, slice G18b-1) against a real server.
+ * Tesserafin Glass selection journey (issue #18, slice G18b-1) against a real server.
  *
  * `theme-glass.spec.ts` proves what Glass *looks like* once applied, and applies it by writing the
  * persistence key directly — which was the only way to reach Glass while it was hidden. This spec
@@ -62,7 +62,7 @@ const THEME_SELECT = '#mui-component-select-theme';
  */
 const SAVE_BUTTON = 'button[type="submit"]';
 
-test.describe('theme: selecting Reefin Glass', () => {
+test.describe('theme: selecting Tesserafin Glass', () => {
     let userId = '';
 
     test.beforeAll(async () => {
@@ -155,7 +155,7 @@ test.describe('theme: selecting Reefin Glass', () => {
     const selectThemeFromUi = async (page: Page, themeId: string) => {
         await page.locator(THEME_SELECT).click();
         // By stable id, not display name: since G18b-2 the picker offers BOTH Glass modes and
-        // "Reefin Glass" is a prefix of "Reefin Glass Light", so a name regex is ambiguous.
+        // "Tesserafin Glass" is a prefix of "Tesserafin Glass Light", so a name regex is ambiguous.
         await page.locator(`[role="option"][data-value="${themeId}"]`).click();
         await page.locator(SAVE_BUTTON).click();
     };
@@ -198,7 +198,7 @@ test.describe('theme: selecting Reefin Glass', () => {
 
         // Classic is offered and is NOT badged.
         const classicOption = page.getByRole('option', {
-            name: /Reefin Classic/
+            name: /Tesserafin Classic/
         });
         await expect(classicOption).toBeVisible();
         await expect(classicOption).not.toHaveAttribute(

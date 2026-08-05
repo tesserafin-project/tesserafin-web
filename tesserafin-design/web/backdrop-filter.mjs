@@ -19,8 +19,8 @@
  * `backdrop-filter: blur(0)` is NOT equivalent to `backdrop-filter: none` — a zero-radius `blur()`
  * still creates a compositing layer and costs GPU work, `none` does not. That distinction is the
  * whole reason consumer CSS reads `--rf-backdrop-filter-<key>` instead of wrapping
- * `--rf-blur-<key>` in `blur()` itself: Reefin Classic (`blur: "0"` for every key) gets a real
- * no-op, Reefin Glass gets an actual `blur(<length>)`, and the `reducedTransparency` profile —
+ * `--rf-blur-<key>` in `blur()` itself: Tesserafin Classic (`blur: "0"` for every key) gets a real
+ * no-op, Tesserafin Glass gets an actual `blur(<length>)`, and the `reducedTransparency` profile —
  * which drives Glass's blur to `"0"` at run time — gets the same real no-op rather than a
  * still-compositing `blur(0px)`.
  *

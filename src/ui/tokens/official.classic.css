@@ -59,7 +59,7 @@
     --rf-color-error: #c62828;
     --rf-color-warning: #ffa726;
     --rf-color-success: #66bb6a;
-    --rf-color-focus: rgba(255, 255, 255, 0.12);
+    --rf-color-focus: #18b8b2;
     --rf-color-divider: rgba(255, 255, 255, 0.12);
 }
 
@@ -75,6 +75,6 @@
     --rf-color-error: #c62828;
     --rf-color-warning: #ed6c02;
     --rf-color-success: #2e7d32;
-    --rf-color-focus: #bbb;
+    --rf-color-focus: #0d7a76;
     --rf-color-divider: rgba(0, 0, 0, 0.14);
 }

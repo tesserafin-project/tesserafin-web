@@ -1,8 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "urn:tesserafin-design:schema:tokens",
-    "title": "Reefin design tokens",
-    "description": "Universal design tokens (RFC-0005 §7.1/§7.3): color (per mode), typography, shape, spacing, elevation, motion, density, blur. One tokens.json per theme directory under tesserafin-design/themes/<id>/, generated per platform (§3.2) — src/ui/tokens/<id>.css and .ts are the Web renderer's output.",
+    "title": "Tesserafin design tokens",
+    "description": "Universal design tokens (RFC-0007 §4.4): color (per mode), typography, shape, spacing, elevation, motion, density, blur. One tokens.json per theme directory under tesserafin-design/themes/<id>/, generated per platform — src/ui/tokens/<id>.css and .ts are the Web renderer's output. Theme Platform v2 did not change the token vocabulary — no group, key or leaf constraint moved — so Classic and Glass migrate without losing a single token. The only token VALUES that changed are the three `focus` colours, which failed WCAG 2.2 SC 1.4.11 as focus indicators; see RFC-0007 §6.4.",
     "type": "object",
     "additionalProperties": false,
     "required": [
@@ -18,7 +18,7 @@
     "properties": {
         "color": {
             "type": "object",
-            "description": "`dark` is always required — it is the base tier every theme falls back to (RFC-0005 §9.1/generate-web-tokens.mjs's baseMode). `light` is optional: a theme declared dark-only in theme.json's `modes` (e.g. Reefin Glass) must not be forced to carry an unused light palette just to satisfy this schema.",
+            "description": "`dark` is always required — it is the base tier every theme falls back to (RFC-0005 §9.1/generate-web-tokens.mjs's baseMode). `light` is optional: a theme declared dark-only in theme.json's `modes` must not be forced to carry an unused light palette just to satisfy this schema.",
             "additionalProperties": false,
             "required": ["dark"],
             "properties": {

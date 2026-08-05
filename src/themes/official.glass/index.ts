@@ -8,7 +8,7 @@ import { buildCustomColorScheme } from 'themes/utils';
 import 'ui/tokens/official.glass.css';
 
 /**
- * Reefin Glass (RFC-0005 §8.2) — a frosted-glass identity: a deep tinted dark background with
+ * Tesserafin Glass (RFC-0005 §8.2) — a frosted-glass identity: a deep tinted dark background with
  * translucent, layered surfaces and cool cyan/indigo accents.
  *
  * The translucency itself (the `rgba()` surface/surfaceVariant colors, `backdrop-filter` blur)
@@ -55,7 +55,7 @@ const theme = buildCustomColorScheme({
 });
 
 /**
- * Reefin Glass — light frosted mode (issue #18, W13.8b).
+ * Tesserafin Glass — light frosted mode (issue #18, W13.8b).
  *
  * The frost is *not* mode-specific: `blur.md` stays `16px` for both modes in
  * `tesserafin-design/themes/glass/tokens.json`, and only the `color.light` group differs. So this

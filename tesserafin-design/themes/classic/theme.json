@@ -1,11 +1,57 @@
 {
+    "contractVersion": 2,
     "id": "official.classic",
-    "version": "0.1.0",
-    "name": "Reefin Classic",
-    "author": "Reefin Team",
+    "version": "0.2.0",
+    "name": "Tesserafin Classic",
+    "description": "The default Tesserafin experience: opaque surfaces, calm hierarchy, no frosted treatment.",
+    "author": "Tesserafin Project",
     "license": "GPL-2.0-or-later",
     "compatibility": {
         "web": ">=13.0"
     },
-    "modes": ["dark", "light"]
+    "modes": ["dark", "light"],
+    "presentation": {
+        "surface": {
+            "variant": "opaque",
+            "border": "none",
+            "elevation": "level1"
+        },
+        "mediaCard": {
+            "imageAspect": "poster",
+            "titlePlacement": "below",
+            "hoverEffect": "lift",
+            "progressStyle": "bar"
+        },
+        "navigation": {
+            "shell": "sidebar",
+            "labels": "always",
+            "position": "start"
+        }
+    },
+    "capabilities": {
+        "required": ["tokens.core"],
+        "optional": [
+            "presentation.surface",
+            "presentation.mediaCard",
+            "presentation.navigation"
+        ]
+    },
+    "renderers": {
+        "web": {
+            "supports": [
+                "tokens.core",
+                "tokens.profiles",
+                "presentation.surface",
+                "presentation.mediaCard",
+                "presentation.navigation"
+            ],
+            "source": {
+                "kind": "none"
+            }
+        }
+    },
+    "lineage": {
+        "remixable": true,
+        "attribution": "Based on Tesserafin Classic by the Tesserafin Project."
+    }
 }

@@ -78,7 +78,7 @@ afterEach(() => {
 });
 
 describe('useInteractionProfiles', () => {
-    it('projects nothing under Reefin Classic, with the signal active', () => {
+    it('projects nothing under Tesserafin Classic, with the signal active', () => {
         const before = readRoot();
 
         renderWithTheme('official.classic');
@@ -91,7 +91,7 @@ describe('useInteractionProfiles', () => {
         expect(readRoot().inlineStyle).toBe('');
     });
 
-    it('projects under Reefin Glass, and restores exactly on unmount', () => {
+    it('projects under Tesserafin Glass, and restores exactly on unmount', () => {
         const before = readRoot();
 
         renderWithTheme(PROFILE_THEME_ID);

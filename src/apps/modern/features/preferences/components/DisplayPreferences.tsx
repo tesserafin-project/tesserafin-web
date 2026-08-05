@@ -29,7 +29,7 @@ interface DisplayPreferencesProps {
 
 /**
  * Renders one theme option, badging the entries the registry marks `experimental` (issue #18
- * G18b-1: Reefin Glass is opt-in and clearly identifiable as new, never auto-activated).
+ * G18b-1: Tesserafin Glass is opt-in and clearly identifiable as new, never auto-activated).
  *
  * The badge is a sibling of the label rather than part of it, so the accessible name of the option
  * stays the theme's own name; `aria-describedby` is not used because MUI's listbox does not carry

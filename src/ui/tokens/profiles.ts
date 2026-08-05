@@ -5,8 +5,9 @@
  * **LIVE.** These partials are resolved at runtime by `src/themes/useInteractionProfiles.ts` and
  * projected onto CSS custom properties by `./projectTokens.ts`, so an override is true in this
  * object *and* in the browser's computed styles. (It was previously dormant, gated on two lanes
- * that have since closed: Reefin Glass landed on `main` with PR #14, reefin#39 merged, and the
- * bundle margin target was met — see the git history of this comment.)
+ * that have since closed: Glass landed on `main` with PR #14, reefin#39 merged, and the bundle
+ * margin target was met — see the git history of this comment. `reefin#39` is a historical issue
+ * reference under the project's former name and is left exact so the link still resolves.)
  *
  * **Bound to Glass only.** `useInteractionProfiles` projects nothing unless the active theme is
  * `official.glass`. That binding matters, because these partials are *not* no-ops against Classic

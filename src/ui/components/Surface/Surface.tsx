@@ -13,8 +13,8 @@ export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
 
 /**
  * Surface primitive (RFC-0005 §6 `Surface`), deliberately token-driven: the same CSS renders flat
- * under Reefin Classic (`--rf-backdrop-filter-md: none`, opaque `--rf-color-surface`) and frosted
- * under Reefin Glass (`--rf-backdrop-filter-md: blur(16px)`, translucent `--rf-color-surface`) —
+ * under Tesserafin Classic (`--rf-backdrop-filter-md: none`, opaque `--rf-color-surface`) and frosted
+ * under Tesserafin Glass (`--rf-backdrop-filter-md: blur(16px)`, translucent `--rf-color-surface`) —
  * this component never branches on the active theme. `variant="glass"` (the default) is the
  * frosted-glass treatment (RFC-0005 §8.2); `variant="opaque"` is the plain surface. Public slot:
  * `data-rf-slot="surface"`.

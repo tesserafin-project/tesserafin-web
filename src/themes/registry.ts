@@ -5,7 +5,7 @@ import lightColorScheme from './light';
 import officialClassicColorScheme from './official.classic';
 
 /**
- * Single source of truth for the themes Reefin Web ships with (RFC-0005 §7.4).
+ * Single source of truth for the themes Tesserafin Web ships with (RFC-0005 §7.4).
  *
  * This registry replaces the three previously independent sources described in RFC-0005 §4.1:
  * `src/config.json`'s `themes` array, the static `colorSchemes` map in `src/themes/index.ts`, and
@@ -46,7 +46,7 @@ export interface ThemeRegistryEntry {
      * one place it is decided. `themes/useAppTheme.ts` is the only consumer.
      */
     tokenThemeId?: string;
-    /** True for themes shipped and maintained by the Reefin team. */
+    /** True for themes shipped and maintained by the Tesserafin project. */
     builtin: boolean;
     /**
      * True for the six themes inherited from Jellyfin: per RFC-0005 §8.1 these are no longer
@@ -72,7 +72,7 @@ export interface ThemeRegistryEntry {
     /**
      * Resolves this theme's MUI color scheme. Non-default themes use a dynamic `import()` (one
      * webpack chunk per theme) so they are not part of the main bundle (RFC-0005 §9.1) — only
-     * Reefin Classic and the two legacy presets it absorbs (`dark`, `light`) are bundled
+     * Tesserafin Classic and the two legacy presets it absorbs (`dark`, `light`) are bundled
      * synchronously, since they back the default, no-loading-flash experience.
      */
     loadColorScheme: () => Promise<ColorSystemOptions>;
@@ -81,7 +81,7 @@ export interface ThemeRegistryEntry {
 export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
     {
         id: 'official.classic',
-        name: 'Reefin Classic',
+        name: 'Tesserafin Classic',
         color: '#101010',
         defaultMode: 'dark',
         builtin: true,
@@ -90,7 +90,7 @@ export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
     },
     {
         id: 'official.glass',
-        name: 'Reefin Glass',
+        name: 'Tesserafin Glass',
         color: '#0b0e14',
         defaultMode: 'dark',
         builtin: true,
@@ -107,7 +107,7 @@ export const THEME_REGISTRY: readonly ThemeRegistryEntry[] = [
     },
     {
         id: 'official.glass.light',
-        name: 'Reefin Glass Light',
+        name: 'Tesserafin Glass Light',
         color: '#eef2f8',
         defaultMode: 'light',
         // Renders the same generated token stylesheet as the dark entry above; only the

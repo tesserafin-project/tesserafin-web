@@ -1,5 +1,5 @@
 /*
- * Reefin Glass (RFC-0005 §8.2) legacy CSS payload.
+ * Tesserafin Glass (RFC-0005 §8.2) legacy CSS payload.
  *
  * This file exists only so the per-theme webpack entry (`themes/**\/*.scss` glob, RFC-0005 §9.1)
  * emits a `themes/official.glass/theme.css` that `components/ThemeCss.tsx` can link to for legacy

@@ -37,7 +37,7 @@ const GLASS_CSS = readFileSync(
     'utf-8'
 );
 
-/** Every `--rf-*` property Reefin Glass's generated stylesheet actually declares. */
+/** Every `--rf-*` property Tesserafin Glass's generated stylesheet actually declares. */
 const GENERATED_PROPERTIES = new Set(
     [...GLASS_CSS.matchAll(/^\s*(--rf-[a-z0-9-]+):/gm)].map((match) => match[1])
 );

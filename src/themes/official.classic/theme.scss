@@ -1,5 +1,5 @@
 /*
- * Reefin Classic (RFC-0005 §8.1) legacy CSS payload.
+ * Tesserafin Classic (RFC-0005 §8.1) legacy CSS payload.
  * Identical to `themes/dark/theme.scss` by design — Classic's default mode absorbs the legacy
  * "Dark" theme as-is (see `themes/official.classic/index.ts` for the MUI color scheme side of the
  * same decision). Kept as a separate file (rather than aliasing the URL in ThemeCss.tsx) so the

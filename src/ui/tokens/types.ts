@@ -28,7 +28,7 @@ export interface TesserafinColorGroup {
 export interface TesserafinColorTokens {
     /**
      * Optional: only present for a theme whose `theme.json#modes` includes `"light"`. A theme
-     * declared dark-only (e.g. Reefin Glass) omits it rather than carrying an unused duplicate
+     * declared dark-only (e.g. Tesserafin Glass) omits it rather than carrying an unused duplicate
      * palette — see `tesserafin-design/schema/tokens.schema.json`'s `color` definition.
      */
     light?: TesserafinColorGroup;

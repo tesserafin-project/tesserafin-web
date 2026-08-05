@@ -16,7 +16,7 @@
     border: 0;
     border-radius: var(--rf-shape-radius-md, 0.2em);
     // Frosted-glass treatment (RFC-0005 §8.2), shared with `Surface` (`variant="glass"`): sets
-    // `background` plus `backdrop-filter`/opaque fallbacks. Under Reefin Classic
+    // `background` plus `backdrop-filter`/opaque fallbacks. Under Tesserafin Classic
     // `--rf-backdrop-filter-md` is `none` and `--rf-color-surface` is opaque, so this is
     // pixel-identical to the previous plain `background: var(--rf-color-surface, #202020);`.
     @include glass.rf-glass-surface;

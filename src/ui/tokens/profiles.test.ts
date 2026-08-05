@@ -307,7 +307,7 @@ describe('interaction profiles (dormant)', () => {
     });
 });
 
-describe('Reefin Glass light frosted mode: WCAG contrast', () => {
+describe('Tesserafin Glass light frosted mode: WCAG contrast', () => {
     /**
      * The light palette is authored for contrast over the *composited* frosted surface, not over an
      * assumed opaque one — Glass Light's `surface` is `rgba(255, 255, 255, 0.55)`, so what a reader
@@ -376,7 +376,7 @@ describe('Reefin Glass light frosted mode: WCAG contrast', () => {
 
     if (!light) {
         throw new Error(
-            'Reefin Glass must declare a light color group (theme.json modes includes "light")'
+            'Tesserafin Glass must declare a light color group (theme.json modes includes "light")'
         );
     }
 

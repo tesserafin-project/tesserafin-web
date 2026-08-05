@@ -19,8 +19,8 @@ tesserafin-design/
 │                             # motion/density/blur, RFC-0005 §7.1)
 ├── themes/
 │   └── classic/
-│       ├── theme.json       # Reefin Classic manifest (RFC-0005 §8.1)
-│       └── tokens.json       # Reefin Classic tokens, light + dark
+│       ├── theme.json       # Tesserafin Classic manifest (RFC-0005 §8.1)
+│       └── tokens.json       # Tesserafin Classic tokens, light + dark
 ├── scripts/
 │   ├── validate-schema.mjs        # Dependency-free JSON Schema (draft 2020-12 subset) validator
 │   └── generate-web-tokens.mjs    # Web renderer: theme dir -> src/ui/tokens/<id>.{css,ts}
@@ -28,7 +28,7 @@ tesserafin-design/
 ```
 
 `themes/classic/` doubles as the W13.6 reference fixture (RFC-0005 §11): it is the canonical
-serialization of Reefin Classic in the universal theme format, consumable as a golden file by
+serialization of Tesserafin Classic in the universal theme format, consumable as a golden file by
 future Android/iOS renderers even though only the Web renderer exists today.
 
 ## Generating platform output

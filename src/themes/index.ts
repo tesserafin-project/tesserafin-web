@@ -3,7 +3,7 @@ import { createTheme, type Theme } from '@mui/material/styles';
 import type { ColorSchemeMap } from './colorSchemeCache';
 import { DEFAULT_THEME_OPTIONS } from './_base/theme';
 
-// Reefin Classic --rf-* design tokens (RFC-0005 §3.2/§7.1, W13.6 WP1). Loaded statically: it is the
+// Tesserafin Classic --rf-* design tokens (RFC-0005 §3.2/§7.1, W13.6 WP1). Loaded statically: it is the
 // default theme's token stylesheet and measures ~2.9 KiB, comfortably under the 5 KiB threshold
 // past which this RFC asks for a lazy import (RFC-0005 §9.2 budgets a theme's CSS at <=50 KiB).
 import 'ui/tokens/official.classic.css';

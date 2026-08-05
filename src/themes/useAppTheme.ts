@@ -35,7 +35,7 @@ export interface AppTheme {
  * Builds (and rebuilds, as lazily-loaded color schemes arrive) the app's MUI theme, and keeps
  * `data-rf-theme`/`data-rf-mode` on `<html>` in sync with the active theme (RFC-0005 §7.1/§9.1).
  *
- * It also drives Reefin Glass's interaction profiles via `useInteractionProfiles` — which projects
+ * It also drives Tesserafin Glass's interaction profiles via `useInteractionProfiles` — which projects
  * `data-rf-profile`, `data-rf-reduced-motion` and the profile's `--rf-*` overrides onto `<html>`,
  * and which no-ops entirely for every theme other than `official.glass` (RFC-0005 §7.2).
  *
@@ -43,9 +43,9 @@ export interface AppTheme {
  *
  * A requested theme can turn out to be unrenderable: its id may not be in the registry (a stale
  * manifest, or a preference written by an older build), or its lazily-imported chunk may fail to
- * arrive. Since issue #18's G18b-1 slice made Reefin Glass — a lazy theme — user-selectable, that
+ * arrive. Since issue #18's G18b-1 slice made Tesserafin Glass — a lazy theme — user-selectable, that
  * is a reachable state for a saved preference and not merely a theoretical one. Either way this
- * hook resolves `activeThemeId` to `getDefaultThemeEntry()` (Reefin Classic, whose scheme is
+ * hook resolves `activeThemeId` to `getDefaultThemeEntry()` (Tesserafin Classic, whose scheme is
  * bundled synchronously and so is always renderable), so the app lands on a coherent theme rather
  * than tagging `<html>` with one whose palette never loaded. Because `activeThemeId` — not the
  * requested id — is what drives `data-rf-theme` and `useInteractionProfiles`, the fallback also

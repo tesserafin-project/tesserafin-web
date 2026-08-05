@@ -34,7 +34,7 @@ export const officialGlassTokens: TesserafinTokens = {
             error: '#b3261e',
             warning: '#8a5a00',
             success: '#0d6e45',
-            focus: 'rgba(10, 102, 137, 0.45)',
+            focus: '#0a6689',
             divider: 'rgba(11, 18, 32, 0.14)'
         }
     },

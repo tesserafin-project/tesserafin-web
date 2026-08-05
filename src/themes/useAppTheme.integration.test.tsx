@@ -156,7 +156,7 @@ describe('useAppTheme() driven by the legacy THEME_CHANGE bus (RootAppRouter.tsx
 });
 
 /**
- * Issue #18 G18b-1: Reefin Glass became user-selectable, which makes two previously unreachable
+ * Issue #18 G18b-1: Tesserafin Glass became user-selectable, which makes two previously unreachable
  * states reachable for a *saved* preference — a theme whose lazy chunk fails to arrive, and a theme
  * id that is no longer in the registry. Both must land on Classic rather than leave `<html>` tagged
  * with a palette that never loaded.

@@ -57,7 +57,7 @@ const nextEnabledIndex = (
  *
  * The frosted treatment comes from the shared `rf-glass-surface` mixin, exactly as `Surface` and
  * `MediaCard` take it — so this component contains no `[data-rf-theme]`, no theme name, and no
- * branch on which theme is active. Under Reefin Classic the very same CSS resolves
+ * branch on which theme is active. Under Tesserafin Classic the very same CSS resolves
  * `--rf-backdrop-filter-md` to `none` over an opaque `--rf-color-surface` and the sidebar renders
  * flat; under Glass it resolves to `blur(16px)` over a translucent one and the sidebar floats.
  * That is the whole mechanism, and it is why adding this component cannot move Classic.
