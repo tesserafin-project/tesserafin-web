@@ -39,6 +39,14 @@ export {
     resolvePresentation
 } from './resolvePresentation';
 
+export { getManifestForThemeId, MANIFEST_THEME_IDS } from './manifests';
+
+export {
+    clearAppliedPresentation,
+    loadAppliedPresentation,
+    saveAppliedPresentation
+} from './localPresentation';
+
 export type {
     ThemeValidationCode,
     ThemeValidationIssue,

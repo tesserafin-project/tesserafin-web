@@ -78,6 +78,11 @@ button.rf-media-card:hover {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    // Transitioned here rather than in a second `.rf-media-card__image` block further down, so the
+    // `zoom` hover variant below has something to animate without duplicating the selector.
+    transition-property: transform;
+    transition-duration: var(--rf-motion-duration-fast, 150ms);
+    transition-timing-function: var(--rf-motion-easing-standard, ease);
 }
 
 .rf-media-card__placeholder {
@@ -128,4 +133,52 @@ button.rf-media-card:hover {
     font-size: var(--rf-typography-font-size-xs, 0.75rem);
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/*
+ * Semantic presentation variants (RFC-0007 §4.6), projected by `MediaCard.tsx` from the active
+ * theme's `presentation.mediaCard`. See `Surface.scss` for why these are attributes, not classes.
+ */
+
+/*
+ * `hoverEffect` replaces the unconditional `scale(1.02)` above. The base rule is now the `lift`
+ * case; `zoom` scales the artwork instead of the card, and `none` opts out entirely — which is the
+ * option a theme aiming at a calm, still interface needs, and which nothing offered before.
+ */
+a.rf-media-card[data-rf-hover='none']:hover,
+button.rf-media-card[data-rf-hover='none']:hover {
+    transform: none;
+}
+
+a.rf-media-card[data-rf-hover='zoom']:hover,
+button.rf-media-card[data-rf-hover='zoom']:hover {
+    transform: none;
+}
+
+a.rf-media-card[data-rf-hover='zoom']:hover .rf-media-card__image,
+button.rf-media-card[data-rf-hover='zoom']:hover .rf-media-card__image {
+    transform: scale(1.06);
+}
+
+/*
+ * `titlePlacement: overlay` lays the text over the foot of the artwork instead of below it. The
+ * scrim is a gradient of the surface colour, so it stays readable whatever the palette does — a
+ * fixed black scrim would fail on a light theme, which is exactly the class of bug the token
+ * indirection exists to prevent.
+ */
+.rf-media-card[data-rf-title-placement='overlay'] {
+    position: relative;
+}
+
+.rf-media-card[data-rf-title-placement='overlay'] .rf-media-card__text {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    padding: var(--rf-spacing-sm, 8px);
+    background:
+        linear-gradient(
+            to top,
+            var(--rf-color-surface, #202020),
+            transparent
+        );
 }

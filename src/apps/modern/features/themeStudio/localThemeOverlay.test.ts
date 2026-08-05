@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { loadAppliedPresentation } from 'themes/platform/localPresentation';
+
 import { createDraft } from './draftState';
 import {
     applyLocalThemeOverlay,
@@ -109,5 +111,25 @@ describe('apply and clear', () => {
                 '--rf-color-background'
             )
         ).toBe('');
+    });
+});
+
+describe('applying a draft records its presentation, not just its tokens', () => {
+    beforeEach(() => {
+        clearLocalThemeOverlay(document);
+    });
+
+    it('writes the draft presentation on apply', () => {
+        applyLocalThemeOverlay(draft, 'dark', document);
+        // Without this, an applied draft would change colour and type but not surfaces, cards or
+        // navigation — the Studio's presentation controls would be preview-only.
+        expect(loadAppliedPresentation()).toEqual(draft.manifest.presentation);
+    });
+
+    it('clears it together with the stylesheet', () => {
+        applyLocalThemeOverlay(draft, 'dark', document);
+        clearLocalThemeOverlay(document);
+        // Cleared together, so the tokens and the presentation can never describe different themes.
+        expect(loadAppliedPresentation()).toBeNull();
     });
 });

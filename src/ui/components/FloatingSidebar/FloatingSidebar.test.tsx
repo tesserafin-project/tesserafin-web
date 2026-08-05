@@ -3,6 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { PLATFORM_DEFAULT_PRESENTATION } from 'themes/platform';
+import { PresentationProvider } from '../../presentation/PresentationContext';
+
 import { FloatingSidebar, type FloatingSidebarItem } from './FloatingSidebar';
 
 const ITEMS: FloatingSidebarItem[] = [
@@ -214,5 +217,120 @@ describe('FloatingSidebar', () => {
         expect(container.innerHTML).not.toContain('official.');
         expect(container.innerHTML).not.toContain('data-rf-theme');
         expect(container.innerHTML).not.toContain('glass');
+    });
+});
+
+describe('FloatingSidebar — theme presentation (RFC-0007 §4.6)', () => {
+    const items: FloatingSidebarItem[] = [
+        { id: 'home', label: 'Home' },
+        { id: 'films', label: 'Films' }
+    ];
+
+    function withNavigation(
+        navigation: Partial<
+            (typeof PLATFORM_DEFAULT_PRESENTATION)['navigation']
+        >
+    ) {
+        return {
+            presentation: {
+                ...PLATFORM_DEFAULT_PRESENTATION,
+                navigation: {
+                    ...PLATFORM_DEFAULT_PRESENTATION.navigation,
+                    ...navigation
+                }
+            },
+            fallbacks: [] as never[],
+            activatable: true
+        };
+    }
+
+    it('projects the active theme shell, labels and position', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider themeId='official.glass'>
+                    <FloatingSidebar
+                        items={items}
+                        value={0}
+                        onChange={() => undefined}
+                    />
+                </PresentationProvider>
+            );
+        });
+
+        const nav = container.querySelector(
+            '[data-rf-slot="floating-sidebar"]'
+        );
+        expect(nav?.getAttribute('data-rf-nav-shell')).toBe('sidebar');
+        expect(nav?.getAttribute('data-rf-nav-labels')).toBe('always');
+        expect(nav?.getAttribute('data-rf-nav-position')).toBe('start');
+    });
+
+    it('collapses to an icon rail when the theme asks for no labels', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider
+                    value={withNavigation({ labels: 'never' })}
+                >
+                    <FloatingSidebar
+                        items={items}
+                        value={0}
+                        onChange={() => undefined}
+                    />
+                </PresentationProvider>
+            );
+        });
+
+        const nav = container.querySelector(
+            '[data-rf-slot="floating-sidebar"]'
+        );
+        expect(nav?.className).toContain('rf-floating-sidebar--collapsed');
+    });
+
+    it('never lets presentation change what navigation contains', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider
+                    value={withNavigation({ shell: 'topbar', labels: 'never' })}
+                >
+                    <FloatingSidebar
+                        items={items}
+                        value={0}
+                        onChange={() => undefined}
+                    />
+                </PresentationProvider>
+            );
+        });
+
+        // The destination list is authorization and library state. Whatever a theme does to the
+        // shell, every item is still present, still a button, and still labelled — `labels: never`
+        // is a visual policy the stylesheet applies, not a removal from the accessibility tree.
+        const buttons = container.querySelectorAll(
+            '[data-rf-slot="floating-sidebar-item"]'
+        );
+        expect(buttons).toHaveLength(items.length);
+        expect(buttons[0].textContent).toContain('Home');
+        expect(buttons[1].textContent).toContain('Films');
+    });
+
+    it('keeps roving-tabindex keyboard operation under any shell', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider
+                    value={withNavigation({ shell: 'topbar' })}
+                >
+                    <FloatingSidebar
+                        items={items}
+                        value={0}
+                        onChange={() => undefined}
+                    />
+                </PresentationProvider>
+            );
+        });
+
+        const buttons = container.querySelectorAll<HTMLButtonElement>(
+            '[data-rf-slot="floating-sidebar-item"]'
+        );
+        // Exactly one item in the tab order, whatever the theme did to the axis.
+        expect([...buttons].filter((b) => b.tabIndex === 0)).toHaveLength(1);
     });
 });

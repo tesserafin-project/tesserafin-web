@@ -109,3 +109,37 @@
         padding: var(--rf-spacing-sm, 8px);
     }
 }
+
+/*
+ * Semantic navigation presentation (RFC-0007 §4.6), projected by `FloatingSidebar.tsx` from the
+ * active theme's `presentation.navigation`. See `Surface.scss` for why these are attributes.
+ *
+ * These change how navigation LOOKS. They never change what it contains: the destination list is
+ * `items`, which the caller derives from authorization and library state.
+ */
+
+/* `position: end` moves the rail to the inline end without a second component or an RTL hack. */
+.rf-floating-sidebar[data-rf-nav-position='end'] {
+    order: 1;
+    margin-inline: auto 0;
+}
+
+/*
+ * `shell: topbar` lays the same items out horizontally. Still a `<nav>` with the same list, the
+ * same roving tabindex and the same `aria-current` — only the axis differs, so nothing about
+ * keyboard or remote operation changes with the theme.
+ */
+.rf-floating-sidebar[data-rf-nav-shell='topbar'] .rf-floating-sidebar__list {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/*
+ * `labels: active` shows the label only for the current destination. `aria-current="page"` is the
+ * selector because it is already the accessible statement of "this one is current" — deriving the
+ * visual from the accessible state means the two cannot drift apart.
+ */
+.rf-floating-sidebar[data-rf-nav-labels='active'] .rf-floating-sidebar__button:not([aria-current='page']) .rf-floating-sidebar__label {
+    display: none;
+}

@@ -17,3 +17,33 @@
 .rf-surface--opaque {
     background: var(--rf-color-surface, #202020);
 }
+
+/*
+ * Semantic presentation variants (RFC-0007 §4.6), projected as data attributes by `Surface.tsx`
+ * from the active theme's `presentation.surface`.
+ *
+ * Attributes rather than modifier classes: a theme selects a *value* from a published enum, and an
+ * attribute selector expresses "whatever value the theme chose" without the component having to
+ * enumerate a class per value. It also keeps the class list stable, which matters because
+ * `className` is a public prop that call sites append to.
+ */
+
+.rf-surface[data-rf-surface-border='hairline'] {
+    border: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+}
+
+.rf-surface[data-rf-surface-elevation='level0'] {
+    box-shadow: var(--rf-elevation-level0, none);
+}
+
+.rf-surface[data-rf-surface-elevation='level1'] {
+    box-shadow: var(--rf-elevation-level1, none);
+}
+
+.rf-surface[data-rf-surface-elevation='level2'] {
+    box-shadow: var(--rf-elevation-level2, none);
+}
+
+.rf-surface[data-rf-surface-elevation='level3'] {
+    box-shadow: var(--rf-elevation-level3, none);
+}

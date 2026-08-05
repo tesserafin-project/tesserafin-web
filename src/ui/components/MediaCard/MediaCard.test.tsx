@@ -3,6 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { PLATFORM_DEFAULT_PRESENTATION } from 'themes/platform';
+import { PresentationProvider } from '../../presentation/PresentationContext';
+
 import { MediaCard } from './MediaCard';
 
 let container: HTMLDivElement;
@@ -129,5 +132,93 @@ describe('MediaCard', () => {
             button.dispatchEvent(new MouseEvent('click', { bubbles: true }));
         });
         expect(clicked).toBe(true);
+    });
+});
+
+describe('MediaCard — theme presentation (RFC-0007 §4.6)', () => {
+    it('projects the active theme hover and title-placement choices', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider themeId='official.classic'>
+                    <MediaCard title='T' imageAspect='poster' />
+                </PresentationProvider>
+            );
+        });
+
+        const card = container.querySelector('[data-rf-slot="media-card"]');
+        // Tesserafin Classic declares hoverEffect: "lift", titlePlacement: "below".
+        expect(card?.getAttribute('data-rf-hover')).toBe('lift');
+        expect(card?.getAttribute('data-rf-title-placement')).toBe('below');
+    });
+
+    it('honours progressStyle: "none" by not rendering the progress bar at all', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider
+                    value={{
+                        presentation: {
+                            ...PLATFORM_DEFAULT_PRESENTATION,
+                            mediaCard: {
+                                ...PLATFORM_DEFAULT_PRESENTATION.mediaCard,
+                                progressStyle: 'none'
+                            }
+                        },
+                        fallbacks: [],
+                        activatable: true
+                    }}
+                >
+                    <MediaCard
+                        title='T'
+                        imageAspect='poster'
+                        progressPercent={40}
+                    />
+                </PresentationProvider>
+            );
+        });
+
+        // Removed from the DOM, not merely hidden: a `role="progressbar"` that is invisible but
+        // still announced would tell a screen-reader user about a control that is not there.
+        expect(container.querySelector('[role="progressbar"]')).toBeNull();
+    });
+
+    it('still renders the progress bar under the default presentation', () => {
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='T'
+                    imageAspect='poster'
+                    progressPercent={40}
+                />
+            );
+        });
+        expect(container.querySelector('[role="progressbar"]')).not.toBeNull();
+    });
+
+    it('never lets a theme change imageAspect', () => {
+        act(() => {
+            root.render(
+                <PresentationProvider
+                    value={{
+                        presentation: {
+                            ...PLATFORM_DEFAULT_PRESENTATION,
+                            mediaCard: {
+                                ...PLATFORM_DEFAULT_PRESENTATION.mediaCard,
+                                imageAspect: 'backdrop'
+                            }
+                        },
+                        fallbacks: [],
+                        activatable: true
+                    }}
+                >
+                    <MediaCard title='T' imageAspect='poster' />
+                </PresentationProvider>
+            );
+        });
+
+        // `imageAspect` is a statement about the artwork this card holds, not a theme choice — a
+        // theme that could override it would crop posters into backdrops.
+        const card = container.querySelector('[data-rf-slot="media-card"]');
+        expect(card?.className).toContain('rf-media-card--poster');
+        expect(card?.className).not.toContain('rf-media-card--backdrop');
     });
 });

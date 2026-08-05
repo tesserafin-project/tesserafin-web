@@ -25,6 +25,7 @@ import BangRedirect from 'components/router/BangRedirect';
 import { createRouterHistory } from 'components/router/routerHistory';
 import { ThemeStorageManager } from 'themes/themeStorageManager';
 import { useAppTheme } from 'themes/useAppTheme';
+import { PresentationProvider } from 'ui/presentation/PresentationContext';
 
 const router = createHashRouter([
     {
@@ -66,11 +67,18 @@ function RootAppLayout() {
             defaultMode='dark'
             storageManager={ThemeStorageManager}
         >
-            <ColorSchemeSync themeId={activeThemeId} />
-            <Backdrop />
-            <AppHeader isHidden={layoutManager.modern || isNewLayoutPath} />
+            {/*
+             * Inside `ThemeProvider` and keyed on the SAME `activeThemeId` it uses, so the
+             * palette and the presentation can never describe different themes — `activeThemeId`
+             * is already the id after the unrenderable-theme fallback, not the requested one.
+             */}
+            <PresentationProvider themeId={activeThemeId}>
+                <ColorSchemeSync themeId={activeThemeId} />
+                <Backdrop />
+                <AppHeader isHidden={layoutManager.modern || isNewLayoutPath} />
 
-            <Outlet />
+                <Outlet />
+            </PresentationProvider>
         </ThemeProvider>
     );
 }
