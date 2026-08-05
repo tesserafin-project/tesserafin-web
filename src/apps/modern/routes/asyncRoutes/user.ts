@@ -29,6 +29,13 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
         page: 'user/display',
         type: AppType.Modern
     },
+    // Linked from the Display preferences page rather than from the drawer: it is an authoring
+    // tool reached from Appearance, not a top-level destination.
+    {
+        path: 'themestudio',
+        page: 'user/themeStudio',
+        type: AppType.Modern
+    },
     { path: 'mypreferencesmenu', page: 'user/settings' },
     { path: 'quickconnect', page: 'quickConnect' },
     { path: 'search' },

@@ -1,3 +1,4 @@
+import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
@@ -10,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React, { Fragment } from 'react';
+import { Link } from 'react-router-dom';
 
 import { appHost } from 'components/apphost';
 import { AppFeature } from 'constants/appFeature';
@@ -132,6 +134,26 @@ export function DisplayPreferences({
                     </Select>
                 </FormControl>
             )}
+
+            {/*
+             * The Theme Studio's entry point (RFC-0007). A link rather than an embedded editor:
+             * the Studio is a two-pane authoring surface with a live preview and needs the width,
+             * but Appearance is where a user looks for it, so this is where it is reachable from.
+             */}
+            <FormControl fullWidth>
+                <Button
+                    component={Link}
+                    to='/themestudio'
+                    variant='outlined'
+                    sx={{ alignSelf: 'flex-start' }}
+                    data-testid='theme-studio-link'
+                >
+                    {globalize.translate('HeaderThemeStudio')}
+                </Button>
+                <FormHelperText>
+                    {globalize.translate('ThemeStudioHelp')}
+                </FormHelperText>
+            </FormControl>
 
             <FormControl fullWidth>
                 <FormControlLabel

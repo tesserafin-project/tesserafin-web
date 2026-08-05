@@ -1,0 +1,121 @@
+/**
+ * Preview chrome only.
+ *
+ * Every rule here reads `--rf-*` and nothing else — no literal colour, radius, spacing or duration.
+ * The point of the preview is that it changes when the draft changes; a hard-coded value would be a
+ * part of the picture the theme could not reach, which is exactly the lie a fake preview tells.
+ */
+
+.rf-studio-preview {
+    background: var(--rf-color-background);
+    color: var(--rf-color-text);
+    font-family: var(--rf-typography-font-family-base);
+    font-size: var(--rf-typography-font-size-md);
+    border-radius: var(--rf-shape-radius-lg);
+    border: 1px solid var(--rf-color-divider);
+    overflow: hidden;
+    container-type: inline-size;
+}
+
+.rf-studio-preview__nav {
+    display: flex;
+    gap: var(--rf-spacing-md);
+    padding: var(--rf-spacing-md) var(--rf-spacing-lg);
+    background: var(--rf-color-surface);
+    backdrop-filter: var(--rf-backdrop-filter-md);
+    border-bottom: 1px solid var(--rf-color-divider);
+}
+
+.rf-studio-preview__nav--rail {
+    flex-direction: column;
+    gap: var(--rf-spacing-sm);
+}
+
+.rf-studio-preview__nav-item {
+    color: var(--rf-color-text-muted);
+    font-size: var(--rf-typography-font-size-sm);
+    font-weight: var(--rf-typography-font-weight-medium);
+    padding: var(--rf-spacing-xs) var(--rf-spacing-sm);
+    border-radius: var(--rf-shape-radius-md);
+    transition-property: color;
+    transition-duration: var(--rf-motion-duration-fast);
+    transition-timing-function: var(--rf-motion-easing-standard);
+}
+
+.rf-studio-preview__nav-item[data-active='true'] {
+    color: var(--rf-color-on-primary);
+    background: var(--rf-color-primary);
+}
+
+.rf-studio-preview__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-lg);
+    padding: var(--rf-spacing-lg);
+}
+
+.rf-studio-preview__detail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-md);
+}
+
+.rf-studio-preview__hero,
+.rf-studio-preview__facts {
+    padding: var(--rf-spacing-lg);
+    border-radius: var(--rf-shape-radius-lg);
+    box-shadow: var(--rf-elevation-level2);
+}
+
+.rf-studio-preview__title {
+    margin: 0;
+    font-size: var(--rf-typography-font-size-xxl);
+    font-weight: var(--rf-typography-font-weight-bold);
+}
+
+.rf-studio-preview__tagline {
+    margin: var(--rf-spacing-xs) 0 0;
+    color: var(--rf-color-text-muted);
+    font-size: var(--rf-typography-font-size-sm);
+}
+
+.rf-studio-preview__overview {
+    margin: var(--rf-spacing-md) 0 0;
+    color: var(--rf-color-text);
+    line-height: 1.55;
+}
+
+.rf-studio-preview__fact {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--rf-spacing-md);
+    padding: var(--rf-spacing-xs) 0;
+    border-bottom: 1px solid var(--rf-color-divider);
+
+    dt {
+        color: var(--rf-color-text-muted);
+        font-size: var(--rf-typography-font-size-sm);
+    }
+
+    dd {
+        margin: 0;
+    }
+}
+
+/*
+ * The remote profile is a real ten-foot rendering, not a scaled screenshot: larger base type and a
+ * thicker focus ring, which is what `data-rf-profile="remote"` already means everywhere else.
+ */
+.rf-studio-preview--remote {
+    font-size: var(--rf-typography-font-size-lg);
+
+    .rf-studio-preview__nav-item {
+        font-size: var(--rf-typography-font-size-md);
+        padding: var(--rf-spacing-sm) var(--rf-spacing-md);
+    }
+}
+
+.rf-studio-preview--touch .rf-studio-preview__nav {
+    gap: var(--rf-spacing-sm);
+    padding: var(--rf-spacing-sm);
+}
