@@ -3,6 +3,15 @@
  * be a stable, cross-route API — components and their prop types, never MUI internals.
  */
 
+export type {
+    PresentationContextValue,
+    PresentationProviderProps
+} from './presentation/PresentationContext';
+export {
+    PresentationProvider,
+    usePresentation,
+    usePresentationContext
+} from './presentation/PresentationContext';
 export type { EmptyStateProps } from './components/states/EmptyState';
 export { EmptyState } from './components/states/EmptyState';
 export type { ErrorStateProps } from './components/states/ErrorState';

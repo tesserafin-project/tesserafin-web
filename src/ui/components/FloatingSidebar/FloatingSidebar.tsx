@@ -6,6 +6,8 @@ import React, {
     useState
 } from 'react';
 
+import { usePresentation } from '../../presentation/PresentationContext';
+
 import './FloatingSidebar.scss';
 
 /** One navigation entry rendered by {@link FloatingSidebar}. */
@@ -92,6 +94,10 @@ export const FloatingSidebar: FC<FloatingSidebarProps> = ({
     className,
     'aria-label': ariaLabel
 }) => {
+    // Navigation PRESENTATION comes from the active theme (RFC-0007 §4.6): shell form, label
+    // policy, which side it sits on. What the sidebar CONTAINS is `items`, decided by the caller
+    // from authorization and library state — a theme has no say in it and never gets one.
+    const presentation = usePresentation();
     const [focusedIndex, setFocusedIndex] = useState(value);
     const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -140,7 +146,11 @@ export const FloatingSidebar: FC<FloatingSidebarProps> = ({
 
     const classes = [
         'rf-floating-sidebar',
-        collapsed && 'rf-floating-sidebar--collapsed',
+        // An explicit `collapsed` prop still wins: it is runtime UI state (the user folded the
+        // rail), not a theme choice. `labels: 'never'` is the theme asking for an icon rail by
+        // default, which the user can still expand.
+        (collapsed || presentation.navigation.labels === 'never') &&
+            'rf-floating-sidebar--collapsed',
         className
     ]
         .filter(Boolean)
@@ -150,6 +160,9 @@ export const FloatingSidebar: FC<FloatingSidebarProps> = ({
         <nav
             className={classes}
             data-rf-slot='floating-sidebar'
+            data-rf-nav-shell={presentation.navigation.shell}
+            data-rf-nav-labels={presentation.navigation.labels}
+            data-rf-nav-position={presentation.navigation.position}
             aria-label={ariaLabel}
         >
             <ul className='rf-floating-sidebar__list'>

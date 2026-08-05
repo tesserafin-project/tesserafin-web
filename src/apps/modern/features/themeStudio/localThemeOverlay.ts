@@ -27,6 +27,10 @@
  * (RFC-0007 §6.1). Getting this precedence backwards would make every draft a way to defeat it.
  */
 
+import {
+    clearAppliedPresentation,
+    saveAppliedPresentation
+} from 'themes/platform/localPresentation';
 import { toCustomProperties } from 'ui/tokens/projectTokens';
 
 import type { ThemeDraft } from './draftFormat';
@@ -69,12 +73,19 @@ export function applyLocalThemeOverlay(
     // re-appended on every apply so a later-loaded theme chunk cannot end up after it.
     doc.head.appendChild(style);
     doc.documentElement.setAttribute(ROOT_ATTRIBUTE, draft.manifest.id);
+    // The draft's SEMANTIC choices, alongside its tokens. Without this an applied draft changed
+    // colour and type but not surfaces, cards or navigation — the Studio's presentation controls
+    // would have been preview-only, which is exactly the half-delivered state to avoid.
+    saveAppliedPresentation(draft.manifest.presentation);
 }
 
 /** Removes the overlay completely. The base theme is left exactly as it was. */
 export function clearLocalThemeOverlay(doc: Document = document): void {
     doc.getElementById(STYLE_ELEMENT_ID)?.remove();
     doc.documentElement.removeAttribute(ROOT_ATTRIBUTE);
+    // Cleared together with the stylesheet, so the tokens and the presentation can never describe
+    // different themes.
+    clearAppliedPresentation();
 }
 
 /** The id currently overlaid, or `null`. */

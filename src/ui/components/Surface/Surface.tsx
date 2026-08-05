@@ -1,11 +1,22 @@
 import React, { type FC, type HTMLAttributes, type ReactNode } from 'react';
 
+import { usePresentation } from '../../presentation/PresentationContext';
+
 import './Surface.scss';
 
 export type SurfaceVariant = 'glass' | 'opaque';
 
 export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
-    /** `'glass'` renders the frosted treatment (RFC-0005 §8.2); `'opaque'` is the plain, non-frosted surface. */
+    /**
+     * `'glass'` renders the frosted treatment (RFC-0005 §8.2); `'opaque'` is the plain, non-frosted
+     * surface.
+     *
+     * **Omit it to let the active theme decide** (RFC-0007 §4.6): the variant then comes from the
+     * theme's `presentation.surface.variant`, which is what makes that contract field do anything.
+     * An explicit prop still wins — a call site that genuinely needs one treatment (a modal scrim,
+     * a print view) must be able to say so, and a theme overriding that would be a theme deciding
+     * layout semantics rather than presentation.
+     */
     variant?: SurfaceVariant;
     children?: ReactNode;
     className?: string;
@@ -20,11 +31,13 @@ export interface SurfaceProps extends HTMLAttributes<HTMLDivElement> {
  * `data-rf-slot="surface"`.
  */
 export const Surface: FC<SurfaceProps> = ({
-    variant = 'glass',
+    variant: variantProp,
     className,
     children,
     ...rest
 }) => {
+    const presentation = usePresentation();
+    const variant = variantProp ?? presentation.surface.variant;
     const classes = [
         'rf-surface',
         variant === 'glass' && 'rf-surface--glass',
@@ -35,7 +48,13 @@ export const Surface: FC<SurfaceProps> = ({
         .join(' ');
 
     return (
-        <div className={classes} data-rf-slot='surface' {...rest}>
+        <div
+            className={classes}
+            data-rf-slot='surface'
+            data-rf-surface-border={presentation.surface.border}
+            data-rf-surface-elevation={presentation.surface.elevation}
+            {...rest}
+        >
             {children}
         </div>
     );

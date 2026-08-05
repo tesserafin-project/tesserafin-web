@@ -1,5 +1,7 @@
 import React, { type FC, type MouseEvent, type ReactNode } from 'react';
 
+import { usePresentation } from '../../presentation/PresentationContext';
+
 import './MediaCard.scss';
 
 export type MediaCardImageAspect = 'poster' | 'backdrop' | 'square';
@@ -35,6 +37,12 @@ export const MediaCard: FC<MediaCardProps> = ({
     placeholderIcon,
     className
 }) => {
+    // Presentation choices come from the active theme (RFC-0007 §4.6). `imageAspect` deliberately
+    // stays a required PROP rather than a theme value: it is a statement about the artwork this
+    // particular card holds, and a theme that could override it would crop posters into backdrops.
+    // `presentation.mediaCard.imageAspect` is the DEFAULT a consuming route may read; it is not
+    // applied here behind the caller's back.
+    const presentation = usePresentation();
     const classes = [
         'rf-media-card',
         `rf-media-card--${imageAspect}`,
@@ -42,6 +50,17 @@ export const MediaCard: FC<MediaCardProps> = ({
     ]
         .filter(Boolean)
         .join(' ');
+
+    /**
+     * Semantic variants as data attributes rather than modifier classes: a theme picks a value from
+     * a published enum, and an attribute selector expresses "whatever the theme chose" without this
+     * component enumerating a class per value. It also leaves `className` — a public prop call
+     * sites append to — untouched.
+     */
+    const presentationAttrs = {
+        'data-rf-hover': presentation.mediaCard.hoverEffect,
+        'data-rf-title-placement': presentation.mediaCard.titlePlacement
+    };
 
     const image = (
         <span className='rf-media-card__image-wrap'>
@@ -52,20 +71,21 @@ export const MediaCard: FC<MediaCardProps> = ({
                     {placeholderIcon}
                 </span>
             )}
-            {typeof progressPercent === 'number' && (
-                <span
-                    className='rf-media-card__progress'
-                    role='progressbar'
-                    aria-valuenow={progressPercent}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                >
+            {typeof progressPercent === 'number' &&
+                presentation.mediaCard.progressStyle === 'bar' && (
                     <span
-                        className='rf-media-card__progress-bar'
-                        style={{ width: `${progressPercent}%` }}
-                    />
-                </span>
-            )}
+                        className='rf-media-card__progress'
+                        role='progressbar'
+                        aria-valuenow={progressPercent}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                    >
+                        <span
+                            className='rf-media-card__progress-bar'
+                            style={{ width: `${progressPercent}%` }}
+                        />
+                    </span>
+                )}
         </span>
     );
 
@@ -83,6 +103,7 @@ export const MediaCard: FC<MediaCardProps> = ({
             <a
                 className={classes}
                 data-rf-slot='media-card'
+                {...presentationAttrs}
                 href={href}
                 onClick={onClick}
             >
@@ -98,6 +119,7 @@ export const MediaCard: FC<MediaCardProps> = ({
                 type='button'
                 className={classes}
                 data-rf-slot='media-card'
+                {...presentationAttrs}
                 onClick={onClick}
             >
                 {image}
@@ -107,7 +129,11 @@ export const MediaCard: FC<MediaCardProps> = ({
     }
 
     return (
-        <div className={classes} data-rf-slot='media-card'>
+        <div
+            className={classes}
+            data-rf-slot='media-card'
+            {...presentationAttrs}
+        >
             {image}
             {text}
         </div>
