@@ -47,6 +47,25 @@
         flex: 0 0 auto;
         scroll-snap-align: start;
     }
+
+    /*
+     * A shelf item needs an explicit width. `MediaCard` is `width: 100%` — correct inside
+     * `MediaGrid`, where the grid track sizes it — but in a flex scroller `flex-basis: auto`
+     * resolves that 100% against the scroller's content box, so a single card filled the entire
+     * shelf and the "horizontal scroller" held exactly one item.
+     *
+     * 260px is not a new number: it is the width `states.scss`'s `--shelf` loading skeleton has
+     * always used. Before this rule the skeleton and the loaded content had different geometry, so
+     * every shelf visibly reflowed from a row of tiles to one full-width card the moment data
+     * arrived. Reading the skeleton's own value makes them agree by construction.
+     *
+     * Overridable per surface via `--rf-media-shelf-item-width`, so a theme's `mediaCard`
+     * `imageAspect` (backdrop is wider than poster) can size shelves without this file knowing
+     * which aspect is active.
+     */
+    > .rf-media-card {
+        width: var(--rf-media-shelf-item-width, 260px);
+    }
 }
 
 .rf-media-shelf__scroller--comfortable {

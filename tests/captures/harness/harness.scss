@@ -1,0 +1,32 @@
+/**
+ * Harness page chrome. Deliberately minimal and NOT token-driven: everything that should change
+ * between `before` and `after` must come from the theme, so any styling here that reacted to the
+ * palette would be a second, uncontrolled variable in the comparison.
+ */
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: #666;
+    font-family: system-ui, sans-serif;
+}
+
+#root {
+    /*
+     * No padding. It started as a mid-grey gutter to show the preview's edge, and that was wrong:
+     * it stole 48px of width, which on the 390px touch viewport pushed `MediaGrid`'s
+     * `minmax(160px, 1fr)` below two columns. The capture then showed a one-column library that no
+     * real phone renders — a harness artefact presented as design evidence.
+     *
+     * The preview now gets the full viewport, so the width the layout responds to is the width the
+     * device actually has.
+     */
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+#root > * {
+    width: 100%;
+}

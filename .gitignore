@@ -54,3 +54,9 @@ dependency-audit-out/
 id_rsa
 id_ecdsa
 id_ed25519
+
+# Server-free capture suite: the harness bundle and the token sets it serves are build
+# artifacts. The captures under tests/captures/out/ are evidence and are attached to the PR
+# rather than committed, so a design iteration does not put binaries in the history.
+tests/captures/dist/
+tests/captures/out/

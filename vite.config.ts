@@ -12,8 +12,9 @@ export default defineConfig({
         },
         environment: 'jsdom',
         // Playwright specs live under tests/e2e (`npm run test:e2e`, needs a
-        // Reefin server) and tests/reader (`npm run test:readers`, server-free
-        // but still Playwright), not vitest. Agent worktrees under .claude/
+        // Reefin server), tests/reader (`npm run test:readers`, server-free
+        // but still Playwright) and tests/captures (`npm run captures`, also
+        // server-free Playwright), not vitest. Agent worktrees under .claude/
         // carry their own copies of the tree and must never be collected here.
         // scripts/ holds standalone Node control suites — dependency-audit
         // spawns the evaluator as a real process and asserts its exit status,
@@ -23,6 +24,10 @@ export default defineConfig({
             ...configDefaults.exclude,
             'tests/e2e/**',
             'tests/reader/**',
+            // Server-free capture suite (`npm run captures`): Playwright, like the two
+            // above. Collected by vitest it fails at import with "did not expect
+            // test.beforeAll() to be called here", because it is a Playwright spec.
+            'tests/captures/**',
             '**/.claude/**',
             'scripts/**'
         ],
