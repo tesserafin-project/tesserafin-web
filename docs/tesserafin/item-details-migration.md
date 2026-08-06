@@ -97,31 +97,33 @@ Every domain named in the P6 brief, with its owner in the migrated slice. `A` = 
 | Domain | Owner | Test |
 | --- | --- | --- |
 | Route parameter resolution and precedence | `utils/routeParams.ts` | `routeParams.test.ts` |
-| Server selection (`serverId`) | `A adapters/itemDetailsApi.ts` | `itemDetails.characterization.test.ts` (reads) |
-| Primary read + acting user | `H api/useItemDetails.ts` | reads per class |
-| Name, parent and hierarchy | `C components/ItemName.tsx` | `episode` links, name block |
-| Image, logo, backdrop | `C components/DetailImage.tsx`, `H hooks/useDetailBackdrop.ts` | `person`/`book` no backdrop |
-| Action bar | `C components/DetailActionBar.tsx` | actions per class |
-| Resume / replay / play / trailer | `H hooks/useItemPlayback.ts` | playback tests |
-| Shuffle and instant mix | `H hooks/useItemPlayback.ts` | playback tests |
-| Media-source selection | `H hooks/useTrackSelection.ts` | selectors per class |
-| Video / audio / subtitle selection | `H hooks/useTrackSelection.ts`, `C components/TrackSelections.tsx` | track tests |
-| Playstate and rating | `C components/UserDataControls.tsx` | userData per class |
-| Split versions + administrator gate | `C components/DetailActionBar.tsx` | `movie-grouped-*` |
-| Edit / delete / context menu | `H hooks/useItemContextMenu.ts` | context-menu tests |
-| Series / Season / Episode children | `C components/sections/ChildrenSection.tsx` | `series`, `season`, `episode` |
-| Next Up and More From Season | `C components/sections/NextUpSection.tsx`, `MoreFromSeasonSection.tsx` | `series`, `episode` |
-| Cast, guest cast, metadata lists | `C components/sections/CastSection.tsx`, `MetadataGroup.tsx` | `movie`, `book` |
-| Special features, scenes, additional parts | `C components/sections/VideoStripSection.tsx` | `movie` |
-| Collections and similar items | `C components/sections/CollectionsSection.tsx`, `SimilarSection.tsx` | `movie`, `box-set` |
-| More From Artist, lyrics, music videos | `C components/sections/MoreFromArtistSection.tsx`, `LyricsSection.tsx`, `MusicVideosSection.tsx` | `audio`, `music-album`, `music-artist` |
-| Programme / channel guide | `C components/sections/ProgramGuideSection.tsx` | `tv-channel` |
-| Recording and series-timer editors | `C components/sections/RecordingFieldsSection.tsx`, `SeriesTimerSection.tsx` | `program`, `series-timer*` |
-| Person biography metadata | `C components/sections/PersonFactsSection.tsx` | `person` |
-| External links, tags, media information | `C components/sections/LinksSection.tsx`, `TagsSection.tsx`, `MiscInfo.tsx` | `movie`, `program` |
-| Loading / empty / malformed / failure | `C components/ItemDetailsView.tsx` | state tests |
-| Websocket user-data refresh | `H hooks/useUserDataSubscription.ts` | subscription test |
-| Route-change cancellation and cleanup | React Query + effect cleanup | lifecycle test |
+| Server selection (`serverId` chooses the client) | `adapters/itemDetailsApi.ts` `getDetailsApiClient` | reads per class |
+| Primary read + acting user | `api/useItemDetails.ts` `useItemDetailsPrimary` | reads per class |
+| Name, parent and hierarchy | `components/ItemName.tsx` | `episode` links to series and season |
+| Image and poster | `components/ItemCollectionGrid.tsx`, `adapters` `scaledImageUrl` | `getScaledImageUrl` in the movie classes' reads |
+| Action bar | `components/DetailActionBar.tsx` | actions per class |
+| Resume / replay / play / trailer | `hooks/useItemActions.ts` | `itemDetails.actions.test.tsx` |
+| Shuffle and instant mix | `hooks/useItemActions.ts` + `utils/itemPredicates.ts` | actions suite, `music-album` |
+| Media-source selection | `hooks/useTrackSelection.ts` | selectors per class, actions suite |
+| Video / audio / subtitle selection | `hooks/useTrackSelection.ts`, `components/TrackSelections.tsx` | track option/default tests |
+| Playstate and rating | `components/DetailActionBar.tsx` (`PlayedButton`/`FavoriteButton`) | userData controls per class |
+| Split versions + administrator gate | `utils/itemPredicates.ts` `canSplitVersions` | `movie-grouped-admin` vs `movie-grouped-regular` |
+| Context menu and destructive actions | `hooks/useItemActions.ts` `showContextMenu` | actions suite (targets the item) |
+| Series / Season / Episode children | `api/useItemDetails.ts` `useDetailChildren`, `components/ItemDetailsView.tsx` | `series`, `season`, `episode` |
+| Next Up and More From Season | `useNextUp`, `useMoreFromSeason` | `series`, `episode` |
+| Cast, guest cast | `utils/itemPredicates.ts` `splitCast`, `components/PeopleGrid.tsx` | `movie`, `book` |
+| Metadata lists (the six former roots) | `components/MetadataLists.tsx` | nested-root count per class |
+| Special features, scenes, additional parts | `useSpecialFeatures`, `renderableChapters`, `useAdditionalParts`, `components/SceneGrid.tsx` | `movie` |
+| Collections and similar items | `useItemCollections`, `useSimilarItems` | `movie`, `box-set`, `minimal-video` |
+| More From Artist, lyrics, music videos | `useMoreFromArtist`, `useLyrics`, `useMusicVideos` | `audio`, `music-album`, `music-artist` |
+| Programme / channel guide | `useChannelGuide`, `ProgramGuide` in `ItemDetailsView.tsx` | `tv-channel` |
+| Recording fields | `components/RecordingFields.tsx` | `program` (section and `getLiveTvProgram`) |
+| Series-timer editor and schedule | `useSeriesTimerSchedule`, `components/ScheduleList.tsx` | `series-timer`, `series-timer-no-livetv` |
+| Person biography metadata | `ItemDetailsView.tsx` birthday/death/birthplace blocks | `person` |
+| External links, tags, media information | `ItemDetailsView.tsx` + `PrimaryMediaInfo`/`SecondaryMediaInfo` | `movie`, `program` |
+| Loading / empty / malformed / failure | `components/ItemDetailsPage.tsx` | state tests |
+| Websocket user-data refresh | `hooks/useUserDataRefresh.ts` | actions suite (matching item only) |
+| Route-change cancellation and cleanup | React Query keys + effect cleanup | subscription lifecycle test |
 
 ---
 
