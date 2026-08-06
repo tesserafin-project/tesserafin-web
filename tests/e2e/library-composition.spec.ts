@@ -65,21 +65,30 @@ interface LedgerEntry {
 }
 
 /**
- * Records every catalogue request the BROWSER issues, normalised.
+ * Records THIS LIBRARY'S catalogue requests as the browser issues them, normalised.
  *
- * Dropped: the origin, the API key, and any parameter outside {@link LEDGER_PARAMS} — those are
- * transport and session details that legitimately differ between two runs. Kept: everything that
- * decides which items come back.
+ * Scoped by `parentId`, not by URL shape. A shape-only filter also caught an unrelated `/Items`
+ * the app shell issues (no `parentId`, `fields=MediaSourceCount`); it happened to be identical on
+ * both sides, so the equality assertion still held — but it would have been reported as Library
+ * traffic, and evidence that names the wrong requester is not evidence. The library's own item
+ * lookup (`/Items/<libraryId>`, which carries no `parentId`) is matched by path instead.
+ *
+ * Dropped: the origin, the API key, and any parameter outside {@link LEDGER_PARAMS} — transport and
+ * session details that legitimately differ between two runs. Kept: everything that decides which
+ * items come back.
  */
-function collectLedger(page: Page): LedgerEntry[] {
+function collectLedger(page: Page, libraryId: () => string): LedgerEntry[] {
     const entries: LedgerEntry[] = [];
 
     page.on('request', (req) => {
         const url = new URL(req.url());
-        if (
-            !/\/(Items|Studios|Filters2?|Users\/.*\/Items)$/i.test(url.pathname)
-        )
-            return;
+        const id = libraryId();
+        const isThisLibrary =
+            url.searchParams.get('parentId') === id ||
+            url.pathname === `/Items/${id}`;
+        if (!id || !isThisLibrary) return;
+        // Image renditions are presentation, not catalogue queries (see the module note on
+        // `cardAspect`); they are keyed by item id and never carry this library's `parentId`.
 
         const params: Record<string, string> = {};
         for (const key of LEDGER_PARAMS) {
@@ -294,7 +303,7 @@ test.describe('Library page composition, against the live route', () => {
     test('changes composition on Apply while the request ledger and the ordered item set stay identical', async ({
         page
     }) => {
-        const ledger = collectLedger(page);
+        const ledger = collectLedger(page, () => libraryId);
         await signIn(page);
 
         // --- Official ------------------------------------------------------------------------
@@ -456,7 +465,7 @@ test.describe('Library page composition, against the live route', () => {
     test('a real sort and a real filter behave identically under both recipes', async ({
         page
     }) => {
-        const ledger = collectLedger(page);
+        const ledger = collectLedger(page, () => libraryId);
         await signIn(page);
 
         // Descending name, page 1 — expressed on the URL, which is where the route's query state
