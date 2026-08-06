@@ -26,12 +26,16 @@ const Overview: FC<{ markdown: string }> = ({ markdown }) => {
     return (
         <>
             <div
-                className={expanded ? undefined : 'detail-clamp-text'}
+                className={expanded ? undefined : 'rf-item-details__clamp'}
                 // The content is server-authored markdown, sanitised by DOMPurify immediately above.
                 // eslint-disable-next-line react/no-danger
                 dangerouslySetInnerHTML={{ __html: html }}
             />
-            <button type='button' onClick={() => setExpanded(!expanded)}>
+            <button
+                type='button'
+                className='rf-item-details__overview-toggle'
+                onClick={() => setExpanded(!expanded)}
+            >
                 {globalize.translate(expanded ? 'ShowLess' : 'ShowMore')}
             </button>
         </>

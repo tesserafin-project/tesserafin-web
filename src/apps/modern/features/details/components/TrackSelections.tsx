@@ -30,7 +30,7 @@ const Selector: FC<SelectorProps> = ({
     disabled,
     onChange
 }) => (
-    <div hidden={options.length === 0}>
+    <div className='rf-item-details__track' hidden={options.length === 0}>
         <label htmlFor={`itemDetails-${name}`}>{label}</label>
         <select
             id={`itemDetails-${name}`}
@@ -63,7 +63,7 @@ interface TrackSelectionsProps {
  * submit from an `emby-select` inside a form.
  */
 const TrackSelections: FC<TrackSelectionsProps> = ({ tracks }) => (
-    <>
+    <div className='rf-item-details__tracks'>
         <Selector
             name='selectSource'
             label={globalize.translate('LabelVersion')}
@@ -94,7 +94,7 @@ const TrackSelections: FC<TrackSelectionsProps> = ({ tracks }) => (
             disabled={tracks.subtitleTracks.length <= 1}
             onChange={tracks.selectSubtitle}
         />
-    </>
+    </div>
 );
 
 export default TrackSelections;

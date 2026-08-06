@@ -171,6 +171,8 @@ Every difference between the legacy route and the migrated one, and why.
 | D13 | `itemContextMenu.getCommands` runs once, not twice | all | `MAY CHANGE` #6 |
 | D14 | `apiClient.serverId()` is no longer touched | all 24 | Its only caller was `components/cardbuilder/cardImage`, which invariant 11 forbids. `item.ServerId` is already on the DTO, so calling it would be a fake call made to keep a test green. The poster still renders (`MUST PRESERVE` #9), through `getScaledImageUrl`. |
 | D15 | `movie-resumable`, `movie-grouped-admin` and `movie-grouped-regular` no longer show an empty specials section | 3 classes | `SUSPECT` #10 — the section was revealed from `SpecialFeatureCount` before the fetch resolved. Rendering it from the result is `MUST PRESERVE` #10 applied to the surface that violated it. |
+| D17 | The slice owns a stylesheet, `components/ItemDetailsView.scss`, on `--rf-*` tokens | all 24 | The first cut shipped with no layout at all and the owner rejected it. No legacy class name is reused: `.detailPagePrimaryContent`, `.detailImageContainer`, `.detailLogo` and friends stay dead, because resurrecting them to get styling back would make a legacy selector this route's public styling surface (invariant 8). Layout is keyed on a `hero`/`full` slot rather than on section names, so no rule turns a section name into something a theme could target. |
+| D18 | The item's poster, logo and backdrop are rendered by `components/DetailImage.tsx` | all 24 | `MUST PRESERVE` #9 had **no owner** in the first cut: the route rendered no item image and every section assertion stayed green, because `.detailImageContainer` was a template element rather than a named section in the frozen record. It is now asserted per class, and `Person`/`Book` are asserted to render no backdrop. |
 | D16 | Eight classes gain a section heading P5 could not see | `series`, `episode`, `music-album`, `music-artist`, `playlist`, `person`, `genre`, `music-genre` | `MAY CHANGE` #1. The legacy children/more-from titles were written into elements that carried no `.sectionTitle` class, so the P5 reader missed them; every section now has a real `h2`. Enumerated exactly in the migrated suite's `HEADING_ADDITIONS`. |
 
 Apart from D14 and D15, both named above and both asserted as exact per-class exceptions, no delta
@@ -179,7 +181,30 @@ of the 24 classes. That is what the migrated suite verifies class by class.
 
 ---
 
-## 7. Deferred, and why
+## 7. What the frozen fixture could not see
+
+The frozen record names sections by the DOM ids the legacy TEMPLATE declared, and
+`VIEW_SECTION_ORDER` was built from that template. Anything the controller rendered into an element
+that was not in that list was invisible to P5's reader — and therefore invisible to a migration
+judged only by it.
+
+The first cut of this migration shipped with **no item artwork at all** and passed every one of the
+24 section assertions. The owner caught it by looking at a screenshot. Three surfaces were in that
+blind spot:
+
+| Surface | Legacy owner | Now |
+| --- | --- | --- |
+| Poster | `renderImage` → `.detailImageContainer` | `DetailImage`, asserted per class |
+| Logo | `renderLogo` → `.detailLogo` | `DetailImage`, asserted to be absent when the item declares none |
+| Backdrop | `renderHeaderBackdrop` / `renderBackdrop` | `DetailImage`, asserted absent for `Person` and `Book` |
+
+The lesson is recorded rather than just fixed: a section list is evidence about which BLOCKS
+appear, not about whether the page is complete. `MUST PRESERVE` entries that name no section need
+their own assertion, and now have one.
+
+---
+
+## 8. Deferred, and why
 
 **Item Details-only CSS in shared stylesheets.** `.detailPagePrimaryContent`,
 `.detailPageSecondaryContainer`, `.detailImageContainer`, `.detailLogo` and `.detailPageContent` have

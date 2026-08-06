@@ -1,5 +1,6 @@
 import React, { type FC, type ReactNode } from 'react';
 
+import { isHeroSection } from '../constants/sections';
 import type { DetailSectionName } from '../constants/sections';
 
 interface DetailSectionProps {
@@ -31,11 +32,18 @@ const DetailSection: FC<DetailSectionProps> = ({
     children
 }) => (
     <section
+        className='rf-item-details__section'
         data-detail-section={name}
+        data-detail-slot={isHeroSection(name) ? 'hero' : 'full'}
         aria-label={heading && headingHidden ? heading : undefined}
     >
         {heading && !headingHidden ? (
-            <h2 data-detail-heading={name}>{heading}</h2>
+            <h2
+                className='rf-item-details__section-title'
+                data-detail-heading={name}
+            >
+                {heading}
+            </h2>
         ) : null}
         {children}
     </section>

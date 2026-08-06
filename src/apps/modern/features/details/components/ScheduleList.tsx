@@ -11,7 +11,7 @@ import type { DetailItem } from '../adapters/itemDetailsApi';
  * nothing here sorts.
  */
 const ScheduleList: FC<{ items: DetailItem[] }> = ({ items }) => (
-    <ul>
+    <ul className='rf-item-details__list'>
         {items.map((entry) => (
             <li key={entry.Id} data-id={entry.Id}>
                 <span>{entry.Name}</span>

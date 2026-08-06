@@ -38,6 +38,7 @@ interface ActionButtonProps {
 const ActionButton: FC<ActionButtonProps> = ({ name, label, onClick }) => (
     <button
         type='button'
+        className='rf-item-details__action'
         data-detail-action={name}
         title={label}
         aria-label={label}
@@ -106,7 +107,7 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
         appHost.supports(AppFeature.FileDownload);
 
     return (
-        <div ref={moreCommandsRef}>
+        <div className='rf-item-details__actions' ref={moreCommandsRef}>
             {canPlay ? (
                 <ActionButton
                     name='btnPlay'
@@ -166,7 +167,10 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
                 />
             ) : null}
             {canMarkPlayed(item) ? (
-                <span data-detail-action='btnPlaystate'>
+                <span
+                    className='rf-item-details__user-data'
+                    data-detail-action='btnPlaystate'
+                >
                     <PlayedButton
                         isPlayed={userData.Played}
                         itemId={item.Id}
@@ -175,7 +179,10 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
                 </span>
             ) : null}
             {canRate(item) ? (
-                <span data-detail-action='btnUserRating'>
+                <span
+                    className='rf-item-details__user-data'
+                    data-detail-action='btnUserRating'
+                >
                     <FavoriteButton
                         isFavorite={userData.IsFavorite}
                         itemId={item.Id}

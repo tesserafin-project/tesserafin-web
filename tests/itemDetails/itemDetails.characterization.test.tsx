@@ -405,12 +405,61 @@ describe('migrated Item Details — composition per equivalence class', () => {
             );
         });
 
+        /**
+         * `MUST PRESERVE` #9, first clause: "A poster is always rendered."
+         *
+         * The frozen `sections` list cannot express this — `.detailImageContainer` was a template
+         * element, never an entry in the legacy `VIEW_SECTION_ORDER`, so the P5 reader was blind to
+         * it. The first migrated route shipped with no item image at all and every section
+         * assertion stayed green. This is the assertion that would have caught it, added per
+         * invariant 15: adapt the evidence to the new route, do not weaken it.
+         */
+        it(`${recorded.id} always renders a poster`, async () => {
+            const mounted = await mountCase(recorded.id);
+
+            expect(
+                mounted.view.querySelectorAll('[data-detail-image="poster"]')
+            ).toHaveLength(1);
+        });
+
         it(`${recorded.id} creates no nested React root`, async () => {
             await mountCase(recorded.id);
             // The reason #129 exists. Six per render became zero.
             expect(roots.mounted).toBe(0);
         });
     }
+});
+
+describe('migrated Item Details — hero and image rules', () => {
+    /**
+     * `MUST PRESERVE` #9, second clause: `Person` and `Book` never get a backdrop, because they
+     * only ever have a primary image. The legacy rule lived in `renderHeaderBackdrop`, which
+     * returned false for those two types before looking at anything else.
+     */
+    it('never requests a backdrop for a Person or a Book', async () => {
+        for (const id of ['person', 'book']) {
+            const mounted = await mountCase(id);
+            expect(
+                mounted.view.querySelector('[data-detail-backdrop]'),
+                `${id} rendered a backdrop`
+            ).toBeNull();
+            unmountAll();
+        }
+    });
+
+    it('offers a backdrop for the types that can have one', async () => {
+        const mounted = await mountCase('movie');
+        expect(
+            mounted.view.querySelector('[data-detail-backdrop]')
+        ).not.toBeNull();
+    });
+
+    it('renders a logo slot only when the item declares one', async () => {
+        // The frozen fixtures carry `ImageTags: {}`, so no class has a logo and none may render
+        // one. A route that emitted an empty logo element for every item would fail here.
+        const mounted = await mountCase('movie');
+        expect(mounted.view.querySelector('[data-detail-image="logo"]')).toBeNull();
+    });
 });
 
 describe('migrated Item Details — the mock is still fail-closed', () => {

@@ -44,9 +44,12 @@ import {
 } from '../utils/itemPredicates';
 import type { DetailsRouteParams } from '../utils/routeParams';
 import DetailActionBar from './DetailActionBar';
+import DetailImage from './DetailImage';
 import DetailSection from './DetailSection';
 import ItemCollectionGrid from './ItemCollectionGrid';
 import ItemName from './ItemName';
+
+import './ItemDetailsView.scss';
 import PeopleGrid from './PeopleGrid';
 import RecordingFields from './RecordingFields';
 import SceneGrid from './SceneGrid';
@@ -212,7 +215,15 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
     const airTime = seriesAirTimeText(item);
 
     return (
-        <>
+        <div className='rf-item-details'>
+            {/*
+             * The item's own artwork. `MUST PRESERVE` #9: a poster is always rendered, and Person
+             * and Book never get a backdrop. It carries no `data-detail-section` because the frozen
+             * record never named it as one — it was a template element — so it is asserted by its
+             * own gate rather than by the section list.
+             */}
+            <DetailImage item={item} />
+
             <DetailSection name='nameContainer'>
                 <ItemName item={item} />
             </DetailSection>
@@ -530,7 +541,7 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                     <ItemCollectionGrid items={list(similar.data)} />
                 </DetailSection>
             ) : null}
-        </>
+        </div>
     );
 };
 
