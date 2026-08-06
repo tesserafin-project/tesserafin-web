@@ -167,6 +167,22 @@ Every difference between the legacy route and the migrated one, and why.
 | D11 | `window.ItemDetailPage` global removed | — | `MUST RETIRE` #6 |
 | D12 | `focuscontainer-x` and `itemShortcuts` delegation replaced by ordinary links and focus order | all | `MAY CHANGE` #7, `MUST PRESERVE` #11 still holds |
 | D13 | `itemContextMenu.getCommands` runs once, not twice | all | `MAY CHANGE` #6 |
+| D14 | `apiClient.serverId()` is no longer touched | all 24 | Its only caller was `components/cardbuilder/cardImage`, which invariant 11 forbids. `item.ServerId` is already on the DTO, so calling it would be a fake call made to keep a test green. The poster still renders (`MUST PRESERVE` #9), through `getScaledImageUrl`. |
+| D15 | `movie-resumable`, `movie-grouped-admin` and `movie-grouped-regular` no longer show an empty specials section | 3 classes | `SUSPECT` #10 — the section was revealed from `SpecialFeatureCount` before the fetch resolved. Rendering it from the result is `MUST PRESERVE` #10 applied to the surface that violated it. |
+| D16 | Eight classes gain a section heading P5 could not see | `series`, `episode`, `music-album`, `music-artist`, `playlist`, `person`, `genre`, `music-genre` | `MAY CHANGE` #1. The legacy children/more-from titles were written into elements that carried no `.sectionTitle` class, so the P5 reader missed them; every section now has a real `h2`. Enumerated exactly in the migrated suite's `HEADING_ADDITIONS`. |
 
-No delta removes a section, an action, a selector, a user-data control, a permission gate or a read
-from any of the 24 classes. That is what Phase 8 verifies class by class.
+Apart from D14 and D15, both named above and both asserted as exact per-class exceptions, no delta
+removes a section, an action, a selector, a user-data control, a permission gate or a read from any
+of the 24 classes. That is what the migrated suite verifies class by class.
+
+---
+
+## 7. Deferred, and why
+
+**Item Details-only CSS in shared stylesheets.** `.detailPagePrimaryContent`,
+`.detailPageSecondaryContainer`, `.detailImageContainer`, `.detailLogo` and `.detailPageContent` have
+no remaining non-stylesheet reference. They live inside `src/styles/librarybrowser.scss` and
+`src/themes/purplehaze/theme.scss` — shared files, not an Item Details stylesheet — so removing them
+is a stylesheet edit rather than a file deletion. Recorded here rather than done silently; the
+reference check that proves them dead is reproducible with
+`git ls-files | xargs grep -l <selector>`.

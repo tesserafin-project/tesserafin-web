@@ -26,7 +26,7 @@
  *      silently.
  */
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import contract from '../fixtures/item-details/legacy-contract.json';
 import { ITEM_DETAILS_CASES } from '../fixtures/item-details/cases';
@@ -39,6 +39,7 @@ import {
     renderedSelectors,
     renderRoute,
     settle,
+    unmountAll,
     touched
 } from './support/modernHarness';
 import { legacyResponders, sdkResponders } from './support/responders';
@@ -334,6 +335,12 @@ async function mountCase(
         unmount: mounted.unmount
     };
 }
+
+afterEach(() => {
+    // A route left mounted keeps its effects alive and can resolve a dynamic import inside the
+    // next test, against a fail-closed API that declares a different read set.
+    unmountAll();
+});
 
 beforeEach(() => {
     document.body.innerHTML = '';

@@ -57,6 +57,21 @@ export function createTestQueryClient(): QueryClient {
     });
 }
 
+/**
+ * Every root this module mounted and has not torn down.
+ *
+ * A route left mounted at the end of a test keeps its effects alive, and a dynamic import it
+ * started can resolve inside the NEXT test — against that test's fail-closed API, which declares a
+ * different read set. {@link unmountAll} is meant for an `afterEach`.
+ */
+const liveRoutes = new Set<() => void>();
+
+/** Tear down every route still mounted. Call from `afterEach`. */
+export function unmountAll(): void {
+    for (const unmount of [...liveRoutes]) unmount();
+    liveRoutes.clear();
+}
+
 export interface MountedRoute {
     container: HTMLElement;
     queryClient: QueryClient;
@@ -88,16 +103,17 @@ export async function renderRoute(
 
     await settle();
 
-    return {
-        container,
-        queryClient,
-        unmount: () => {
-            act(() => {
-                root?.unmount();
-            });
-            container.remove();
-        }
+    const unmount = () => {
+        if (!liveRoutes.has(unmount)) return;
+        liveRoutes.delete(unmount);
+        act(() => {
+            root?.unmount();
+        });
+        container.remove();
     };
+    liveRoutes.add(unmount);
+
+    return { container, queryClient, unmount };
 }
 
 /** Drain macrotasks until the tree stops changing. */
