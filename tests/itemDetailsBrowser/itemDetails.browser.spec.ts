@@ -557,3 +557,39 @@ test.describe('migrated Item Details, reduced motion', () => {
         ).toBe(0);
     });
 });
+
+/**
+ * Side-by-side captures for owner visual acceptance.
+ *
+ * These assert only that the route reached a rendered state — the picture is the deliverable, and
+ * judging it is the owner's job, not a test's. The equivalence classes are the ones the fixture API
+ * can serve; the remaining nineteen are covered by the jsdom suite against the frozen fixture.
+ */
+test.describe('migrated Item Details, capture set', () => {
+    for (const [label, query] of [
+        ['movie', 'id=movie-1'],
+        ['series', 'id=series-1'],
+        ['season', 'id=season-1'],
+        ['episode', 'id=episode-1'],
+        ['music-album', 'id=album-1'],
+        ['person', 'id=person-1'],
+        ['series-timer', 'seriesTimerId=seriestimer-1']
+    ] as const) {
+        test(`captures ${label}`, async ({ page, baseURL }) => {
+            await installFixtureApi(page, baseURL as string, DIST);
+            await page.goto(`/#/details?${query}&serverId=${SERVER_ID}`);
+            await page.waitForSelector(
+                `${PAGE} [data-detail-section="nameContainer"] h1`,
+                { timeout: 30_000 }
+            );
+            await page.waitForTimeout(1500);
+
+            expect(await renderedSections(page)).toContain('nameContainer');
+
+            await page.screenshot({
+                path: join(ARTIFACTS, `capture-${label}.png`),
+                fullPage: true
+            });
+        });
+    }
+});

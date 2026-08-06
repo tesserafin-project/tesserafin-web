@@ -178,10 +178,73 @@ const EPISODES = [1, 2, 3].map((n) => ({
     ImageTags: {}
 }));
 
+export const EPISODE = {
+    Id: 'episode-1',
+    ServerId: SERVER_ID,
+    Name: 'Episode 1',
+    Type: 'Episode',
+    MediaType: 'Video',
+    IsFolder: false,
+    SeriesId: 'series-1',
+    SeriesName: 'Fixture Series',
+    SeasonId: 'season-1',
+    SeasonName: 'Season 1',
+    IndexNumber: 1,
+    ParentIndexNumber: 1,
+    RunTimeTicks: 24_000_000_000,
+    Overview: 'A fixture episode.',
+    People: [],
+    UserData: { Key: 'episode-1', PlaybackPositionTicks: 0, Played: false },
+    MediaSources: [source('episode-1', 'Episode 1')],
+    ImageTags: {}
+};
+
+export const MUSIC_ALBUM = {
+    Id: 'album-1',
+    ServerId: SERVER_ID,
+    Name: 'Fixture Album',
+    Type: 'MusicAlbum',
+    IsFolder: true,
+    ProductionYear: 2026,
+    AlbumArtists: [{ Id: 'artist-1', Name: 'Fixture Artist' }],
+    ArtistItems: [{ Id: 'artist-1', Name: 'Fixture Artist' }],
+    People: [],
+    UserData: { Key: 'album-1', IsFavorite: false },
+    ImageTags: {}
+};
+
+export const PERSON = {
+    Id: 'person-1',
+    ServerId: SERVER_ID,
+    Name: 'Fixture Person',
+    Type: 'Person',
+    IsFolder: false,
+    PremiereDate: '1970-01-01T00:00:00.0000000Z',
+    ProductionLocations: ['Somewhere'],
+    Overview: 'A fixture biography.',
+    People: [],
+    UserData: { Key: 'person-1', IsFavorite: false },
+    ImageTags: {}
+};
+
+export const SERIES_TIMER = {
+    Id: 'seriestimer-1',
+    ServerId: SERVER_ID,
+    Name: 'Fixture Series Timer',
+    Type: 'SeriesTimer',
+    IsFolder: false,
+    StartDate: '2026-01-01T20:00:00.0000000Z',
+    EndDate: '2026-01-01T21:00:00.0000000Z',
+    People: []
+};
+
 const ITEMS: Record<string, unknown> = {
     'movie-1': MOVIE,
     'series-1': SERIES,
-    'season-1': SEASON
+    'season-1': SEASON,
+    'episode-1': EPISODE,
+    'album-1': MUSIC_ALBUM,
+    'person-1': PERSON
 };
 
 /**
@@ -297,6 +360,9 @@ export async function installFixtureApi(
             if (sub === '/PlaybackInfo')
                 return json({ MediaSources: MOVIE.MediaSources });
         }
+        if (path === '/LiveTv/SeriesTimers/seriestimer-1')
+            return json(SERIES_TIMER);
+        if (path === '/LiveTv/Timers') return json(list([]));
         if (path === '/Shows/series-1/Seasons') return json(list([SEASON]));
         if (path === '/Shows/series-1/Episodes') return json(list(EPISODES));
         if (path === '/Shows/NextUp') return json(list([]));
