@@ -148,6 +148,125 @@
             "platformDefaultComparison": "MISMATCH"
         },
         {
+            "id": "movie-grouped-admin",
+            "description": "Same class as `movie`, with a `Grouping` media source and an administrator: `btnSplitVersions` is the only difference.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "movie-grouped"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible"
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnSplitVersions",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "movie-grouped-regular",
+            "description": "The identical item for a non-administrator: `btnSplitVersions` is withheld. The permission gate, isolated.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "movie-grouped"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible"
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
             "id": "minimal-video",
             "description": "Playable video with no overview, tagline, tags, links, people, chapters, parts, specials or related items.",
             "itemTypes": ["Movie"],
@@ -684,6 +803,48 @@
             "platformDefaultComparison": "MISMATCH"
         },
         {
+            "id": "recording-no-livetv",
+            "description": "Same in-progress recording as `recording`, for a user without `EnableLiveTvManagement`: no stop-recording action.",
+            "itemTypes": ["Recording"],
+            "routeParams": {
+                "id": "recording-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
             "id": "series-timer",
             "description": "Series timer reached by `seriesTimerId`: schedule section and cancel-series action only.",
             "itemTypes": ["SeriesTimer"],
@@ -706,6 +867,36 @@
                     "getCurrentUserId",
                     "getLiveTvSeriesTimer",
                     "getLiveTvTimers",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "series-timer-no-livetv",
+            "description": "Same series timer as `series-timer`, for a user without `EnableLiveTvManagement`: no cancel action and no schedule section.",
+            "itemTypes": ["SeriesTimer"],
+            "routeParams": {
+                "seriesTimerId": "seriestimer-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": ["btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": [],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getLiveTvSeriesTimer",
                     "serverId",
                     "subscribe"
                 ],

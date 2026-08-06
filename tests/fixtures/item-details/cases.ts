@@ -46,6 +46,20 @@ export const ITEM_DETAILS_CASES: ItemDetailsCase[] = [
         user: fixtures.REGULAR_USER
     },
     {
+        // Administrator with a grouped version: `btnSplitVersions` is offered.
+        id: 'movie-grouped-admin',
+        params: { id: 'movie-grouped' },
+        item: fixtures.movieWithGroupedVersions(),
+        user: fixtures.ADMIN_USER
+    },
+    {
+        // The SAME item for a non-administrator: the control must not be offered.
+        id: 'movie-grouped-regular',
+        params: { id: 'movie-grouped' },
+        item: fixtures.movieWithGroupedVersions(),
+        user: fixtures.REGULAR_USER
+    },
+    {
         id: 'minimal-video',
         params: { id: 'minimal-1' },
         item: fixtures.minimalVideo(),
@@ -156,10 +170,24 @@ export const ITEM_DETAILS_CASES: ItemDetailsCase[] = [
         user: fixtures.ADMIN_USER
     },
     {
+        // The same in-progress recording for a user WITHOUT live-TV management.
+        id: 'recording-no-livetv',
+        params: { id: 'recording-1' },
+        item: fixtures.recording(),
+        user: fixtures.REGULAR_USER
+    },
+    {
         id: 'series-timer',
         params: { seriesTimerId: 'seriestimer-1' },
         item: fixtures.seriesTimer(),
         user: fixtures.ADMIN_USER
+    },
+    {
+        // The same series timer for a user WITHOUT live-TV management: no editor, no schedule.
+        id: 'series-timer-no-livetv',
+        params: { seriesTimerId: 'seriestimer-1' },
+        item: fixtures.seriesTimer(),
+        user: fixtures.REGULAR_USER
     },
     {
         id: 'tv-channel',

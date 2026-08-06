@@ -275,6 +275,11 @@ test.describe('legacy Item Details, in a real browser', () => {
 
 test.describe('legacy Item Details, accessibility baseline', () => {
     /**
+     * SCOPE: `#itemDetailPage` only. `tests/e2e/support/axe.ts` requires a narrowed `include` to be
+     * justified where it is written, so: this loop's subject is the route, the surrounding shell
+     * (header, drawer, backdrop) is untouched by it and is already scanned by `b2-axe.spec.ts`, and
+     * a whole-document scan here would attribute the shell's findings to Item Details.
+     *
      * BASELINE, NOT A GATE. The route is unchanged by this loop, so any violation here predates it.
      * The suite records what axe finds and fails only on `critical`, which is the threshold that
      * would put this work into Lane A. Everything below `critical` is written to an artifact and to

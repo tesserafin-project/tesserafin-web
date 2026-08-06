@@ -608,12 +608,22 @@ describe('legacy Item Details — user-data controls', () => {
 
 describe('legacy Item Details — administrative and permission-dependent actions', () => {
     it('shows split-versions only to an administrator with grouped sources', async () => {
-        const admin = await mountCase('movie');
-        expect(
-            admin.view
-                .querySelector('.btnSplitVersions')
-                ?.classList.contains('hide')
-        ).toBe(true);
+        // The gate is `IsAdministrator && groupedVersions.length`, so isolating it needs BOTH a
+        // media source of `Type: 'Grouping'` and two users. Without the grouped source the control
+        // is hidden for everyone and the role half of the gate is unobservable.
+        const admin = await mountCase('movie-grouped-admin');
+        expect(visibleActions(admin.view)).toContain('btnSplitVersions');
+
+        document.body.innerHTML = '';
+        const regular = await mountCase('movie-grouped-regular');
+        expect(visibleActions(regular.view)).not.toContain('btnSplitVersions');
+
+        document.body.innerHTML = '';
+        // An administrator with no grouped source is still refused.
+        const adminNoGrouping = await mountCase('movie');
+        expect(visibleActions(adminNoGrouping.view)).not.toContain(
+            'btnSplitVersions'
+        );
     });
 
     it('offers the context menu only when the menu has commands', async () => {
@@ -653,8 +663,40 @@ describe('legacy Item Details — administrative and permission-dependent action
         expect(visibleActions(recording.view)).toContain('btnCancelTimer');
 
         document.body.innerHTML = '';
+        const recordingNoPermission = await mountCase('recording-no-livetv');
+        expect(visibleActions(recordingNoPermission.view)).not.toContain(
+            'btnCancelTimer'
+        );
+
+        document.body.innerHTML = '';
         const timer = await mountCase('series-timer');
         expect(visibleActions(timer.view)).toContain('btnCancelSeriesTimer');
+        expect(visibleSections(timer.view)).toContain(
+            'seriesTimerScheduleSection'
+        );
+
+        document.body.innerHTML = '';
+        const timerNoPermission = await mountCase('series-timer-no-livetv');
+        expect(visibleActions(timerNoPermission.view)).not.toContain(
+            'btnCancelSeriesTimer'
+        );
+        expect(visibleSections(timerNoPermission.view)).not.toContain(
+            'seriesTimerScheduleSection'
+        );
+    });
+
+    it('withholds the live-TV schedule read from a user without the permission', async () => {
+        const permitted = await mountCase('series-timer');
+        expect(permitted.api.calls.map((call) => call.method)).toContain(
+            'getLiveTvTimers'
+        );
+
+        document.body.innerHTML = '';
+        const refused = await mountCase('series-timer-no-livetv');
+        expect(refused.api.calls.map((call) => call.method)).not.toContain(
+            'getLiveTvTimers'
+        );
+        expect(refused.api.refused).toEqual([]);
     });
 });
 

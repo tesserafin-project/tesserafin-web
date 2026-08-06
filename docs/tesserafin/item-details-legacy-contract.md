@@ -99,10 +99,20 @@ Two collapses are asserted rather than assumed:
 `MusicGenre` is kept separate from `genre` because `reloadPlayButtons` enables instant mix for it
 and not for `Genre`.
 
+Four classes are **state variants** of another class rather than new item types, and exist because
+a gate cannot be characterized from one side. `movie-grouped-admin` / `movie-grouped-regular` are
+the same item — one with a `Grouping` media source — seen by an administrator and by a regular user,
+which is the only way to observe the `btnSplitVersions` gate at all: without a grouped source the
+control is hidden for everyone, so the role half of the condition is invisible.
+`recording-no-livetv` and `series-timer-no-livetv` are the `EnableLiveTvManagement`-off counterparts
+of `recording` and `series-timer`. `movie-resumable` follows the same pattern for user-data state.
+
 | Class | Item types | Route parameter | Platform-default comparison |
 | --- | --- | --- | --- |
 | `movie` | `Movie`, `Video`, `MusicVideo`, `Trailer` | `id` | `MISMATCH` |
 | `movie-resumable` | `Movie` | `id` | `MISMATCH` |
+| `movie-grouped-admin` | `Movie` | `id` | `MISMATCH` |
+| `movie-grouped-regular` | `Movie` | `id` | `MISMATCH` |
 | `minimal-video` | `Movie` | `id` | `MISMATCH` |
 | `series` | `Series` | `id` | `MISMATCH` |
 | `season` | `Season` | `id` | `MISMATCH` |
@@ -117,7 +127,9 @@ and not for `Genre`.
 | `photo` | `Photo` | `id` | `NOT APPLICABLE` |
 | `program` | `Program` | `id` | `MISMATCH` |
 | `recording` | `Recording` | `id` | `MISMATCH` |
+| `recording-no-livetv` | `Recording` | `id` | `MISMATCH` |
 | `series-timer` | `SeriesTimer` | `seriesTimerId` | `NOT APPLICABLE` |
+| `series-timer-no-livetv` | `SeriesTimer` | `seriesTimerId` | `NOT APPLICABLE` |
 | `tv-channel` | `TvChannel` | `id` | `NOT APPLICABLE` |
 | `genre` | `Genre`, `Studio` | `genre` | `NOT APPLICABLE` |
 | `music-genre` | `MusicGenre` | `musicgenre` | `NOT APPLICABLE` |
@@ -178,6 +190,56 @@ Same class as `movie`, with a non-zero resume position and no optional list resu
 
 - Headings, in order: `HeaderCastAndCrew`, `HeaderGuestCast`, `SpecialFeatures`, `HeaderScenes`
 - Actions, in order: `btnPlay`, `btnReplay`, `btnPlayTrailer`, `btnPlaystate`, `btnUserRating`, `btnMoreCommands`
+- Selectors: `selectAudio`, `selectSource`, `selectSubtitles`, `selectVideo`
+- User-data controls bound to the item: `btnPlaystate`, `btnUserRating`
+- Legacy reads: `getAdditionalVideoParts`, `getCurrentUser`, `getCurrentUserId`, `getItem`, `getScaledImageUrl`, `getSimilarItems`, `getSpecialFeatures`, `serverId`, `subscribe`
+- SDK reads: `getItemCollections`
+- Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
+
+#### `movie-grouped-admin`
+
+Same class as `movie`, with a `Grouping` media source and an administrator: `btnSplitVersions` is the only difference.
+
+1. `nameContainer`
+1. `mainDetailButtons`
+1. `trackSelections`
+1. `tagline`
+1. `overview`
+1. `itemTags`
+1. `itemExternalLinks`
+1. `itemDetailsGroup`
+1. `castCollapsible`
+1. `guestCastCollapsible`
+1. `specialsCollapsible`
+1. `scenesCollapsible`
+
+- Headings, in order: `HeaderCastAndCrew`, `HeaderGuestCast`, `SpecialFeatures`, `HeaderScenes`
+- Actions, in order: `btnPlay`, `btnPlayTrailer`, `btnPlaystate`, `btnUserRating`, `btnSplitVersions`, `btnMoreCommands`
+- Selectors: `selectAudio`, `selectSource`, `selectSubtitles`, `selectVideo`
+- User-data controls bound to the item: `btnPlaystate`, `btnUserRating`
+- Legacy reads: `getAdditionalVideoParts`, `getCurrentUser`, `getCurrentUserId`, `getItem`, `getScaledImageUrl`, `getSimilarItems`, `getSpecialFeatures`, `serverId`, `subscribe`
+- SDK reads: `getItemCollections`
+- Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
+
+#### `movie-grouped-regular`
+
+The identical item for a non-administrator: `btnSplitVersions` is withheld. The permission gate, isolated.
+
+1. `nameContainer`
+1. `mainDetailButtons`
+1. `trackSelections`
+1. `tagline`
+1. `overview`
+1. `itemTags`
+1. `itemExternalLinks`
+1. `itemDetailsGroup`
+1. `castCollapsible`
+1. `guestCastCollapsible`
+1. `specialsCollapsible`
+1. `scenesCollapsible`
+
+- Headings, in order: `HeaderCastAndCrew`, `HeaderGuestCast`, `SpecialFeatures`, `HeaderScenes`
+- Actions, in order: `btnPlay`, `btnPlayTrailer`, `btnPlaystate`, `btnUserRating`, `btnMoreCommands`
 - Selectors: `selectAudio`, `selectSource`, `selectSubtitles`, `selectVideo`
 - User-data controls bound to the item: `btnPlaystate`, `btnUserRating`
 - Legacy reads: `getAdditionalVideoParts`, `getCurrentUser`, `getCurrentUserId`, `getItem`, `getScaledImageUrl`, `getSimilarItems`, `getSpecialFeatures`, `serverId`, `subscribe`
@@ -431,6 +493,23 @@ In-progress recording: stop-recording action alongside playback.
 - SDK reads: `getItemCollections`
 - Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
 
+#### `recording-no-livetv`
+
+Same in-progress recording as `recording`, for a user without `EnableLiveTvManagement`: no stop-recording action.
+
+1. `nameContainer`
+1. `mainDetailButtons`
+1. `trackSelections`
+1. `itemDetailsGroup`
+
+- Headings, in order: (none)
+- Actions, in order: `btnPlay`, `btnPlaystate`, `btnUserRating`, `btnMoreCommands`
+- Selectors: `selectAudio`, `selectSource`, `selectSubtitles`, `selectVideo`
+- User-data controls bound to the item: `btnPlaystate`, `btnUserRating`
+- Legacy reads: `getCurrentUser`, `getCurrentUserId`, `getItem`, `getSimilarItems`, `serverId`, `subscribe`
+- SDK reads: `getItemCollections`
+- Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
+
 #### `series-timer`
 
 Series timer reached by `seriesTimerId`: schedule section and cancel-series action only.
@@ -445,6 +524,22 @@ Series timer reached by `seriesTimerId`: schedule section and cancel-series acti
 - Selectors: (none)
 - User-data controls bound to the item: (none)
 - Legacy reads: `getCurrentUser`, `getCurrentUserId`, `getLiveTvSeriesTimer`, `getLiveTvTimers`, `serverId`, `subscribe`
+- SDK reads: `getItemCollections`
+- Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
+
+#### `series-timer-no-livetv`
+
+Same series timer as `series-timer`, for a user without `EnableLiveTvManagement`: no cancel action and no schedule section.
+
+1. `nameContainer`
+1. `mainDetailButtons`
+1. `itemDetailsGroup`
+
+- Headings, in order: (none)
+- Actions, in order: `btnMoreCommands`
+- Selectors: (none)
+- User-data controls bound to the item: (none)
+- Legacy reads: `getCurrentUser`, `getCurrentUserId`, `getLiveTvSeriesTimer`, `serverId`, `subscribe`
 - SDK reads: `getItemCollections`
 - Nested React roots: 6 mounted, 6 unmounted on `viewdestroy`
 

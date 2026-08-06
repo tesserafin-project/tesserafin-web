@@ -134,6 +134,31 @@ export const movieResumable = () => {
     return item;
 };
 
+/**
+ * MOVIE with a grouped alternate version — the only shape that can reveal `btnSplitVersions`.
+ *
+ * `reloadFromItem` reveals that control on `user.Policy.IsAdministrator && groupedVersions.length`,
+ * where a grouped version is a media source of `Type: 'Grouping'`. Without such a source the
+ * control is hidden for every user, so the administrator gate cannot be observed at all.
+ */
+export const movieWithGroupedVersions = () => {
+    const item = movie();
+    item.Id = 'movie-grouped';
+    item.UserData = {
+        Key: 'movie-grouped',
+        PlaybackPositionTicks: 0,
+        Played: false
+    };
+    item.MediaSources = [
+        multiTrackSource('movie-grouped', 'Version A'),
+        {
+            ...multiTrackSource('movie-grouped-alt', 'Version B'),
+            Type: 'Grouping'
+        }
+    ];
+    return item;
+};
+
 /** MINIMAL — a playable video with none of the optional data. */
 export const minimalVideo = () =>
     base({
