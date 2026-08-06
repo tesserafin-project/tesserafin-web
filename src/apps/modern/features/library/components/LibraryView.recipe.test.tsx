@@ -130,7 +130,7 @@ vi.mock('lib/tesserafin-sdk', async (importOriginal) => {
             },
             getLatestMedia: (params: Record<string, unknown>) => {
                 record('getLatestMedia', params);
-                return Promise.resolve({ data: [] });
+                return Promise.resolve({ data: ITEMS });
             },
             getResumeItems: (params: Record<string, unknown>) => {
                 record('getResumeItems', params);
@@ -154,7 +154,10 @@ vi.mock('lib/tesserafin-sdk', async (importOriginal) => {
             getGenres: (params: Record<string, unknown>) => {
                 record('getGenres', params);
                 return Promise.resolve({
-                    data: { Items: [], TotalRecordCount: 0 }
+                    data: {
+                        Items: [{ Id: 'genre-1', Name: 'Drama' }],
+                        TotalRecordCount: 1
+                    }
                 });
             }
         }),
@@ -665,6 +668,106 @@ describe('Library composition — a recipe cannot change the result set', () => 
     });
 });
 
+describe('Library composition — every destination the recipe governs', () => {
+    /**
+     * The recipe is a PAGE recipe, and `/library/:libraryId` is four destinations. Which of them
+     * each key governs is a decision (`utils/libraryRecipe.ts`), and a decision nobody asserts is a
+     * decision that quietly changes: `layout` and `cardAspect` govern the item list — Browse and
+     * Collections — `cardAspect` also shapes Suggestions' media cards, and Genres is exempt because
+     * its cards are aggregates carrying a name and no artwork.
+     */
+    function freshRoot() {
+        act(() => root.unmount());
+        container.remove();
+        ledger.length = 0;
+        localStorage.clear();
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+    }
+
+    it('composes Collections with the same recipe as Browse', async () => {
+        await renderRecipe(RECIPES[4], '/library/lib-movies/collections');
+
+        expect(
+            container.querySelector('[data-rf-slot="media-shelf"]')
+        ).not.toBeNull();
+        expect(
+            container.querySelector('.rf-media-card--backdrop')
+        ).not.toBeNull();
+    });
+
+    it('issues the same Collections ledger under every recipe', async () => {
+        const url = '/library/lib-movies/collections';
+        await renderRecipe(RECIPES[0], url);
+        const baseline = ledgerSnapshot();
+        expect(baseline.length).toBeGreaterThan(0);
+
+        for (const recipe of RECIPES.slice(1)) {
+            freshRoot();
+            await renderRecipe(recipe, url);
+            expect(
+                ledgerSnapshot(),
+                `recipe "${recipe.name}" changed the Collections ledger`
+            ).toEqual(baseline);
+        }
+    });
+
+    it('shapes Suggestions cards, and issues the same Suggestions ledger under every recipe', async () => {
+        const url = '/library/lib-movies/suggestions';
+        await renderRecipe(RECIPES[0], url);
+        const baseline = ledgerSnapshot();
+        expect(baseline.length).toBeGreaterThan(0);
+        expect(
+            container.querySelector('.rf-media-card--poster')
+        ).not.toBeNull();
+
+        freshRoot();
+        await renderRecipe(RECIPES[4], url); // backdrop
+        expect(
+            container.querySelector('.rf-media-card--backdrop')
+        ).not.toBeNull();
+        expect(container.querySelector('.rf-media-card--poster')).toBeNull();
+        expect(
+            ledgerSnapshot(),
+            'a recipe changed what Suggestions asks for'
+        ).toEqual(baseline);
+    });
+
+    it('leaves Genres alone, because a genre tile is not a media item', async () => {
+        // `square` everywhere else; Genres keeps the `backdrop` shape its name-only cards were
+        // given for a layout reason that has nothing to do with artwork.
+        await renderRecipe(RECIPES[5], '/library/lib-movies/genres');
+
+        expect(
+            container.querySelector('.rf-media-card--backdrop')
+        ).not.toBeNull();
+        expect(container.querySelector('.rf-media-card--square')).toBeNull();
+    });
+});
+
+describe('Library composition — which key wins for a card aspect', () => {
+    it('lets the page recipe override the app-wide media-card aspect', async () => {
+        // Both published keys name the shape of a card on this route. The MORE SPECIFIC one wins.
+        // Under the platform default both are `poster`, so this is the only place the precedence
+        // is observable — and therefore the only place it can be pinned.
+        saveAppliedPresentation({
+            mediaCard: { imageAspect: 'square' },
+            page: { library: { cardAspect: 'backdrop' } }
+        });
+        await render(
+            <PresentationProvider themeId='official.classic'>
+                <LibraryView />
+            </PresentationProvider>
+        );
+
+        expect(
+            container.querySelector('.rf-media-card--backdrop')
+        ).not.toBeNull();
+        expect(container.querySelector('.rf-media-card--square')).toBeNull();
+    });
+});
+
 describe('Library composition — the filter drawer is a place, not a condition', () => {
     const DRAWER = RECIPES[4];
 
@@ -825,6 +928,28 @@ describe('Library composition — layout never writes user state', () => {
         expect(
             ledger.find((entry) => entry.endpoint === 'getItems')?.params
         ).toMatchObject({ limit: 24, startIndex: 0 });
+    });
+
+    it('shows the same pagination state under a grid and under a shelf', async () => {
+        // The visible half of the same claim: a shelf displays fewer items AT ONCE, and still holds
+        // page 1 of 5. A recipe that changed `limit` would change this label too.
+        await renderRecipe(RECIPES[3]); // grid
+        const fromGrid = container.querySelector(
+            '.rf-library-view__pagination'
+        )?.textContent;
+        expect(fromGrid).toBeTruthy();
+
+        act(() => root.unmount());
+        container.remove();
+        localStorage.clear();
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+
+        await renderRecipe(RECIPES[4]); // shelf
+        expect(
+            container.querySelector('.rf-library-view__pagination')?.textContent
+        ).toBe(fromGrid);
     });
 });
 
