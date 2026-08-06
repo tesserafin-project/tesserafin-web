@@ -169,6 +169,7 @@
         "secret-scan:controls": "./ci/tests/secret-scan.test.sh",
         "secret-scan:tree": "./ci/secret-scan.sh --mode tree --repo-name tesserafin-web",
         "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10",
+        "test:item-details-browser": "playwright test --config playwright.itemDetails.config.ts",
         "test:delivery-ledger": "playwright test --config playwright.delivery.config.ts"
     },
     "engines": {

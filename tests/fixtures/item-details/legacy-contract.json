@@ -1,0 +1,1017 @@
+{
+    "$comment": "Generated from measured behaviour by tests/itemDetails/itemDetails.characterization.test.ts. See docs/tesserafin/item-details-legacy-contract.md.",
+    "route": {
+        "path": "details",
+        "registration": "LEGACY_USER_ROUTES -> toViewManagerPageRoute",
+        "controller": "itemDetails/index",
+        "view": "itemDetails/index.html",
+        "parameterResolutionOrder": [
+            "id",
+            "seriesTimerId",
+            "genre",
+            "musicgenre",
+            "musicartist"
+        ],
+        "serverSelection": "params.serverId ? ServerConnections.getApiClient(serverId) : ServerConnections.currentApiClient()",
+        "contextParameter": "params.context is forwarded to card/link URL building only"
+    },
+    "platformDefault": {
+        "source": "src/themes/platform/resolvePresentation.ts PLATFORM_DEFAULT_PRESENTATION.page.itemDetails",
+        "hero": "backdrop",
+        "sections": ["overview", "cast", "episodes", "related", "mediaInfo"],
+        "boundByRoute": false
+    },
+    "classes": [
+        {
+            "id": "movie",
+            "description": "Playable standalone video with every optional surface present.",
+            "itemTypes": ["Movie", "Video", "MusicVideo", "Trailer"],
+            "routeParams": {
+                "id": "movie-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "additionalPartsCollapsible",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible",
+                "collectionsCollapsible",
+                "similarCollapsible"
+            ],
+            "headings": [
+                "HeaderAdditionalParts",
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes",
+                "Collections",
+                "HeaderMoreLikeThis"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "movie-resumable",
+            "description": "Same class as `movie`, with a non-zero resume position and no optional list results.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "movie-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible"
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnReplay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "movie-grouped-admin",
+            "description": "Same class as `movie`, with a `Grouping` media source and an administrator: `btnSplitVersions` is the only difference.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "movie-grouped"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible"
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnSplitVersions",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "movie-grouped-regular",
+            "description": "The identical item for a non-administrator: `btnSplitVersions` is withheld. The permission gate, isolated.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "movie-grouped"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible"
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getAdditionalVideoParts",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getScaledImageUrl",
+                    "getSimilarItems",
+                    "getSpecialFeatures",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "minimal-video",
+            "description": "Playable video with no overview, tagline, tags, links, people, chapters, parts, specials or related items.",
+            "itemTypes": ["Movie"],
+            "routeParams": {
+                "id": "minimal-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "series",
+            "description": "Series: seasons as children in the PRIMARY column, Next Up, upcoming-on-TV schedule and air time.",
+            "itemTypes": ["Series"],
+            "routeParams": {
+                "id": "series-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "overview",
+                "seriesAirTime",
+                "itemDetailsGroup",
+                "nextUpSection",
+                "listChildrenCollapsible",
+                "castCollapsible"
+            ],
+            "headings": ["NextUp", "HeaderCastAndCrew"],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getLiveTvPrograms",
+                    "getNextUpEpisodes",
+                    "getSeasons",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "season",
+            "description": "Season: episodes as a list view in the primary column, no related surface.",
+            "itemTypes": ["Season"],
+            "routeParams": {
+                "id": "season-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getEpisodes",
+                    "getItem",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "episode",
+            "description": "Episode: leaf item with a sibling-episode strip and Series/Season parent links.",
+            "itemTypes": ["Episode"],
+            "routeParams": {
+                "id": "episode-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup",
+                "moreFromSeasonSection"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getEpisodes",
+                    "getItem",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "music-album",
+            "description": "Album: tracks as a list view, more-from-artist, music videos, instant mix and shuffle.",
+            "itemTypes": ["MusicAlbum"],
+            "routeParams": {
+                "id": "album-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible",
+                "moreFromArtistSection",
+                "musicVideosCollapsible"
+            ],
+            "headings": ["MusicVideos"],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getItems",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "audio",
+            "description": "Track: lyrics surface, instant mix, no played state.",
+            "itemTypes": ["Audio"],
+            "routeParams": {
+                "id": "audio-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "lyricsSection"
+            ],
+            "headings": ["Lyrics"],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "ajax",
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getItems",
+                    "getSimilarItems",
+                    "getUrl",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "music-artist",
+            "description": "Artist: items-by-name children and an appears-on strip.",
+            "itemTypes": ["MusicArtist"],
+            "routeParams": {
+                "id": "artist-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getItems",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "playlist",
+            "description": "Playlist: children delegated to `scripts/playlistViewer`.",
+            "itemTypes": ["Playlist"],
+            "routeParams": {
+                "id": "playlist-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getJSON",
+                    "getSimilarItems",
+                    "getUrl",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "box-set",
+            "description": "Collection: children grouped by item type into `.collectionItems`; both collapsibles stay hidden.",
+            "itemTypes": ["BoxSet"],
+            "routeParams": {
+                "id": "boxset-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "collectionItems"
+            ],
+            "headings": ["Movies"],
+            "actions": ["btnPlaystate", "btnUserRating", "btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "person",
+            "description": "Person: items-by-name children, birth/death/birthplace lines, no backdrop, not playable.",
+            "itemTypes": ["Person"],
+            "routeParams": {
+                "id": "person-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "overview",
+                "itemBirthday",
+                "itemBirthLocation",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": ["btnUserRating", "btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "book",
+            "description": "Book: download action, no backdrop, cast surface, not playable.",
+            "itemTypes": ["Book"],
+            "routeParams": {
+                "id": "book-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "castCollapsible"
+            ],
+            "headings": ["People"],
+            "actions": [
+                "btnDownload",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "photo",
+            "description": "Photo: not playable, no children, no related surface.",
+            "itemTypes": ["Photo"],
+            "routeParams": {
+                "id": "photo-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": ["btnUserRating", "btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "program",
+            "description": "Live TV programme outside its airing window: the whole action bar is hidden and recording fields are embedded.",
+            "itemTypes": ["Program"],
+            "routeParams": {
+                "id": "program-1"
+            },
+            "sections": [
+                "nameContainer",
+                "itemMiscInfo-secondary",
+                "recordingFields",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": [],
+            "trackSelectors": [],
+            "userDataControls": [],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getLiveTvProgram",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "recording",
+            "description": "In-progress recording: stop-recording action alongside playback.",
+            "itemTypes": ["Recording"],
+            "routeParams": {
+                "id": "recording-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnCancelTimer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "recording-no-livetv",
+            "description": "Same in-progress recording as `recording`, for a user without `EnableLiveTvManagement`: no stop-recording action.",
+            "itemTypes": ["Recording"],
+            "routeParams": {
+                "id": "recording-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "userDataControls": ["btnPlaystate", "btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getSimilarItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "MISMATCH"
+        },
+        {
+            "id": "series-timer",
+            "description": "Series timer reached by `seriesTimerId`: schedule section and cancel-series action only.",
+            "itemTypes": ["SeriesTimer"],
+            "routeParams": {
+                "seriesTimerId": "seriestimer-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "seriesTimerScheduleSection"
+            ],
+            "headings": ["Schedule"],
+            "actions": ["btnCancelSeriesTimer", "btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": [],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getLiveTvSeriesTimer",
+                    "getLiveTvTimers",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "series-timer-no-livetv",
+            "description": "Same series timer as `series-timer`, for a user without `EnableLiveTvManagement`: no cancel action and no schedule section.",
+            "itemTypes": ["SeriesTimer"],
+            "routeParams": {
+                "seriesTimerId": "seriestimer-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup"
+            ],
+            "headings": [],
+            "actions": ["btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": [],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getLiveTvSeriesTimer",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "tv-channel",
+            "description": "TV channel: programme guide, no media-source selection.",
+            "itemTypes": ["TvChannel"],
+            "routeParams": {
+                "id": "channel-1"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "programGuideSection"
+            ],
+            "headings": ["Saturday, January 1"],
+            "actions": ["btnPlay", "btnUserRating", "btnMoreCommands"],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItem",
+                    "getLiveTvPrograms",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "genre",
+            "description": "Genre reached by the `genre` route parameter: items-by-name children, no instant mix.",
+            "itemTypes": ["Genre", "Studio"],
+            "routeParams": {
+                "genre": "Drama"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getGenre",
+                    "getItems",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        },
+        {
+            "id": "music-genre",
+            "description": "Music genre reached by the `musicgenre` route parameter: items-by-name children WITH instant mix.",
+            "itemTypes": ["MusicGenre"],
+            "routeParams": {
+                "musicgenre": "Jazz"
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "trackSelectors": [],
+            "userDataControls": ["btnUserRating"],
+            "reads": {
+                "legacy": [
+                    "getCurrentUser",
+                    "getCurrentUserId",
+                    "getItems",
+                    "getMusicGenre",
+                    "serverId",
+                    "subscribe"
+                ],
+                "sdk": ["getItemCollections"]
+            },
+            "nestedReactRoots": 6,
+            "nestedReactRootsUnmounted": 6,
+            "platformDefaultComparison": "NOT APPLICABLE"
+        }
+    ]
+}
