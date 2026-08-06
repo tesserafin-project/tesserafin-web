@@ -367,7 +367,7 @@ expectRefusal(
 expectRefusal(
     'an emitted asset missing from dist',
     (paths) => unlinkSync(join(paths.dist, 'main.css')),
-    'missing from'
+    'could not be read from'
 );
 
 expectRefusal(

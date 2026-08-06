@@ -24,12 +24,7 @@
  * cross-checks it against the declared entrypoints and fails closed when the two disagree, so
  * adding a chunk to index.html cannot slip past the budget.
  */
-const {
-    existsSync,
-    mkdirSync,
-    readFileSync,
-    writeFileSync
-} = require('node:fs');
+const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { dirname, join } = require('node:path');
 
 const PLUGIN_NAME = 'DeliveryStatsPlugin';
@@ -114,14 +109,20 @@ class DeliveryStatsPlugin {
             // by the `done` hook webpack has replaced every asset source with a `SizeOnlySource`
             // ("Content and Map of this Source is not available"). The file on disk is also the
             // more honest input - it is literally what the server will hand a browser.
+            // Read directly rather than guarding with `existsSync`: checking and then opening
+            // is a check-then-use race, and a compilation with no index.html (the captures
+            // config, for one) is an expected shape, not an error - it just has nothing to
+            // record here.
             const htmlPath = join(compilation.outputOptions.path, HTML_ASSET);
             let htmlInjected = null;
-            if (existsSync(htmlPath)) {
+            try {
                 const parsed = parseInjected(readFileSync(htmlPath, 'utf8'));
                 htmlInjected = {
                     js: sorted(parsed.js),
                     css: sorted(parsed.css)
                 };
+            } catch {
+                htmlInjected = null;
             }
             const shortener = compilation.requestShortener;
             const chunkGraph = compilation.chunkGraph;

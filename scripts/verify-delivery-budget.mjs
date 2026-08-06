@@ -40,13 +40,7 @@
  * not a gate.
  */
 import { constants, brotliCompressSync, gzipSync } from 'node:zlib';
-import {
-    existsSync,
-    mkdirSync,
-    readFileSync,
-    statSync,
-    writeFileSync
-} from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -102,15 +96,30 @@ function parseArgs(argv) {
     return args;
 }
 
-function readJson(path, what) {
-    if (!existsSync(path)) {
-        fail(
-            `${what} not found at ${path}. Run \`npm run build:production\` first ` +
-                '(it emits the delivery stats as a side effect - see webpack.prod.js).'
-        );
-    }
+/**
+ * One read, no `existsSync` guard in front of it.
+ *
+ * Checking for a file and then opening it is a check-then-use race (CodeQL js/file-system-race):
+ * the answer can change between the two calls, and the guard buys nothing except a second failure
+ * path that the error handling does not cover. Attempting the read and turning a failed one into
+ * the intended fail-closed message is both correct and shorter.
+ */
+function readOrFail(path, message) {
     try {
-        return JSON.parse(readFileSync(path, 'utf8'));
+        return readFileSync(path);
+    } catch (err) {
+        fail(`${message} (${err.code ?? err.message})`);
+    }
+}
+
+function readJson(path, what) {
+    const contents = readOrFail(
+        path,
+        `${what} not found or unreadable at ${path}. Run \`npm run build:production\` first ` +
+            '(it emits the delivery stats as a side effect - see webpack.prod.js)'
+    );
+    try {
+        return JSON.parse(contents.toString('utf8'));
     } catch (err) {
         fail(`${what} at ${path} is not valid JSON: ${err.message}`);
     }
@@ -179,20 +188,24 @@ function measureAssets(names, stats, distDir) {
             );
         }
         const path = join(distDir, name);
-        if (!existsSync(path)) {
-            fail(
-                `asset "${name}" is in the initial delivery set but missing from ${distDir}. ` +
-                    'Build output and delivery stats disagree; refusing to report a size.'
-            );
-        }
-        const onDisk = statSync(path).size;
+        // Read first, ask questions after. An `existsSync` guard before the read is a
+        // check-then-use race (CodeQL js/file-system-race): between the two calls the file can
+        // disappear, and the script would then throw an unhandled ENOENT instead of the
+        // fail-closed message it promises. Reading once and measuring the buffer it returned also
+        // removes the second race - the size compared against the stats file is the size of the
+        // bytes actually compressed, not of a stat taken a moment earlier.
+        const buffer = readOrFail(
+            path,
+            `asset "${name}" is in the initial delivery set but could not be read from ` +
+                `${distDir}. Build output and delivery stats disagree; refusing to report a size.`
+        );
+        const onDisk = buffer.length;
         if (onDisk !== declaredSize) {
             fail(
                 `asset "${name}" is ${onDisk} bytes on disk but recorded as ${declaredSize} ` +
                     'bytes in the delivery stats - the stats file is stale.'
             );
         }
-        const buffer = readFileSync(path);
         assets.push({
             name,
             extension: extensionOf(name),
