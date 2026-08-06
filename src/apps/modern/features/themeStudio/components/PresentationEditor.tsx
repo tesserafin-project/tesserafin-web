@@ -14,6 +14,17 @@ import {
     WEB_RENDERED_HOME_SECTIONS,
     WEB_UNRENDERED_HOME_SECTIONS
 } from 'apps/modern/features/home/utils/homeRecipe';
+/*
+ * The Library value lists come from the LIVE ROUTE's recipe module, not from a second copy typed
+ * here. That import is the mechanism behind "never offer a value the route silently ignores": the
+ * Studio can only offer what `apps/modern/features/library` composes from, and a value added or
+ * removed there changes this control in the same commit.
+ */
+import {
+    LIBRARY_CARD_ASPECTS,
+    LIBRARY_FILTER_PRESENTATIONS,
+    LIBRARY_LAYOUTS
+} from 'apps/modern/features/library/utils/libraryRecipe';
 import {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
@@ -21,6 +32,7 @@ import {
     WEB_RENDERER_CAPABILITIES,
     type HomeRecipe,
     type HomeSection,
+    type LibraryRecipe,
     type ThemeCapability,
     type ThemePresentation
 } from 'themes/platform';
@@ -71,6 +83,15 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
         onChange({
             ...presentation,
             page: { ...presentation.page, home }
+        });
+
+    const setLibrary = (key: keyof LibraryRecipe, value: string) =>
+        onChange({
+            ...presentation,
+            page: {
+                ...presentation.page,
+                library: { ...presentation.page?.library, [key]: value }
+            }
         });
 
     return (
@@ -164,14 +185,30 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
                 )}
             </Section>
 
+            <Section title='Library composition'>
+                {supports('presentation.page.library') ? (
+                    <LibraryCompositionEditor
+                        recipe={presentation.page?.library}
+                        onChange={setLibrary}
+                    />
+                ) : (
+                    <Alert severity='warning' variant='outlined'>
+                        The Library composition recipe is defined by the
+                        contract and <strong>not bound</strong> by this
+                        renderer, so editing it here is disabled.
+                    </Alert>
+                )}
+            </Section>
+
             <Section title='Other page composition'>
                 <Alert severity='warning' variant='outlined'>
-                    Library and Item Details composition recipes are defined by
-                    the contract and <strong>not yet bound</strong> by the Web
-                    renderer. A theme may declare them today; this renderer
-                    falls back to the platform default and reports the fallback.
-                    Editing them here is disabled until their routes read a
-                    recipe, so the Studio does not offer a control that would do
+                    The Item Details composition recipe is defined by the
+                    contract and <strong>not yet bound</strong> by the Web
+                    renderer — its route is still a legacy view that reads no
+                    recipe. A theme may declare it today; this renderer falls
+                    back to the platform default and reports the fallback.
+                    Editing it here is disabled until that route reads a recipe,
+                    so the Studio does not offer a control that would do
                     nothing.
                 </Alert>
             </Section>
@@ -330,6 +367,66 @@ const HomeCompositionEditor: FC<HomeCompositionEditorProps> = ({
         </Stack>
     );
 };
+
+const DEFAULT_LIBRARY = PLATFORM_DEFAULT_PRESENTATION.page.library;
+
+interface LibraryCompositionEditorProps {
+    recipe: LibraryRecipe | undefined;
+    onChange: (key: keyof LibraryRecipe, value: string) => void;
+}
+
+/**
+ * The Library composition control — a REAL one, on the same terms as Home's.
+ *
+ * It edits the `presentation.page.library` object the live route resolves, its three value lists
+ * are IMPORTED from `apps/modern/features/library/utils/libraryRecipe.ts` rather than re-typed, and
+ * applying a draft changes `/library/:libraryId` itself, not only `PreviewCanvas`.
+ *
+ * The notes below are not decoration. Each records a place where a value is valid vocabulary and
+ * inert, which is the one thing a capability-based contract has to say out loud — the precedent
+ * Home set by labelling `recommendations` rather than quietly dropping it.
+ */
+const LibraryCompositionEditor: FC<LibraryCompositionEditorProps> = ({
+    recipe,
+    onChange
+}) => (
+    <Stack spacing={2} data-testid='theme-studio-library-composition'>
+        <Typography variant='body2'>
+            A recipe composes the library. It never changes the catalogue query:
+            the same items, in the same order, with the same sort, filters, page
+            and page size are requested under every recipe below.
+        </Typography>
+
+        <Choice
+            label='Layout'
+            value={recipe?.layout ?? DEFAULT_LIBRARY.layout}
+            options={LIBRARY_LAYOUTS}
+            onChange={(value) => onChange('layout', value)}
+        />
+        <Choice
+            label='Card aspect'
+            value={recipe?.cardAspect ?? DEFAULT_LIBRARY.cardAspect}
+            options={LIBRARY_CARD_ASPECTS}
+            onChange={(value) => onChange('cardAspect', value)}
+        />
+        <Choice
+            label='Filter controls'
+            value={recipe?.filters ?? DEFAULT_LIBRARY.filters}
+            options={LIBRARY_FILTER_PRESENTATIONS}
+            onChange={(value) => onChange('filters', value)}
+        />
+
+        <Alert severity='info' variant='outlined'>
+            Layout composes the library&apos;s item list — Browse and
+            Collections. Genres lists aggregates and Suggestions is editorial,
+            so both keep their own composition. Card aspect shapes every
+            media-item card the route draws, and takes precedence over the
+            app-wide media-card image aspect above. Under a shelf layout the
+            list/grid view-mode toggle does not apply, and the reader&apos;s own
+            saved choice is left untouched.
+        </Alert>
+    </Stack>
+);
 
 const Section: FC<{ title: string; children: React.ReactNode }> = ({
     title,

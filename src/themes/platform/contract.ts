@@ -65,8 +65,11 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
  * correction #122 made in the other direction for `presentation.*`.
  *
  * `presentation.page.home` joined this list once the modern Home route actually read the resolved
- * recipe (`apps/modern/features/home`), and not before. `.library` and `.itemDetails` stay off it
- * for exactly the reason `.home` used to: their routes do not read a recipe yet.
+ * recipe (`apps/modern/features/home`), and not before. `presentation.page.library` joined it on the
+ * same terms: `apps/modern/features/library` now reads `page.library` through `usePresentation()`
+ * and composes the route from it. `.itemDetails` stays off it for exactly the reason the other two
+ * used to — its route does not read a recipe yet, and it is still a legacy `controller` +
+ * `view.html` view that would need migrating first.
  *
  * `source.web.css` in particular is the advanced CSS/SCSS/LESS/Sass authoring layer: the manifest
  * reserves its shape (`renderers.web.source`) so the package format is already right, while the
@@ -78,7 +81,8 @@ export const WEB_RENDERER_CAPABILITIES: readonly ThemeCapability[] = [
     'presentation.surface',
     'presentation.mediaCard',
     'presentation.navigation',
-    'presentation.page.home'
+    'presentation.page.home',
+    'presentation.page.library'
 ] as const;
 
 export type ThemeMode = 'light' | 'dark';
@@ -182,13 +186,41 @@ export interface HomeRecipe {
     shelfDensity?: HomeShelfDensity;
 }
 
+/**
+ * The Library recipe vocabulary (RFC-0007 §4.7), as runtime lists for the same reason
+ * {@link HOME_SECTIONS} is one: the applied-presentation record in `localStorage` is hand-editable,
+ * so the resolver has to be able to reject `{"layout":"enormous"}` at runtime, and a TypeScript
+ * union cannot do that.
+ *
+ * Every value here is a statement about COMPOSITION — how the library's item list is laid out, how
+ * a card is shaped, where the filter controls live. None of them is a statement about the CATALOGUE
+ * QUERY. `startIndex`, `limit`, sort, and every filter parameter are decided by the route's URL
+ * state and the user's page-size setting, above any recipe read, and
+ * `LibraryView.recipe.test.tsx` asserts the issued request ledger is byte-identical across every
+ * recipe below (RFC-0007 §6.1).
+ */
+export const LIBRARY_LAYOUTS = ['grid', 'shelf'] as const;
+
+export type LibraryLayout = (typeof LIBRARY_LAYOUTS)[number];
+
+export const LIBRARY_CARD_ASPECTS = ['poster', 'backdrop', 'square'] as const;
+
+export type LibraryCardAspect = (typeof LIBRARY_CARD_ASPECTS)[number];
+
+export const LIBRARY_FILTER_PRESENTATIONS = ['inline', 'drawer'] as const;
+
+export type LibraryFilterPresentation =
+    (typeof LIBRARY_FILTER_PRESENTATIONS)[number];
+
+export interface LibraryRecipe {
+    layout?: LibraryLayout;
+    cardAspect?: LibraryCardAspect;
+    filters?: LibraryFilterPresentation;
+}
+
 export interface PageRecipes {
     home?: HomeRecipe;
-    library?: {
-        layout?: 'grid' | 'shelf';
-        cardAspect?: 'poster' | 'backdrop' | 'square';
-        filters?: 'inline' | 'drawer';
-    };
+    library?: LibraryRecipe;
     itemDetails?: {
         hero?: 'backdrop' | 'poster' | 'minimal';
         sections?: readonly ItemDetailsSection[];

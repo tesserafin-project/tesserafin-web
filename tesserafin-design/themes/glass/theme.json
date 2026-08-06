@@ -37,6 +37,11 @@
                     "libraries"
                 ],
                 "shelfDensity": "spacious"
+            },
+            "library": {
+                "layout": "shelf",
+                "cardAspect": "backdrop",
+                "filters": "drawer"
             }
         }
     },
@@ -47,7 +52,8 @@
             "presentation.surface",
             "presentation.mediaCard",
             "presentation.navigation",
-            "presentation.page.home"
+            "presentation.page.home",
+            "presentation.page.library"
         ]
     },
     "renderers": {
@@ -58,7 +64,8 @@
                 "presentation.surface",
                 "presentation.mediaCard",
                 "presentation.navigation",
-                "presentation.page.home"
+                "presentation.page.home",
+                "presentation.page.library"
             ],
             "source": {
                 "kind": "none"

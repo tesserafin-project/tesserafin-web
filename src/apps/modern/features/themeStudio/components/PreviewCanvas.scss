@@ -47,6 +47,22 @@
     background: var(--rf-color-primary);
 }
 
+/* The library preview's filter row: inline chips, or the single chip a drawer trigger stands for. */
+.rf-studio-preview__library-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-spacing-sm);
+    margin-block: var(--rf-spacing-sm);
+}
+
+.rf-studio-preview__filter-chip {
+    color: var(--rf-color-text-muted);
+    font-size: var(--rf-typography-font-size-sm);
+    padding: var(--rf-spacing-xs) var(--rf-spacing-sm);
+    border: 1px solid var(--rf-color-divider);
+    border-radius: var(--rf-shape-radius-sm);
+}
+
 .rf-studio-preview__body {
     display: flex;
     flex-direction: column;

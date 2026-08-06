@@ -48,9 +48,22 @@ const getItemHref = (item: ItemDto, fallbackServerId?: string): string => {
     return `#/details?id=${id}&serverId=${serverId}`;
 };
 
+/**
+ * @param imageAspect The shape the card is drawn at, resolved from
+ * `presentation.page.library.cardAspect` by `utils/libraryRecipe.ts`. Required rather than
+ * defaulted: a call site that forgot it would silently render the platform default under every
+ * theme, which is the "control that does nothing" failure the binding exists to avoid.
+ *
+ * Note what this does NOT do: {@link getItemImageUrl} asks for `ImageType.Primary` at
+ * `quality: 96` whatever the aspect is, so changing `cardAspect` changes the CSS box a card draws
+ * into and issues the byte-identical image request for the byte-identical media item. A theme
+ * cropping a poster is presentation; a theme choosing a different image endpoint would be a theme
+ * changing what the client asks the server for.
+ */
 export const toMediaCardProps = (
     item: ItemDto,
-    apiClient: ImageApiClient | undefined
+    apiClient: ImageApiClient | undefined,
+    imageAspect: MediaCardProps['imageAspect']
 ): MediaCardProps => {
     // `ItemDto` (unlike the raw `BaseItemDto`) flattens `UserItemDataDto`'s fields directly onto the
     // item instead of nesting them under `UserData` (`types/base/models/item-dto.ts`'s `UserItem`
@@ -61,7 +74,7 @@ export const toMediaCardProps = (
         title: item.Name ?? '',
         subtitle: item.ProductionYear ? String(item.ProductionYear) : undefined,
         imageUrl: getItemImageUrl(item, apiClient),
-        imageAspect: 'poster',
+        imageAspect,
         progressPercent:
             playedPercentage && playedPercentage > 0 && playedPercentage < 100
                 ? playedPercentage
@@ -72,6 +85,7 @@ export const toMediaCardProps = (
 
 export const toMediaCardPropsArray = (
     items: ItemDto[] | null | undefined,
-    apiClient: ImageApiClient | undefined
+    apiClient: ImageApiClient | undefined,
+    imageAspect: MediaCardProps['imageAspect']
 ): MediaCardProps[] =>
-    (items ?? []).map((item) => toMediaCardProps(item, apiClient));
+    (items ?? []).map((item) => toMediaCardProps(item, apiClient, imageAspect));

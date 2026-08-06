@@ -24,6 +24,13 @@ import {
     type HomeSection,
     type HomeShelfDensity,
     type ItemDetailsSection,
+    LIBRARY_CARD_ASPECTS,
+    LIBRARY_FILTER_PRESENTATIONS,
+    LIBRARY_LAYOUTS,
+    type LibraryCardAspect,
+    type LibraryFilterPresentation,
+    type LibraryLayout,
+    type LibraryRecipe,
     type MediaCardPresentation,
     type NavigationPresentation,
     type SurfacePresentation,
@@ -46,11 +53,7 @@ export interface ResolvedPresentation {
             sections: readonly HomeSection[];
             shelfDensity: HomeShelfDensity;
         };
-        library: {
-            layout: 'grid' | 'shelf';
-            cardAspect: 'poster' | 'backdrop' | 'square';
-            filters: 'inline' | 'drawer';
-        };
+        library: Required<LibraryRecipe>;
         itemDetails: {
             hero: 'backdrop' | 'poster' | 'minimal';
             sections: readonly ItemDetailsSection[];
@@ -105,6 +108,18 @@ export const PLATFORM_DEFAULT_PRESENTATION: ResolvedPresentation = {
             ],
             shelfDensity: 'comfortable'
         },
+        /*
+         * Checked against the route before `presentation.page.library` was bound, the way Home's
+         * order should have been. `/library/:libraryId` rendered its items through `MediaGrid`
+         * (`LibraryItemsGrid.tsx`), built every media-item card with a hard-coded
+         * `imageAspect: 'poster'` (`library/utils/mediaCardProps.ts`), and laid its sort/genre/
+         * year/studio controls out in the always-visible `rf-library-view__controls` bar
+         * (`BrowseDestination.tsx`). `grid` / `poster` / `inline` therefore already WAS the product
+         * behaviour, and `LibraryView.recipe.test.tsx` pins that equality so the two cannot drift.
+         *
+         * Unlike Home, no correction was needed here — which is why the check mattered: the answer
+         * was not known in advance either time.
+         */
         library: {
             layout: 'grid',
             cardAspect: 'poster',
@@ -210,6 +225,57 @@ function sanitizeHomeRecipe(override: HomeRecipe | undefined): HomeRecipe {
     return clean;
 }
 
+const LIBRARY_LAYOUT_NAMES: ReadonlySet<string> = new Set(LIBRARY_LAYOUTS);
+const LIBRARY_CARD_ASPECT_NAMES: ReadonlySet<string> = new Set(
+    LIBRARY_CARD_ASPECTS
+);
+const LIBRARY_FILTER_PRESENTATION_NAMES: ReadonlySet<string> = new Set(
+    LIBRARY_FILTER_PRESENTATIONS
+);
+
+/**
+ * The Library recipe's three keys are scalar enums, which is exactly why they need this: `object`
+ * spread in {@link mergeGroup} would merge `{"layout":"enormous"}` straight into the resolved
+ * presentation, and the route would then branch on a value no renderer defines.
+ *
+ * Same rule as {@link sanitizeHomeRecipe}, and same reason — a hand-edited `localStorage` record
+ * must degrade, never throw, and never prevent boot:
+ *
+ *   - each key is validated INDEPENDENTLY, so one bad value cannot cost the other two;
+ *   - an unknown value is dropped, leaving the platform default for that key alone;
+ *   - nothing is reported. A theme author gets a real error from `validateManifest`.
+ */
+function sanitizeLibraryRecipe(
+    override: LibraryRecipe | undefined
+): LibraryRecipe {
+    if (!override || typeof override !== 'object') return {};
+
+    const clean: LibraryRecipe = {};
+
+    if (
+        typeof override.layout === 'string' &&
+        LIBRARY_LAYOUT_NAMES.has(override.layout)
+    ) {
+        clean.layout = override.layout as LibraryLayout;
+    }
+
+    if (
+        typeof override.cardAspect === 'string' &&
+        LIBRARY_CARD_ASPECT_NAMES.has(override.cardAspect)
+    ) {
+        clean.cardAspect = override.cardAspect as LibraryCardAspect;
+    }
+
+    if (
+        typeof override.filters === 'string' &&
+        LIBRARY_FILTER_PRESENTATION_NAMES.has(override.filters)
+    ) {
+        clean.filters = override.filters as LibraryFilterPresentation;
+    }
+
+    return clean;
+}
+
 function mergeGroup<T extends object>(
     defaults: T,
     override: Partial<T> | undefined,
@@ -279,7 +345,7 @@ export function resolvePresentation(
             ),
             library: mergeGroup(
                 defaults.page.library,
-                themePresentation.page?.library,
+                sanitizeLibraryRecipe(themePresentation.page?.library),
                 supports(CAPABILITY_FOR_PAGE_KEY.library),
                 CAPABILITY_FOR_PAGE_KEY.library,
                 fallbacks

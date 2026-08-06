@@ -11,7 +11,14 @@ import { useLocalStorage } from 'usehooks-ts';
 import Page from 'components/Page';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import { EmptyState, ErrorState, LoadingState, Tabs, type TabItem } from 'ui';
+import {
+    EmptyState,
+    ErrorState,
+    LoadingState,
+    Tabs,
+    usePresentation,
+    type TabItem
+} from 'ui';
 
 import { useLibraryInfo } from '../api/useLibraryInfo';
 import {
@@ -37,6 +44,7 @@ import {
     getLibraryRedirectPath,
     isSupportedLibraryCollectionType
 } from '../utils/libraryRedirect';
+import { resolveLibraryCardAspect } from '../utils/libraryRecipe';
 
 import BrowseDestination from './BrowseDestination';
 import CollectionsDestination from './CollectionsDestination';
@@ -104,6 +112,18 @@ const LibraryView: FC = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
     const { __legacyApiClient__ } = useApi();
+
+    /*
+     * The route's own read of the resolved recipe (RFC-0007 §4.6). Read HERE, at the top of the
+     * page, and passed down — the destinations receive semantic values, and no component below
+     * this line knows that themes exist, let alone which one is active.
+     *
+     * Read unconditionally, above every data hook and every early return, so a recipe can never be
+     * the reason a query does or does not happen.
+     */
+    const presentation = usePresentation();
+    const recipe = presentation.page.library;
+    const cardAspect = resolveLibraryCardAspect(presentation);
 
     const infoQuery = useLibraryInfo(libraryId);
     const collectionType = infoQuery.data?.CollectionType;
@@ -255,7 +275,20 @@ const LibraryView: FC = () => {
             title={libraryName}
             backDropType={[primaryItemType]}
         >
-            <div className='rf-library-view'>
+            {/*
+             * The composition root, published as a durable slot with the resolved recipe on it as
+             * semantic data attributes — the same shape `MediaCard` uses for `data-rf-hover`. A
+             * theme picks a value from a published enum and an attribute selector expresses
+             * "whatever the theme chose", so nothing here enumerates a class per value and no
+             * generated class name becomes theme API.
+             */}
+            <div
+                className='rf-library-view'
+                data-rf-slot='library-composition'
+                data-rf-library-layout={recipe.layout}
+                data-rf-library-card-aspect={recipe.cardAspect}
+                data-rf-library-filters={recipe.filters}
+            >
                 <h1 className='rf-library-view__title'>{libraryName}</h1>
 
                 <Tabs
@@ -286,8 +319,15 @@ const LibraryView: FC = () => {
                         primaryItemType={primaryItemType}
                         density={density}
                         apiClient={__legacyApiClient__}
+                        recipe={recipe}
                     />
                 )}
+                {/*
+                 * Genres takes no recipe on purpose. Its cards are AGGREGATES — a genre name, no
+                 * artwork — so `cardAspect` has nothing to shape, and `layout` composes an item
+                 * list this destination does not have. Recorded in `utils/libraryRecipe.ts` and
+                 * stated in the Theme Studio control, rather than passed through and ignored.
+                 */}
                 {destination === 'genres' && (
                     <GenresDestination
                         libraryId={libraryId}
@@ -300,14 +340,17 @@ const LibraryView: FC = () => {
                         libraryId={libraryId}
                         density={density}
                         apiClient={__legacyApiClient__}
+                        recipe={recipe}
                     />
                 )}
+                {/* Suggestions is editorial: already shelves, so only `cardAspect` applies. */}
                 {destination === 'suggestions' && (
                     <SuggestionsDestination
                         libraryId={libraryId}
                         collectionType={collectionType}
                         density={density}
                         apiClient={__legacyApiClient__}
+                        cardAspect={cardAspect}
                     />
                 )}
             </div>

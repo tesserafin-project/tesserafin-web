@@ -7,6 +7,7 @@ import globalize from 'lib/globalize';
 import { useLibraryCollections } from '../api/useLibraryDestinations';
 import { useCanonicalPage } from '../hooks/useCanonicalPage';
 import type { LibraryDensity } from '../utils/density';
+import type { ResolvedLibraryRecipe } from '../utils/libraryRecipe';
 import type { ImageApiClient } from '../utils/mediaCardProps';
 import {
     clampPage,
@@ -24,6 +25,12 @@ export interface CollectionsDestinationProps {
     libraryId: string;
     density: LibraryDensity;
     apiClient: ImageApiClient | undefined;
+    /**
+     * The resolved `presentation.page.library` recipe. Collections composes an item list through
+     * the same `LibraryItemsGrid`, so it honours `layout` and `cardAspect` exactly as Browse does —
+     * one page, one recipe.
+     */
+    recipe: ResolvedLibraryRecipe;
 }
 
 /**
@@ -39,7 +46,8 @@ export interface CollectionsDestinationProps {
 export const CollectionsDestination: FC<CollectionsDestinationProps> = ({
     libraryId,
     density,
-    apiClient
+    apiClient,
+    recipe
 }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { libraryPageSize: pageSize } = useUserSettings();
@@ -93,6 +101,8 @@ export const CollectionsDestination: FC<CollectionsDestinationProps> = ({
         <LibraryItemsGrid
             itemsQuery={collectionsQuery}
             density={density}
+            layout={recipe.layout}
+            cardAspect={recipe.cardAspect}
             apiClient={apiClient}
             label={globalize.translate('Collections')}
             page={page}

@@ -10,6 +10,10 @@ export type {
     HomeSection,
     HomeShelfDensity,
     ItemDetailsSection,
+    LibraryCardAspect,
+    LibraryFilterPresentation,
+    LibraryLayout,
+    LibraryRecipe,
     MediaCardPresentation,
     NavigationPresentation,
     PageRecipes,
@@ -28,6 +32,9 @@ export type {
 export {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    LIBRARY_CARD_ASPECTS,
+    LIBRARY_FILTER_PRESENTATIONS,
+    LIBRARY_LAYOUTS,
     THEME_CAPABILITIES,
     THEME_CONTRACT_VERSION,
     WEB_RENDERER_CAPABILITIES

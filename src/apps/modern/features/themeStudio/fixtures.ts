@@ -94,6 +94,18 @@ export const PREVIEW_HOME_SHELVES = {
 export const PREVIEW_HERO_ITEM: PreviewItem = PREVIEW_HOME_SHELVES
     .continueWatching.items[0] as PreviewItem;
 
+/**
+ * The filter controls the library preview stands in for, named after the real ones on
+ * `BrowseDestination`. Fixture labels only — the preview is a still life, and these never reach a
+ * query.
+ */
+export const PREVIEW_LIBRARY_FILTERS: readonly string[] = [
+    'Sort',
+    'Genre',
+    'Year',
+    'Studio'
+];
+
 export const PREVIEW_LIBRARY_ITEMS: readonly PreviewItem[] = [
     item('lib-1', 'Aurora Bay', '2024'),
     item('lib-2', 'Between Tides', '2023'),

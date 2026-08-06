@@ -19,6 +19,7 @@ import {
     PREVIEW_DETAIL,
     PREVIEW_HERO_ITEM,
     PREVIEW_HOME_SHELVES,
+    PREVIEW_LIBRARY_FILTERS,
     PREVIEW_LIBRARY_ITEMS,
     PREVIEW_NAV_ITEMS
 } from '../fixtures';
@@ -105,6 +106,20 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
     const homeSections = toRenderedHomeSections(
         presentation.page.home.sections
     );
+
+    // Built once, above the layout branch — the same construction the live route uses, and the
+    // reason grid and shelf preview the same set of cards at the same aspect.
+    const libraryCards = PREVIEW_LIBRARY_ITEMS.map((item) => (
+        <MediaCard
+            key={item.id}
+            title={item.title}
+            subtitle={item.subtitle}
+            imageAspect={presentation.page.library.cardAspect}
+            placeholderIcon={
+                <span aria-hidden='true'>{item.title.charAt(0)}</span>
+            }
+        />
+    ));
 
     return (
         <div
@@ -194,7 +209,18 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
                 )}
 
                 {surface === 'library' && (
-                    <>
+                    <div
+                        data-testid='theme-studio-preview-library'
+                        data-rf-library-layout={
+                            presentation.page.library.layout
+                        }
+                        data-rf-library-card-aspect={
+                            presentation.page.library.cardAspect
+                        }
+                        data-rf-library-filters={
+                            presentation.page.library.filters
+                        }
+                    >
                         <Tabs
                             items={[
                                 { id: 'browse', label: 'Browse' },
@@ -210,27 +236,47 @@ export const PreviewCanvas: FC<PreviewCanvasProps> = ({
                             }
                             aria-label='Preview library sections'
                         />
-                        <MediaGrid
-                            density={gridDensity}
-                            aria-label='Preview library items'
-                        >
-                            {PREVIEW_LIBRARY_ITEMS.map((item) => (
-                                <MediaCard
-                                    key={item.id}
-                                    title={item.title}
-                                    subtitle={item.subtitle}
-                                    imageAspect={
-                                        presentation.page.library.cardAspect
-                                    }
-                                    placeholderIcon={
-                                        <span aria-hidden='true'>
-                                            {item.title.charAt(0)}
-                                        </span>
-                                    }
-                                />
-                            ))}
-                        </MediaGrid>
-                    </>
+
+                        {/*
+                         * The filter placement, as a still life: the live route's controls behind a
+                         * single trigger, or laid out in the bar. Deliberately NOT a mounted
+                         * `FilterDrawer` — the preview is a picture, and an openable dialog inside
+                         * it would be a second, interactive copy of a control whose real behaviour
+                         * (focus, Escape, query invariance) is asserted on the route itself.
+                         */}
+                        <div className='rf-studio-preview__library-filters'>
+                            {presentation.page.library.filters === 'drawer' ? (
+                                <span className='rf-studio-preview__filter-chip'>
+                                    Filters
+                                </span>
+                            ) : (
+                                PREVIEW_LIBRARY_FILTERS.map((filter) => (
+                                    <span
+                                        key={filter}
+                                        className='rf-studio-preview__filter-chip'
+                                    >
+                                        {filter}
+                                    </span>
+                                ))
+                            )}
+                        </div>
+
+                        {presentation.page.library.layout === 'shelf' ? (
+                            <MediaShelf
+                                title='Preview library items'
+                                density={density}
+                            >
+                                {libraryCards}
+                            </MediaShelf>
+                        ) : (
+                            <MediaGrid
+                                density={gridDensity}
+                                aria-label='Preview library items'
+                            >
+                                {libraryCards}
+                            </MediaGrid>
+                        )}
+                    </div>
                 )}
 
                 {surface === 'itemDetails' && (

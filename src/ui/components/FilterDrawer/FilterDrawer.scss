@@ -1,0 +1,105 @@
+/**
+ * FilterDrawer (RFC-0007 §4.7, `presentation.page.library.filters`). Only `--rf-*` custom
+ * properties, with static fallbacks — no historical class name and no generated MUI selector, per
+ * RFC-0005 §6/§7.3.
+ */
+
+.rf-filter-drawer {
+    display: inline-flex;
+}
+
+.rf-filter-drawer__trigger,
+.rf-filter-drawer__close {
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 var(--rf-spacing-md, 16px);
+    color: var(--rf-color-text, #fff);
+    background: transparent;
+    border: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    border-radius: var(--rf-shape-radius-sm, 4px);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    cursor: pointer;
+
+    &:hover {
+        border-color: var(--rf-color-text, #fff);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+}
+
+.rf-filter-drawer__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    padding: 0;
+    background: var(--rf-color-scrim, rgba(0, 0, 0, 0.5));
+    border: 0;
+    cursor: default;
+}
+
+.rf-filter-drawer__panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-md, 16px);
+
+    /*
+     * `min(…, 100vw)` rather than a bare width: on a narrow phone a fixed 22rem panel is wider than
+     * the viewport, and a fixed element wider than the viewport is precisely what produces the
+     * horizontal page overflow the responsive gate forbids.
+     */
+    width: min(22rem, 100vw);
+    padding: var(--rf-spacing-md, 16px);
+    overflow-y: auto;
+    color: var(--rf-color-text, #fff);
+    background: var(--rf-color-surface, #101010);
+    border-left: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+
+    /* Motion is opt-in: the panel is usable with none, and the reduced-motion profile gets none. */
+    @media (prefers-reduced-motion: no-preference) {
+        animation:
+            rf-filter-drawer-in var(--rf-motion-duration-fast, 150ms)
+            var(--rf-motion-easing-standard, ease);
+    }
+}
+
+@keyframes rf-filter-drawer-in {
+    from {
+        transform: translateX(1rem);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.rf-filter-drawer__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-spacing-sm, 8px);
+}
+
+.rf-filter-drawer__title {
+    margin: 0;
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+    font-size: var(--rf-typography-font-size-lg, 1.17rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+.rf-filter-drawer__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-md, 16px);
+}
