@@ -4,13 +4,13 @@ import {
     ItemSortBy,
     SortOrder
 } from 'lib/tesserafin-sdk';
-import React, { type FC, useCallback, useMemo } from 'react';
+import React, { type FC, useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
 
 import { useUserSettings } from 'hooks/useUserSettings';
 import globalize from 'lib/globalize';
-import { SortSelect, type SortSelectOption } from 'ui';
+import { FilterDrawer, SortSelect, type SortSelectOption } from 'ui';
 
 import { useLibraryFilters } from '../api/useLibraryFilters';
 import { useLibraryStudios } from '../api/useLibraryDestinations';
@@ -30,6 +30,7 @@ import {
 } from '../constants/librarySections';
 import { useCanonicalPage } from '../hooks/useCanonicalPage';
 import type { LibraryDensity } from '../utils/density';
+import type { ResolvedLibraryRecipe } from '../utils/libraryRecipe';
 import type { ImageApiClient } from '../utils/mediaCardProps';
 import {
     clampPage,
@@ -77,6 +78,11 @@ export interface BrowseDestinationProps {
     primaryItemType: BaseItemKind;
     density: LibraryDensity;
     apiClient: ImageApiClient | undefined;
+    /**
+     * The resolved `presentation.page.library` recipe, handed down from `LibraryView`. Semantic
+     * values only — this component has no idea which theme produced them, and no way to find out.
+     */
+    recipe: ResolvedLibraryRecipe;
 }
 
 /**
@@ -95,10 +101,12 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
     collectionType,
     primaryItemType,
     density,
-    apiClient
+    apiClient,
+    recipe
 }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const { libraryPageSize: pageSize } = useUserSettings();
+    const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
     const queryState = useMemo(
         () => parseLibraryQueryState(searchParams),
@@ -309,80 +317,116 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         []
     );
 
+    /*
+     * The filter controls, built ONCE and then PLACED — inline, or inside the drawer. This is the
+     * whole of what `filters: 'inline' | 'drawer'` decides.
+     *
+     * What it deliberately cannot decide: every one of these controls writes to the URL query
+     * state, which `useLibraryItems` reads above any recipe. So the catalogue query is identical
+     * whichever placement is active, an unmounted drawer keeps the filters it was given applied,
+     * and closing the drawer changes nothing about the request. `LibraryView.recipe.test.tsx`
+     * asserts each of those separately, because each is a plausible way to get this wrong.
+     */
+    const filterControls = (
+        <>
+            <SortSelect
+                label={globalize.translate('Sort')}
+                options={SORT_OPTIONS}
+                value={queryState.sortBy}
+                onChange={onSortByChange}
+            />
+            <SortSelect
+                label={globalize.translate('LabelSortOrder')}
+                options={ORDER_OPTIONS}
+                value={queryState.sortOrder}
+                onChange={onSortOrderChange}
+                disabled={queryState.sortBy === ItemSortBy.Random}
+            />
+            <SortSelect
+                label={globalize.translate('Genre')}
+                options={genreOptions}
+                value={queryState.genre ?? FILTER_ALL_VALUE}
+                onChange={onGenreChange}
+                disabled={filtersQuery.isPending}
+            />
+            <SortSelect
+                label={globalize.translate('LabelYear')}
+                options={yearOptions}
+                value={
+                    queryState.year ? String(queryState.year) : FILTER_ALL_VALUE
+                }
+                onChange={onYearChange}
+                disabled={filtersQuery.isPending}
+            />
+            {/* Studios: a filter, not a destination (design §3.2). */}
+            <SortSelect
+                label={globalize.translate('LabelStudio')}
+                options={studioOptions}
+                value={queryState.studioIds?.[0] ?? FILTER_ALL_VALUE}
+                onChange={onStudioChange}
+                disabled={studiosQuery.isPending}
+            />
+            {/*
+             * Granularity exists only for tvshows: a movies library has no depth below `Movie`,
+             * so the control is *absent* there rather than disabled (`resolveGranularity`).
+             */}
+            {isTvshows && (
+                <SortSelect
+                    label={globalize.translate('LabelGranularity')}
+                    options={granularityOptions}
+                    value={granularity}
+                    onChange={onGranularityChange}
+                />
+            )}
+            {/* Favorites: a pure predicate (`isFavorite: true`), so a toggle, not a tab. */}
+            <button
+                type='button'
+                className='rf-library-view__density-toggle'
+                aria-pressed={!!queryState.favorite}
+                onClick={onFavoriteToggle}
+            >
+                {globalize.translate('Favorites')}
+            </button>
+        </>
+    );
+
     return (
         <>
             <div className='rf-library-view__controls'>
-                <SortSelect
-                    label={globalize.translate('Sort')}
-                    options={SORT_OPTIONS}
-                    value={queryState.sortBy}
-                    onChange={onSortByChange}
-                />
-                <SortSelect
-                    label={globalize.translate('LabelSortOrder')}
-                    options={ORDER_OPTIONS}
-                    value={queryState.sortOrder}
-                    onChange={onSortOrderChange}
-                    disabled={queryState.sortBy === ItemSortBy.Random}
-                />
-                <SortSelect
-                    label={globalize.translate('Genre')}
-                    options={genreOptions}
-                    value={queryState.genre ?? FILTER_ALL_VALUE}
-                    onChange={onGenreChange}
-                    disabled={filtersQuery.isPending}
-                />
-                <SortSelect
-                    label={globalize.translate('LabelYear')}
-                    options={yearOptions}
-                    value={
-                        queryState.year
-                            ? String(queryState.year)
-                            : FILTER_ALL_VALUE
-                    }
-                    onChange={onYearChange}
-                    disabled={filtersQuery.isPending}
-                />
-                {/* Studios: a filter, not a destination (design §3.2). */}
-                <SortSelect
-                    label={globalize.translate('LabelStudio')}
-                    options={studioOptions}
-                    value={queryState.studioIds?.[0] ?? FILTER_ALL_VALUE}
-                    onChange={onStudioChange}
-                    disabled={studiosQuery.isPending}
-                />
-                {/*
-                 * Granularity exists only for tvshows: a movies library has no depth below `Movie`,
-                 * so the control is *absent* there rather than disabled (`resolveGranularity`).
-                 */}
-                {isTvshows && (
-                    <SortSelect
-                        label={globalize.translate('LabelGranularity')}
-                        options={granularityOptions}
-                        value={granularity}
-                        onChange={onGranularityChange}
-                    />
+                {recipe.filters === 'drawer' ? (
+                    <FilterDrawer
+                        triggerLabel={globalize.translate('Filters')}
+                        title={globalize.translate('Filters')}
+                        closeLabel={globalize.translate('ButtonClose')}
+                        open={isFilterDrawerOpen}
+                        onOpenChange={setFilterDrawerOpen}
+                    >
+                        {filterControls}
+                    </FilterDrawer>
+                ) : (
+                    filterControls
                 )}
-                {/* Favorites: a pure predicate (`isFavorite: true`), so a toggle, not a tab. */}
-                <button
-                    type='button'
-                    className='rf-library-view__density-toggle'
-                    aria-pressed={!!queryState.favorite}
-                    onClick={onFavoriteToggle}
-                >
-                    {globalize.translate('Favorites')}
-                </button>
-                <button
-                    type='button'
-                    className='rf-library-view__density-toggle'
-                    aria-pressed={viewMode === 'list'}
-                    aria-label={globalize.translate('LabelViewMode')}
-                    onClick={onToggleViewMode}
-                >
-                    {viewMode === 'list'
-                        ? globalize.translate('List')
-                        : globalize.translate('Grid')}
-                </button>
+
+                {/*
+                 * The list/grid view mode is USER state, and `layout: 'shelf'` is a theme choice in
+                 * which "one item per row" has no meaning. The control is therefore ABSENT under a
+                 * shelf rather than shown inert — this route's own precedent, the same way the
+                 * granularity control is absent on a movies library. The stored preference is not
+                 * written, so a return to `layout: 'grid'` restores the user's choice untouched.
+                 */}
+                {recipe.layout !== 'shelf' && (
+                    <button
+                        type='button'
+                        className='rf-library-view__density-toggle'
+                        aria-pressed={viewMode === 'list'}
+                        aria-label={globalize.translate('LabelViewMode')}
+                        onClick={onToggleViewMode}
+                    >
+                        {viewMode === 'list'
+                            ? globalize.translate('List')
+                            : globalize.translate('Grid')}
+                    </button>
+                )}
             </div>
 
             <LibraryAlphaPicker
@@ -396,6 +440,8 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                 itemsQuery={itemsQuery}
                 density={density}
                 viewMode={viewMode}
+                layout={recipe.layout}
+                cardAspect={recipe.cardAspect}
                 apiClient={apiClient}
                 label={libraryName}
                 page={queryState.page}

@@ -36,6 +36,11 @@
                     "latestMedia"
                 ],
                 "shelfDensity": "comfortable"
+            },
+            "library": {
+                "layout": "grid",
+                "cardAspect": "poster",
+                "filters": "inline"
             }
         }
     },
@@ -45,7 +50,8 @@
             "presentation.surface",
             "presentation.mediaCard",
             "presentation.navigation",
-            "presentation.page.home"
+            "presentation.page.home",
+            "presentation.page.library"
         ]
     },
     "renderers": {
@@ -56,7 +62,8 @@
                 "presentation.surface",
                 "presentation.mediaCard",
                 "presentation.navigation",
-                "presentation.page.home"
+                "presentation.page.home",
+                "presentation.page.library"
             ],
             "source": {
                 "kind": "none"

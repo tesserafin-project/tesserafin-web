@@ -257,7 +257,7 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
         draft.manifest.capabilities = {
             required: [
                 ...(draft.manifest.capabilities?.required ?? []),
-                capability as 'presentation.page.library'
+                capability as 'presentation.page.itemDetails'
             ]
         };
         window.localStorage.setItem(
@@ -267,13 +267,16 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
     }
 
     it('refuses to apply, and names the capability and the fix', () => {
-        startDraftRequiring('presentation.page.library');
+        // A capability the Web renderer still does not implement. It was
+        // `presentation.page.library` until that route read a recipe; using a bound capability
+        // here would have made this test assert nothing.
+        startDraftRequiring('presentation.page.itemDetails');
         render();
 
         const alert = container.querySelector(
             '[data-testid="theme-studio-required-unsupported"]'
         );
-        expect(alert?.textContent).toContain('presentation.page.library');
+        expect(alert?.textContent).toContain('presentation.page.itemDetails');
         expect(alert?.textContent).toContain('capabilities.optional');
 
         const apply = [...container.querySelectorAll('button')].find((button) =>
@@ -296,7 +299,7 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
         );
         draft.manifest.capabilities = {
             required: ['tokens.core'],
-            optional: ['presentation.page.library']
+            optional: ['presentation.page.itemDetails']
         };
         window.localStorage.setItem(
             'tesserafin.themeStudio.draft',

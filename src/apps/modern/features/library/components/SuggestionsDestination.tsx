@@ -16,6 +16,7 @@ import {
 } from '../api/useLibraryDestinations';
 import { getSuggestionsShelves } from '../constants/librarySections';
 import type { LibraryDensity } from '../utils/density';
+import type { LibraryCardAspect } from '../utils/libraryRecipe';
 import {
     type ImageApiClient,
     toMediaCardPropsArray
@@ -27,6 +28,13 @@ export interface SuggestionsDestinationProps {
     collectionType: CollectionType | string | null | undefined;
     density: LibraryDensity;
     apiClient: ImageApiClient | undefined;
+    /**
+     * Resolved `presentation.page.library.cardAspect`. Suggestions is EDITORIAL — it is already a
+     * column of shelves, so `layout` has nothing to compose here — but its cards are media items
+     * like Browse's, and a recipe that shaped one and not the other would be a recipe the route
+     * half-applies.
+     */
+    cardAspect: LibraryCardAspect;
 }
 
 /** Section name (`types/sections.ts` `SectionType` values) → its shelf heading. */
@@ -44,6 +52,7 @@ interface ShelfProps {
     query: UseQueryResult<ItemDtoQueryResult | undefined, Error>;
     density: LibraryDensity;
     apiClient: ImageApiClient | undefined;
+    cardAspect: LibraryCardAspect;
 }
 
 /**
@@ -52,10 +61,16 @@ interface ShelfProps {
  * has not populated yet would be worse than a shorter page. Errors are swallowed for the same
  * reason — one failing shelf must not replace the whole destination with an error state.
  */
-const Shelf: FC<ShelfProps> = ({ title, query, density, apiClient }) => {
+const Shelf: FC<ShelfProps> = ({
+    title,
+    query,
+    density,
+    apiClient,
+    cardAspect
+}) => {
     const cards = useMemo(
-        () => toMediaCardPropsArray(query.data?.Items, apiClient),
-        [query.data?.Items, apiClient]
+        () => toMediaCardPropsArray(query.data?.Items, apiClient, cardAspect),
+        [query.data?.Items, apiClient, cardAspect]
     );
 
     if (query.isPending && query.fetchStatus !== 'idle') {
@@ -87,7 +102,8 @@ export const SuggestionsDestination: FC<SuggestionsDestinationProps> = ({
     libraryId,
     collectionType,
     density,
-    apiClient
+    apiClient,
+    cardAspect
 }) => {
     const shelves = getSuggestionsShelves(collectionType);
     const has = (name: string) => shelves.includes(name);
@@ -134,10 +150,11 @@ export const SuggestionsDestination: FC<SuggestionsDestinationProps> = ({
                         // shape `useLibraryItems` casts its `getItems` response to. Only the fields
                         // the adapter reads matter here, and they are identical in both.
                         group.Items as unknown as ItemDto[],
-                        apiClient
+                        apiClient,
+                        cardAspect
                     )
                 })),
-        [recommendationsQuery.data, apiClient]
+        [recommendationsQuery.data, apiClient, cardAspect]
     );
 
     const orderedShelves = shelves
@@ -185,6 +202,7 @@ export const SuggestionsDestination: FC<SuggestionsDestinationProps> = ({
                     query={entry.query}
                     density={density}
                     apiClient={apiClient}
+                    cardAspect={cardAspect}
                 />
             ))}
 

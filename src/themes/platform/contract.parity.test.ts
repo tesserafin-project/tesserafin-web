@@ -13,6 +13,9 @@ import themeSchema from '../../../tesserafin-design/schema/theme.schema.json';
 import {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    LIBRARY_CARD_ASPECTS,
+    LIBRARY_FILTER_PRESENTATIONS,
+    LIBRARY_LAYOUTS,
     THEME_CAPABILITIES,
     WEB_RENDERER_CAPABILITIES
 } from './contract';
@@ -35,9 +38,9 @@ describe('contract.ts <-> theme.schema.json', () => {
     it.each([
         'source.web.css',
         // `presentation.page.home` was on this list until the modern Home route actually read a
-        // resolved recipe. It is off it now because there is code reading it, which is the only
-        // thing that ever justified moving a name from one list to the other.
-        'presentation.page.library',
+        // resolved recipe, and `presentation.page.library` until `apps/modern/features/library`
+        // did. Both are off it now because there is code reading them, which is the only thing
+        // that ever justified moving a name from one list to the other.
         'presentation.page.itemDetails',
         // Removed once it was checked: a theme's `assets` block names a package-relative path, and
         // there is no theme package, so nothing could have resolved one. Binding it needs the
@@ -58,7 +61,6 @@ describe('contract.ts <-> theme.schema.json', () => {
         // renderer support, no record that it is pending. This forces the choice to be made.
         const notYetBound = [
             'source.web.css',
-            'presentation.page.library',
             'presentation.page.itemDetails',
             'assets.roles'
         ];
@@ -106,6 +108,31 @@ describe('contract.ts <-> theme.schema.json', () => {
         expect([...HOME_SECTIONS]).toEqual(home.properties.sections.items.enum);
         expect([...HOME_SHELF_DENSITIES]).toEqual(
             home.properties.shelfDensity.enum
+        );
+    });
+
+    it('publishes the Library recipe vocabulary as runtime lists identical to the schema', () => {
+        // Same reason as the Home lists above: `resolvePresentation.sanitizeLibraryRecipe` REJECTS
+        // values with these at runtime, so a name in the schema and not in the list would be
+        // silently stripped from a valid theme — "my recipe does nothing", with nothing red.
+        const library = (
+            defs.pageRecipes.properties as Record<
+                string,
+                {
+                    properties: {
+                        layout: { enum: string[] };
+                        cardAspect: { enum: string[] };
+                        filters: { enum: string[] };
+                    };
+                }
+            >
+        ).library;
+        expect([...LIBRARY_LAYOUTS]).toEqual(library.properties.layout.enum);
+        expect([...LIBRARY_CARD_ASPECTS]).toEqual(
+            library.properties.cardAspect.enum
+        );
+        expect([...LIBRARY_FILTER_PRESENTATIONS]).toEqual(
+            library.properties.filters.enum
         );
     });
 

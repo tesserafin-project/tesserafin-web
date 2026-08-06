@@ -181,9 +181,10 @@ const BASELINE: Readonly<Record<string, readonly string[]>> = {
     'themes/platform': [],
     // Bound but not composed: these read `PresentationContext` and are theme-platform ready.
     'apps/modern/features/themeStudio': [],
-    // Hybrid. The library vertical is modern React on `src/ui`, but still builds some cards
-    // through the legacy builder — the reason `presentation.page.library` is a separate,
-    // later vertical rather than a second half of this change.
+    // The second bound page-composition vertical, and empty for the same reason Home's is: a theme
+    // composes `/library/:libraryId` through published `src/ui` primitives and the resolved recipe.
+    // The `filters: 'drawer'` surface is `ui/components/FilterDrawer`, deliberately not MUI's
+    // `Drawer`, so no generated class name became the only thing a theme could target.
     'apps/modern/features/library': [],
     'apps/modern/features/libraries': ['cardbuilder', 'mui-internals']
 };
@@ -230,11 +231,18 @@ describe('no component knows a theme', () => {
      * adding a theme means editing components — and every theme after the first becomes a diff
      * across the design system rather than a manifest.
      *
-     * Scoped to the two places it would actually appear: the design system, and the one page
-     * vertical that consumes a resolved recipe. `themes/` itself is excluded on purpose — the
-     * registry and the manifest lookup exist precisely to know theme ids in one place.
+     * Scoped to the places it would actually appear: the design system, and every page vertical
+     * that consumes a resolved recipe. `themes/` itself is excluded on purpose — the registry and
+     * the manifest lookup exist precisely to know theme ids in one place.
+     *
+     * `apps/modern/features/library` joined this list with its binding. Classic and Glass declare
+     * materially different Library recipes, and no file in that slice may name either of them.
      */
-    const SCOPES = ['ui', 'apps/modern/features/home'];
+    const SCOPES = [
+        'ui',
+        'apps/modern/features/home',
+        'apps/modern/features/library'
+    ];
 
     it.each(SCOPES)('%s names no official theme id', (scope) => {
         for (const file of everySourceFileUnder(join(SRC, scope))) {

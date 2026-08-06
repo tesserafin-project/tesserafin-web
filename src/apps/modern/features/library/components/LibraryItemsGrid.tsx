@@ -9,12 +9,18 @@ import {
     LoadingState,
     MediaCard,
     MediaGrid,
+    MediaShelf,
     Pagination
 } from 'ui';
 
 import type { LibraryViewMode } from '../constants/librarySections';
 import type { LibraryDensity } from '../utils/density';
 import { classifyLibraryFailure } from '../utils/libraryAccess';
+import {
+    type LibraryCardAspect,
+    type LibraryLayout,
+    toLibraryShelfDensity
+} from '../utils/libraryRecipe';
 import {
     type ImageApiClient,
     toMediaCardPropsArray
@@ -39,6 +45,15 @@ export interface LibraryItemsGridProps {
      * three ad-hoc modes.
      */
     viewMode?: LibraryViewMode;
+    /**
+     * Resolved `presentation.page.library.layout`. Chooses the CONTAINER — a `MediaGrid` or a
+     * `MediaShelf` — and nothing else: the same page of the same items, in the same order, with the
+     * same pagination beneath it. In particular it does not reach `limit`, which is
+     * `useUserSettings().libraryPageSize` under both values.
+     */
+    layout?: LibraryLayout;
+    /** Resolved `presentation.page.library.cardAspect`. */
+    cardAspect: LibraryCardAspect;
     apiClient: ImageApiClient | undefined;
     /** Accessible name for the grid region. */
     label: string;
@@ -53,6 +68,8 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     itemsQuery,
     density,
     viewMode = 'grid',
+    layout = 'grid',
+    cardAspect,
     apiClient,
     label,
     page,
@@ -123,28 +140,47 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
         );
     }
 
+    // Built ONCE, above the layout branch, so grid and shelf render the same cards from the same
+    // response in the same order. "Grid and shelf expose the same media set" is then true by
+    // construction rather than by two code paths agreeing.
+    const cards = toMediaCardPropsArray(
+        itemsQuery.data.Items,
+        apiClient,
+        cardAspect
+    ).map((cardProps) => <MediaCard key={cardProps.href} {...cardProps} />);
+
     return (
         <>
-            <MediaGrid
-                density={density}
-                aria-label={label}
-                className={
-                    viewMode === 'list'
-                        ? 'rf-library-view__grid--list'
-                        : undefined
-                }
-                // In list mode one item per row is the point, so the grid's auto-fill minimum is
-                // widened past any realistic container width rather than the layout being swapped
-                // for a different component: same cards, same DOM, one column.
-                minItemWidth={viewMode === 'list' ? '100%' : undefined}
-            >
-                {toMediaCardPropsArray(itemsQuery.data.Items, apiClient).map(
-                    (cardProps) => (
-                        <MediaCard key={cardProps.href} {...cardProps} />
-                    )
-                )}
-            </MediaGrid>
+            {layout === 'shelf' ? (
+                <MediaShelf
+                    title={label}
+                    density={toLibraryShelfDensity(density)}
+                >
+                    {cards}
+                </MediaShelf>
+            ) : (
+                <MediaGrid
+                    density={density}
+                    aria-label={label}
+                    className={
+                        viewMode === 'list'
+                            ? 'rf-library-view__grid--list'
+                            : undefined
+                    }
+                    // In list mode one item per row is the point, so the grid's auto-fill minimum is
+                    // widened past any realistic container width rather than the layout being swapped
+                    // for a different component: same cards, same DOM, one column.
+                    minItemWidth={viewMode === 'list' ? '100%' : undefined}
+                >
+                    {cards}
+                </MediaGrid>
+            )}
 
+            {/*
+             * Outside the branch: a shelf shows fewer items AT ONCE, but it holds the same page of
+             * the same size, so it needs the same pagination. Dropping it here would be a layout
+             * value deciding how much of a library is reachable.
+             */}
             {totalPages > 1 && (
                 <Pagination
                     className='rf-library-view__pagination'

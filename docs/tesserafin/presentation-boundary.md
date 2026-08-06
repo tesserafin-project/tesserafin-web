@@ -11,15 +11,16 @@ server capability — see [§1](#1-this-is-a-renderer-boundary-not-a-server-gap)
 
 ## 1. This is a renderer boundary, not a server gap
 
-`presentation.page.library` and `.itemDetails` are unbound because **their routes do not read a
-recipe**, not because the server cannot answer something.
+`presentation.page.itemDetails` is unbound because **its route does not read a recipe**, not because
+the server cannot answer something.
 
-The evidence is now direct rather than argued: `presentation.page.home` was bound with **no server
-change at all**. Home issues `getUserViews`, `getResumeItems`, `getNextUp` and `getLatestMedia`
-today, under every theme, and `HomeTab.recipe.test.tsx` asserts that request set is identical under
-every recipe — including one that omits a section entirely. Composition is a client-side ordering of
-data the client already has, and Library and Item Details are the same shape of problem: React work
-inside `src/apps/modern`, not API work.
+The evidence is now direct twice over: `presentation.page.home` and `presentation.page.library` were
+both bound with **no server change at all**. Home issues `getUserViews`, `getResumeItems`,
+`getNextUp` and `getLatestMedia` under every theme; Library issues `getItems`, `getStudios` and
+`getQueryFiltersLegacy` with identical parameters under every recipe, which
+`LibraryView.recipe.test.tsx` asserts as a full request ledger. Composition is a client-side
+arrangement of data the client already has, and Item Details is the same shape of problem: React
+work inside `src/apps/modern`, not API work.
 
 Nothing in the theme contract reaches the server either. `theme.json` is a static document; the
 manifest lookup (`src/themes/platform/manifests.ts`) imports it at build time; the applied local
@@ -75,13 +76,19 @@ Three outcomes:
 | Route family | Paths | `src/ui` | `Presentation Context` | `--rf-*` | Prohibited | Outcome |
 |---|---|---|---|---|---|---|
 | **Home** | `/home` | yes (5 files) | **yes** | yes | none | **1 — ready, and BOUND** |
-| Library | `/library/:libraryId[/:destination]` | yes (6 files) | no | yes | none | 1 — ready, recipe unbound |
+| **Library** | `/library/:libraryId[/:destination]` | yes (7 files) | **yes** | yes | none | **1 — ready, and BOUND** |
 | Theme Studio | `/themestudio` | via direct component imports | no (renders its own resolution) | yes (5 files) | none | 1 — ready |
 | Libraries (`movies`, `music`, `tv`, `books`, `boxsets`, `playlists`, `musicvideos`, `mixed`, `livetv`, `homevideos`) | 10 paths | no | no | no | `cardbuilder` (5 files), `mui-internals` (1 file) | **2 — hybrid** |
 | Details drawer / preferences / syncPlay | in-route components | no | no | no | none *(MUI components, not MUI internals)* | 2 — hybrid |
 
-`ui/` and `themes/platform/` are themselves clean (baseline `[]`), which is what lets the Home
-result be attributed to the route rather than to something below it.
+`ui/` and `themes/platform/` are themselves clean (baseline `[]`), which is what lets the Home and
+Library results be attributed to the routes rather than to something below them.
+
+Library's `filters: 'drawer'` surface is `ui/components/FilterDrawer`, a new `src/ui` primitive
+rather than MUI's `Drawer`. That choice is what kept the baseline empty: a MUI drawer would have put
+`.MuiDrawer-paper` and `.MuiBackdrop-root` on the one element the recipe produces, and a theme
+author wanting to shape it would have had nothing else to target — a generated class name becoming
+the theme API, which §2 prohibits.
 
 ### 3.2 Legacy routes through `toViewManagerPageRoute` (`src/apps/modern/routes/legacyRoutes`)
 
@@ -175,20 +182,30 @@ decision recorded as such, not a side effect of a theme.
 
 ---
 
-## 6. The next vertical: Library, not Item Details
+## 6. The next vertical: Item Details, and what it costs
 
 **Home** is done — it needed no migration at all.
 
-**Library** next. Its slice is also outcome 1 — six files on `src/ui`, `--rf-*` tokens, zero
-prohibited dependencies — and `presentation.page.library`'s vocabulary (`layout`, `cardAspect`,
-`filters`) maps onto controls `LibraryView` already has.
+**Library** is done, and it needed none either. `presentation.page.library`'s vocabulary (`layout`,
+`cardAspect`, `filters`) mapped onto controls `LibraryView` already had, the slice stayed at
+baseline `[]`, and the platform default reproduced the pre-binding composition exactly — checked
+against the route rather than assumed, after Home's default turned out to be wrong.
 
-**Item Details** after that. It is a legacy `controller` + `view.html` route (§3.2), so binding
+The invariant Library added to Home's is the one its server-side pagination made necessary:
+**a recipe may not change the catalogue query or its result**. `LibraryView.recipe.test.tsx` compares
+a full request LEDGER — endpoint and every parameter, including `startIndex`, `limit`, sort field
+and order, and each filter — across six recipes plus a malformed record, and compares the rendered
+item IDs in order on top of it. Home's ledger compared endpoint names only, which would not have
+caught a shelf layout quietly asking for a smaller page.
+
+**Item Details** is next. It is a legacy `controller` + `view.html` route (§3.2), so binding
 `presentation.page.itemDetails` means first rewriting it in modern React on `src/ui` — a migration,
-not a binding, and a much larger change with a different risk profile.
+not a binding, and a much larger change with a different risk profile. It is the last capability
+between the Web renderer and a complete `presentation.*` surface.
 
-Taking them in that order also keeps the `libraries/*` hybrid (§3.1) visible as a separate, later
-item rather than folding an unrelated `cardbuilder` migration into a composition change.
+Taking them in this order kept the `libraries/*` hybrid (§3.1) visible as a separate, later item
+rather than folding an unrelated `cardbuilder` migration into a composition change. Library's
+binding touched none of it.
 
 ---
 

@@ -32,7 +32,7 @@ describe('toMediaCardProps()', () => {
             ImageTags: { Primary: 'tag-primary' }
         });
 
-        const props = toMediaCardProps(movie, apiClient);
+        const props = toMediaCardProps(movie, apiClient, 'poster');
 
         expect(props.title).toBe('The Matrix');
         expect(props.subtitle).toBe('1999');
@@ -46,14 +46,15 @@ describe('toMediaCardProps()', () => {
     it('omits the subtitle when there is no production year', () => {
         const props = toMediaCardProps(
             item({ ProductionYear: undefined }),
-            fakeApiClient()
+            fakeApiClient(),
+            'poster'
         );
 
         expect(props.subtitle).toBeUndefined();
     });
 
     it('omits the image when there is no primary image tag', () => {
-        const props = toMediaCardProps(item({}), fakeApiClient());
+        const props = toMediaCardProps(item({}), fakeApiClient(), 'poster');
 
         expect(props.imageUrl).toBeUndefined();
     });
@@ -61,7 +62,7 @@ describe('toMediaCardProps()', () => {
     it('omits the image when there is no api client', () => {
         const movie = item({ ImageTags: { Primary: 'tag-primary' } });
 
-        const props = toMediaCardProps(movie, undefined);
+        const props = toMediaCardProps(movie, undefined, 'poster');
 
         expect(props.imageUrl).toBeUndefined();
     });
@@ -69,7 +70,8 @@ describe('toMediaCardProps()', () => {
     it('falls back to the api client serverId when the item has none', () => {
         const props = toMediaCardProps(
             item({ ServerId: undefined }),
-            fakeApiClient()
+            fakeApiClient(),
+            'poster'
         );
 
         expect(props.href).toBe('#/details?id=item-1&serverId=srv-1');
@@ -78,7 +80,8 @@ describe('toMediaCardProps()', () => {
     it("prefers the item's own ServerId over the api client's", () => {
         const props = toMediaCardProps(
             item({ ServerId: 'item-server' }),
-            fakeApiClient()
+            fakeApiClient(),
+            'poster'
         );
 
         expect(props.href).toBe('#/details?id=item-1&serverId=item-server');
@@ -87,7 +90,8 @@ describe('toMediaCardProps()', () => {
     it('reports an in-progress percentage as progressPercent', () => {
         const props = toMediaCardProps(
             item({ PlayedPercentage: 42 }),
-            fakeApiClient()
+            fakeApiClient(),
+            'poster'
         );
 
         expect(props.progressPercent).toBe(42);
@@ -95,13 +99,43 @@ describe('toMediaCardProps()', () => {
 
     it('omits progressPercent for fully played or unplayed items', () => {
         expect(
-            toMediaCardProps(item({ PlayedPercentage: 100 }), fakeApiClient())
-                .progressPercent
+            toMediaCardProps(
+                item({ PlayedPercentage: 100 }),
+                fakeApiClient(),
+                'poster'
+            ).progressPercent
         ).toBeUndefined();
         expect(
-            toMediaCardProps(item({ PlayedPercentage: 0 }), fakeApiClient())
-                .progressPercent
+            toMediaCardProps(
+                item({ PlayedPercentage: 0 }),
+                fakeApiClient(),
+                'poster'
+            ).progressPercent
         ).toBeUndefined();
+    });
+});
+
+describe('toMediaCardProps() — the aspect is presentation, not a request', () => {
+    it('draws every aspect from the same image request for the same item', () => {
+        const movie = item({
+            Id: 'movie-1',
+            ImageTags: { Primary: 'tag-primary' }
+        });
+
+        const urls = (['poster', 'backdrop', 'square'] as const).map((aspect) =>
+            toMediaCardProps(movie, fakeApiClient(), aspect)
+        );
+
+        // The aspect reaches `imageAspect` and NOTHING else. If `cardAspect: 'backdrop'` ever
+        // selected `ImageType.Backdrop`, a theme would be choosing which image endpoint the client
+        // calls — the line RFC-0007 §6.1 draws. Cropping is presentation; a different request is not.
+        expect(urls.map((props) => props.imageAspect)).toEqual([
+            'poster',
+            'backdrop',
+            'square'
+        ]);
+        expect(new Set(urls.map((props) => props.imageUrl)).size).toBe(1);
+        expect(new Set(urls.map((props) => props.href)).size).toBe(1);
     });
 });
 
@@ -109,7 +143,7 @@ describe('toMediaCardPropsArray()', () => {
     it('maps every item in the array', () => {
         const items = [item({ Id: 'a' }), item({ Id: 'b' })];
 
-        const props = toMediaCardPropsArray(items, fakeApiClient());
+        const props = toMediaCardPropsArray(items, fakeApiClient(), 'poster');
 
         expect(props).toHaveLength(2);
         expect(props[0].href).toBe('#/details?id=a&serverId=srv-1');
@@ -117,7 +151,11 @@ describe('toMediaCardPropsArray()', () => {
     });
 
     it('returns an empty array for null/undefined items', () => {
-        expect(toMediaCardPropsArray(null, fakeApiClient())).toEqual([]);
-        expect(toMediaCardPropsArray(undefined, fakeApiClient())).toEqual([]);
+        expect(toMediaCardPropsArray(null, fakeApiClient(), 'poster')).toEqual(
+            []
+        );
+        expect(
+            toMediaCardPropsArray(undefined, fakeApiClient(), 'poster')
+        ).toEqual([]);
     });
 });
