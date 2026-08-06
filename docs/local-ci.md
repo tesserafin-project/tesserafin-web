@@ -134,6 +134,13 @@ npm run validate:full
 **plus the real end-to-end suite** (Playwright, against a real server — not a
 mocked run).
 
+`validate:full` also runs the aggregate delivery budget
+(`npm run test:delivery-budget`, then `npm run verify:delivery-budget` on the
+production build it just made). That gate covers the whole initial delivery set,
+not only `main.tesserafin.bundle.js`, and it is independent of the individual
+bundle budget rather than a replacement for it — see
+[docs/tesserafin/web-delivery-budget.md](tesserafin/web-delivery-budget.md).
+
 ### Measured reference
 
 Obtained on unmodified `main`:

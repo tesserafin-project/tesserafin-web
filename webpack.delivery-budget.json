@@ -1,0 +1,50 @@
+{
+    "$comment": "Aggregate initial/start-up delivery contract. The INDIVIDUAL main-bundle budget is not here: it stays in webpack.performance-budget.json, which webpack.prod.js enforces during the build itself. Enforced by scripts/verify-delivery-budget.mjs; see docs/tesserafin/web-delivery-budget.md. Raising a ceiling is a deliberate edit to this file, reviewed in a pull request with before/after numbers. Nothing rewrites it automatically - there is no --update-baseline.",
+    "statsSchemaVersion": 1,
+    "htmlEntrypoints": ["main.tesserafin", "serviceworker"],
+    "htmlEntrypointsNote": "The entrypoints html-webpack-plugin injects into index.html (webpack.common.js `chunks`). The theme entrypoints (themes/*) are deliberately absent: their stylesheets are fetched by the theme manager at runtime, one at a time, and are not part of what a cold visitor downloads first. The verifier cross-checks this list against the tags actually injected and fails if they diverge.",
+    "bootModules": ["./index.jsx"],
+    "bootModulesNote": "Modules whose `import()` calls run unconditionally at start-up. Their chunks are counted in the `startup` tier so that the budget cannot be dodged by moving a static start-up import behind `import()`: the bytes change tier, the total does not. Route-level `lazy()` boundaries are NOT listed - those are async on purpose and are governed by protectedModulePatterns instead.",
+    "countedAssetExtensions": [".js", ".css"],
+    "countedAssetExtensionsNote": "Anything else appearing in the counted set (a font, an image, a wasm module promoted into an initial chunk) is a hard failure, not a silent exclusion: it has to be classified deliberately here first.",
+    "assetCountNote": "initial.assetCount is a stable, small set - treat any movement as a real change. startup.assetCount is the metric most likely to need a mechanical bump: the tier counts whole chunk GROUPS, and splitChunks will happily extract a newly shared module out of one of them into two files. A count bump whose byte totals are unchanged is a chunk split, not growth; say so in the pull request and move on.",
+    "rounding": "Every byte ceiling is the measurement rounded UP to the next whole KiB (1024 B). Asset counts take no margin: the measured count is the ceiling. The KiB margin exists only to absorb the handful of bytes that move when __COMMIT_SHA__ / __JF_BUILD_VERSION__ differ between a local build and a CI build (webpack.common.js, .github/workflows/__package.yml) - it is not headroom for features.",
+    "baseline": {
+        "commit": "1cb72daa15ccbddaf8e095c0d541e04911cc17d8",
+        "note": "Measured on tesserafin-web main at the squash merge of PR #130, from two clean production builds with identical results. See docs/tesserafin/web-delivery-budget.md for the full asset table."
+    },
+    "compression": {
+        "gzip": "node:zlib gzipSync, level 9, zlib defaults otherwise",
+        "brotli": "node:zlib brotliCompressSync, BROTLI_PARAM_QUALITY 11, no BROTLI_PARAM_SIZE_HINT",
+        "method": "each asset compressed separately, sizes summed - assets are separate HTTP responses with separate compression contexts. Nothing compressed here is written to dist/."
+    },
+    "budgets": {
+        "initial": {
+            "rawJsBytes": 1957888,
+            "rawCssBytes": 172032,
+            "rawBytes": 2129920,
+            "gzipBytes": 544768,
+            "brotliBytes": 459776,
+            "assetCount": 25
+        },
+        "startup": {
+            "rawBytes": 3223552,
+            "gzipBytes": 904192,
+            "brotliBytes": 572416,
+            "assetCount": 44
+        }
+    },
+    "protectedModulePatterns": [
+        {
+            "id": "theme-studio",
+            "pattern": "^\\./apps/modern/(features/themeStudio|routes/user/themeStudio)/",
+            "reason": "Theme Studio is an authoring tool reached from Display preferences, not a viewer destination (tesserafin-web #119). It must stay behind its async route: an ordinary viewer who never opens it must never download it."
+        },
+        {
+            "id": "theme-authoring-validation",
+            "pattern": "^\\./themes/platform/(validateManifest|validateTokens)",
+            "reason": "Manifest and token validation is authoring/compiler-side work (#115, #117). The viewer resolves an already-valid presentation; it does not validate one at boot."
+        }
+    ],
+    "acceptanceRuleForItemDetails": "tesserafin-web #129 Step 1b: the future modern Item Details route must be an async route, and must not expand the ordinary boot graph merely because it exists. No guard is declared here for files that do not exist yet - the rule is enforced by these budgets, which the migration must leave green without raising a ceiling for code no viewer loads at boot."
+}

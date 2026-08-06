@@ -10,7 +10,8 @@
             "!.idea",
             "!.vscode",
             "!src/lib/tesserafin-sdk/generated",
-            "!tests/e2e/vendor"
+            "!tests/e2e/vendor",
+            "!scripts/fixtures/delivery-budget/emitted"
         ]
     },
     "formatter": {

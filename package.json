@@ -149,8 +149,11 @@
         "verify:runtime-origins": "node scripts/verify-runtime-origins.mjs",
         "verify:tokens-fresh": "node scripts/verify-tokens-fresh.mjs",
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
+        "verify:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-json delivery-stats/report.json",
+        "report:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-only --report-json delivery-stats/report-preview.json",
         "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --summary dependency-audit-out/summary.md",
         "test:dependency-audit": "node scripts/dependency-audit.test.mjs",
+        "test:delivery-budget": "node scripts/delivery-budget.test.mjs",
         "test:epub-xmldom-fallback": "node scripts/epub-xmldom-fallback.test.mjs",
         "lint": "biome check .",
         "format": "biome format --write .",
@@ -162,10 +165,11 @@
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback",
-        "validate:full": "npm run validate && npm run build:production && npm run verify:bundle-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source",
+        "validate:full": "npm run validate && npm run test:delivery-budget && npm run build:production && npm run verify:bundle-budget && npm run verify:delivery-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source",
         "secret-scan:controls": "./ci/tests/secret-scan.test.sh",
         "secret-scan:tree": "./ci/secret-scan.sh --mode tree --repo-name tesserafin-web",
-        "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10"
+        "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10",
+        "test:delivery-ledger": "playwright test --config playwright.delivery.config.ts"
     },
     "engines": {
         "node": ">=24.0.0",

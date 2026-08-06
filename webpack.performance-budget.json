@@ -1,5 +1,6 @@
 {
     "mainBundleAsset": "main.tesserafin.bundle.js",
     "mainBundleBudgetBytes": 460800,
-    "note": "460800 bytes = 450 KiB. Raw (uncompressed) size on disk, not gzip - see webpack.prod.js `performance` block and scripts/verify-bundle-budget.mjs for the rationale. Single source of truth for both the webpack-integrated guard and the standalone verify:bundle-budget script; keep them reading this file rather than duplicating the number."
+    "note": "460800 bytes = 450 KiB. Raw (uncompressed) size on disk, not gzip - see webpack.prod.js `performance` block and scripts/verify-bundle-budget.mjs for the rationale. Single source of truth for both the webpack-integrated guard and the standalone verify:bundle-budget script; keep them reading this file rather than duplicating the number.",
+    "scopeNote": "This budget covers ONE asset. It is not the size of the initial delivery: main.tesserafin.bundle.js is about 18% of what index.html loads, because splitChunks fans the entrypoint across two dozen assets. The aggregate initial/start-up ceilings live in webpack.delivery-budget.json and are enforced separately by scripts/verify-delivery-budget.mjs - see docs/tesserafin/web-delivery-budget.md. Neither file replaces the other."
 }

@@ -1,0 +1,31 @@
+{
+    "$comment": "Fixture budget for scripts/delivery-budget.test.mjs. Ceilings are the EXACT measurements of ./stats.json + ./emitted, with no rounding margin at all, so that a case which adds a single byte or a single asset flips the verdict. The production ceilings in webpack.delivery-budget.json use the documented next-whole-KiB rule instead.",
+    "statsSchemaVersion": 1,
+    "htmlEntrypoints": ["main.tesserafin", "serviceworker"],
+    "bootModules": ["./index.jsx"],
+    "countedAssetExtensions": [".js", ".css"],
+    "rounding": "fixture: exact measurement, no margin",
+    "budgets": {
+        "initial": {
+            "rawJsBytes": 797,
+            "rawCssBytes": 720,
+            "rawBytes": 1517,
+            "gzipBytes": 221,
+            "brotliBytes": 166,
+            "assetCount": 4
+        },
+        "startup": {
+            "rawBytes": 1673,
+            "gzipBytes": 283,
+            "brotliBytes": 211,
+            "assetCount": 5
+        }
+    },
+    "protectedModulePatterns": [
+        {
+            "id": "theme-studio",
+            "pattern": "^\\./apps/modern/(features/themeStudio|routes/user/themeStudio)/",
+            "reason": "fixture mirror of the production Theme Studio boundary"
+        }
+    ]
+}

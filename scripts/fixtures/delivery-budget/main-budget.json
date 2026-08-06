@@ -1,0 +1,5 @@
+{
+    "$comment": "Fixture stand-in for webpack.performance-budget.json; only the two fields the delivery verifier reads.",
+    "mainBundleAsset": "main.tesserafin.bundle.js",
+    "mainBundleBudgetBytes": 1024
+}
