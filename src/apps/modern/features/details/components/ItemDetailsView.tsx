@@ -113,14 +113,41 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
         item: item as never,
         showEpisodeTitleInfo: false
     });
-    const secondaryInfo = useSecondaryMediaInfo({ item: item as never });
+    /*
+     * The legacy route called `fillSecondaryMediaInfo(elem, item, { interactive: true })`, and
+     * `getProgramInfoHtml` treated programme time, start date, channel number and channel name as
+     * ON unless explicitly disabled. The modern hook defaults them all to `false`, so they are
+     * requested here — same fields, same order.
+     */
+    const secondaryInfoOptions = {
+        showProgramTimeInfo: true,
+        showStartDateInfo: true,
+        showChannelNumberInfo: true,
+        showChannelInfo: true,
+        channelInteractive: true
+    };
+    const secondaryInfo = useSecondaryMediaInfo({
+        item: item as never,
+        ...secondaryInfoOptions
+    });
 
     const { cast, guestCast } = useMemo(() => splitCast(item), [item]);
     const chapters = useMemo(() => renderableChapters(item), [item]);
 
     const childKind = childrenKind(item);
     const childItems = list(children.data);
-    const isListChildren = LIST_VIEW_TYPES.includes(item.Type ?? '');
+    /*
+     * Which of the two child containers this class uses.
+     *
+     * `setInitialCollapsibleState` sends the items-by-name and playlist branches to
+     * `#listChildrenCollapsible` explicitly, and `renderChildren` picks between the two by
+     * `LIST_VIEW_TYPES`. Both rules matter: five classes in the frozen record are items-by-name
+     * types that are NOT in `LIST_VIEW_TYPES` and still land in the list container.
+     */
+    const isListChildren =
+        childrenKind(item) === 'itemsByName' ||
+        childrenKind(item) === 'playlist' ||
+        LIST_VIEW_TYPES.includes(item.Type ?? '');
     const isBoxSet = item.Type === 'BoxSet';
 
     const gates = playbackGates(item);
@@ -179,7 +206,10 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
 
             {secondaryInfo.length > 0 && !isSeriesTimer ? (
                 <DetailSection name='itemMiscInfo-secondary'>
-                    <SecondaryMediaInfo item={item as never} />
+                    <SecondaryMediaInfo
+                        item={item as never}
+                        {...secondaryInfoOptions}
+                    />
                 </DetailSection>
             ) : null}
 
@@ -311,7 +341,14 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                 </DetailSection>
             ) : null}
 
-            {childKind !== 'none' && !isBoxSet && childItems.length ? (
+            {/*
+             * Revealed by TYPE, not by result count. `setInitialCollapsibleState` unhid
+             * `#listChildrenCollapsible` before the items-by-name and playlist reads resolved, and
+             * `renderChildren` unhid its container for every non-`BoxSet` folder whatever the
+             * result was. Five classes in the frozen record show this section with no children, so
+             * gating it on `childItems.length` would silently drop a recorded surface.
+             */}
+            {childKind !== 'none' && !isBoxSet ? (
                 <DetailSection
                     name={
                         isListChildren
@@ -374,11 +411,18 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
             {list(moreFromArtist.data).length ? (
                 <DetailSection
                     name='moreFromArtistSection'
-                    heading={globalize.translate(
+                    heading={
                         item.Type === 'MusicArtist'
-                            ? 'HeaderAppearsOn'
-                            : 'MoreFromValue'
-                    )}
+                            ? globalize.translate('HeaderAppearsOn')
+                            : globalize.translate(
+                                  'MoreFromValue',
+                                  (
+                                      (item.AlbumArtists ?? []) as {
+                                          Name?: string;
+                                      }[]
+                                  )[0]?.Name ?? ''
+                              )
+                    }
                 >
                     <ItemCollectionGrid
                         items={list(moreFromArtist.data)}

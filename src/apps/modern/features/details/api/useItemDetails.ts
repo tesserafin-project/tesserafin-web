@@ -62,6 +62,13 @@ export function useItemDetailsPrimary(
 ): UseQueryResult<ItemDetailsPrimary> {
     return useQuery({
         queryKey: detailsQueryKey(params),
+        /*
+         * A malformed route issues no request at all. The legacy `getPromise` threw synchronously
+         * from inside a `Promise.all` argument list, escaping its own `.catch` (`SUSPECT` #1);
+         * disabling the query is the migrated form of "there is nothing to ask for", and it leaves
+         * retry policy to the application's client rather than overriding it here.
+         */
+        enabled: params.kind !== null,
         queryFn: async () => {
             const client = getDetailsApiClient(params.serverId);
             const [item, user] = await Promise.all([
@@ -69,10 +76,7 @@ export function useItemDetailsPrimary(
                 fetchCurrentUser(client)
             ]);
             return { item, user };
-        },
-        // A malformed route is a bounded error, not something to retry. `SUSPECT` #1.
-        retry: (failureCount, error) =>
-            error.name !== 'InvalidDetailsRouteError' && failureCount < 2
+        }
     });
 }
 
