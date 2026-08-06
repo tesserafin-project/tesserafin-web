@@ -1,3 +1,4 @@
+const path = require('path');
 const { merge } = require('webpack-merge');
 
 const common = require('./webpack.common');
@@ -5,6 +6,10 @@ const {
     mainBundleAsset,
     mainBundleBudgetBytes
 } = require('./webpack.performance-budget.json');
+const { bootModules } = require('./webpack.delivery-budget.json');
+const {
+    DeliveryStatsPlugin
+} = require('./scripts/lib/delivery-stats-plugin.cjs');
 
 module.exports = merge(common, {
     mode: 'production',
@@ -12,6 +17,15 @@ module.exports = merge(common, {
         ...common.entry,
         serviceworker: './serviceworker.js'
     },
+    plugins: [
+        // Writes the slim asset graph `npm run verify:delivery-budget` reads. OUTSIDE `dist/` on
+        // purpose: it is a measurement artifact, not something shipped to a browser, and the
+        // production build must not gain a file it did not have before.
+        new DeliveryStatsPlugin({
+            outputPath: path.resolve(__dirname, 'delivery-stats/stats.json'),
+            bootModules
+        })
+    ],
     performance: {
         hints: 'error',
         // Raw (uncompressed) byte size, not gzip - see webpack.performance-budget.json and

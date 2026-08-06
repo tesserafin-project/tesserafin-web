@@ -1,0 +1,130 @@
+{
+    "$comment": "Hand-written miniature of the graph scripts/lib/delivery-stats-plugin.cjs emits, small enough that the expected verdict is obvious from reading it. Shape only - the byte sizes belong to the tiny files in ./emitted and have nothing to do with the real application. Deliberately reproduces the three shapes that matter: runtime.bundle.js is shared by two injected entrypoints (must be counted once), themes/dark is an entrypoint that index.html does NOT load (must be ignored), and the Theme Studio route chunk is async (must stay outside the counted set).",
+    "schemaVersion": 1,
+    "htmlInjected": {
+        "js": [
+            "main.tesserafin.bundle.js",
+            "runtime.bundle.js",
+            "serviceworker.js"
+        ],
+        "css": ["main.css"]
+    },
+    "entrypoints": {
+        "main.tesserafin": {
+            "chunkIds": ["main", "runtime"],
+            "files": [
+                "main.css",
+                "main.tesserafin.bundle.js",
+                "runtime.bundle.js"
+            ]
+        },
+        "serviceworker": {
+            "chunkIds": ["runtime", "sw"],
+            "files": ["runtime.bundle.js", "serviceworker.js"]
+        },
+        "themes/dark": {
+            "chunkIds": ["theme"],
+            "files": ["themes/dark/theme.css"]
+        }
+    },
+    "assets": {
+        "boot.chunk.js": 156,
+        "main.css": 720,
+        "main.tesserafin.bundle.js": 746,
+        "runtime.bundle.js": 22,
+        "serviceworker.js": 29,
+        "themeStudio.chunk.js": 1170,
+        "themes/dark/theme.css": 32
+    },
+    "chunks": [
+        {
+            "id": "boot",
+            "names": [],
+            "initial": false,
+            "files": ["boot.chunk.js"],
+            "modules": ["./styles/fonts.scss"]
+        },
+        {
+            "id": "main",
+            "names": ["main.tesserafin"],
+            "initial": true,
+            "files": ["main.css", "main.tesserafin.bundle.js"],
+            "modules": ["./RootApp.tsx", "./index.jsx"]
+        },
+        {
+            "id": "runtime",
+            "names": ["runtime"],
+            "initial": true,
+            "files": ["runtime.bundle.js"],
+            "modules": []
+        },
+        {
+            "id": "studio",
+            "names": ["user-themeStudio"],
+            "initial": false,
+            "files": ["themeStudio.chunk.js"]
+        },
+        {
+            "id": "sw",
+            "names": ["serviceworker"],
+            "initial": true,
+            "files": ["serviceworker.js"],
+            "modules": ["./serviceworker.js"]
+        },
+        {
+            "id": "theme",
+            "names": ["themes/dark"],
+            "initial": true,
+            "files": ["themes/dark/theme.css"],
+            "modules": []
+        }
+    ],
+    "chunkGroups": [
+        {
+            "name": null,
+            "isEntrypoint": false,
+            "chunkIds": ["boot"],
+            "files": ["boot.chunk.js"],
+            "origins": [
+                { "module": "./index.jsx", "request": "./styles/fonts.scss" }
+            ]
+        },
+        {
+            "name": null,
+            "isEntrypoint": false,
+            "chunkIds": ["studio"],
+            "files": ["themeStudio.chunk.js"],
+            "origins": [
+                {
+                    "module": "./apps/modern/routes/ lazy ^\\./.*$ chunkName: [request] namespace object",
+                    "request": "./user/themeStudio"
+                }
+            ]
+        },
+        {
+            "name": "main.tesserafin",
+            "isEntrypoint": true,
+            "chunkIds": ["main", "runtime"],
+            "files": [
+                "main.css",
+                "main.tesserafin.bundle.js",
+                "runtime.bundle.js"
+            ],
+            "origins": []
+        },
+        {
+            "name": "serviceworker",
+            "isEntrypoint": true,
+            "chunkIds": ["runtime", "sw"],
+            "files": ["runtime.bundle.js", "serviceworker.js"],
+            "origins": []
+        },
+        {
+            "name": "themes/dark",
+            "isEntrypoint": true,
+            "chunkIds": ["theme"],
+            "files": ["themes/dark/theme.css"],
+            "origins": []
+        }
+    ]
+}

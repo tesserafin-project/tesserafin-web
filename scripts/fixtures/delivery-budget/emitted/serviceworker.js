@@ -1,0 +1,1 @@
+/* fixture service worker */

@@ -35,10 +35,33 @@ jobs:
       - name: Install Node.js dependencies
         run: npm ci --no-audit
 
+      # Controls for the delivery-budget verifier itself, before it is used as a gate. They are
+      # fixture-only and take about a second; a gate nobody has proven can fail is not a gate.
+      - name: Verify the delivery-budget controls
+        run: npm run test:delivery-budget
+
       - name: Run a production build
         env:
           JELLYFIN_VERSION: ${{ inputs.commit || github.sha }}
         run: npm run build:production
+
+      # Aggregate initial/start-up delivery budget (webpack.delivery-budget.json). Runs HERE
+      # rather than as its own job so that it is covered by the already-required "Build 🏗️ / Run
+      # production build 🏗️" status check, and so that it measures the very build that was just
+      # produced instead of a second, separately-built one. The individual main-bundle budget is
+      # enforced earlier and independently, by webpack's own `performance` block during the build
+      # step above.
+      - name: Verify the aggregate delivery budget
+        run: npm run verify:delivery-budget
+
+      - name: Upload the delivery report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: delivery-budget-report
+          path: delivery-stats
+          if-no-files-found: warn
+          retention-days: 7
 
       # UPSTREAM STEP REMOVED (tesserafin-web #54 / B1).
       #

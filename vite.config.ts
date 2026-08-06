@@ -24,6 +24,9 @@ export default defineConfig({
             ...configDefaults.exclude,
             'tests/e2e/**',
             'tests/reader/**',
+            // Server-free delivery-ledger suite (`npm run test:delivery-ledger`): Playwright,
+            // like the others here, and it reads dist/ + delivery-stats/ rather than src.
+            'tests/delivery/**',
             // Server-free capture suite (`npm run captures`): Playwright, like the two
             // above. Collected by vitest it fails at import with "did not expect
             // test.beforeAll() to be called here", because it is a Playwright spec.
