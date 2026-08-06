@@ -458,7 +458,9 @@ describe('migrated Item Details — hero and image rules', () => {
         // The frozen fixtures carry `ImageTags: {}`, so no class has a logo and none may render
         // one. A route that emitted an empty logo element for every item would fail here.
         const mounted = await mountCase('movie');
-        expect(mounted.view.querySelector('[data-detail-image="logo"]')).toBeNull();
+        expect(
+            mounted.view.querySelector('[data-detail-image="logo"]')
+        ).toBeNull();
     });
 });
 
