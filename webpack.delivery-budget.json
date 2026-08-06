@@ -44,7 +44,12 @@
             "id": "theme-authoring-validation",
             "pattern": "^\\./themes/platform/(validateManifest|validateTokens)",
             "reason": "Manifest and token validation is authoring/compiler-side work (#115, #117). The viewer resolves an already-valid presentation; it does not validate one at boot."
+        },
+        {
+            "id": "item-details",
+            "pattern": "^\\./apps/modern/(features/details|routes/details)",
+            "reason": "Item Details is the largest single viewer route (tesserafin-web #129 Step 1b). It replaced a view-manager controller that was already async, and it must stay async: a cold visitor who never opens an item must never download it. Navigating to /details is what first requests this chunk."
         }
     ],
-    "acceptanceRuleForItemDetails": "tesserafin-web #129 Step 1b: the future modern Item Details route must be an async route, and must not expand the ordinary boot graph merely because it exists. No guard is declared here for files that do not exist yet - the rule is enforced by these budgets, which the migration must leave green without raising a ceiling for code no viewer loads at boot."
+    "acceptanceRuleForItemDetails": "tesserafin-web #129 Step 1b, SATISFIED: the modern Item Details route is registered through ASYNC_USER_ROUTES / toAsyncPageRoute in both route families, and the `item-details` protectedModulePatterns entry above enforces its absence from the initial and start-up graphs. No ceiling was raised for it."
 }
