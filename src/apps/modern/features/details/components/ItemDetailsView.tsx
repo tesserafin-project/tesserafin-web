@@ -109,9 +109,31 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
         canManageLiveTv(user)
     );
 
+    /*
+     * The legacy route called
+     * `fillPrimaryMediaInfo(elem, item, { interactive: true, episodeTitle: false, subtitles: false })`,
+     * and `getMediaInfoHtml` treated every field as ON unless explicitly disabled
+     * (`options.x !== false`). The modern hook defaults them all to `false`, so the same set is
+     * requested here: everything except the episode title, which the legacy call turned off.
+     */
+    const primaryInfoOptions = {
+        showYearInfo: true,
+        showAudioContainerInfo: true,
+        showEpisodeTitleInfo: false,
+        showOriginalAirDateInfo: true,
+        showFolderRuntimeInfo: true,
+        showRuntimeInfo: true,
+        showItemCountInfo: true,
+        showSeriesTimerInfo: true,
+        showStartDateInfo: true,
+        showProgramIndicatorInfo: true,
+        showOfficialRatingInfo: true,
+        showVideo3DFormatInfo: true,
+        showPhotoSizeInfo: true
+    };
     const primaryInfo = usePrimaryMediaInfo({
         item: item as never,
-        showEpisodeTitleInfo: false
+        ...primaryInfoOptions
     });
     /*
      * The legacy route called `fillSecondaryMediaInfo(elem, item, { interactive: true })`, and
@@ -199,7 +221,7 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                 <DetailSection name='itemMiscInfo-primary'>
                     <PrimaryMediaInfo
                         item={item as never}
-                        showEpisodeTitleInfo={false}
+                        {...primaryInfoOptions}
                     />
                 </DetailSection>
             ) : null}

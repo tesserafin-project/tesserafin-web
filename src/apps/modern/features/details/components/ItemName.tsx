@@ -82,6 +82,14 @@ function artistLinks(item: DetailItem): ParentLink[] {
     }));
 }
 
+/**
+ * A parent link.
+ *
+ * `color: inherit` so the link takes the name block's own foreground rather than the theme's link
+ * colour. Not decoration: the link sits on the detail hero, where the default link blue fails WCAG
+ * AA contrast — axe reports `color-contrast` on exactly this element otherwise. The legacy block
+ * carried the same inline `color: inherit` for the same reason.
+ */
 const ParentAnchor: FC<{ link: ParentLink }> = ({ link }) => (
     <Link
         to={appRouter.getRouteUrl(
@@ -91,6 +99,7 @@ const ParentAnchor: FC<{ link: ParentLink }> = ({ link }) => (
         data-id={link.id}
         data-type={link.type}
         data-serverid={link.serverId}
+        style={{ color: 'inherit' }}
     >
         {link.name}
     </Link>

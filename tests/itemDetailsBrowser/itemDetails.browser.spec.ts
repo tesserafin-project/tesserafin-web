@@ -1,11 +1,10 @@
 /**
- * Browser corroboration for the frozen legacy Item Details contract (tesserafin-web#129 Step 1a).
+ * Browser proof for the MIGRATED Item Details route (tesserafin-web#129 Step 1b).
  *
- * `tests/itemDetails/itemDetails.characterization.test.ts` asserts the same behaviours under jsdom
- * with both API surfaces stubbed. That is fast and precise and it is NOT evidence that the live
- * route works: it never loads the built bundle, never authenticates, never lays anything out and
- * never upgrades a custom element. This suite drives the REAL `/details` route, in the REAL
- * production bundle, in a real Chromium.
+ * `tests/itemDetails/*.test.tsx` asserts the frozen contract under jsdom with both API surfaces
+ * stubbed. That is fast and precise and it is NOT evidence that the live route works: it never loads
+ * the built bundle, never authenticates, never lays anything out. This suite drives the REAL
+ * `/details` route, in the REAL production bundle, in a real Chromium.
  *
  * It needs NO Reefin server. `npm run build:production`, the tracked static server already used by
  * the reader and delivery suites, and a same-origin fixture API are the whole dependency set — see
@@ -13,8 +12,8 @@
  *
  *     npm run build:production && npm run test:item-details-browser
  *
- * The durable evidence is the machine-readable record: section order, action names, the request
- * ledger, focusability and teardown. Screenshots are written alongside as artifacts, not asserted.
+ * The route is now a code-split async route, so this suite also proves the delivery boundary from
+ * the outside: the chunk is not fetched until a viewer navigates to an item.
  */
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -30,70 +29,38 @@ const ARTIFACTS = join(REPO_ROOT, 'test-results', 'item-details-browser');
 
 mkdirSync(ARTIFACTS, { recursive: true });
 
-/** The sections the frozen contract names, in the order the view declares them. */
-const SECTION_SELECTORS: [string, string][] = [
-    ['nameContainer', '.nameContainer'],
-    ['itemMiscInfo-primary', '.itemMiscInfo-primary'],
-    ['itemMiscInfo-secondary', '.itemMiscInfo-secondary'],
-    ['mainDetailButtons', '.mainDetailButtons'],
-    ['trackSelections', '.trackSelections'],
-    ['tagline', '.tagline'],
-    ['overview', '.overview'],
-    ['itemTags', '.itemTags'],
-    ['itemExternalLinks', '.itemExternalLinks'],
-    ['itemDetailsGroup', '.itemDetailsGroup'],
-    ['nextUpSection', '.nextUpSection'],
-    ['listChildrenCollapsible', '#listChildrenCollapsible'],
-    ['childrenCollapsible', '#childrenCollapsible'],
-    ['castCollapsible', '#castCollapsible'],
-    ['similarCollapsible', '#similarCollapsible']
-];
+const PAGE = '#itemDetailPage';
 
+/** The rendered semantic sections, in document order, by the names the frozen contract uses. */
 async function renderedSections(page: Page): Promise<string[]> {
-    return page.evaluate((pairs) => {
-        const visible = (element: Element | null) => {
-            let node: Element | null = element;
-            while (node && node.id !== 'itemDetailPage') {
-                if (node.classList.contains('hide')) return false;
-                node = node.parentElement;
-            }
-            return Boolean(node);
-        };
-        return pairs
-            .filter(([, selector]) =>
-                visible(document.querySelector(`#itemDetailPage ${selector}`))
-            )
-            .map(([name]) => name);
-    }, SECTION_SELECTORS);
+    return page.$$eval(`${PAGE} [data-detail-section]`, (nodes) =>
+        nodes.map((node) => node.getAttribute('data-detail-section') ?? '')
+    );
 }
 
-async function visibleActions(page: Page): Promise<string[]> {
-    return page.evaluate(() => {
-        const bar = document.querySelector(
-            '#itemDetailPage .mainDetailButtons'
-        );
-        if (!bar || bar.classList.contains('hide')) return [];
-        return [...bar.querySelectorAll('button')]
-            .filter((button) => !button.classList.contains('hide'))
-            .map(
-                (button) =>
-                    [...button.classList].find((c) => c.startsWith('btn')) ?? ''
-            )
-            .filter(Boolean);
-    });
+async function renderedActions(page: Page): Promise<string[]> {
+    return page.$$eval(`${PAGE} [data-detail-action]`, (nodes) =>
+        nodes.map((node) => node.getAttribute('data-detail-action') ?? '')
+    );
 }
+
+const selectOptions = (page: Page, name: string) =>
+    page.locator(`${PAGE} [data-detail-select="${name}"] option`);
 
 async function openDetails(page: Page, id: string) {
     await page.goto(`/#/details?id=${id}&serverId=${SERVER_ID}`);
-    await page.waitForSelector('#itemDetailPage .nameContainer h1', {
-        timeout: 30_000
-    });
-    // The route fans out into several independent section renders; wait for the page to stop
-    // changing rather than for a fixed number of them.
+    await page.waitForSelector(
+        `${PAGE} [data-detail-section="nameContainer"] h1`,
+        {
+            timeout: 30_000
+        }
+    );
+    // The route fans out into independent section queries; wait for it to stop changing rather
+    // than for a fixed number of them.
     await page.waitForTimeout(1500);
 }
 
-test.describe('legacy Item Details, in a real browser', () => {
+test.describe('migrated Item Details, in a real browser', () => {
     test('a movie renders the recorded composition, actions and selectors', async ({
         page,
         baseURL
@@ -113,7 +80,7 @@ test.describe('legacy Item Details, in a real browser', () => {
             'castCollapsible'
         ]);
 
-        expect(await visibleActions(page)).toEqual([
+        expect(await renderedActions(page)).toEqual([
             'btnPlay',
             'btnPlaystate',
             'btnUserRating',
@@ -122,18 +89,15 @@ test.describe('legacy Item Details, in a real browser', () => {
 
         // Multi-version / multi-track case: every selector the contract records is populated.
         expect(
-            await page
-                .locator('#itemDetailPage .selectSource option')
-                .allTextContents()
+            await selectOptions(page, 'selectSource').allTextContents()
         ).toEqual(['Version A', 'Version B']);
         expect(
-            await page
-                .locator('#itemDetailPage .selectAudio option')
-                .allTextContents()
+            await selectOptions(page, 'selectAudio').allTextContents()
         ).toEqual(['English AAC', 'French AC3']);
-        const subtitles = await page
-            .locator('#itemDetailPage .selectSubtitles option')
-            .allTextContents();
+        const subtitles = await selectOptions(
+            page,
+            'selectSubtitles'
+        ).allTextContents();
         expect(subtitles).toHaveLength(3);
         expect(subtitles.slice(1).sort()).toEqual([
             'English SRT',
@@ -149,6 +113,41 @@ test.describe('legacy Item Details, in a real browser', () => {
         });
     });
 
+    /**
+     * The delivery boundary, proven from outside the build.
+     *
+     * `webpack.delivery-budget.json` asserts that no Item Details module is reachable from the
+     * start-up graph. This asserts the consequence a viewer can observe: the route's chunk is not
+     * fetched until they open an item.
+     */
+    test('the route chunk is fetched only when the route is opened', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+
+        const chunkRequests: string[] = [];
+        page.on('request', (request) => {
+            const path = new URL(request.url()).pathname;
+            if (/^\/details\..*\.(chunk\.js|css)$/.test(path)) {
+                chunkRequests.push(path);
+            }
+        });
+
+        await page.goto('/#/home');
+        await page.waitForTimeout(2500);
+        expect(
+            chunkRequests,
+            'the Item Details chunk was fetched at start-up'
+        ).toEqual([]);
+
+        await openDetails(page, 'movie-1');
+        expect(
+            chunkRequests.length,
+            'navigating to /details did not fetch the route chunk'
+        ).toBeGreaterThan(0);
+    });
+
     test('the principal controls are focusable and keyboard-reachable', async ({
         page,
         baseURL
@@ -157,21 +156,51 @@ test.describe('legacy Item Details, in a real browser', () => {
         await openDetails(page, 'movie-1');
 
         for (const selector of [
-            '.btnPlay',
-            '.btnPlaystate',
-            '.btnUserRating',
-            '.btnMoreCommands',
-            '.selectSource',
-            '.selectAudio',
-            '.selectSubtitles'
+            '[data-detail-action="btnPlay"]',
+            '[data-detail-action="btnPlaystate"] button',
+            '[data-detail-action="btnUserRating"] button',
+            '[data-detail-action="btnMoreCommands"]',
+            '[data-detail-select="selectSource"]',
+            '[data-detail-select="selectAudio"]',
+            '[data-detail-select="selectSubtitles"]'
         ]) {
-            const control = page.locator(`#itemDetailPage ${selector}`).first();
+            const control = page.locator(`${PAGE} ${selector}`).first();
             await control.focus();
             await expect(
                 control,
                 `${selector} could not take focus`
             ).toBeFocused();
         }
+    });
+
+    test('every action control has an accessible name', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'movie-1');
+
+        const unnamed = await page.$$eval(
+            `${PAGE} [data-detail-action]`,
+            (nodes) =>
+                nodes
+                    .map((node) => {
+                        const button =
+                            node.tagName === 'BUTTON'
+                                ? node
+                                : node.querySelector('button');
+                        const name =
+                            button?.getAttribute('aria-label') ??
+                            button?.getAttribute('title') ??
+                            button?.textContent?.trim() ??
+                            '';
+                        return name
+                            ? null
+                            : (node.getAttribute('data-detail-action') ?? '?');
+                    })
+                    .filter(Boolean)
+        );
+        expect(unnamed, 'action controls with no accessible name').toEqual([]);
     });
 
     test('the played control issues a user-data mutation', async ({
@@ -182,7 +211,10 @@ test.describe('legacy Item Details, in a real browser', () => {
         await openDetails(page, 'movie-1');
 
         const before = ledger.requests.length;
-        await page.locator('#itemDetailPage .btnPlaystate').first().click();
+        await page
+            .locator(`${PAGE} [data-detail-action="btnPlaystate"] button`)
+            .first()
+            .click();
         await page.waitForTimeout(1000);
 
         const issued = ledger.requests.slice(before);
@@ -201,7 +233,10 @@ test.describe('legacy Item Details, in a real browser', () => {
         await openDetails(page, 'movie-1');
 
         const before = ledger.requests.length;
-        await page.locator('#itemDetailPage .btnPlay').first().click();
+        await page
+            .locator(`${PAGE} [data-detail-action="btnPlay"]`)
+            .first()
+            .click();
         await page.waitForTimeout(2000);
 
         // What is asserted is that pressing play reaches the playback stack for THIS item — not
@@ -213,6 +248,32 @@ test.describe('legacy Item Details, in a real browser', () => {
         ).toBe(true);
     });
 
+    test('selecting an alternate version keeps the page on the same item', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'movie-1');
+
+        await page
+            .locator(`${PAGE} [data-detail-select="selectSource"]`)
+            .selectOption('movie-1-alt');
+        await page.waitForTimeout(500);
+
+        expect(
+            await page
+                .locator(`${PAGE} [data-detail-select="selectSource"]`)
+                .inputValue()
+        ).toBe('movie-1-alt');
+        // The audio and subtitle selectors follow the selected source and stay populated.
+        expect(
+            await selectOptions(page, 'selectAudio').allTextContents()
+        ).toEqual(['English AAC', 'French AC3']);
+        await expect(
+            page.locator(`${PAGE} [data-detail-section="nameContainer"] h1`)
+        ).toHaveText('Fixture Movie');
+    });
+
     test('a season renders its episodes in server order', async ({
         page,
         baseURL
@@ -220,17 +281,16 @@ test.describe('legacy Item Details, in a real browser', () => {
         const ledger = await installFixtureApi(page, baseURL as string, DIST);
         await openDetails(page, 'season-1');
 
-        const sections = await renderedSections(page);
-        expect(sections).toContain('listChildrenCollapsible');
+        expect(await renderedSections(page)).toContain(
+            'listChildrenCollapsible'
+        );
 
-        // A list row carries `data-id` on several nested controls, so the raw node list repeats
-        // each id. First-occurrence order is the rendered order.
-        const ids = await page
-            .locator('#listChildrenCollapsible [data-id]')
-            .evaluateAll((nodes) => [
-                ...new Set(nodes.map((node) => node.getAttribute('data-id')))
-            ]);
-        expect(ids).toEqual(['episode-1', 'episode-2', 'episode-3']);
+        const names = await page
+            .locator(
+                `${PAGE} [data-detail-section="listChildrenCollapsible"] .rf-media-card__title`
+            )
+            .allTextContents();
+        expect(names).toEqual(['Episode 1', 'Episode 2', 'Episode 3']);
         expect(ledger.undeclared).toEqual([]);
 
         await page.screenshot({
@@ -246,61 +306,254 @@ test.describe('legacy Item Details, in a real browser', () => {
         await installFixtureApi(page, baseURL as string, DIST);
         await openDetails(page, 'series-1');
 
-        const ids = await page
-            .locator('#listChildrenCollapsible [data-id]')
-            .evaluateAll((nodes) => [
-                ...new Set(nodes.map((node) => node.getAttribute('data-id')))
-            ]);
-        expect(ids).toEqual(['season-1']);
+        const names = await page
+            .locator(
+                `${PAGE} [data-detail-section="listChildrenCollapsible"] .rf-media-card__title`
+            )
+            .allTextContents();
+        expect(names).toEqual(['Season 1']);
+
+        await page.screenshot({
+            path: join(ARTIFACTS, 'series.png'),
+            fullPage: true
+        });
     });
 
-    test('navigating away tears the page down', async ({ page, baseURL }) => {
+    /** Episodic navigation: a season's child card opens that episode's own details page. */
+    test('an episode is reachable from its season', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'season-1');
+
+        await page
+            .locator(
+                `${PAGE} [data-detail-section="listChildrenCollapsible"] a`
+            )
+            .first()
+            .click();
+        await page.waitForTimeout(2000);
+
+        expect(page.url()).toContain('id=episode-1');
+    });
+
+    /**
+     * `SUSPECT` #1, fixed. A `/details` URL with no recognised parameter left the legacy route
+     * showing a spinner forever, because `getPromise` threw past its own `.catch`.
+     */
+    test('a malformed URL leaves a bounded error and no spinner', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await page.goto('/#/details?nonsense=1');
+        await page.waitForSelector('[data-rf-slot="state-error"]', {
+            timeout: 30_000
+        });
+        await page.waitForTimeout(1000);
+
+        await expect(
+            page.locator('[data-rf-slot="state-loading"]')
+        ).toHaveCount(0);
+        await expect(
+            page.locator('[data-rf-slot="state-error"]')
+        ).toBeVisible();
+
+        await page.screenshot({
+            path: join(ARTIFACTS, 'malformed-route.png'),
+            fullPage: true
+        });
+    });
+
+    /**
+     * Navigating away unmounts the route.
+     *
+     * The legacy view manager CACHED the view, so the old suite could only assert that it was
+     * hidden. There is no view cache any more: React unmounts the tree, so the page element is
+     * gone from the document entirely. That is the migration's cleanup guarantee, asserted
+     * directly rather than around.
+     */
+    test('navigating away unmounts the route', async ({ page, baseURL }) => {
         await installFixtureApi(page, baseURL as string, DIST);
         await openDetails(page, 'movie-1');
-        expect(await page.locator('#itemDetailPage').count()).toBe(1);
+        expect(await page.locator(PAGE).count()).toBe(1);
 
         await page.goto('/#/home');
         await page.waitForTimeout(2000);
 
-        // The view manager CACHES a view rather than removing it — `#itemDetailPage` can survive
-        // in the DOM. What must be true is that it is no longer presented, and that the item's own
-        // content is gone from view. Asserting removal would freeze a view-manager implementation
-        // detail the migration is meant to retire.
-        await expect(page.locator('#itemDetailPage')).toBeHidden();
-        await expect(
-            page.locator('#itemDetailPage .nameContainer h1')
-        ).toBeHidden();
+        await expect(page.locator(PAGE)).toHaveCount(0);
+        await expect(page.locator('[data-detail-section]')).toHaveCount(0);
     });
 });
 
-test.describe('legacy Item Details, accessibility baseline', () => {
-    /**
-     * SCOPE: `#itemDetailPage` only. `tests/e2e/support/axe.ts` requires a narrowed `include` to be
-     * justified where it is written, so: this loop's subject is the route, the surrounding shell
-     * (header, drawer, backdrop) is untouched by it and is already scanned by `b2-axe.spec.ts`, and
-     * a whole-document scan here would attribute the shell's findings to Item Details.
-     *
-     * BASELINE, NOT A GATE. The route is unchanged by this loop, so any violation here predates it.
-     * The suite records what axe finds and fails only on `critical`, which is the threshold that
-     * would put this work into Lane A. Everything below `critical` is written to an artifact and to
-     * the test output so the migration can be measured against it.
-     */
-    test('axe records the unchanged route as a baseline', async ({
+/**
+ * Accessibility, as a GATE rather than a baseline.
+ *
+ * SCOPE: `#itemDetailPage` only. `tests/e2e/support/axe.ts` requires a narrowed `include` to be
+ * justified where it is written, so: this loop's subject is the route, the surrounding shell
+ * (header, drawer, backdrop) is untouched by it and is already scanned by `b2-axe.spec.ts`, and a
+ * whole-document scan here would attribute the shell's findings to Item Details.
+ *
+ * The P5 baseline recorded the legacy route's violations and failed only on `critical`. The rewrite
+ * is required to reach ZERO at every severity, so that is what this asserts.
+ */
+test.describe('migrated Item Details, accessibility', () => {
+    for (const [label, id] of [
+        ['movie', 'movie-1'],
+        ['series', 'series-1'],
+        ['season', 'season-1']
+    ] as const) {
+        test(`axe finds no violation on ${label}`, async ({
+            page,
+            baseURL
+        }) => {
+            await installFixtureApi(page, baseURL as string, DIST);
+            await openDetails(page, id);
+
+            const result = await scanPage(page, [PAGE]);
+            // eslint-disable-next-line no-console
+            console.log(
+                `axe ${AXE_VERSION} on the migrated /details route (${label})\n${formatViolations(result)}`
+            );
+
+            expect(
+                result.violations.length,
+                `accessibility violations on ${label}:\n${formatViolations(result)}`
+            ).toBe(0);
+        });
+    }
+
+    test('the heading hierarchy starts at h1 and never skips a level', async ({
         page,
         baseURL
     }) => {
         await installFixtureApi(page, baseURL as string, DIST);
         await openDetails(page, 'movie-1');
 
-        const result = await scanPage(page, ['#itemDetailPage']);
-        // eslint-disable-next-line no-console
-        console.log(
-            `axe ${AXE_VERSION} on the legacy /details route\n${formatViolations(result)}`
+        const levels = await page.$$eval(
+            `${PAGE} h1, ${PAGE} h2, ${PAGE} h3, ${PAGE} h4, ${PAGE} h5, ${PAGE} h6`,
+            (nodes) => nodes.map((node) => Number(node.tagName.slice(1)))
         );
 
+        expect(levels[0], 'the page does not start at h1').toBe(1);
+        for (let i = 1; i < levels.length; i++) {
+            expect(
+                levels[i] - levels[i - 1],
+                `heading level jumped from h${levels[i - 1]} to h${levels[i]}`
+            ).toBeLessThanOrEqual(1);
+        }
+    });
+});
+
+/** Narrow mobile: the composition is the same, and nothing overflows the viewport horizontally. */
+test.describe('migrated Item Details, narrow mobile', () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test('renders the same composition without horizontal overflow', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'movie-1');
+
+        expect(await renderedSections(page)).toContain('mainDetailButtons');
+        expect(await renderedActions(page)).toContain('btnPlay');
+
+        const overflow = await page.evaluate(
+            () =>
+                document.documentElement.scrollWidth -
+                document.documentElement.clientWidth
+        );
+        expect(overflow, 'the page scrolls horizontally').toBeLessThanOrEqual(
+            1
+        );
+
+        const result = await scanPage(page, [PAGE]);
         expect(
-            result.bySeverity.critical ?? 0,
-            `critical accessibility violations on the supported surface:\n${formatViolations(result)}`
+            result.violations.length,
+            `accessibility violations on mobile:\n${formatViolations(result)}`
+        ).toBe(0);
+
+        await page.screenshot({
+            path: join(ARTIFACTS, 'movie-mobile.png'),
+            fullPage: true
+        });
+    });
+});
+
+/** TV / 10-foot: every principal action must be reachable with the keyboard alone. */
+test.describe('migrated Item Details, TV viewport', () => {
+    test.use({ viewport: { width: 1920, height: 1080 } });
+
+    test('the action bar is reachable by keyboard alone', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'movie-1');
+
+        await page.locator('body').click({ position: { x: 1, y: 1 } });
+
+        const reached = new Set<string>();
+        for (let i = 0; i < 60; i++) {
+            await page.keyboard.press('Tab');
+            const name = await page.evaluate(() => {
+                const active = document.activeElement;
+                if (!active) return null;
+                const owner = active.closest('[data-detail-action]');
+                return owner?.getAttribute('data-detail-action') ?? null;
+            });
+            if (name) reached.add(name);
+            if (reached.size >= 4) break;
+        }
+
+        for (const action of [
+            'btnPlay',
+            'btnPlaystate',
+            'btnUserRating',
+            'btnMoreCommands'
+        ]) {
+            expect(
+                reached.has(action),
+                `${action} was not reachable by Tab; reached: ${[...reached].join(', ')}`
+            ).toBe(true);
+        }
+
+        await page.screenshot({
+            path: join(ARTIFACTS, 'movie-tv.png'),
+            fullPage: true
+        });
+    });
+});
+
+/** Reduced motion: the route must render its whole composition with animation suppressed. */
+test.describe('migrated Item Details, reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+
+    test('renders the whole composition with motion suppressed', async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL as string, DIST);
+        await openDetails(page, 'movie-1');
+
+        expect(await renderedSections(page)).toEqual([
+            'nameContainer',
+            'itemMiscInfo-primary',
+            'mainDetailButtons',
+            'trackSelections',
+            'tagline',
+            'overview',
+            'itemTags',
+            'itemDetailsGroup',
+            'castCollapsible'
+        ]);
+
+        const result = await scanPage(page, [PAGE]);
+        expect(
+            result.violations.length,
+            `accessibility violations under reduced motion:\n${formatViolations(result)}`
         ).toBe(0);
     });
 });

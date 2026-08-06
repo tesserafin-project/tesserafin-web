@@ -199,6 +199,18 @@ export async function installFixtureApi(
 
     await page.addInitScript(
         ([apiOrigin, serverId, userId, token]) => {
+            /*
+             * Drop React Query's persisted cache before the app boots.
+             *
+             * `utils/query/queryClient.ts` persists the whole client into IndexedDB through
+             * `idb-keyval` (database `keyval-store`, key `tesserafin-query-cache`) with a 24-hour
+             * gcTime. A request-sensitive assertion in a suite that reused that store would pass
+             * from a previous run's cached data rather than from a request the route issued, which
+             * is exactly the accident Phase 3 requirement 11 names. Deleting the database is
+             * cheaper and more honest than trying to invalidate individual keys.
+             */
+            indexedDB.deleteDatabase('keyval-store');
+
             localStorage.setItem(
                 'jellyfin_credentials',
                 JSON.stringify({
