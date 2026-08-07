@@ -28,6 +28,7 @@ import {
     compareLedgerRuns,
     describeBreach,
     ledgerClass,
+    requestMatches,
     resolveValue,
     valueMatches,
     type LedgerActionRow,
@@ -287,30 +288,57 @@ describe('migrated Item Details ledger — the render-phase run matches the ledg
     }
 });
 
-describe('migrated Item Details ledger — declared absences stay absent', () => {
+/**
+ * Absent reads are ENFORCED by the two directions above, not by a gate of their own.
+ *
+ * An absent read whose member the class never declares is unreachable: the fail-closed proxy throws
+ * on property access. One that shares a member with a read the class DOES issue — `getItems`,
+ * `getEpisodes` and `getLiveTvPrograms` each appear in more than one row — is caught by the argument
+ * comparison, because the arguments of the absent variant match no row and land in `unknown`.
+ *
+ * What is left for this block is that the record explains itself: every declared absence names the
+ * gate that excludes it, so a reader can tell "this class cannot" from "nobody checked".
+ */
+describe('migrated Item Details ledger — every declared absence names its gate', () => {
     for (const cls of LEDGER.classes) {
-        it(`${cls.id}: none of the ${cls.absentRequests.length} inapplicable reads is issued`, async () => {
-            const mounted = await mountForLedger(cls.id);
-            const issued = new Set(
-                observationsOf(mounted.api).map(
-                    (o) => `${o.surface}.${o.member}`
-                )
-            );
-
-            // An absent read whose MEMBER is not reachable at all is proven by the fail-closed
-            // proxy. One that shares a member with a read the class does issue (getItems,
-            // getEpisodes, getLiveTvPrograms) is proven by the argument comparison above, so the
-            // assertion here is that the ledger names a reason for every one of them.
+        it(`${cls.id}: all ${cls.absentRequests.length} inapplicable reads carry a reason`, () => {
+            expect(cls.absentRequests.length).toBeGreaterThan(0);
             for (const absence of cls.absentRequests) {
                 expect(
                     absence.reason,
                     `absence "${absence.signature}" of class "${cls.id}"`
                 ).toMatch(/\S/);
             }
-            expect(issued.size).toBeGreaterThan(0);
-            expect(mounted.api.refused).toEqual([]);
         });
     }
+
+    /**
+     * The same-member case, demonstrated rather than assumed.
+     *
+     * `children.folder` and `children.itemsByName` are both `legacy.getItems`, so a class issuing
+     * the wrong one would reach a DECLARED member and could only be caught by its arguments.
+     */
+    it('a read sharing a member with a declared one is still caught by its arguments', async () => {
+        const cls = ledgerClass('box-set');
+        const mounted = await mountForLedger(cls.id);
+        const observed = observationsOf(mounted.api).filter(
+            (o) => o.member === 'getItems'
+        );
+        expect(observed).toHaveLength(1);
+
+        const itemsByName = ledgerClass('person').requests.find(
+            (row) => row.id === 'children.itemsByName'
+        );
+        expect(itemsByName).toBeDefined();
+        expect(
+            requestMatches(
+                itemsByName as (typeof cls.requests)[number],
+                observed[0],
+                cls.identity
+            ),
+            'the items-by-name arguments must not match a folder read'
+        ).toBe(false);
+    });
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -383,6 +411,31 @@ describe('migrated Item Details ledger — every rendered affordance is classifi
                     ),
                     `[item-details ledger] class "${cls.id}" declares delegated control "${delegated.id}" but it is not rendered`
                 ).toBe(true);
+            }
+
+            /*
+             * Navigation target identity, §11 of the document.
+             *
+             * A link from this route is always to an ITEM. A URL carrying one of this item's
+             * MEDIA-SOURCE ids would mean a card or a parent link had been built from the wrong
+             * identity. Sources whose id equals the item's own are skipped: the ledger records that
+             * collision explicitly, and asserting on it would pass for the wrong reason.
+             */
+            const distinctSourceIds = Object.entries(cls.identity)
+                .filter(([role]) => role.startsWith('mediaSourceId.'))
+                .map(([, value]) => value)
+                .filter((value) => value !== cls.identity.itemId);
+            for (const anchor of mounted.container.querySelectorAll(
+                'a[href]'
+            )) {
+                const href = anchor.getAttribute('href') ?? '';
+                for (const sourceId of distinctSourceIds) {
+                    expect(
+                        href.includes(sourceId),
+                        `[item-details ledger] class "${cls.id}" renders a link to media-source ` +
+                            `"${sourceId}": ${href}`
+                    ).toBe(false);
+                }
             }
 
             // And no action the ledger did NOT declare for this class is rendered.
@@ -559,6 +612,15 @@ describe('migrated Item Details ledger — the administrative split action', () 
 // LOCAL_ONLY: a control that must NOT reach outward
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * How many of the declared LOCAL_ONLY controls were actually OPERATED.
+ *
+ * A selector with no options cannot be changed, so its test asserts that it is empty and stops.
+ * Counting the two outcomes separately is the difference between "30 controls proved inert" and
+ * "30 controls have a test", and only the first is true.
+ */
+const exercised = { operated: 0, skippedEmpty: 0 };
+
 describe('migrated Item Details ledger — LOCAL_ONLY controls reach nothing outward', () => {
     for (const cls of LEDGER.classes) {
         for (const local of cls.localOnly) {
@@ -572,6 +634,7 @@ describe('migrated Item Details ledger — LOCAL_ONLY controls reach nothing out
                         '.rf-item-details__overview-toggle'
                     );
                     await activate(toggle);
+                    exercised.operated += 1;
                 } else {
                     const select = selectControl(mounted.container, local.id);
                     const options = [...(select?.options ?? [])].map(
@@ -581,7 +644,22 @@ describe('migrated Item Details ledger — LOCAL_ONLY controls reach nothing out
                     const next =
                         options.find((value) => value !== select?.value) ??
                         options[0];
-                    if (next === undefined) return;
+                    if (next === undefined) {
+                        /*
+                         * An empty selector cannot be operated, so there is nothing to assert about
+                         * what it reaches. Failing here rather than returning silently is what stops
+                         * a control that UNEXPECTEDLY lost its options from passing as "nothing
+                         * happened" — the shape this whole suite exists to refuse.
+                         */
+                        expect(
+                            options.length,
+                            `[item-details ledger] class "${cls.id}": LOCAL_ONLY control ` +
+                                `"${local.id}" offers options but none could be selected`
+                        ).toBe(0);
+                        exercised.skippedEmpty += 1;
+                        return;
+                    }
+                    exercised.operated += 1;
                     await changeSelect(select, next);
                 }
 
@@ -612,6 +690,24 @@ describe('migrated Item Details ledger — LOCAL_ONLY controls reach nothing out
             });
         }
     }
+
+    it('accounts for every declared LOCAL_ONLY control, operated or empty', () => {
+        const declared = LEDGER.classes.reduce(
+            (total, cls) => total + cls.localOnly.length,
+            0
+        );
+        expect(
+            exercised.operated + exercised.skippedEmpty,
+            `[item-details ledger] ${declared} LOCAL_ONLY controls are declared but ` +
+                `${exercised.operated} were operated and ${exercised.skippedEmpty} were empty`
+        ).toBe(declared);
+        // Most must actually be operable; a suite where everything was "empty" would prove nothing.
+        expect(exercised.operated).toBeGreaterThan(exercised.skippedEmpty);
+        // 26 operated, 4 empty at the time of freezing: the four `selectAudio` controls whose item
+        // declares no media streams. Pinned so a control silently losing its options is a failure.
+        expect(exercised.operated).toBe(26);
+        expect(exercised.skippedEmpty).toBe(4);
+    });
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -721,9 +817,17 @@ describe('migrated Item Details ledger — declared local-state variants', () =>
 // Keyboard reachability of the action surface, under the real components
 // ---------------------------------------------------------------------------------------------
 
-describe('migrated Item Details ledger — actions are reachable by keyboard', () => {
+/**
+ * Focusability, not activation.
+ *
+ * jsdom does not derive a button's activation behaviour from `Enter`, so what is provable here is
+ * that every declared action control takes focus and is in the tab order. The keyboard ACTIVATION
+ * proof — pressing Enter and watching the request leave — lives in
+ * `tests/itemDetailsBrowser/itemDetails.ledger.browser.spec.ts`, where a real browser supplies it.
+ */
+describe('migrated Item Details ledger — every action control is focusable', () => {
     for (const cls of LEDGER.classes) {
-        it(`${cls.id}: every declared action control takes focus and activates`, async () => {
+        it(`${cls.id}: every declared action control takes focus`, async () => {
             const mounted = await mountForLedger(cls.id);
             for (const row of cls.actions) {
                 const control = actionControl(mounted.container, row.id);

@@ -76,6 +76,8 @@ export interface LedgerClass {
     navigation: {
         id: string;
         section: string;
+        /** A CSS selector that identifies this affordance, where a section name cannot. */
+        selector: string | null;
         hrefShape: string;
         targetRole: string;
         note: string;
@@ -474,11 +476,20 @@ export function classifyAffordance(
         };
     }
 
+    /*
+     * An anchor is classified by SELECTOR where the rule has one, otherwise by the section it sits
+     * in. Not "any anchor matches the card rule": that fallback would classify a link in a brand-new
+     * surface, which is exactly the vacuity this sweep exists to avoid.
+     */
     if (node.tagName === 'A' && node.getAttribute('href')) {
-        const rule =
-            cls.navigation.find((entry) => entry.section === section) ??
-            cls.navigation.find((entry) => entry.id === 'cards.itemLinks');
-        if (rule) return { kind: 'NAVIGATION', id: rule.id };
+        const bySelector = cls.navigation.find(
+            (entry) => entry.selector && node.matches(entry.selector)
+        );
+        if (bySelector) return { kind: 'NAVIGATION', id: bySelector.id };
+        const bySection = cls.navigation.find(
+            (entry) => entry.section === section
+        );
+        if (bySection) return { kind: 'NAVIGATION', id: bySection.id };
     }
 
     const local = cls.localOnly.find(
