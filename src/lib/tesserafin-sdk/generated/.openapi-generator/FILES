@@ -9,6 +9,7 @@ api/backup-api.ts
 api/branding-api.ts
 api/channel-api.ts
 api/collection-api.ts
+api/content-packs-api.ts
 api/device-api.ts
 api/display-preference-api.ts
 api/environment-api.ts
@@ -104,6 +105,10 @@ models/collection-type-options.ts
 models/collection-type.ts
 models/configuration-page-info.ts
 models/container-profile.ts
+models/content-pack-browsing-preference.ts
+models/content-pack-dto.ts
+models/content-pack-membership-provenance.ts
+models/content-pack-origin.ts
 models/contract-field-issue.ts
 models/contract-issue-code.ts
 models/contract-mapping-delta.ts
@@ -113,6 +118,7 @@ models/contract-path.ts
 models/contract-structural-scan.ts
 models/contract-unknown-member-count.ts
 models/country-info.ts
+models/create-content-pack-request.ts
 models/create-playback-session-request.ts
 models/create-playlist-dto.ts
 models/create-user-by-name.ts
@@ -351,6 +357,7 @@ models/remote-lyric-info-dto.ts
 models/remote-search-result.ts
 models/remote-subtitle-info.ts
 models/remove-from-playlist-request-dto.ts
+models/reorder-content-packs-request.ts
 models/repeat-mode.ts
 models/replace-playback-session-request.ts
 models/repository-info.ts
@@ -439,6 +446,7 @@ models/tuner-channel-mapping.ts
 models/tuner-host-info.ts
 models/type-options.ts
 models/unrated-item.ts
+models/update-content-pack-request.ts
 models/update-library-options-dto.ts
 models/update-media-path-request-dto.ts
 models/update-playlist-dto.ts

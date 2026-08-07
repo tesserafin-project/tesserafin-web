@@ -20,6 +20,7 @@ export * from './api/backup-api';
 export * from './api/branding-api';
 export * from './api/channel-api';
 export * from './api/collection-api';
+export * from './api/content-packs-api';
 export * from './api/device-api';
 export * from './api/display-preference-api';
 export * from './api/environment-api';

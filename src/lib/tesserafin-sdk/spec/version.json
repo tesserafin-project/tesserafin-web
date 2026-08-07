@@ -6,11 +6,11 @@
     "webAppVersion": "1.0.0",
     "versionSkewNote": null,
     "openapi": "3.0.4",
-    "pathCount": 301,
-    "schemaCount": 409,
-    "source": "/tmp/claude-1000/-home-alex-Repos/dd2ee288-fc3b-4068-bdb5-3fc1b2489ebd/scratchpad/wt/srv/openapi/openapi.json",
-    "sourceCommit": "498e1f348aa27788cf2fc8320677b39c60ad9dd5",
-    "sourceRef": "origin/master",
-    "specSha256": "d5061badda045fa906e16ba89311e98316f07ec7160ab8a103dee55d79ae2cc2",
-    "generatedAt": "2026-07-27T03:22:06.342Z"
+    "pathCount": 307,
+    "schemaCount": 416,
+    "source": "~/.tesserafin-m1p/server/openapi/openapi.json",
+    "sourceCommit": "d08c8f94817fda6a481b654c6dbefd804a14831e",
+    "sourceRef": "d08c8f94817fda6a481b654c6dbefd804a14831e",
+    "specSha256": "d234d2a8e7775cb8473ebfde4abf2c298478cc26bc827c136853b6d31b5e4030",
+    "generatedAt": "2026-08-07T18:27:52.333Z"
 }
