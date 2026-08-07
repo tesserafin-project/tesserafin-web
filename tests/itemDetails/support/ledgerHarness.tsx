@@ -303,7 +303,14 @@ export async function mountForLedger(
      * multiplicity assertions deterministic.
      */
     if (cls.requests.some((row) => row.phase === 'delegated')) {
-        for (let turn = 0; turn < 40; turn++) {
+        /*
+         * The bound was 40 turns until it failed on a GitHub runner while passing locally: the
+         * widget arrives through a dynamic import inside an effect, and #129 Step 2 grew this
+         * suite from 1 741 to 3 222 tests, so the same machine has more to do between turns. 400
+         * keeps the loop's exit condition identical and only stops it giving up early — a fast
+         * machine still leaves on the first turn that sees the call.
+         */
+        for (let turn = 0; turn < 400; turn++) {
             if (api.calls.some((call) => call.method === 'getLiveTvProgram'))
                 break;
             await settle(1);

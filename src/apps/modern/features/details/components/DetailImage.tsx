@@ -90,11 +90,7 @@ const DetailImage: FC<{ item: DetailItem; hero: HeroLayout }> = ({
                 />
             ) : null}
 
-            <div
-                className='rf-item-details__poster'
-                data-detail-image='poster'
-                data-detail-hero={hero.treatment}
-            >
+            <div className='rf-item-details__poster' data-detail-image='poster'>
                 {poster ? (
                     <img
                         className='rf-item-details__poster-image'

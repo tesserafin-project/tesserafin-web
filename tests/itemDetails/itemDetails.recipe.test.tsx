@@ -329,6 +329,12 @@ function expectedUnexercised(
     return chaptersComposed ? [] : [URL_BUILDER_ROW];
 }
 
+/** Every rendered section heading, in document order. */
+const headingsOf = (root: HTMLElement) =>
+    [...root.querySelectorAll('[data-detail-heading]')]
+        .map((element) => (element.textContent ?? '').trim())
+        .filter(Boolean);
+
 const renderedSectionsOf = (root: HTMLElement) =>
     [...root.querySelectorAll('[data-detail-section]')].map(
         (element) => element.getAttribute('data-detail-section') ?? ''
@@ -396,6 +402,52 @@ for (const recipe of RECIPES) {
                     describeBreach(ledger, `recipe "${recipe.id}"`, result)
                 ).toEqual([]);
                 expect(result.ambiguous).toEqual([]);
+            });
+
+            it(`${cls.id} keeps the headings its selected families carry`, async () => {
+                /*
+                 * A family that rendered without its heading would pass every section assertion
+                 * above — the section element would still be there. The pre-binding record
+                 * captured the headings, so the check costs nothing.
+                 *
+                 * Two branches, because "the same headings" only means equality when the recipe
+                 * selects the whole vocabulary:
+                 *
+                 *   - a recipe selecting all eleven families must show EXACTLY the captured
+                 *     headings, as a set — the recipe reorders them, which is its job;
+                 *   - a recipe that omits families must show a SUBSET.
+                 *
+                 * Either way no heading may be orphaned from its section, which is the failure a
+                 * set comparison alone would miss.
+                 */
+                const mounted = await mount(cls.id, recipe);
+                const shown = headingsOf(mounted.container);
+                const captured = preBindingClass(cls.id).headings;
+
+                if (recipe.expected.length === ITEM_DETAILS_SECTIONS.length) {
+                    expect([...shown].sort()).toEqual([...captured].sort());
+                } else {
+                    for (const heading of shown) {
+                        expect(
+                            captured,
+                            `"${heading}" is not a heading the record captured`
+                        ).toContain(heading);
+                    }
+                }
+
+                const rendered = new Set(renderedSectionsOf(mounted.container));
+                for (const owner of [
+                    ...mounted.container.querySelectorAll(
+                        '[data-detail-heading]'
+                    )
+                ].map((element) =>
+                    element.getAttribute('data-detail-heading')
+                )) {
+                    expect(
+                        rendered,
+                        `heading for "${owner}" has no rendered section`
+                    ).toContain(owner as string);
+                }
             });
 
             it(`${cls.id} keeps every fixed surface, in its own order`, async () => {

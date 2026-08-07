@@ -27,15 +27,171 @@ import { PLATFORM_DEFAULT_PRESENTATION } from 'themes/platform/resolvePresentati
 
 import { DETAIL_SECTIONS } from '../constants/sections';
 import {
-    DETAIL_ITEM_TYPES,
     FIXED_REGIONS,
     SECTION_CLASSIFICATION,
-    SURFACE_ITEM_TYPES,
     composeItemDetails,
     familyMembers,
     isFixedRegion,
     resolveHeroLayout
 } from './itemDetailsRecipe';
+
+import type { DetailSectionName } from '../constants/sections';
+
+/*
+ * The eligibility model lives HERE, not in the module it describes.
+ *
+ * It exists only to prove the composition model, nothing reads it at runtime, and it is ~100 lines
+ * webpack would otherwise keep in the viewer's Item Details chunk — exactly the kind of test data a
+ * delivery budget is meant to notice. Keeping it beside the proof that consumes it costs nothing
+ * and ships nothing.
+ */
+/**
+ * The item types the route can render, as the equivalence classes name them.
+ *
+ * Used only to prove the composition model — see {@link SURFACE_ITEM_TYPES}. It is a list of
+ * TYPES, never a branch: nothing in the render path asks "which type is this?" to decide an order.
+ */
+const DETAIL_ITEM_TYPES = [
+    'Movie',
+    'Video',
+    'MusicVideo',
+    'Trailer',
+    'Series',
+    'Season',
+    'Episode',
+    'MusicAlbum',
+    'Audio',
+    'MusicArtist',
+    'Playlist',
+    'BoxSet',
+    'Folder',
+    'Person',
+    'Book',
+    'Photo',
+    'Program',
+    'Recording',
+    'SeriesTimer',
+    'TvChannel',
+    'Genre',
+    'MusicGenre',
+    'Studio'
+] as const;
+
+type DetailItemType = (typeof DETAIL_ITEM_TYPES)[number];
+
+const ALL_TYPES: readonly DetailItemType[] = DETAIL_ITEM_TYPES;
+const VIDEO_TYPES: readonly DetailItemType[] = [
+    'Movie',
+    'Video',
+    'MusicVideo',
+    'Trailer',
+    'Episode',
+    'Recording'
+];
+/** Types whose DTO carries `People`. `splitCast` reads nothing else. */
+const CAST_TYPES: readonly DetailItemType[] = [
+    'Movie',
+    'Video',
+    'MusicVideo',
+    'Trailer',
+    'Series',
+    'Season',
+    'Episode',
+    'MusicAlbum',
+    'Audio',
+    'Playlist',
+    'BoxSet',
+    'Book',
+    'Photo',
+    'Program',
+    'Recording'
+];
+/** `childrenKind` !== 'none' and `isListChildren`. */
+const LIST_CHILDREN_TYPES: readonly DetailItemType[] = [
+    'Series',
+    'Season',
+    'MusicAlbum',
+    'Playlist',
+    'Studio',
+    'Person',
+    'Genre',
+    'MusicGenre',
+    'MusicArtist'
+];
+
+/**
+ * Which item types each concrete surface can render for.
+ *
+ * Read off the route's own gates — `api/useItemDetails.ts` query predicates and
+ * `utils/itemPredicates.ts` — never off the 24 fixtures, which exercise 29 of the 33 surfaces and
+ * would leave the other four unchecked.
+ *
+ * This exists for one purpose: to prove that the published family ORDER reproduces the order the
+ * view emits, for every item type, without relying on any fixture. It is the "applicable
+ * equivalence classes" column of the design record, in executable form.
+ *
+ * Where a surface is gated on DATA rather than on type, the list is the widest set of types whose
+ * DTO can carry that data. Being generous here makes the proof STRICTER, never weaker: a type
+ * listed in error only adds a constraint the ordering must satisfy.
+ */
+const SURFACE_ITEM_TYPES: Readonly<
+    Record<DetailSectionName, readonly DetailItemType[]>
+> = {
+    // Fixed surfaces. Listed for completeness; they are anchored above the recipe and take no part
+    // in the ordering proof.
+    nameContainer: ALL_TYPES,
+    'itemMiscInfo-primary': ALL_TYPES.filter((t) => t !== 'SeriesTimer'),
+    'itemMiscInfo-secondary': ALL_TYPES.filter((t) => t !== 'SeriesTimer'),
+    mainDetailButtons: ALL_TYPES,
+    trackSelections: [...VIDEO_TYPES, 'Audio', 'Book'],
+    recordingFields: ['Program'],
+
+    // Theme-controllable surfaces.
+    tagline: ALL_TYPES,
+    overview: ALL_TYPES,
+    itemBirthday: ['Person'],
+    itemBirthLocation: ['Person'],
+    itemDeathDate: ['Person'],
+    seriesAirTime: ['Series'],
+    // `item.Type === 'Program' ? [] : item.Tags`.
+    itemTags: ALL_TYPES.filter((t) => t !== 'Program'),
+    itemExternalLinks: ALL_TYPES,
+    itemDetailsGroup: ALL_TYPES,
+    seriesTimerScheduleSection: ['SeriesTimer'],
+    programGuideSection: ['TvChannel'],
+    seriesScheduleSection: ['Series'],
+    collectionItems: ['BoxSet'],
+    listChildrenCollapsible: LIST_CHILDREN_TYPES,
+    // `IsFolder` types that are none of the above — a plain library folder.
+    childrenCollapsible: ['Folder'],
+    // `PartCount > 1`: a multi-part video.
+    additionalPartsCollapsible: VIDEO_TYPES,
+    nextUpSection: ['Series'],
+    lyricsSection: ['Audio'],
+    moreFromSeasonSection: ['Episode'],
+    // `hasMoreFromArtist`.
+    moreFromArtistSection: ['MusicArtist', 'Audio', 'MusicAlbum'],
+    castCollapsible: CAST_TYPES,
+    guestCastCollapsible: CAST_TYPES,
+    // `SpecialFeatureCount > 0`.
+    specialsCollapsible: ['Movie', 'Series', 'Season', 'Episode', 'Recording'],
+    musicVideosCollapsible: ['MusicAlbum'],
+    // `renderableChapters`.
+    scenesCollapsible: VIDEO_TYPES,
+    collectionsCollapsible: ALL_TYPES,
+    // `SIMILAR_TYPES`.
+    similarCollapsible: [
+        'Movie',
+        'Trailer',
+        'Series',
+        'Program',
+        'Recording',
+        'MusicAlbum',
+        'MusicArtist',
+        'Playlist',
+        'Audio'
+    ]
+};
 
 const PUBLIC: readonly string[] = ITEM_DETAILS_SECTIONS;
 const FIXED: readonly string[] = FIXED_REGIONS;
