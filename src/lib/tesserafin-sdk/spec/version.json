@@ -9,8 +9,8 @@
     "pathCount": 307,
     "schemaCount": 416,
     "source": "~/.tesserafin-m1p/server/openapi/openapi.json",
-    "sourceCommit": "d08c8f94817fda6a481b654c6dbefd804a14831e",
-    "sourceRef": "d08c8f94817fda6a481b654c6dbefd804a14831e",
+    "sourceCommit": "1d0e91b77978cdbf69eef4117702383115e65826",
+    "sourceRef": "1d0e91b77978cdbf69eef4117702383115e65826",
     "specSha256": "d234d2a8e7775cb8473ebfde4abf2c298478cc26bc827c136853b6d31b5e4030",
-    "generatedAt": "2026-08-07T18:27:52.333Z"
+    "generatedAt": "2026-08-07T18:52:58.698Z"
 }
