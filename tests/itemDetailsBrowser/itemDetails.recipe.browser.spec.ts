@@ -16,7 +16,7 @@
  * differ in the order they render, both show the same set of surfaces, and axe finds nothing. The
  * PICTURE is the deliverable, and judging it is the maintainer's job, not a test's.
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { type Page, expect, test } from '@playwright/test';
@@ -34,8 +34,18 @@ const APPLIED_KEY = 'tesserafin.themeStudio.appliedPresentation';
 mkdirSync(ARTIFACTS, { recursive: true });
 
 const THEMES = [
-    { id: 'classic', label: 'Tesserafin Classic', manifest: classicManifest },
-    { id: 'glass', label: 'Frosted Glass', manifest: glassManifest }
+    {
+        id: 'classic',
+        themeId: 'official.classic',
+        label: 'Tesserafin Classic',
+        manifest: classicManifest
+    },
+    {
+        id: 'glass',
+        themeId: 'official.glass',
+        label: 'Frosted Glass',
+        manifest: glassManifest
+    }
 ] as const;
 
 /** The semantic extremes Phase 7 asks for, limited to what the fixture API can serve. */
@@ -54,13 +64,69 @@ const VIEWPORTS = [
     { id: 'mobile', width: 390, height: 844 }
 ] as const;
 
-async function applyRecipe(page: Page, presentation: unknown) {
-    await page.addInitScript(
-        ([key, value]) => {
-            window.localStorage.setItem(key as string, value as string);
-        },
-        [APPLIED_KEY, JSON.stringify(presentation)] as const
+/**
+ * The generated `--rf-*` token tier for a theme, as an emitted asset.
+ *
+ * `tesserafin-design/scripts/generate-web-tokens.mjs` emits one tier per non-default theme, keyed
+ * on `[data-rf-theme="<id>"]`, and the app fetches it lazily through `ensureColorSchemeLoaded`.
+ * Reading the emitted file rather than rebuilding the tokens here is deliberate: the projection
+ * rule (`ui/tokens/projectTokens.ts`) must not have a second implementation living in a test.
+ *
+ * `null` for the default theme, whose tokens are in the base stylesheet already.
+ */
+function tokenTierFor(themeId: string): string | null {
+    if (themeId === 'official.classic') return null;
+    const slug = themeId.replace(/\./g, '-');
+    const file = readdirSync(DIST).find(
+        (name) =>
+            name.startsWith(`theme-colorscheme-${slug}.`) &&
+            name.endsWith('.css')
     );
+    if (!file) throw new Error(`no emitted token tier for "${themeId}"`);
+    return join(DIST, file);
+}
+
+/**
+ * Dress the page in a theme — BOTH halves of it.
+ *
+ * The first cut of this suite wrote the applied-presentation record and nothing else. That
+ * delivered the recipe and left the palette at the default, so the two themes differed only by
+ * section order and a maintainer reasonably read them as "nearly identical". A capture that shows
+ * less than a reader sees is not evidence.
+ *
+ * A theme reaches a reader as two things and this applies both:
+ *
+ *   - its TOKENS — the emitted `[data-rf-theme]` tier above, plus the attribute that selects it;
+ *   - its RECIPE — `presentation`, through the record `PresentationProvider` reads.
+ *
+ * The picker path (`userSettings.theme()` → `themeManager` → `THEME_CHANGE`) is deliberately not
+ * driven here: it needs the authenticated settings round-trip this server-free fixture does not
+ * reproduce, and it is not what #129 Step 2 changes. What is asserted below is that both halves
+ * arrived — `data-rf-theme` is the requested id and `--rf-color-surface` differs between the two.
+ */
+async function wearTheme(page: Page, themeId: string, presentation: unknown) {
+    await page.addInitScript(
+        ([id, key, value]) => {
+            window.localStorage.setItem(key as string, value as string);
+            document.documentElement.setAttribute(
+                'data-rf-theme',
+                id as string
+            );
+        },
+        [themeId, APPLIED_KEY, JSON.stringify(presentation)] as const
+    );
+}
+
+/** Re-assert the attribute and add the token tier once the app has booted. */
+async function settleTheme(page: Page, themeId: string) {
+    const tier = tokenTierFor(themeId);
+    if (tier) await page.addStyleTag({ path: tier });
+    await page.evaluate((id) => {
+        // `useAppTheme` writes this on mount from the default entry; the capture is of a reader
+        // who chose this theme, so it is set back afterwards.
+        document.documentElement.setAttribute('data-rf-theme', id as string);
+    }, themeId);
+    await page.waitForTimeout(300);
 }
 
 async function open(page: Page, query: string) {
@@ -93,9 +159,14 @@ for (const theme of THEMES) {
                     baseURL
                 }) => {
                     await page.setViewportSize(viewport);
-                    await applyRecipe(page, theme.manifest.presentation);
+                    await wearTheme(
+                        page,
+                        theme.themeId,
+                        theme.manifest.presentation
+                    );
                     await installFixtureApi(page, baseURL as string, DIST);
                     await open(page, subject.query);
+                    await settleTheme(page, theme.themeId);
 
                     expect(await sectionsOf(page)).toContain('nameContainer');
 
@@ -125,9 +196,10 @@ for (const theme of THEMES) {
             page,
             baseURL
         }) => {
-            await applyRecipe(page, theme.manifest.presentation);
+            await wearTheme(page, theme.themeId, theme.manifest.presentation);
             await installFixtureApi(page, baseURL as string, DIST);
             await open(page, 'id=movie-1');
+            await settleTheme(page, theme.themeId);
 
             const result = await scanPage(page, [PAGE]);
             expect(AXE_VERSION).toBe('4.12.1');
@@ -144,9 +216,10 @@ for (const theme of THEMES) {
             // A TV-shaped viewport, driven only by Tab. Reordering content must never strand the
             // fixed header behind it.
             await page.setViewportSize({ width: 1920, height: 1080 });
-            await applyRecipe(page, theme.manifest.presentation);
+            await wearTheme(page, theme.themeId, theme.manifest.presentation);
             await installFixtureApi(page, baseURL as string, DIST);
             await open(page, 'id=movie-1');
+            await settleTheme(page, theme.themeId);
 
             let reached: string | null = null;
             for (let step = 0; step < 40 && !reached; step++) {
@@ -181,26 +254,44 @@ test.describe('the two official recipes are materially distinct', () => {
         browser,
         baseURL
     }) => {
-        const read = async (presentation: unknown) => {
+        const read = async (themeId: string) => {
             const context = await browser.newContext();
             const page = await context.newPage();
-            await applyRecipe(page, presentation);
+            await wearTheme(
+                page,
+                themeId,
+                themeId === 'official.classic'
+                    ? classicManifest.presentation
+                    : glassManifest.presentation
+            );
             await installFixtureApi(page, baseURL as string, DIST);
             await open(page, 'id=movie-1');
+            await settleTheme(page, themeId);
             const observed = {
                 sections: await sectionsOf(page),
                 slots: [...new Set(await slotsOf(page))],
                 backdrop: await page.$$eval(
                     '[data-detail-backdrop]',
                     (nodes) => nodes.length
+                ),
+                // The palette arrives with the theme, not with the recipe. Recorded here because
+                // an earlier cut of this suite delivered the recipe alone and both themes rendered
+                // in the default colours — which is not what a reader sees.
+                rfTheme: await page.evaluate(() =>
+                    document.documentElement.getAttribute('data-rf-theme')
+                ),
+                surface: await page.evaluate(() =>
+                    getComputedStyle(document.documentElement)
+                        .getPropertyValue('--rf-color-surface')
+                        .trim()
                 )
             };
             await context.close();
             return observed;
         };
 
-        const classic = await read(classicManifest.presentation);
-        const glass = await read(glassManifest.presentation);
+        const classic = await read('official.classic');
+        const glass = await read('official.glass');
 
         // Same surfaces, different order — nothing suppressed, everything recomposed.
         expect([...glass.sections].sort()).toEqual(
@@ -208,6 +299,11 @@ test.describe('the two official recipes are materially distinct', () => {
         );
         expect(glass.sections).not.toEqual(classic.sections);
         expect(glass.slots).not.toEqual(classic.slots);
+
+        // And each page is actually wearing its own theme.
+        expect(classic.rfTheme).toBe('official.classic');
+        expect(glass.rfTheme).toBe('official.glass');
+        expect(glass.surface).not.toBe(classic.surface);
 
         // And a visibly different hero: Classic draws the backdrop layer, Glass does not.
         expect(classic.backdrop).toBe(1);
@@ -232,7 +328,11 @@ test.describe('the two official recipes are materially distinct', () => {
 
         const themed = await browser.newContext();
         const themedPage = await themed.newPage();
-        await applyRecipe(themedPage, classicManifest.presentation);
+        await wearTheme(
+            themedPage,
+            'official.classic',
+            classicManifest.presentation
+        );
         await installFixtureApi(themedPage, baseURL as string, DIST);
         await open(themedPage, 'id=movie-1');
         const underClassic = await sectionsOf(themedPage);

@@ -37,7 +37,34 @@ compare.
 the provider falls back to `PLATFORM_DEFAULT_PRESENTATION`. It is byte-identical to
 `capture-movie.png`.
 
-## 2. The two official recipes
+## 2. What "the theme" means in these captures
+
+A theme reaches a reader as **two** things, and both are applied here:
+
+- its **tokens** — the emitted `[data-rf-theme="<id>"]` tier that
+  `tesserafin-design/scripts/generate-web-tokens.mjs` produces, injected from `dist/` rather than
+  rebuilt, so the projection rule has no second implementation in a test;
+- its **recipe** — `presentation`, through the record `PresentationProvider` reads.
+
+The first cut of this suite applied only the recipe. That left both themes in the default palette,
+so they differed by section order alone and read as nearly identical — a capture showing less than a
+reader sees. Corrected; the suite now asserts `data-rf-theme` is the requested id and that
+`--rf-color-surface` differs between the two.
+
+| | Tesserafin Classic | Frosted Glass |
+| --- | --- | --- |
+| `--rf-color-background` | `#050e22` | `#0b0e14` |
+| `--rf-color-surface` | `#07142f` — opaque | `#161b268c` — 55 % alpha |
+| `--rf-color-primary` | `#18b8b2` teal | `#4fd1ff` cyan |
+| `--rf-blur-md` | `0` | `16px` |
+| `hero` | `backdrop` — band drawn | `poster` — no band, wider poster |
+| movie order | … `itemTags`, `itemDetailsGroup`, `castCollapsible` | … `castCollapsible`, `itemTags`, `itemDetailsGroup` |
+
+Only the last two rows are #129 Step 2's doing. The palette, surface alpha and blur are
+`tokens.core` and `presentation.surface`, bound well before this PR — they are here because a
+capture of one half of a theme is not evidence about the theme.
+
+## 3. The two official recipes
 
 `classic/` and `glass/` each carry seven subjects × two viewports, plus one TV-shaped focus state:
 
