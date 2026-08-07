@@ -25,13 +25,24 @@ import {
     LIBRARY_FILTER_PRESENTATIONS,
     LIBRARY_LAYOUTS
 } from 'apps/modern/features/library/utils/libraryRecipe';
+/*
+ * Same rule for Item Details: the families come from the LIVE ROUTE's composition module. That is
+ * what guarantees the Studio can never offer a section the route does not draw — and, just as
+ * importantly, that no FIXED surface can appear as an option: `PUBLISHED_FAMILIES` is the public
+ * enum, and the action bar, the track selectors, the recording controls and the item's identity
+ * are not in it.
+ */
+import { PUBLISHED_FAMILIES } from 'apps/modern/features/details/utils/itemDetailsRecipe';
 import {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    ITEM_DETAILS_HEROES,
     PLATFORM_DEFAULT_PRESENTATION,
     WEB_RENDERER_CAPABILITIES,
     type HomeRecipe,
     type HomeSection,
+    type ItemDetailsRecipe,
+    type ItemDetailsSection,
     type LibraryRecipe,
     type ThemeCapability,
     type ThemePresentation
@@ -92,6 +103,12 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
                 ...presentation.page,
                 library: { ...presentation.page?.library, [key]: value }
             }
+        });
+
+    const setItemDetails = (itemDetails: ItemDetailsRecipe) =>
+        onChange({
+            ...presentation,
+            page: { ...presentation.page, itemDetails }
         });
 
     return (
@@ -200,17 +217,19 @@ export const PresentationEditor: FC<PresentationEditorProps> = ({
                 )}
             </Section>
 
-            <Section title='Other page composition'>
-                <Alert severity='warning' variant='outlined'>
-                    The Item Details composition recipe is defined by the
-                    contract and <strong>not yet bound</strong> by the Web
-                    renderer — its route is still a legacy view that reads no
-                    recipe. A theme may declare it today; this renderer falls
-                    back to the platform default and reports the fallback.
-                    Editing it here is disabled until that route reads a recipe,
-                    so the Studio does not offer a control that would do
-                    nothing.
-                </Alert>
+            <Section title='Item Details composition'>
+                {supports('presentation.page.itemDetails') ? (
+                    <ItemDetailsCompositionEditor
+                        recipe={presentation.page?.itemDetails}
+                        onChange={setItemDetails}
+                    />
+                ) : (
+                    <Alert severity='warning' variant='outlined'>
+                        The Item Details composition recipe is defined by the
+                        contract and <strong>not bound</strong> by this
+                        renderer, so editing it here is disabled.
+                    </Alert>
+                )}
             </Section>
         </Stack>
     );
@@ -427,6 +446,164 @@ const LibraryCompositionEditor: FC<LibraryCompositionEditorProps> = ({
         </Alert>
     </Stack>
 );
+
+const DEFAULT_ITEM_DETAILS = PLATFORM_DEFAULT_PRESENTATION.page.itemDetails;
+
+/**
+ * User-facing names for the published content families.
+ *
+ * Deliberately NOT the token strings. A token is contract vocabulary; a label is what an author
+ * reads. Two of the tokens are wider than their published names — `episodes` covers any contained
+ * children and `mediaInfo` covers the whole fact panel — and the labels say what the family
+ * actually is, which is the only place that difference can be explained to an author.
+ */
+const ITEM_DETAILS_LABELS: Record<ItemDetailsSection, string> = {
+    overview: 'Overview and tagline',
+    mediaInfo: 'Details, tags and links',
+    nextUp: 'Next up',
+    episodes: 'Contents — episodes, tracks and collection items',
+    lyrics: 'Lyrics',
+    moreFrom: 'More from this artist or season',
+    cast: 'Cast and crew',
+    schedule: 'Schedule and programme guide',
+    extras: 'Extras and music videos',
+    chapters: 'Scenes',
+    related: 'Related and collections'
+};
+
+interface ItemDetailsCompositionEditorProps {
+    recipe: ItemDetailsRecipe | undefined;
+    onChange: (recipe: ItemDetailsRecipe) => void;
+}
+
+/**
+ * The Item Details composition control — a REAL one, on the same terms as Home's and Library's.
+ *
+ * It edits the `presentation.page.itemDetails` object the live route resolves, its family list is
+ * IMPORTED from `apps/modern/features/details/utils/itemDetailsRecipe.ts`, and applying a draft
+ * changes `/details` itself rather than only `PreviewCanvas`.
+ *
+ * What is deliberately NOT here is the point of the control. There is no option for the item's
+ * name, the play button, the media-source or subtitle selectors, the played/favourite/rating
+ * controls, the recording editor, a permission gate or a warning — those are fixed regions
+ * (RFC-0007 §6.1), and the way they are kept out is structural: this list is the published enum,
+ * and the enum contains none of them. A theme cannot select what the vocabulary cannot name.
+ *
+ * Ordering uses explicit Move up/Move down buttons for the reason Home's does: drag is operable by
+ * neither keyboard nor remote.
+ */
+const ItemDetailsCompositionEditor: FC<ItemDetailsCompositionEditorProps> = ({
+    recipe,
+    onChange
+}) => {
+    const selected: readonly ItemDetailsSection[] =
+        recipe?.sections ?? DEFAULT_ITEM_DETAILS.sections;
+    const hero = recipe?.hero ?? DEFAULT_ITEM_DETAILS.hero;
+
+    // Selected first, in recipe order; then everything still available, in contract order. Derived
+    // rather than stored, so the control has no state that could disagree with the draft.
+    const rows = [
+        ...selected,
+        ...PUBLISHED_FAMILIES.filter((family) => !selected.includes(family))
+    ];
+
+    const setSections = (sections: readonly ItemDetailsSection[]) =>
+        onChange({ hero, sections });
+
+    const toggle = (family: ItemDetailsSection) => {
+        if (selected.includes(family)) {
+            // `theme.schema.json` requires `minItems: 1`; the last one is disabled below.
+            setSections(selected.filter((entry) => entry !== family));
+        } else {
+            setSections([...selected, family]);
+        }
+    };
+
+    const move = (family: ItemDetailsSection, delta: -1 | 1) => {
+        const from = selected.indexOf(family);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= selected.length) return;
+        const next = [...selected];
+        next.splice(from, 1);
+        next.splice(to, 0, family);
+        setSections(next);
+    };
+
+    return (
+        <Stack spacing={2} data-testid='theme-studio-item-details-composition'>
+            <Typography variant='body2'>
+                A recipe orders and selects Item Details content families. It
+                never changes which requests the page issues: a family you hide
+                is still fetched, so hiding is a statement about what is shown,
+                not about what is loaded.
+            </Typography>
+
+            <Choice
+                label='Artwork treatment'
+                value={hero}
+                options={ITEM_DETAILS_HEROES}
+                onChange={(value) =>
+                    onChange({
+                        hero: value as ItemDetailsRecipe['hero'],
+                        sections: selected
+                    })
+                }
+            />
+
+            <ul className='rf-theme-studio__home-sections'>
+                {rows.map((family) => {
+                    const index = selected.indexOf(family);
+                    const isSelected = index >= 0;
+
+                    return (
+                        <li key={family}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={isSelected}
+                                        disabled={
+                                            isSelected && selected.length === 1
+                                        }
+                                        onChange={() => toggle(family)}
+                                    />
+                                }
+                                label={ITEM_DETAILS_LABELS[family]}
+                            />
+                            <Button
+                                size='small'
+                                disabled={!isSelected || index === 0}
+                                onClick={() => move(family, -1)}
+                            >
+                                {`Move ${ITEM_DETAILS_LABELS[family]} up`}
+                            </Button>
+                            <Button
+                                size='small'
+                                disabled={
+                                    !isSelected || index === selected.length - 1
+                                }
+                                onClick={() => move(family, 1)}
+                            >
+                                {`Move ${ITEM_DETAILS_LABELS[family]} down`}
+                            </Button>
+                        </li>
+                    );
+                })}
+            </ul>
+
+            <Alert severity='info' variant='outlined'>
+                The artwork treatment is a layout choice. It never causes an
+                extra image request, it never overrides the reader&apos;s own
+                backdrop setting, people and books never gain a backdrop, and
+                the poster is rendered under all three. The item&apos;s name,
+                the playback controls, the media-source, audio and subtitle
+                selectors, the played/favourite/rating controls, the recording
+                editor and every required warning are fixed: no recipe can
+                select, hide, reorder or move them, which is why none of them
+                appears above.
+            </Alert>
+        </Stack>
+    );
+};
 
 const Section: FC<{ title: string; children: React.ReactNode }> = ({
     title,

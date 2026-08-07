@@ -257,7 +257,7 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
         draft.manifest.capabilities = {
             required: [
                 ...(draft.manifest.capabilities?.required ?? []),
-                capability as 'presentation.page.itemDetails'
+                capability as 'assets.roles'
             ]
         };
         window.localStorage.setItem(
@@ -267,16 +267,22 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
     }
 
     it('refuses to apply, and names the capability and the fix', () => {
-        // A capability the Web renderer still does not implement. It was
-        // `presentation.page.library` until that route read a recipe; using a bound capability
-        // here would have made this test assert nothing.
-        startDraftRequiring('presentation.page.itemDetails');
+        /*
+         * A capability the Web renderer still does not implement. It was
+         * `presentation.page.library` until that route read a recipe, then
+         * `presentation.page.itemDetails` until #129 Step 2 bound that one; using a bound
+         * capability here would make this test assert nothing.
+         *
+         * `assets.roles` is the honest remaining choice: a theme's `assets` block names a
+         * package-relative path and there is no theme package, so nothing can resolve one.
+         */
+        startDraftRequiring('assets.roles');
         render();
 
         const alert = container.querySelector(
             '[data-testid="theme-studio-required-unsupported"]'
         );
-        expect(alert?.textContent).toContain('presentation.page.itemDetails');
+        expect(alert?.textContent).toContain('assets.roles');
         expect(alert?.textContent).toContain('capabilities.optional');
 
         const apply = [...container.querySelectorAll('button')].find((button) =>
