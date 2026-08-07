@@ -12,7 +12,7 @@
  * later binding step (#129 Step 2), so changing one has to be a deliberate edit to both the fixture
  * and the document, not a quiet change to a JSON field.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -169,6 +169,64 @@ describe('legacy Item Details contract — platform-default comparison', () => {
         expect(WEB_RENDERER_CAPABILITIES as readonly string[]).not.toContain(
             'presentation.page.itemDetails'
         );
+    });
+
+    /**
+     * The other half of "unbound", added with the Step 1b migration.
+     *
+     * Keeping the capability off `WEB_RENDERER_CAPABILITIES` says the renderer does not DECLARE the
+     * recipe. It says nothing about whether the route quietly READS one — and a route that read a
+     * recipe it had not declared would be the worst of both: a theme could change the page, and
+     * `resolvePresentation` could not report a fallback for it. Step 2 binds both together or
+     * neither.
+     *
+     * Scoped to the migrated slice and its route module, which is exactly where a binding would be
+     * written.
+     */
+    it('no file in the migrated slice reads a presentation recipe', () => {
+        const roots = [
+            resolve(REPO_ROOT, 'src/apps/modern/features/details'),
+            resolve(REPO_ROOT, 'src/apps/modern/routes/details.tsx')
+        ];
+
+        const files: string[] = [];
+        const walk = (target: string) => {
+            if (!existsSync(target)) return;
+            if (statSync(target).isFile()) {
+                if (/\.(ts|tsx)$/.test(target)) files.push(target);
+                return;
+            }
+            for (const entry of readdirSync(target)) {
+                walk(join(target, entry));
+            }
+        };
+        roots.forEach(walk);
+
+        expect(
+            files.length,
+            'the migrated slice was not found'
+        ).toBeGreaterThan(0);
+
+        for (const file of files) {
+            const source = readFileSync(file, 'utf8')
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/^\s*\/\/.*$/gm, '');
+            expect(source, `${file} calls usePresentation()`).not.toMatch(
+                /\busePresentation\s*\(/
+            );
+            /*
+             * `presentation.page.itemDetails`, however it is spelled. Deliberately NOT a bare
+             * `itemDetails` match: the slice namespaces its React Query keys under
+             * `['itemDetails', …]`, and a gate that a query key can trip is a gate that gets
+             * weakened until it passes.
+             */
+            expect(
+                source,
+                `${file} reads presentation.page.itemDetails`
+            ).not.toMatch(
+                /presentation[\s\S]{0,40}?\bitemDetails\b|PLATFORM_DEFAULT_PRESENTATION/
+            );
+        }
     });
 });
 
