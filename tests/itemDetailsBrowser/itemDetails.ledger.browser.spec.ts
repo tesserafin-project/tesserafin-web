@@ -256,9 +256,24 @@ test.describe('migrated Item Details ledger, in a real browser', () => {
     });
 
     /**
-     * The route is still unbound, proven from the shipped bundle rather than from source.
+     * The binding, proven from the SHIPPED BUNDLE rather than from source — #129 Step 2.
+     *
+     * This test asserted the opposite until Step 2, and it asserted it with a source-shaped regular
+     * expression (`/presentation[\s\S]{0,40}?itemDetails/`) that minification made unsatisfiable:
+     * property names are mangled, so the pattern could never match and the test passed whatever the
+     * chunk contained. Inverting the sentence without changing the method would have kept a gate
+     * that says nothing.
+     *
+     * What survives minification is STRING LITERALS, so that is what is asserted:
+     *
+     *   - the published family tokens are present, because the composition compares against them.
+     *     A route that had been "bound" without consuming the vocabulary would not carry them;
+     *   - the authoring layer is absent. `additionalProperties`, `$schema` and `contractVersion`
+     *     are literals from `theme.schema.json` and the manifest validator, and none of them may
+     *     appear in a viewer's route chunk — that is the delivery half of the binding, and the
+     *     reason `PresentationContext` imports the specific modules rather than the barrel.
      */
-    test('the shipped route chunk reads no presentation recipe', async ({
+    test('the shipped route chunk consumes the vocabulary and carries no authoring code', async ({
         page,
         baseURL
     }) => {
@@ -275,15 +290,34 @@ test.describe('migrated Item Details ledger, in a real browser', () => {
             chunks.length,
             'the route chunk was not fetched'
         ).toBeGreaterThan(0);
-        for (const chunk of chunks) {
-            const source = readFileSync(
-                join(DIST, chunk.replace(/^\//, '')),
-                'utf8'
-            );
+
+        const sources = chunks.map((chunk) =>
+            readFileSync(join(DIST, chunk.replace(/^\//, '')), 'utf8')
+        );
+        const joined = sources.join('\n');
+
+        for (const token of [
+            'moreFrom',
+            'chapters',
+            'extras',
+            'mediaInfo',
+            'schedule'
+        ]) {
             expect(
-                source,
-                `${chunk} reads presentation.page.itemDetails`
-            ).not.toMatch(/presentation[\s\S]{0,40}?\bitemDetails\b/);
+                joined,
+                `the route chunk does not carry the published family "${token}"`
+            ).toContain(token);
+        }
+
+        for (const authoring of [
+            'additionalProperties',
+            '$schema',
+            'contractVersion'
+        ]) {
+            expect(
+                joined,
+                `the route chunk carries the authoring literal "${authoring}"`
+            ).not.toContain(authoring);
         }
     });
 });
