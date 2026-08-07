@@ -1,0 +1,1444 @@
+{
+    "$comment": "AUTHORITATIVE PRE-BINDING RECORD. The Item Details composition as rendered by the migrated route BEFORE presentation.page.itemDetails was bound (#129 Step 2). Captured by tests/itemDetails/preBinding.capture.test.tsx with CAPTURE_PRE_BINDING=1; guarded by a source-held SHA-256 in tests/itemDetails/preBinding.consistency.test.ts. Never regenerate to make a test pass.",
+    "version": 1,
+    "startSha": "1486760c76150970fa8aab7d24d3919a6a7197fa",
+    "capability": "presentation.page.itemDetails",
+    "boundAtCapture": false,
+    "platformDefaultAtCapture": {
+        "source": "src/themes/platform/resolvePresentation.ts PLATFORM_DEFAULT_PRESENTATION.page.itemDetails",
+        "hero": "backdrop",
+        "sections": [
+            "overview",
+            "cast",
+            "episodes",
+            "related",
+            "mediaInfo"
+        ],
+        "boundByRoute": false
+    },
+    "states": {
+        "malformedRoute": [
+            "state-error"
+        ],
+        "emptyCollection": "box-set with no children renders EmptyState inside collectionItems"
+    },
+    "classes": [
+        {
+            "id": "movie",
+            "itemTypes": [
+                "Movie",
+                "Video",
+                "MusicVideo",
+                "Trailer"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "additionalPartsCollapsible",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "specialsCollapsible",
+                "scenesCollapsible",
+                "collectionsCollapsible",
+                "similarCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "tagline",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemTags",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemExternalLinks",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "additionalPartsCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "guestCastCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "specialsCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "scenesCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "collectionsCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "similarCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "HeaderAdditionalParts",
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "SpecialFeatures",
+                "HeaderScenes",
+                "Collections",
+                "HeaderMoreLikeThis"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "movie-resumable",
+            "itemTypes": [
+                "Movie"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "scenesCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "tagline",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemTags",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemExternalLinks",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "guestCastCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "scenesCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnReplay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "movie-grouped-admin",
+            "itemTypes": [
+                "Movie"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "scenesCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "tagline",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemTags",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemExternalLinks",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "guestCastCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "scenesCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnSplitVersions",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "movie-grouped-regular",
+            "itemTypes": [
+                "Movie"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "tagline",
+                "overview",
+                "itemTags",
+                "itemExternalLinks",
+                "itemDetailsGroup",
+                "castCollapsible",
+                "guestCastCollapsible",
+                "scenesCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "tagline",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemTags",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemExternalLinks",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "guestCastCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "scenesCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "HeaderCastAndCrew",
+                "HeaderGuestCast",
+                "HeaderScenes"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlayTrailer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "minimal-video",
+            "itemTypes": [
+                "Movie"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "series",
+            "itemTypes": [
+                "Series"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "overview",
+                "seriesAirTime",
+                "itemDetailsGroup",
+                "nextUpSection",
+                "listChildrenCollapsible",
+                "castCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "seriesAirTime",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "nextUpSection",
+                    "slot": "full"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "NextUp",
+                "HeaderSeasons",
+                "HeaderCastAndCrew"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "season",
+            "itemTypes": [
+                "Season"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "episode",
+            "itemTypes": [
+                "Episode"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup",
+                "moreFromSeasonSection"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "moreFromSeasonSection",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "MoreFromValue Season 1"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "music-album",
+            "itemTypes": [
+                "MusicAlbum"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible",
+                "moreFromArtistSection",
+                "musicVideosCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                },
+                {
+                    "section": "moreFromArtistSection",
+                    "slot": "full"
+                },
+                {
+                    "section": "musicVideosCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "MoreFromValue An Artist",
+                "MusicVideos"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "audio",
+            "itemTypes": [
+                "Audio"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "lyricsSection"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "lyricsSection",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Lyrics"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "music-artist",
+            "itemTypes": [
+                "MusicArtist"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Items"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "playlist",
+            "itemTypes": [
+                "Playlist"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Items"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "box-set",
+            "itemTypes": [
+                "BoxSet"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "collectionItems"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "collectionItems",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Movies"
+            ],
+            "actions": [
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "person",
+            "itemTypes": [
+                "Person"
+            ],
+            "artwork": {
+                "backdropElement": 0,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "overview",
+                "itemBirthday",
+                "itemBirthLocation",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "overview",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemBirthday",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemBirthLocation",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Items"
+            ],
+            "actions": [
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "book",
+            "itemTypes": [
+                "Book"
+            ],
+            "artwork": {
+                "backdropElement": 0,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "castCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "castCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "People"
+            ],
+            "actions": [
+                "btnDownload",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "photo",
+            "itemTypes": [
+                "Photo"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "program",
+            "itemTypes": [
+                "Program"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "itemMiscInfo-secondary",
+                "recordingFields",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemMiscInfo-secondary",
+                    "slot": "hero"
+                },
+                {
+                    "section": "recordingFields",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "recording",
+            "itemTypes": [
+                "Recording"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnCancelTimer",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "recording-no-livetv",
+            "itemTypes": [
+                "Recording"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "trackSelections",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "trackSelections",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnPlay",
+                "btnPlaystate",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [
+                "selectAudio",
+                "selectSource",
+                "selectSubtitles",
+                "selectVideo"
+            ],
+            "focusTarget": "body"
+        },
+        {
+            "id": "series-timer",
+            "itemTypes": [
+                "SeriesTimer"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "seriesTimerScheduleSection"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "seriesTimerScheduleSection",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Schedule"
+            ],
+            "actions": [
+                "btnCancelSeriesTimer",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "series-timer-no-livetv",
+            "itemTypes": [
+                "SeriesTimer"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                }
+            ],
+            "headings": [],
+            "actions": [
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "tv-channel",
+            "itemTypes": [
+                "TvChannel"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "programGuideSection"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "programGuideSection",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Saturday, January 1"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "genre",
+            "itemTypes": [
+                "Genre",
+                "Studio"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Items"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        },
+        {
+            "id": "music-genre",
+            "itemTypes": [
+                "MusicGenre"
+            ],
+            "artwork": {
+                "backdropElement": 1,
+                "backdropImage": false,
+                "posterElement": 1,
+                "posterImage": false,
+                "posterPlaceholder": true,
+                "logoElement": 0
+            },
+            "sections": [
+                "nameContainer",
+                "mainDetailButtons",
+                "itemDetailsGroup",
+                "listChildrenCollapsible"
+            ],
+            "slots": [
+                {
+                    "section": "nameContainer",
+                    "slot": "hero"
+                },
+                {
+                    "section": "mainDetailButtons",
+                    "slot": "hero"
+                },
+                {
+                    "section": "itemDetailsGroup",
+                    "slot": "hero"
+                },
+                {
+                    "section": "listChildrenCollapsible",
+                    "slot": "full"
+                }
+            ],
+            "headings": [
+                "Items"
+            ],
+            "actions": [
+                "btnPlay",
+                "btnInstantMix",
+                "btnShuffle",
+                "btnUserRating",
+                "btnMoreCommands"
+            ],
+            "selectors": [],
+            "focusTarget": "body"
+        }
+    ]
+}
