@@ -118,7 +118,13 @@ describe('the private vocabulary stayed private', () => {
      * name that encoded an item type would fail here.
      */
     it('names no item type and no component in the six names Step 2 chose', () => {
-        const retained = ['overview', 'cast', 'episodes', 'related', 'mediaInfo'];
+        const retained = [
+            'overview',
+            'cast',
+            'episodes',
+            'related',
+            'mediaInfo'
+        ];
         const added = ITEM_DETAILS_SECTIONS.filter(
             (family) => !retained.includes(family)
         );
@@ -138,7 +144,9 @@ describe('the private vocabulary stayed private', () => {
                     `"${family}" encodes the item type "${type}"`
                 ).not.toContain(type.toLowerCase());
             }
-            expect(family).not.toMatch(/Collapsible|Section|Container|Grid|List/);
+            expect(family).not.toMatch(
+                /Collapsible|Section|Container|Grid|List/
+            );
         }
     });
 
@@ -204,8 +212,8 @@ describe('the platform-default order agrees with the order the view emits', () =
             );
             expect(
                 runs,
-                `a ${type} emits ${runs.join(' → ')} but the default declares `
-                    + `${published.join(' → ')}`
+                `a ${type} emits ${runs.join(' → ')} but the default declares ` +
+                    `${published.join(' → ')}`
             ).toEqual([...published]);
         }
     );

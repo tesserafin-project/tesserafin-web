@@ -344,8 +344,8 @@ function sanitizeItemDetailsRecipe(
     }
 
     if (
-        typeof override.hero === 'string'
-        && ITEM_DETAILS_HERO_NAMES.has(override.hero)
+        typeof override.hero === 'string' &&
+        ITEM_DETAILS_HERO_NAMES.has(override.hero)
     ) {
         clean.hero = override.hero;
     }

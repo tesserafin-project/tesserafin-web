@@ -324,3 +324,229 @@ describe('Theme Studio — a required capability this renderer lacks', () => {
         ).not.toBeNull();
     });
 });
+
+/** The Item Details editor's per-family rows, in the order it lists them. */
+function itemDetailsRows() {
+    return [
+        ...container.querySelectorAll(
+            '[data-testid="theme-studio-item-details-composition"] li'
+        )
+    ];
+}
+
+function itemDetailsRowLabelled(text: string) {
+    const row = itemDetailsRows().find((candidate) =>
+        rowLabel(candidate).startsWith(text)
+    );
+    if (!row) throw new Error(`No Item Details row for "${text}"`);
+    return row;
+}
+
+function toggleItemDetailsFamily(text: string) {
+    const checkbox = itemDetailsRowLabelled(text).querySelector(
+        'input[type="checkbox"]'
+    ) as HTMLInputElement;
+    act(() => {
+        checkbox.click();
+    });
+}
+
+function clickInItemDetailsRow(text: string, buttonText: string) {
+    const button = [
+        ...itemDetailsRowLabelled(text).querySelectorAll('button')
+    ].find((candidate) => candidate.textContent?.includes(buttonText));
+    if (!button) throw new Error(`No "${buttonText}" in the "${text}" row`);
+    act(() => {
+        button.click();
+    });
+}
+
+/** The order the control currently shows for the SELECTED families. */
+function selectedItemDetailsOrder(): string[] {
+    return itemDetailsRows()
+        .filter((row) => row.querySelector('input:checked'))
+        .map((row) => rowLabel(row).split('—')[0].trim());
+}
+
+/**
+ * The Item Details composition control, asserted as a REAL one — #129 Step 2, Phase 4.
+ *
+ * Same standard the Home and Library controls are held to, and for the same reason: the easy way
+ * to fake this requirement is a control that edits a draft nothing reads. So the assertions reach
+ * past `PreviewCanvas` to the record the LIVE renderer resolves, to the exported document, and to
+ * the resolver the application itself calls.
+ */
+describe('Theme Studio — the Item Details composition control is real', () => {
+    it('offers the control enabled, because the renderer implements the capability', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+        expect(
+            container.querySelector(
+                '[data-testid="theme-studio-item-details-composition"]'
+            )
+        ).not.toBeNull();
+    });
+
+    it('starts from the theme it copied, not from an invented default', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Glass');
+        // Glass lifts the cast to second and pushes the fact panel last.
+        expect(selectedItemDetailsOrder()[1]).toBe('Cast and crew');
+        expect(selectedItemDetailsOrder().at(-1)).toBe(
+            'Details, tags and links'
+        );
+    });
+
+    it('offers no fixed surface as a family', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+
+        const offered = itemDetailsRows().map((row) => rowLabel(row));
+        expect(offered).toHaveLength(11);
+        for (const forbidden of [
+            'Play',
+            'Name',
+            'Subtitle',
+            'Audio track',
+            'Media source',
+            'Recording',
+            'Favourite',
+            'Rating',
+            'Warning'
+        ]) {
+            expect(
+                offered.some((label) => label.includes(forbidden)),
+                `"${forbidden}" is a fixed surface and must not be offered`
+            ).toBe(false);
+        }
+    });
+
+    it('reorders the recipe, and the order it shows is the order it stored', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+        expect(selectedItemDetailsOrder()[0]).toBe('Overview and tagline');
+
+        clickInItemDetailsRow('Cast and crew', 'Move Cast and crew up');
+        clickButtonLabelled('Apply to Tesserafin');
+
+        const applied = loadAppliedPresentation();
+        expect(applied?.page?.itemDetails?.sections).toEqual([
+            'overview',
+            'mediaInfo',
+            'nextUp',
+            'episodes',
+            'lyrics',
+            'cast',
+            'moreFrom',
+            'schedule',
+            'extras',
+            'chapters',
+            'related'
+        ]);
+    });
+
+    it('writes the artwork treatment where the LIVE renderer reads it', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Glass');
+        clickButtonLabelled('Apply to Tesserafin');
+
+        const applied = loadAppliedPresentation();
+        expect(applied?.page?.itemDetails?.hero).toBe('poster');
+
+        // And the live renderer resolves it — the same call `PresentationProvider` makes.
+        const resolved = resolvePresentation({ presentation: applied ?? {} });
+        expect(resolved.presentation.page.itemDetails.hero).toBe('poster');
+        expect(resolved.fallbacks).toEqual([]);
+    });
+
+    it('does not touch the live record until Apply', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+        toggleItemDetailsFamily('Scenes');
+        expect(window.localStorage.getItem(APPLIED_KEY)).toBeNull();
+    });
+
+    it('survives a reload of the Studio, because the draft is persisted', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Glass');
+        clickInItemDetailsRow('Scenes', 'Move Scenes up');
+        const edited = selectedItemDetailsOrder();
+
+        // A reload is a fresh mount reading the same `localStorage` draft.
+        act(() => {
+            root.unmount();
+        });
+        act(() => {
+            root = createRoot(container);
+        });
+        render();
+
+        expect(selectedItemDetailsOrder()).toEqual(edited);
+    });
+
+    it('restores the official recipe on reset', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+        clickButtonLabelled('Apply to Tesserafin');
+        expect(loadAppliedPresentation()?.page?.itemDetails).toBeDefined();
+
+        clickButtonLabelled('Stop using this theme');
+        expect(loadAppliedPresentation()).toBeNull();
+
+        // With nothing applied, the resolver hands back the platform default.
+        const resolved = resolvePresentation({ presentation: {} });
+        expect(resolved.presentation.page.itemDetails.hero).toBe('backdrop');
+    });
+
+    it('refuses to empty the recipe, because the schema requires at least one family', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+
+        const labels = itemDetailsRows().map((row) => rowLabel(row));
+        for (const label of labels.slice(0, labels.length - 1)) {
+            toggleItemDetailsFamily(label);
+        }
+        expect(selectedItemDetailsOrder()).toHaveLength(1);
+
+        const last = itemDetailsRowLabelled(
+            selectedItemDetailsOrder()[0]
+        ).querySelector('input') as HTMLInputElement;
+        expect(last.disabled).toBe(true);
+    });
+
+    it('round-trips the Item Details recipe through the exported document', () => {
+        const source = requireSource('official.glass');
+        const draft = createDraft(source, 'Round trip', 'Someone');
+        draft.manifest.presentation = {
+            ...draft.manifest.presentation,
+            page: {
+                ...draft.manifest.presentation?.page,
+                itemDetails: {
+                    hero: 'minimal',
+                    sections: ['cast', 'overview', 'related']
+                }
+            }
+        };
+
+        const parsed = parseDraft(serialiseDraft(draft));
+        expect(parsed.valid).toBe(true);
+        if (!parsed.valid) return;
+        expect(parsed.draft.manifest.presentation?.page?.itemDetails).toEqual({
+            hero: 'minimal',
+            sections: ['cast', 'overview', 'related']
+        });
+    });
+
+    it('needs no account and no server connection to author or preview it', () => {
+        // Nothing above signed in, connected a server or stubbed an API client. The whole flow —
+        // copy, edit, apply, reset — ran against `localStorage` and the static manifests.
+        render();
+        clickButtonLabelled('Copy Tesserafin Classic');
+        clickInItemDetailsRow(
+            'Related and collections',
+            'Move Related and collections up'
+        );
+        clickButtonLabelled('Apply to Tesserafin');
+        expect(loadAppliedPresentation()?.page?.itemDetails).toBeDefined();
+    });
+});

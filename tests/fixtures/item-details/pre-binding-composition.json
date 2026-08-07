@@ -7,30 +7,17 @@
     "platformDefaultAtCapture": {
         "source": "src/themes/platform/resolvePresentation.ts PLATFORM_DEFAULT_PRESENTATION.page.itemDetails",
         "hero": "backdrop",
-        "sections": [
-            "overview",
-            "cast",
-            "episodes",
-            "related",
-            "mediaInfo"
-        ],
+        "sections": ["overview", "cast", "episodes", "related", "mediaInfo"],
         "boundByRoute": false
     },
     "states": {
-        "malformedRoute": [
-            "state-error"
-        ],
+        "malformedRoute": ["state-error"],
         "emptyCollection": "box-set with no children renders EmptyState inside collectionItems"
     },
     "classes": [
         {
             "id": "movie",
-            "itemTypes": [
-                "Movie",
-                "Video",
-                "MusicVideo",
-                "Trailer"
-            ],
+            "itemTypes": ["Movie", "Video", "MusicVideo", "Trailer"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -144,9 +131,7 @@
         },
         {
             "id": "movie-resumable",
-            "itemTypes": [
-                "Movie"
-            ],
+            "itemTypes": ["Movie"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -237,9 +222,7 @@
         },
         {
             "id": "movie-grouped-admin",
-            "itemTypes": [
-                "Movie"
-            ],
+            "itemTypes": ["Movie"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -330,9 +313,7 @@
         },
         {
             "id": "movie-grouped-regular",
-            "itemTypes": [
-                "Movie"
-            ],
+            "itemTypes": ["Movie"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -422,9 +403,7 @@
         },
         {
             "id": "minimal-video",
-            "itemTypes": [
-                "Movie"
-            ],
+            "itemTypes": ["Movie"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -474,9 +453,7 @@
         },
         {
             "id": "series",
-            "itemTypes": [
-                "Series"
-            ],
+            "itemTypes": ["Series"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -529,11 +506,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "NextUp",
-                "HeaderSeasons",
-                "HeaderCastAndCrew"
-            ],
+            "headings": ["NextUp", "HeaderSeasons", "HeaderCastAndCrew"],
             "actions": [
                 "btnPlay",
                 "btnShuffle",
@@ -546,9 +519,7 @@
         },
         {
             "id": "season",
-            "itemTypes": [
-                "Season"
-            ],
+            "itemTypes": ["Season"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -594,9 +565,7 @@
         },
         {
             "id": "episode",
-            "itemTypes": [
-                "Episode"
-            ],
+            "itemTypes": ["Episode"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -634,9 +603,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "MoreFromValue Season 1"
-            ],
+            "headings": ["MoreFromValue Season 1"],
             "actions": [
                 "btnPlay",
                 "btnPlaystate",
@@ -653,9 +620,7 @@
         },
         {
             "id": "music-album",
-            "itemTypes": [
-                "MusicAlbum"
-            ],
+            "itemTypes": ["MusicAlbum"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -698,10 +663,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "MoreFromValue An Artist",
-                "MusicVideos"
-            ],
+            "headings": ["MoreFromValue An Artist", "MusicVideos"],
             "actions": [
                 "btnPlay",
                 "btnInstantMix",
@@ -714,9 +676,7 @@
         },
         {
             "id": "audio",
-            "itemTypes": [
-                "Audio"
-            ],
+            "itemTypes": ["Audio"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -749,9 +709,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Lyrics"
-            ],
+            "headings": ["Lyrics"],
             "actions": [
                 "btnPlay",
                 "btnInstantMix",
@@ -763,9 +721,7 @@
         },
         {
             "id": "music-artist",
-            "itemTypes": [
-                "MusicArtist"
-            ],
+            "itemTypes": ["MusicArtist"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -798,9 +754,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Items"
-            ],
+            "headings": ["Items"],
             "actions": [
                 "btnPlay",
                 "btnInstantMix",
@@ -813,9 +767,7 @@
         },
         {
             "id": "playlist",
-            "itemTypes": [
-                "Playlist"
-            ],
+            "itemTypes": ["Playlist"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -848,9 +800,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Items"
-            ],
+            "headings": ["Items"],
             "actions": [
                 "btnPlay",
                 "btnShuffle",
@@ -862,9 +812,7 @@
         },
         {
             "id": "box-set",
-            "itemTypes": [
-                "BoxSet"
-            ],
+            "itemTypes": ["BoxSet"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -897,22 +845,14 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Movies"
-            ],
-            "actions": [
-                "btnPlaystate",
-                "btnUserRating",
-                "btnMoreCommands"
-            ],
+            "headings": ["Movies"],
+            "actions": ["btnPlaystate", "btnUserRating", "btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "person",
-            "itemTypes": [
-                "Person"
-            ],
+            "itemTypes": ["Person"],
             "artwork": {
                 "backdropElement": 0,
                 "backdropImage": false,
@@ -960,21 +900,14 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Items"
-            ],
-            "actions": [
-                "btnUserRating",
-                "btnMoreCommands"
-            ],
+            "headings": ["Items"],
+            "actions": ["btnUserRating", "btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "book",
-            "itemTypes": [
-                "Book"
-            ],
+            "itemTypes": ["Book"],
             "artwork": {
                 "backdropElement": 0,
                 "backdropImage": false,
@@ -1007,9 +940,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "People"
-            ],
+            "headings": ["People"],
             "actions": [
                 "btnDownload",
                 "btnPlaystate",
@@ -1021,9 +952,7 @@
         },
         {
             "id": "photo",
-            "itemTypes": [
-                "Photo"
-            ],
+            "itemTypes": ["Photo"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1052,18 +981,13 @@
                 }
             ],
             "headings": [],
-            "actions": [
-                "btnUserRating",
-                "btnMoreCommands"
-            ],
+            "actions": ["btnUserRating", "btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "program",
-            "itemTypes": [
-                "Program"
-            ],
+            "itemTypes": ["Program"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1103,9 +1027,7 @@
         },
         {
             "id": "recording",
-            "itemTypes": [
-                "Recording"
-            ],
+            "itemTypes": ["Recording"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1156,9 +1078,7 @@
         },
         {
             "id": "recording-no-livetv",
-            "itemTypes": [
-                "Recording"
-            ],
+            "itemTypes": ["Recording"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1208,9 +1128,7 @@
         },
         {
             "id": "series-timer",
-            "itemTypes": [
-                "SeriesTimer"
-            ],
+            "itemTypes": ["SeriesTimer"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1243,21 +1161,14 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Schedule"
-            ],
-            "actions": [
-                "btnCancelSeriesTimer",
-                "btnMoreCommands"
-            ],
+            "headings": ["Schedule"],
+            "actions": ["btnCancelSeriesTimer", "btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "series-timer-no-livetv",
-            "itemTypes": [
-                "SeriesTimer"
-            ],
+            "itemTypes": ["SeriesTimer"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1286,17 +1197,13 @@
                 }
             ],
             "headings": [],
-            "actions": [
-                "btnMoreCommands"
-            ],
+            "actions": ["btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "tv-channel",
-            "itemTypes": [
-                "TvChannel"
-            ],
+            "itemTypes": ["TvChannel"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1329,23 +1236,14 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Saturday, January 1"
-            ],
-            "actions": [
-                "btnPlay",
-                "btnUserRating",
-                "btnMoreCommands"
-            ],
+            "headings": ["Saturday, January 1"],
+            "actions": ["btnPlay", "btnUserRating", "btnMoreCommands"],
             "selectors": [],
             "focusTarget": "body"
         },
         {
             "id": "genre",
-            "itemTypes": [
-                "Genre",
-                "Studio"
-            ],
+            "itemTypes": ["Genre", "Studio"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1378,9 +1276,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Items"
-            ],
+            "headings": ["Items"],
             "actions": [
                 "btnPlay",
                 "btnShuffle",
@@ -1392,9 +1288,7 @@
         },
         {
             "id": "music-genre",
-            "itemTypes": [
-                "MusicGenre"
-            ],
+            "itemTypes": ["MusicGenre"],
             "artwork": {
                 "backdropElement": 1,
                 "backdropImage": false,
@@ -1427,9 +1321,7 @@
                     "slot": "full"
                 }
             ],
-            "headings": [
-                "Items"
-            ],
+            "headings": ["Items"],
             "actions": [
                 "btnPlay",
                 "btnInstantMix",

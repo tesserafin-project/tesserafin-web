@@ -299,8 +299,8 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                     </DetailSection>
                 ) : null}
 
-                {item.Type === 'Person'
-                && ((item.ProductionLocations ?? []) as string[]).length ? (
+                {item.Type === 'Person' &&
+                ((item.ProductionLocations ?? []) as string[]).length ? (
                     <DetailSection
                         name='itemBirthLocation'
                         column={column}
@@ -309,8 +309,8 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                         <p>
                             {globalize.translate(
                                 'BirthPlaceValue',
-                                ((item.ProductionLocations as string[])
-                                    ?? [])[0]
+                                ((item.ProductionLocations as string[]) ??
+                                    [])[0]
                             )}
                         </p>
                     </DetailSection>

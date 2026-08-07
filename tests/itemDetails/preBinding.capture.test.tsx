@@ -109,8 +109,8 @@ vi.mock('../../src/components/playback/playbackmanager', () => ({
     playbackManager: {
         canPlay: vi.fn(
             (item: { Type?: string; MediaType?: string }) =>
-                ['Video', 'Audio'].includes(item?.MediaType ?? '')
-                || [
+                ['Video', 'Audio'].includes(item?.MediaType ?? '') ||
+                [
                     'Series',
                     'Season',
                     'MusicAlbum',
@@ -202,9 +202,8 @@ function artworkOf(view: HTMLElement) {
     return {
         backdropElement: view.querySelectorAll('[data-detail-backdrop]').length,
         backdropImage: Boolean(
-            view
-                .querySelector<HTMLElement>('[data-detail-backdrop]')
-                ?.style.backgroundImage
+            view.querySelector<HTMLElement>('[data-detail-backdrop]')?.style
+                .backgroundImage
         ),
         posterElement: view.querySelectorAll('[data-detail-image="poster"]')
             .length,
@@ -252,65 +251,69 @@ beforeEach(() => {
     vi.clearAllMocks();
 });
 
-describe.skipIf(!ENABLED)('#129 Step 2 — pre-binding composition capture', () => {
-    it('writes the immutable record', async () => {
-        const classes: unknown[] = [];
+describe.skipIf(!ENABLED)(
+    '#129 Step 2 — pre-binding composition capture',
+    () => {
+        it('writes the immutable record', async () => {
+            const classes: unknown[] = [];
 
-        for (const recorded of CLASSES) {
-            const mounted = await mountCase(recorded.id);
-            classes.push({
-                id: recorded.id,
-                itemTypes: recorded.itemTypes,
-                artwork: artworkOf(mounted.container),
-                sections: renderedSections(mounted.container),
-                slots: slotsOf(mounted.container),
-                headings: renderedHeadings(mounted.container),
-                actions: renderedActions(mounted.container),
-                selectors: renderedSelectors(mounted.container).sort(),
-                focusTarget: focusTarget()
-            });
+            for (const recorded of CLASSES) {
+                const mounted = await mountCase(recorded.id);
+                classes.push({
+                    id: recorded.id,
+                    itemTypes: recorded.itemTypes,
+                    artwork: artworkOf(mounted.container),
+                    sections: renderedSections(mounted.container),
+                    slots: slotsOf(mounted.container),
+                    headings: renderedHeadings(mounted.container),
+                    actions: renderedActions(mounted.container),
+                    selectors: renderedSelectors(mounted.container).sort(),
+                    focusTarget: focusTarget()
+                });
+                unmountAll();
+            }
+
+            const { default: ItemDetailsPage } = await import(
+                '../../src/apps/modern/features/details/components/ItemDetailsPage'
+            );
+
+            // The malformed-route state. No API surface is reachable, by construction.
+            const invalid = await renderRoute(
+                <ItemDetailsPage
+                    searchParams={new URLSearchParams({ nonsense: 'x' })}
+                />,
+                createTestQueryClient()
+            );
+            const states = {
+                malformedRoute: [
+                    ...invalid.container.querySelectorAll('[data-rf-slot]')
+                ].map((element) => element.getAttribute('data-rf-slot')),
+                emptyCollection:
+                    'box-set with no children renders EmptyState inside collectionItems'
+            };
             unmountAll();
-        }
 
-        const { default: ItemDetailsPage } = await import(
-            '../../src/apps/modern/features/details/components/ItemDetailsPage'
-        );
+            const record = {
+                $comment:
+                    'AUTHORITATIVE PRE-BINDING RECORD. The Item Details composition as rendered by the ' +
+                    'migrated route BEFORE presentation.page.itemDetails was bound (#129 Step 2). ' +
+                    'Captured by tests/itemDetails/preBinding.capture.test.tsx with ' +
+                    'CAPTURE_PRE_BINDING=1; guarded by a source-held SHA-256 in ' +
+                    'tests/itemDetails/preBinding.consistency.test.ts. Never regenerate to make a ' +
+                    'test pass.',
+                version: 1,
+                startSha: '1486760c76150970fa8aab7d24d3919a6a7197fa',
+                capability: 'presentation.page.itemDetails',
+                boundAtCapture: false,
+                platformDefaultAtCapture: contract.platformDefault,
+                states,
+                classes
+            };
 
-        // The malformed-route state. No API surface is reachable, by construction.
-        const invalid = await renderRoute(
-            <ItemDetailsPage
-                searchParams={new URLSearchParams({ nonsense: 'x' })}
-            />,
-            createTestQueryClient()
-        );
-        const states = {
-            malformedRoute: [
-                ...invalid.container.querySelectorAll('[data-rf-slot]')
-            ].map((element) => element.getAttribute('data-rf-slot')),
-            emptyCollection: 'box-set with no children renders EmptyState inside collectionItems'
-        };
-        unmountAll();
+            mkdirSync(dirname(OUTPUT), { recursive: true });
+            writeFileSync(OUTPUT, `${JSON.stringify(record, null, 4)}\n`);
 
-        const record = {
-            $comment:
-                'AUTHORITATIVE PRE-BINDING RECORD. The Item Details composition as rendered by the '
-                + 'migrated route BEFORE presentation.page.itemDetails was bound (#129 Step 2). '
-                + 'Captured by tests/itemDetails/preBinding.capture.test.tsx with '
-                + 'CAPTURE_PRE_BINDING=1; guarded by a source-held SHA-256 in '
-                + 'tests/itemDetails/preBinding.consistency.test.ts. Never regenerate to make a '
-                + 'test pass.',
-            version: 1,
-            startSha: '1486760c76150970fa8aab7d24d3919a6a7197fa',
-            capability: 'presentation.page.itemDetails',
-            boundAtCapture: false,
-            platformDefaultAtCapture: contract.platformDefault,
-            states,
-            classes
-        };
-
-        mkdirSync(dirname(OUTPUT), { recursive: true });
-        writeFileSync(OUTPUT, `${JSON.stringify(record, null, 4)}\n`);
-
-        expect(classes).toHaveLength(24);
-    });
-});
+            expect(classes).toHaveLength(24);
+        });
+    }
+);

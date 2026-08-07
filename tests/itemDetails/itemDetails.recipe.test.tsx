@@ -36,7 +36,12 @@ import {
 } from '../../src/apps/modern/features/details/utils/itemDetailsRecipe';
 import classicManifest from '../../tesserafin-design/themes/classic/theme.json';
 import glassManifest from '../../tesserafin-design/themes/glass/theme.json';
-import { compareLedgerRuns, describeBreach, ledgerClass, LEDGER } from './support/ledger';
+import {
+    compareLedgerRuns,
+    describeBreach,
+    ledgerClass,
+    LEDGER
+} from './support/ledger';
 import { unmountAll } from './support/modernHarness';
 import { PRE_BINDING, preBindingClass } from './support/preBinding';
 
@@ -145,7 +150,8 @@ const RENDER_PHASES = [
 
 const APPLIED_KEY = 'tesserafin.themeStudio.appliedPresentation';
 
-const DEFAULT_SECTIONS = PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections;
+const DEFAULT_SECTIONS =
+    PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections;
 
 const CLASSIC = (classicManifest as { presentation: ThemePresentation })
     .presentation;
@@ -203,8 +209,7 @@ const RECIPES: RecipeCase[] = [
             page: {
                 itemDetails: {
                     sections: ITEM_DETAILS_SECTIONS.filter(
-                        (family) =>
-                            family !== 'cast' && family !== 'related'
+                        (family) => family !== 'cast' && family !== 'related'
                     )
                 }
             }
@@ -406,9 +411,7 @@ for (const recipe of RECIPES) {
                     ...mounted.container.querySelectorAll(
                         '[data-detail-section][data-rf-slot]'
                     )
-                ].map((element) =>
-                    element.getAttribute('data-detail-section')
-                );
+                ].map((element) => element.getAttribute('data-detail-section'));
                 for (const surface of fixed) {
                     expect(
                         slotted,
@@ -522,8 +525,8 @@ describe('no recipe changes the reads that reach a server', () => {
                     )
                     .map(
                         (observation) =>
-                            `${observation.surface}.${observation.member}#`
-                            + JSON.stringify(observation.args)
+                            `${observation.surface}.${observation.member}#` +
+                            JSON.stringify(observation.args)
                     )
                     .sort();
                 unmountAll();

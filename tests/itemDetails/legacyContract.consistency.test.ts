@@ -247,9 +247,11 @@ describe('legacy Item Details contract — platform-default comparison', () => {
 
         // One reader, and it is the composition boundary. A second call site would mean two parts
         // of the page could disagree about the recipe mid-render.
-        expect(readers.map((file) => file.replace(`${REPO_ROOT}/`, ''))).toEqual(
-            ['src/apps/modern/features/details/components/ItemDetailsView.tsx']
-        );
+        expect(
+            readers.map((file) => file.replace(`${REPO_ROOT}/`, ''))
+        ).toEqual([
+            'src/apps/modern/features/details/components/ItemDetailsView.tsx'
+        ]);
     });
 
     it('never parses a manifest or persisted record inside the route', () => {

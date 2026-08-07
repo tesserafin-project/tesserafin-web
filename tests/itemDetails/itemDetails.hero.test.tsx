@@ -402,7 +402,8 @@ describe('the treatment does not touch composition, actions or naming', () => {
                         '[data-detail-action]'
                     )
                 ].map(
-                    (element) => element.getAttribute('data-detail-action') ?? ''
+                    (element) =>
+                        element.getAttribute('data-detail-action') ?? ''
                 )
             };
             unmountAll();
@@ -424,9 +425,9 @@ describe('the treatment does not touch composition, actions or naming', () => {
         );
         expect(logoOf(mounted.container)?.getAttribute('alt')).toBe('');
         expect(
-            mounted.container.querySelector(
-                '[data-detail-image="poster"] img'
-            )?.getAttribute('alt')
+            mounted.container
+                .querySelector('[data-detail-image="poster"] img')
+                ?.getAttribute('alt')
         ).toBe('');
         expect(
             mounted.container.querySelector(
@@ -449,9 +450,9 @@ describe('the treatment does not touch composition, actions or naming', () => {
                 )
             ].map(
                 (element) =>
-                    element.getAttribute('data-detail-action')
-                    ?? element.getAttribute('data-detail-select')
-                    ?? element.tagName.toLowerCase()
+                    element.getAttribute('data-detail-action') ??
+                    element.getAttribute('data-detail-select') ??
+                    element.tagName.toLowerCase()
             );
             unmountAll();
         }

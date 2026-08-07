@@ -156,7 +156,9 @@ describe('contract.ts <-> theme.schema.json', () => {
         expect([...ITEM_DETAILS_SECTIONS]).toEqual(
             itemDetails.properties.sections.items.enum
         );
-        expect([...ITEM_DETAILS_HEROES]).toEqual(itemDetails.properties.hero.enum);
+        expect([...ITEM_DETAILS_HEROES]).toEqual(
+            itemDetails.properties.hero.enum
+        );
     });
 
     it('retains every Item Details section name that was published before the binding', () => {

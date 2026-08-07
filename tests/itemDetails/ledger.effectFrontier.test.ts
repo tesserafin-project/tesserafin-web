@@ -23,11 +23,20 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 const SLICE = resolve(REPO_ROOT, 'src/apps/modern/features/details');
 const ROUTE_MODULE = resolve(REPO_ROOT, 'src/apps/modern/routes/details.tsx');
 
+/**
+ * The slice's PRODUCTION source. Test files are excluded for the reason
+ * `presentationBoundary.ratchet.test.ts` excludes them: the effect frontier is a statement about
+ * what the shipped route reaches, and a colocated suite importing `vitest` is neither an effect
+ * nor shipped. The slice had no colocated test until #129 Step 2 added
+ * `utils/itemDetailsRecipe.test.ts`, which is why this never had to be said before.
+ */
 function sourceFiles(): string[] {
     const files: string[] = [ROUTE_MODULE];
     const walk = (target: string) => {
         if (statSync(target).isFile()) {
-            if (/\.tsx?$/.test(target)) files.push(target);
+            if (/\.tsx?$/.test(target) && !/\.(test|a11y)\./.test(target)) {
+                files.push(target);
+            }
             return;
         }
         for (const entry of readdirSync(target)) walk(join(target, entry));

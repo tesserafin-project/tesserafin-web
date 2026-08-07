@@ -26,9 +26,15 @@ import { PRE_BINDING, PRE_BINDING_PATH } from './support/preBinding';
  * SHA-256 of `pre-binding-composition.json` as captured from
  * `1486760c76150970fa8aab7d24d3919a6a7197fa` — origin/main, PR #136's merge commit, before the
  * first line of Step 2 was written.
+ *
+ * The checksum is taken AFTER `biome format`, which the repository requires of every JSON file and
+ * which the capture's `JSON.stringify(…, 4)` does not produce. Formatting changed whitespace only;
+ * `JSON.parse` of the two byte sequences is identical. What the checksum guards is the CONTENT
+ * being re-derived from a later tree, and formatting once at capture time does not weaken that: a
+ * re-capture produces different bytes and fails here until someone updates this constant by hand.
  */
 const PRE_BINDING_SHA256 =
-    '668b261dabdc219e18c83175fb7db36b64d38acca96d4d150c2527dbc4df1fd8';
+    '3cad168d779ae5f6ef2e001f8cc40d5a9e3f42829f7520a02b4a98def48ddd92';
 
 const START_SHA = '1486760c76150970fa8aab7d24d3919a6a7197fa';
 
@@ -40,9 +46,9 @@ describe('pre-binding composition record — integrity', () => {
 
         expect(
             actual,
-            'the pre-binding record changed. It is evidence from a commit that no longer '
-                + 'exists in the working tree; regenerating it from the proposed head would make '
-                + 'the equivalence proof circular.'
+            'the pre-binding record changed. It is evidence from a commit that no longer ' +
+                'exists in the working tree; regenerating it from the proposed head would make ' +
+                'the equivalence proof circular.'
         ).toBe(PRE_BINDING_SHA256);
     });
 

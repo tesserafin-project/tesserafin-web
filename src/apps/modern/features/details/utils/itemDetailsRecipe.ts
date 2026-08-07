@@ -287,9 +287,7 @@ export const isFixedRegion = (
 export const familyMembers = (
     family: ItemDetailsSection
 ): readonly DetailSectionName[] =>
-    DETAIL_SECTIONS.filter(
-        (name) => SECTION_CLASSIFICATION[name] === family
-    );
+    DETAIL_SECTIONS.filter((name) => SECTION_CLASSIFICATION[name] === family);
 
 /**
  * The families that render BESIDE the poster rather than below it, when they come first.
@@ -303,9 +301,8 @@ export const familyMembers = (
  * `presentation.page.itemDetails.hero`, which is the artwork TREATMENT. Two different things were
  * both called "hero" in this slice; only one of them is theme vocabulary.
  */
-const PRIMARY_COLUMN_FAMILIES: ReadonlySet<string> = new Set<ItemDetailsSection>(
-    ['overview', 'mediaInfo']
-);
+const PRIMARY_COLUMN_FAMILIES: ReadonlySet<string> =
+    new Set<ItemDetailsSection>(['overview', 'mediaInfo']);
 
 export type SectionColumn = 'hero' | 'full';
 
@@ -389,9 +386,9 @@ export function resolveHeroLayout(options: {
     return {
         treatment,
         backdrop:
-            treatment === 'backdrop'
-            && itemSupportsBackdrop
-            && userWantsBackdrop,
+            treatment === 'backdrop' &&
+            itemSupportsBackdrop &&
+            userWantsBackdrop,
         // `minimal` is minimal decoration: the title carries the item, not its logotype. The poster
         // stays either way, and the logo URL is still built, so no treatment changes the request set.
         logo: treatment !== 'minimal'
