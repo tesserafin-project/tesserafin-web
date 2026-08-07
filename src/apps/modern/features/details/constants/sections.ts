@@ -8,7 +8,8 @@
  *
  * That attribute is a CHARACTERIZATION HOOK, not a theming surface. It exists so the frozen fixture
  * can judge the migrated route without being rewritten. No stylesheet targets it, it is not part of
- * the published presentation vocabulary, and Step 2's recipe binding will not read it. See
+ * the published presentation vocabulary, and the Step 2 recipe binding does not read it — the
+ * mapping in `utils/itemDetailsRecipe.ts` is the only thing that knows both names. See
  * `docs/tesserafin/item-details-migration.md` §3.
  */
 

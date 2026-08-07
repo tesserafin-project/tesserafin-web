@@ -729,7 +729,7 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
  *
  * `SUSPECT` #7 records that this emits untranslated English (`daily`, ` at `, `Aired `/`Airs `).
  * It is preserved verbatim: adding translation keys would touch the i18n corpus, which the P6 scope
- * neither includes nor excludes. Flagged for Step 2.
+ * neither includes nor excludes, and Step 2 did not widen its scope to take it on. Still open.
  */
 function seriesAirTimeText(item: DetailItem): string {
     if (item.Type !== 'Series') return '';
