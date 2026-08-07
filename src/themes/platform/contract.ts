@@ -67,9 +67,12 @@ export type ThemeCapability = (typeof THEME_CAPABILITIES)[number];
  * `presentation.page.home` joined this list once the modern Home route actually read the resolved
  * recipe (`apps/modern/features/home`), and not before. `presentation.page.library` joined it on the
  * same terms: `apps/modern/features/library` now reads `page.library` through `usePresentation()`
- * and composes the route from it. `.itemDetails` stays off it for exactly the reason the other two
- * used to — its route does not read a recipe yet, and it is still a legacy `controller` +
- * `view.html` view that would need migrating first.
+ * and composes the route from it. `presentation.page.itemDetails` joined it last, on exactly those
+ * terms and no others: `apps/modern/features/details` reads `page.itemDetails` through
+ * `usePresentation()` and composes the route from it (#129 Step 2). It was off this list for as
+ * long as the route was a legacy `controller` + `view.html` view, then for as long as the migrated
+ * route rendered a fixed composition, and it moved in the same commit the route began reading a
+ * recipe — never before.
  *
  * `source.web.css` in particular is the advanced CSS/SCSS/LESS/Sass authoring layer: the manifest
  * reserves its shape (`renderers.web.source`) so the package format is already right, while the
@@ -82,7 +85,8 @@ export const WEB_RENDERER_CAPABILITIES: readonly ThemeCapability[] = [
     'presentation.mediaCard',
     'presentation.navigation',
     'presentation.page.home',
-    'presentation.page.library'
+    'presentation.page.library',
+    'presentation.page.itemDetails'
 ] as const;
 
 export type ThemeMode = 'light' | 'dark';
@@ -174,12 +178,77 @@ export const HOME_SHELF_DENSITIES = [
 
 export type HomeShelfDensity = (typeof HOME_SHELF_DENSITIES)[number];
 
-export type ItemDetailsSection =
-    | 'overview'
-    | 'cast'
-    | 'episodes'
-    | 'related'
-    | 'mediaInfo';
+/**
+ * The content families an Item Details recipe may order (RFC-0007 §4.7).
+ *
+ * A runtime list for the reason {@link HOME_SECTIONS} is one — the applied-presentation record is
+ * hand-editable and a union type cannot reject `{"sections":["castt"]}` at runtime.
+ *
+ * ## What a token is, and what it is not
+ *
+ * Each name here is a durable, cross-platform USER-FACING CONTENT FAMILY. None of them is a Web
+ * component, a DOM id, a Jellyfin name or an item type. In particular this vocabulary is NOT the
+ * 33 `data-detail-section` identifiers the migrated route emits: those are characterization hooks
+ * that let the frozen P5 fixture judge the route, they are private implementation evidence, and no
+ * recipe reads or exposes one. `apps/modern/features/details/utils/itemDetailsRecipe.ts` is the
+ * single place the two vocabularies meet, and it maps every concrete surface to exactly one token
+ * here or to a permanently fixed region.
+ *
+ * ## The five names that were already published
+ *
+ * `overview`, `cast`, `episodes`, `related` and `mediaInfo` shipped in the closed contract before
+ * any route read it. They are RETAINED VERBATIM, because renaming a published enum member would
+ * invalidate manifests that are valid today, and a closed vocabulary that renames itself is not
+ * closed. Two of them read oddly against the rule that a token must not encode an item type or a
+ * legacy name:
+ *
+ *   - `episodes` covers a folder's contained children whatever they are — seasons, episodes,
+ *     tracks, playlist entries, collection members, the further parts of a multi-part video;
+ *   - `mediaInfo` covers the item's factual panel: birth and death dates, birthplace, broadcast
+ *     day, tags, outward reference links and the genre/studio/crew lists.
+ *
+ * Both are wider than their names suggest. That is a cost of backward compatibility, paid once and
+ * documented here; the six names ADDED by #129 Step 2 follow the rule.
+ *
+ * ## What a recipe cannot reach
+ *
+ * There is deliberately no token for the item's identity, its primary information, the action bar,
+ * the media-source/audio/subtitle/video selectors, the played/favourite/rating controls, the
+ * recording editor, permission gates or any warning. Those are FIXED REGIONS: RFC-0007 §6.1 keeps
+ * them outside theme authority, and a token for one of them would be a theme deciding what the
+ * product does rather than how it looks.
+ */
+export const ITEM_DETAILS_SECTIONS = [
+    'overview',
+    'mediaInfo',
+    'nextUp',
+    'episodes',
+    'lyrics',
+    'moreFrom',
+    'cast',
+    'schedule',
+    'extras',
+    'chapters',
+    'related'
+] as const;
+
+export type ItemDetailsSection = (typeof ITEM_DETAILS_SECTIONS)[number];
+
+/**
+ * How the item's artwork is laid out. A LAYOUT treatment, never data eligibility (RFC-0007 §6.1).
+ *
+ * No value here causes an extra image or API request, none overrides the user's details-banner
+ * setting, none gives a `Person` or a `Book` a backdrop, and the poster is rendered under all
+ * three — `MUST PRESERVE` #9 is a product guarantee, not a theme preference.
+ */
+export const ITEM_DETAILS_HEROES = ['backdrop', 'poster', 'minimal'] as const;
+
+export type ItemDetailsHero = (typeof ITEM_DETAILS_HEROES)[number];
+
+export interface ItemDetailsRecipe {
+    hero?: ItemDetailsHero;
+    sections?: readonly ItemDetailsSection[];
+}
 
 export interface HomeRecipe {
     sections?: readonly HomeSection[];
@@ -221,10 +290,7 @@ export interface LibraryRecipe {
 export interface PageRecipes {
     home?: HomeRecipe;
     library?: LibraryRecipe;
-    itemDetails?: {
-        hero?: 'backdrop' | 'poster' | 'minimal';
-        sections?: readonly ItemDetailsSection[];
-    };
+    itemDetails?: ItemDetailsRecipe;
 }
 
 export interface ThemePresentation {

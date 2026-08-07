@@ -1,11 +1,26 @@
 import React, { type FC, type ReactNode } from 'react';
 
-import { isHeroSection } from '../constants/sections';
-import type { DetailSectionName } from '../constants/sections';
+import type {
+    DetailSectionColumn,
+    DetailSectionName
+} from '../constants/sections';
 
 interface DetailSectionProps {
     /** The frozen contract's name for this surface. Rendered as `data-detail-section`. */
     name: DetailSectionName;
+    /**
+     * The grid column, decided by the composition rather than by this surface's identity.
+     * Defaults to `full`; the fixed header block and a leading primary-column family pass `hero`.
+     */
+    column?: DetailSectionColumn;
+    /**
+     * The PUBLISHED content family this surface belongs to, rendered as `data-rf-slot`.
+     *
+     * Only theme-controllable surfaces carry one: it is the vocabulary a theme is allowed to know
+     * about. The fixed header surfaces pass nothing, so a stylesheet or a test cannot address them
+     * as if they were a recipe slot.
+     */
+    slot?: string;
     /** Already-translated heading text, or nothing for a section with no heading. */
     heading?: string;
     /** Suppress the heading element while keeping the section. `renderChildren` does this for
@@ -27,6 +42,8 @@ interface DetailSectionProps {
  */
 const DetailSection: FC<DetailSectionProps> = ({
     name,
+    column = 'full',
+    slot,
     heading,
     headingHidden,
     children
@@ -34,7 +51,8 @@ const DetailSection: FC<DetailSectionProps> = ({
     <section
         className='rf-item-details__section'
         data-detail-section={name}
-        data-detail-slot={isHeroSection(name) ? 'hero' : 'full'}
+        data-detail-slot={column}
+        data-rf-slot={slot}
         aria-label={heading && headingHidden ? heading : undefined}
     >
         {heading && !headingHidden ? (

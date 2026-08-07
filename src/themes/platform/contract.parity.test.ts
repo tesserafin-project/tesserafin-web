@@ -13,6 +13,8 @@ import themeSchema from '../../../tesserafin-design/schema/theme.schema.json';
 import {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    ITEM_DETAILS_HEROES,
+    ITEM_DETAILS_SECTIONS,
     LIBRARY_CARD_ASPECTS,
     LIBRARY_FILTER_PRESENTATIONS,
     LIBRARY_LAYOUTS,
@@ -37,15 +39,15 @@ describe('contract.ts <-> theme.schema.json', () => {
 
     it.each([
         'source.web.css',
-        // `presentation.page.home` was on this list until the modern Home route actually read a
-        // resolved recipe, and `presentation.page.library` until `apps/modern/features/library`
-        // did. Both are off it now because there is code reading them, which is the only thing
-        // that ever justified moving a name from one list to the other.
-        'presentation.page.itemDetails',
         // Removed once it was checked: a theme's `assets` block names a package-relative path, and
         // there is no theme package, so nothing could have resolved one. Binding it needs the
         // package format (#117), not a loader.
         'assets.roles'
+        // `presentation.page.home` was on this list until the modern Home route actually read a
+        // resolved recipe, `presentation.page.library` until `apps/modern/features/library` did,
+        // and `presentation.page.itemDetails` until `apps/modern/features/details` did (#129
+        // Step 2). All three are off it because there is code reading them, which is the only
+        // thing that ever justified moving a name from one list to the other.
     ])(
         'leaves the not-yet-bound capability %s out of the Web renderer list',
         (capability) => {
@@ -59,11 +61,7 @@ describe('contract.ts <-> theme.schema.json', () => {
     it('names every capability as either implemented or not-yet-bound, with none unaccounted for', () => {
         // A new capability added to the vocabulary and to neither list would be invisible: no
         // renderer support, no record that it is pending. This forces the choice to be made.
-        const notYetBound = [
-            'source.web.css',
-            'presentation.page.itemDetails',
-            'assets.roles'
-        ];
+        const notYetBound = ['source.web.css', 'assets.roles'];
         expect([...WEB_RENDERER_CAPABILITIES, ...notYetBound].sort()).toEqual(
             [...THEME_CAPABILITIES].sort()
         );
@@ -134,6 +132,51 @@ describe('contract.ts <-> theme.schema.json', () => {
         expect([...LIBRARY_FILTER_PRESENTATIONS]).toEqual(
             library.properties.filters.enum
         );
+    });
+
+    it('publishes the Item Details recipe vocabulary as runtime lists identical to the schema', () => {
+        /*
+         * Order matters here, not just membership. `PLATFORM_DEFAULT_PRESENTATION.page.itemDetails`
+         * IS `ITEM_DETAILS_SECTIONS`, so the declaration order in `contract.ts` is the platform
+         * default composition — and `itemDetails.recipe.test.tsx` proves that order reproduces the
+         * pre-binding page for all 24 equivalence classes. A schema that listed the same names in
+         * a different order would make the two documents disagree about what "the default" is.
+         */
+        const itemDetails = (
+            defs.pageRecipes.properties as Record<
+                string,
+                {
+                    properties: {
+                        hero: { enum: string[] };
+                        sections: { items: { enum: string[] } };
+                    };
+                }
+            >
+        ).itemDetails;
+        expect([...ITEM_DETAILS_SECTIONS]).toEqual(
+            itemDetails.properties.sections.items.enum
+        );
+        expect([...ITEM_DETAILS_HEROES]).toEqual(itemDetails.properties.hero.enum);
+    });
+
+    it('retains every Item Details section name that was published before the binding', () => {
+        /*
+         * The enum widened from five names to eleven in #129 Step 2. Widening a closed enum is
+         * backward-compatible only if nothing was removed or renamed: a manifest that was valid
+         * against the five must still be valid against the eleven, and `validateManifest.test.ts`
+         * checks that end-to-end with a real manifest. This is the vocabulary half of the claim.
+         */
+        for (const published of [
+            'overview',
+            'cast',
+            'episodes',
+            'related',
+            'mediaInfo'
+        ]) {
+            expect(ITEM_DETAILS_SECTIONS as readonly string[]).toContain(
+                published
+            );
+        }
     });
 
     it('keeps the advanced-source extension point reserved but shaped', () => {

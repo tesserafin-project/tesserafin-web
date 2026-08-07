@@ -164,16 +164,41 @@ describe('migrated Item Details ledger — the effect frontier is classified', (
     /**
      * The presentation boundary, restated at the effect frontier.
      *
-     * Step 1c freezes behaviour; it does not bind. A recipe read is not merely out of scope here —
-     * it would change what the ledger is a contract ABOUT.
+     * Step 1c asserted this list was EMPTY, because it froze behaviour without binding. Step 2
+     * binds, so the list is now enumerated instead: exactly these four specifiers, no more. The
+     * gate is the same strength — a fifth presentation import still fails — and it additionally
+     * pins WHICH modules the binding is allowed to reach.
+     *
+     * `validateManifest`, `theme.schema.json` and the Theme Studio are the ones that must never
+     * appear: they are the authoring layer, and pulling them in here would put the schema validator
+     * into the Item Details async chunk.
      */
-    it('nothing in the slice imports the presentation context or the platform default', () => {
-        const forbidden = [...imported.keys()].filter((specifier) =>
-            /presentation|resolvePresentation|themes\/platform/i.test(specifier)
+    it('imports exactly the four presentation modules the binding needs', () => {
+        const presentation = [...imported.keys()]
+            .filter((specifier) =>
+                /presentation|themes\/platform|settings\/userSettings/i.test(
+                    specifier
+                )
+            )
+            .sort();
+
+        expect(presentation).toEqual([
+            'scripts/settings/userSettings',
+            'themes/platform/contract',
+            'themes/platform/resolvePresentation',
+            'ui/presentation/PresentationContext'
+        ]);
+    });
+
+    it('never reaches the authoring, validation or Studio layer', () => {
+        const authoring = [...imported.keys()].filter((specifier) =>
+            /validateManifest|theme\.schema|themeStudio|localPresentation|manifests/i.test(
+                specifier
+            )
         );
         expect(
-            forbidden,
-            'the Item Details slice must stay unbound until Step 2'
+            authoring,
+            'the Item Details chunk must not carry the schema validator or the Studio'
         ).toEqual([]);
     });
 });

@@ -135,13 +135,46 @@ describe('legacy Item Details contract — fixture and document agree', () => {
 });
 
 describe('legacy Item Details contract — platform-default comparison', () => {
-    it('records the platform default exactly as the platform declares it', () => {
-        expect(contract.platformDefault.hero).toBe(
-            PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.hero
+    /**
+     * What this block asserted before #129 Step 2, and why it no longer can.
+     *
+     * It used to require `contract.platformDefault.sections` to EQUAL the live
+     * `PLATFORM_DEFAULT_PRESENTATION`. That was the right assertion for as long as the default was
+     * unread: the fixture recorded the declaration so the two could not drift while nobody was
+     * looking. Step 2 read it, and the declaration turned out to be wrong — five names in an order
+     * no equivalence class rendered, which this very fixture recorded as 13 MISMATCH / 11 NOT
+     * APPLICABLE / 0 MATCH. Binding it unchanged would have recomposed the page for every user.
+     *
+     * The fixture is checksum-frozen (`ledger.consistency.test.ts`) and is not edited. It is now
+     * read as HISTORY — the declaration as it stood before the binding — and the live default is
+     * asserted against the thing that actually matters instead: the composition the pre-binding
+     * route rendered, class by class, in `itemDetails.recipe.test.tsx`.
+     */
+    it('records the platform default as it stood before the binding', () => {
+        expect(contract.platformDefault.boundByRoute).toBe(false);
+        expect(contract.platformDefault.hero).toBe('backdrop');
+        expect(contract.platformDefault.sections).toEqual([
+            'overview',
+            'cast',
+            'episodes',
+            'related',
+            'mediaInfo'
+        ]);
+    });
+
+    it('keeps the hero the historical record declared, and widens only the sections', () => {
+        // `hero` needed no correction: the pre-binding route rendered the backdrop layer for every
+        // class that may have one, which is what `backdrop` means.
+        expect(PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.hero).toBe(
+            contract.platformDefault.hero
         );
-        expect(contract.platformDefault.sections).toEqual(
-            PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections
-        );
+        // Widened, never narrowed: every name the historical default declared is still published.
+        for (const section of contract.platformDefault.sections) {
+            expect(
+                PLATFORM_DEFAULT_PRESENTATION.page.itemDetails
+                    .sections as readonly string[]
+            ).toContain(section);
+        }
     });
 
     it('uses only the four permitted verdicts', () => {
@@ -161,29 +194,26 @@ describe('legacy Item Details contract — platform-default comparison', () => {
         ).toEqual([]);
     });
 
-    it('the route still does not read the presentation it is being compared against', () => {
-        // Step 1a compares; it does not bind. If `presentation.page.itemDetails` ever appears in
-        // WEB_RENDERER_CAPABILITIES, the comparison above stops being hypothetical and this
-        // document's §13 has to be revisited before the binding lands.
-        expect(contract.platformDefault.boundByRoute).toBe(false);
-        expect(WEB_RENDERER_CAPABILITIES as readonly string[]).not.toContain(
+    /**
+     * The binding, asserted in BOTH directions.
+     *
+     * Until #129 Step 2 this block said the opposite: the capability was off
+     * `WEB_RENDERER_CAPABILITIES` and no file in the slice called `usePresentation()`. Those were
+     * two halves of one claim, and Step 1c's comment said Step 2 must move both together or
+     * neither — because a route that reads a recipe it has not DECLARED lets a theme change the
+     * page while `resolvePresentation` cannot report a fallback for it, and a renderer that
+     * declares a recipe no route READS is a contract lying about what it implements.
+     *
+     * So the inverted assertions are kept as a pair, not deleted. Either one alone would let the
+     * other half regress silently.
+     */
+    it('declares the capability the route now reads', () => {
+        expect(WEB_RENDERER_CAPABILITIES as readonly string[]).toContain(
             'presentation.page.itemDetails'
         );
     });
 
-    /**
-     * The other half of "unbound", added with the Step 1b migration.
-     *
-     * Keeping the capability off `WEB_RENDERER_CAPABILITIES` says the renderer does not DECLARE the
-     * recipe. It says nothing about whether the route quietly READS one — and a route that read a
-     * recipe it had not declared would be the worst of both: a theme could change the page, and
-     * `resolvePresentation` could not report a fallback for it. Step 2 binds both together or
-     * neither.
-     *
-     * Scoped to the migrated slice and its route module, which is exactly where a binding would be
-     * written.
-     */
-    it('no file in the migrated slice reads a presentation recipe', () => {
+    it('reads the recipe exactly once, at the composition boundary', () => {
         const roots = [
             resolve(REPO_ROOT, 'src/apps/modern/features/details'),
             resolve(REPO_ROOT, 'src/apps/modern/routes/details.tsx')
@@ -207,24 +237,48 @@ describe('legacy Item Details contract — platform-default comparison', () => {
             'the migrated slice was not found'
         ).toBeGreaterThan(0);
 
+        const readers: string[] = [];
         for (const file of files) {
             const source = readFileSync(file, 'utf8')
                 .replace(/\/\*[\s\S]*?\*\//g, '')
                 .replace(/^\s*\/\/.*$/gm, '');
-            expect(source, `${file} calls usePresentation()`).not.toMatch(
-                /\busePresentation\s*\(/
-            );
-            /*
-             * `presentation.page.itemDetails`, however it is spelled. Deliberately NOT a bare
-             * `itemDetails` match: the slice namespaces its React Query keys under
-             * `['itemDetails', …]`, and a gate that a query key can trip is a gate that gets
-             * weakened until it passes.
-             */
-            expect(
-                source,
-                `${file} reads presentation.page.itemDetails`
-            ).not.toMatch(
-                /presentation[\s\S]{0,40}?\bitemDetails\b|PLATFORM_DEFAULT_PRESENTATION/
+            if (/\busePresentation\s*\(/.test(source)) readers.push(file);
+        }
+
+        // One reader, and it is the composition boundary. A second call site would mean two parts
+        // of the page could disagree about the recipe mid-render.
+        expect(readers.map((file) => file.replace(`${REPO_ROOT}/`, ''))).toEqual(
+            ['src/apps/modern/features/details/components/ItemDetailsView.tsx']
+        );
+    });
+
+    it('never parses a manifest or persisted record inside the route', () => {
+        // The recipe arrives already resolved. A route that validated a manifest or read
+        // `localStorage` itself would drag the authoring and schema code into its async chunk —
+        // the delivery half of the binding, gated separately by `verify:delivery-budget`.
+        const roots = [
+            resolve(REPO_ROOT, 'src/apps/modern/features/details'),
+            resolve(REPO_ROOT, 'src/apps/modern/routes/details.tsx')
+        ];
+
+        const files: string[] = [];
+        const walk = (target: string) => {
+            if (!existsSync(target)) return;
+            if (statSync(target).isFile()) {
+                if (/\.(ts|tsx)$/.test(target)) files.push(target);
+                return;
+            }
+            for (const entry of readdirSync(target)) walk(join(target, entry));
+        };
+        roots.forEach(walk);
+
+        for (const file of files) {
+            if (file.includes('.test.')) continue;
+            const source = readFileSync(file, 'utf8')
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .replace(/^\s*\/\/.*$/gm, '');
+            expect(source, `${file} parses a manifest`).not.toMatch(
+                /validateManifest|theme\.schema\.json|loadAppliedPresentation|localStorage/
             );
         }
     });
