@@ -20,6 +20,7 @@ import { createFailClosedApi, type FailClosedApi } from './failClosedApi';
 import { createTestQueryClient, renderRoute, settle } from './modernHarness';
 import { legacyResponders, sdkResponders } from './responders';
 import { ledgerClass, type LedgerClass, type Observation } from './ledger';
+import type { ThemePresentation } from '../../../src/themes/platform/contract';
 
 /** Every service call the route made, in order. Cleared by {@link resetServiceLedger}. */
 export const serviceLedger: Observation[] = [];
@@ -193,6 +194,24 @@ export interface LedgerMount {
 export interface MountOptions {
     /** Applied on top of the class fixture's item. Used only by declared ledger variants. */
     itemOverride?: Record<string, unknown>;
+    /**
+     * A presentation to resolve the route against (#129 Step 2).
+     *
+     * `undefined` mounts with NO provider, which is what every Step 1c assertion does and what the
+     * platform default means: `PresentationContext` falls back to
+     * `PLATFORM_DEFAULT_PRESENTATION` when nothing is above it. Passing a value wraps the route in
+     * a real `PresentationProvider`, so the recipe reaches it through the same context the
+     * application uses — not through a prop the route would only have in a test.
+     */
+    presentation?: ThemePresentation;
+    /**
+     * Resolve the recipe from the PERSISTED record instead, exactly as the app does after Apply.
+     *
+     * Used for the malformed and mixed valid/invalid cases, which have to travel the real
+     * `localStorage` → `loadAppliedPresentation` → `resolvePresentation` path to prove anything:
+     * a hand-built object would already have been sanitised by the type system.
+     */
+    fromAppliedRecord?: boolean;
 }
 
 /**
@@ -230,10 +249,41 @@ export async function mountForLedger(
     const { default: ItemDetailsPage } = await import(
         '../../../src/apps/modern/features/details/components/ItemDetailsPage'
     );
-    const mounted = await renderRoute(
-        <ItemDetailsPage searchParams={new URLSearchParams(testCase.params)} />,
-        createTestQueryClient()
+    const page = (
+        <ItemDetailsPage searchParams={new URLSearchParams(testCase.params)} />
     );
+
+    let element = page;
+    if (options.presentation || options.fromAppliedRecord) {
+        const { PresentationProvider } = await import(
+            '../../../src/ui/presentation/PresentationContext'
+        );
+        if (options.fromAppliedRecord) {
+            // No `value`, no `themeId`: the provider reads the persisted record itself, which is
+            // the whole point of the malformed-storage cases.
+            element = <PresentationProvider>{page}</PresentationProvider>;
+        } else {
+            const { resolvePresentation } = await import(
+                '../../../src/themes/platform/resolvePresentation'
+            );
+            const resolution = resolvePresentation({
+                presentation: options.presentation
+            });
+            element = (
+                <PresentationProvider
+                    value={{
+                        presentation: resolution.presentation,
+                        fallbacks: resolution.fallbacks,
+                        activatable: resolution.activatable
+                    }}
+                >
+                    {page}
+                </PresentationProvider>
+            );
+        }
+    }
+
+    const mounted = await renderRoute(element, createTestQueryClient());
 
     /*
      * The delegated recording widget arrives through a dynamic import inside an effect. Waiting for
