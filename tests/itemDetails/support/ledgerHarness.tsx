@@ -195,6 +195,14 @@ export interface MountOptions {
     /** Applied on top of the class fixture's item. Used only by declared ledger variants. */
     itemOverride?: Record<string, unknown>;
     /**
+     * Applied on top of the class fixture's acting user.
+     *
+     * Used to reach permission combinations no equivalence class carries — `program` is only ever
+     * viewed by an administrator in the 24 classes, so the live-TV gate on its recording controls
+     * has no class that would notice it disappearing.
+     */
+    userOverride?: Record<string, unknown>;
+    /**
      * A presentation to resolve the route against (#129 Step 2).
      *
      * `undefined` mounts with NO provider, which is what every Step 1c assertion does and what the
@@ -224,10 +232,14 @@ export async function mountForLedger(
     const cls = ledgerClass(classId);
     const testCase = findCase(classId);
     const item = { ...testCase.item, ...(options.itemOverride ?? {}) };
+    const user = {
+        ...testCase.user,
+        ...(options.userOverride ?? {})
+    } as typeof testCase.user;
 
     const responderOptions = {
         item,
-        user: testCase.user,
+        user,
         lists: testCase.lists
     };
     const api = createFailClosedApi({

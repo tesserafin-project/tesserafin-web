@@ -605,3 +605,58 @@ describe('the pre-binding record is the thing being reproduced', () => {
         }
     });
 });
+
+describe('permission gates hold under every recipe', () => {
+    /**
+     * The gap this closes.
+     *
+     * `recordingFields` is a FIXED surface gated on `canManageLiveTv(user)`, and the 24
+     * equivalence classes only ever show a `Program` to an administrator — so deleting that gate
+     * changed no class, and nothing failed. A fixed surface whose permission gate no test can
+     * observe is a fixed surface that can quietly stop being gated.
+     *
+     * `userOverride` reaches the combination the classes do not carry. The recipe is varied on top
+     * of it, because "a recipe bypassing a permission gate" is the shape of the risk: a theme must
+     * not be able to compose its way past authorization.
+     */
+    it.each(RECIPES.map((entry) => entry.id))(
+        'a non-administrator sees no recording controls under "%s"',
+        async (recipeId) => {
+            const recipe = RECIPES.find(
+                (entry) => entry.id === recipeId
+            ) as RecipeCase;
+
+            if (recipe.persisted) {
+                window.localStorage.setItem(APPLIED_KEY, recipe.persisted);
+            }
+            const mounted = await mountForLedger('program', {
+                userOverride: { Policy: { EnableLiveTvManagement: false } },
+                ...(recipe.persisted
+                    ? { fromAppliedRecord: true }
+                    : { presentation: recipe.presentation })
+            });
+
+            expect(renderedSectionsOf(mounted.container)).not.toContain(
+                'recordingFields'
+            );
+        }
+    );
+
+    it('and an administrator still sees them under every recipe', async () => {
+        for (const recipe of RECIPES) {
+            if (recipe.persisted) {
+                window.localStorage.setItem(APPLIED_KEY, recipe.persisted);
+            }
+            const mounted = await mountForLedger('program', {
+                ...(recipe.persisted
+                    ? { fromAppliedRecord: true }
+                    : { presentation: recipe.presentation })
+            });
+            expect(renderedSectionsOf(mounted.container), recipe.id).toContain(
+                'recordingFields'
+            );
+            unmountAll();
+            window.localStorage.clear();
+        }
+    });
+});
