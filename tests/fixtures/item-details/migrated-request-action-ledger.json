@@ -28,9 +28,9 @@
     },
     "presentationBinding": {
         "capability": "presentation.page.itemDetails",
-        "readByRoute": false,
-        "declaredInWebRendererCapabilities": false,
-        "note": "Step 1c freezes behaviour. Step 2 binds the recipe, and must preserve every row below."
+        "readByRoute": true,
+        "declaredInWebRendererCapabilities": true,
+        "note": "Step 1c froze behaviour; Step 2 bound the recipe and preserved every row below. tests/itemDetails/itemDetails.recipe.test.tsx replays this ledger under nine recipes — platform default, both official themes, reordered, omitting, partial, missing, malformed and mixed valid/invalid — and asserts every request, action and LOCAL_ONLY row is identical to the rows here."
     },
     "causality": {
         "phases": [
@@ -341,6 +341,30 @@
             "classification": "PURE",
             "surface": null,
             "note": "type constants only"
+        },
+        {
+            "module": "ui/presentation/PresentationContext",
+            "classification": "CAPABILITY",
+            "surface": null,
+            "note": "#129 Step 2. usePresentation() reads an already-resolved value from a context above the app; it issues nothing and reaches no surface. The single call site is ItemDetailsView, the composition boundary."
+        },
+        {
+            "module": "themes/platform/contract",
+            "classification": "PURE",
+            "surface": null,
+            "note": "#129 Step 2. ITEM_DETAILS_SECTIONS and the recipe types — the closed vocabulary the composition maps the private data-detail-section names onto."
+        },
+        {
+            "module": "themes/platform/resolvePresentation",
+            "classification": "PURE",
+            "surface": null,
+            "note": "#129 Step 2. PLATFORM_DEFAULT_PRESENTATION, read only for the fallback order when a recipe selects nothing renderable. No manifest is parsed and no schema is loaded on this path."
+        },
+        {
+            "module": "scripts/settings/userSettings",
+            "classification": "CAPABILITY",
+            "surface": null,
+            "note": "#129 Step 2. detailsBanner() — the user's own artwork preference, which outranks the theme's hero treatment. A local settings read; it issues no request."
         }
     ],
     "identityRoles": [

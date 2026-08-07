@@ -23,11 +23,20 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 const SLICE = resolve(REPO_ROOT, 'src/apps/modern/features/details');
 const ROUTE_MODULE = resolve(REPO_ROOT, 'src/apps/modern/routes/details.tsx');
 
+/**
+ * The slice's PRODUCTION source. Test files are excluded for the reason
+ * `presentationBoundary.ratchet.test.ts` excludes them: the effect frontier is a statement about
+ * what the shipped route reaches, and a colocated suite importing `vitest` is neither an effect
+ * nor shipped. The slice had no colocated test until #129 Step 2 added
+ * `utils/itemDetailsRecipe.test.ts`, which is why this never had to be said before.
+ */
 function sourceFiles(): string[] {
     const files: string[] = [ROUTE_MODULE];
     const walk = (target: string) => {
         if (statSync(target).isFile()) {
-            if (/\.tsx?$/.test(target)) files.push(target);
+            if (/\.tsx?$/.test(target) && !/\.(test|a11y)\./.test(target)) {
+                files.push(target);
+            }
             return;
         }
         for (const entry of readdirSync(target)) walk(join(target, entry));
@@ -164,16 +173,41 @@ describe('migrated Item Details ledger — the effect frontier is classified', (
     /**
      * The presentation boundary, restated at the effect frontier.
      *
-     * Step 1c freezes behaviour; it does not bind. A recipe read is not merely out of scope here —
-     * it would change what the ledger is a contract ABOUT.
+     * Step 1c asserted this list was EMPTY, because it froze behaviour without binding. Step 2
+     * binds, so the list is now enumerated instead: exactly these four specifiers, no more. The
+     * gate is the same strength — a fifth presentation import still fails — and it additionally
+     * pins WHICH modules the binding is allowed to reach.
+     *
+     * `validateManifest`, `theme.schema.json` and the Theme Studio are the ones that must never
+     * appear: they are the authoring layer, and pulling them in here would put the schema validator
+     * into the Item Details async chunk.
      */
-    it('nothing in the slice imports the presentation context or the platform default', () => {
-        const forbidden = [...imported.keys()].filter((specifier) =>
-            /presentation|resolvePresentation|themes\/platform/i.test(specifier)
+    it('imports exactly the four presentation modules the binding needs', () => {
+        const presentation = [...imported.keys()]
+            .filter((specifier) =>
+                /presentation|themes\/platform|settings\/userSettings/i.test(
+                    specifier
+                )
+            )
+            .sort();
+
+        expect(presentation).toEqual([
+            'scripts/settings/userSettings',
+            'themes/platform/contract',
+            'themes/platform/resolvePresentation',
+            'ui/presentation/PresentationContext'
+        ]);
+    });
+
+    it('never reaches the authoring, validation or Studio layer', () => {
+        const authoring = [...imported.keys()].filter((specifier) =>
+            /validateManifest|theme\.schema|themeStudio|localPresentation|manifests/i.test(
+                specifier
+            )
         );
         expect(
-            forbidden,
-            'the Item Details slice must stay unbound until Step 2'
+            authoring,
+            'the Item Details chunk must not carry the schema validator or the Studio'
         ).toEqual([]);
     });
 });

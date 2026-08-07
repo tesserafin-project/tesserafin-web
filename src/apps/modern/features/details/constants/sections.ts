@@ -8,7 +8,8 @@
  *
  * That attribute is a CHARACTERIZATION HOOK, not a theming surface. It exists so the frozen fixture
  * can judge the migrated route without being rewritten. No stylesheet targets it, it is not part of
- * the published presentation vocabulary, and Step 2's recipe binding will not read it. See
+ * the published presentation vocabulary, and the Step 2 recipe binding does not read it — the
+ * mapping in `utils/itemDetailsRecipe.ts` is the only thing that knows both names. See
  * `docs/tesserafin/item-details-migration.md` §3.
  */
 
@@ -51,20 +52,22 @@ export const DETAIL_SECTIONS = [
 export type DetailSectionName = (typeof DETAIL_SECTIONS)[number];
 
 /**
- * The sections that sit BESIDE the poster rather than below it.
+ * Which grid column a section occupies — `data-detail-slot`, read only by this slice's stylesheet.
  *
  * The legacy template split the page into `detailPagePrimaryContent` (beside the artwork) and the
- * full-width blocks under it. That split is layout, not composition — `MAY CHANGE` #2 says which
- * column a section renders in carries no product guarantee — so it is expressed here as a slot the
- * stylesheet reads, and the SECTION ORDER is untouched either way.
+ * full-width blocks under it. That split is layout, not composition: `MAY CHANGE` #2 says which
+ * column a section renders in carries no product guarantee.
  *
- * Everything from `seriesTimerScheduleSection` onward is a full-width block.
+ * It was a POSITIONAL slice of {@link DETAIL_SECTIONS} until #129 Step 2, which was correct only
+ * while the order was fixed. Under a recipe it would have marked a section "beside the poster"
+ * while it sat below three full-width blocks. The column is now decided per render by
+ * `utils/itemDetailsRecipe.ts`, which keeps the primary column a contiguous prefix, and the fixed
+ * header surfaces always take it.
+ *
+ * The value `hero` here is the LAYOUT COLUMN and is unrelated to
+ * `presentation.page.itemDetails.hero`, which is the artwork treatment.
  */
-export const HERO_SECTIONS: readonly DetailSectionName[] =
-    DETAIL_SECTIONS.slice(0, DETAIL_SECTIONS.indexOf('itemDetailsGroup') + 1);
-
-export const isHeroSection = (name: DetailSectionName): boolean =>
-    HERO_SECTIONS.includes(name);
+export type DetailSectionColumn = 'hero' | 'full';
 
 /** The principal actions, named as the frozen contract names them. */
 export const DETAIL_ACTIONS = [

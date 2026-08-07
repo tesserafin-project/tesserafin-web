@@ -37,10 +37,18 @@ describe('resolvePresentation — defaults', () => {
 
 describe('resolvePresentation — capability fallback', () => {
     /*
-     * Re-pointed from `presentation.page.home` to `.itemDetails` when the Home binding landed:
-     * these two cases need a capability the Web renderer does NOT implement, and `.home` stopped
-     * being one. Re-pointing keeps the assertions exactly as strong; relaxing them to accommodate
-     * the new support would have deleted the only coverage of the fallback path.
+     * These two cases need a renderer that does NOT implement the capability under test.
+     *
+     * The subject was `presentation.page.home` until the Home binding landed, then
+     * `.itemDetails` until #129 Step 2 bound that one too. Web now implements every
+     * `presentation.*` capability the contract defines, so there is no longer a real Web gap to
+     * point at — and relaxing these assertions instead would delete the only coverage of the
+     * fallback path.
+     *
+     * The renderer list is therefore given EXPLICITLY. `resolvePresentation` takes it as a
+     * parameter precisely so a renderer other than this build's Web can be resolved against, which
+     * is what the Android and Apple renderers will do; a capability Web has bound is still one
+     * another renderer may not have. The assertions are unchanged in strength.
      */
     const pageTheme: PresentationInput = {
         presentation: {
@@ -48,13 +56,17 @@ describe('resolvePresentation — capability fallback', () => {
         }
     };
 
+    /** A renderer that speaks everything this build's Web does, except the recipe under test. */
+    const withoutItemDetails: readonly ThemeCapability[] =
+        WEB_RENDERER_CAPABILITIES.filter(
+            (capability) => capability !== 'presentation.page.itemDetails'
+        );
+
     it('falls back to the default when the renderer does not support the capability', () => {
         const { presentation, fallbacks } = resolvePresentation(
             pageTheme,
-            WEB_RENDERER_CAPABILITIES
+            withoutItemDetails
         );
-        // presentation.page.itemDetails is DEFINED by the contract and NOT YET BOUND by the Web
-        // renderer — its route does not read a recipe.
         expect(presentation.page.itemDetails).toEqual(
             PLATFORM_DEFAULT_PRESENTATION.page.itemDetails
         );
@@ -67,17 +79,21 @@ describe('resolvePresentation — capability fallback', () => {
     });
 
     it('applies the theme value once a renderer declares the capability', () => {
-        const future: readonly ThemeCapability[] = [
-            ...WEB_RENDERER_CAPABILITIES,
-            'presentation.page.itemDetails'
-        ];
         const { presentation, fallbacks } = resolvePresentation(
             pageTheme,
-            future
+            WEB_RENDERER_CAPABILITIES
         );
         expect(presentation.page.itemDetails.hero).toBe('minimal');
         expect(presentation.page.itemDetails.sections).toEqual(['overview']);
         expect(fallbacks).toEqual([]);
+    });
+
+    it('this build of Web declares the capability, so the theme value is what renders', () => {
+        // The other half of the binding: a Web renderer that resolved the recipe but did not
+        // DECLARE it would leave `resolvePresentation` unable to report a fallback for it.
+        expect(WEB_RENDERER_CAPABILITIES).toContain(
+            'presentation.page.itemDetails'
+        );
     });
 
     it('honours a Home recipe, because the Web renderer now implements it', () => {

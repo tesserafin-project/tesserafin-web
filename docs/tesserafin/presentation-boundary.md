@@ -11,11 +11,12 @@ server capability — see [§1](#1-this-is-a-renderer-boundary-not-a-server-gap)
 
 ## 1. This is a renderer boundary, not a server gap
 
-`presentation.page.itemDetails` is unbound because **its route does not read a recipe**, not because
-the server cannot answer something.
+Every `presentation.*` capability the contract defines is now implemented by the Web renderer. Each
+was unbound because **its route did not read a recipe**, never because the server could not answer
+something — and each was bound with **no server change at all**.
 
-The evidence is now direct twice over: `presentation.page.home` and `presentation.page.library` were
-both bound with **no server change at all**. Home issues `getUserViews`, `getResumeItems`,
+The evidence is now direct three times over: `presentation.page.home`, `.library` and
+`.itemDetails` were all bound with no server change. Home issues `getUserViews`, `getResumeItems`,
 `getNextUp` and `getLatestMedia` under every theme; Library issues `getItems`, `getStudios` and
 `getQueryFiltersLegacy` with identical parameters under every recipe, which
 `LibraryView.recipe.test.tsx` asserts as a full request ledger. Composition is a client-side
@@ -97,8 +98,10 @@ Eight user routes and four public routes, each a `controller` + `view.html` pair
 `details`, `list`, `lyrics`, `mypreferencescontrols`, `mypreferenceshome`, `mypreferencesplayback`,
 `mypreferencessubtitles`, `queue` · `addserver`, `selectserver`, `login`, `forgotpasswordpin`
 
-All **outcome 3**. `details` is the Item Details route — it is a legacy controller today, which is
-the single largest fact bearing on which vertical comes next (§6).
+All **outcome 3** — except `details`, which left this list in #129 Step 1b. The Item Details route
+is modern React on `src/ui` (`apps/modern/features/details`), registered through
+`toAsyncPageRoute`, and it reads `presentation.page.itemDetails` at its composition boundary since
+#129 Step 2. Seven legacy user routes and four public routes remain.
 
 ### 3.3 Hybrid route
 
@@ -151,14 +154,14 @@ applied   Harbour Lights (hero) · Continue Watching · Next Up · Recently Adde
 with no server change, no `if (themeId === …)` anywhere in `ui/` or `apps/modern/features/home/`,
 no legacy selector exposed as public theme API, and no change to the requests the page issues.
 
-**Still open.** Four things, and none of them is a server gap:
+**Still open.** Three things, and none of them is a server gap. The `presentation.page.*` entry
+that used to head this list is gone: Home, Library and Item Details are all bound.
 
-1. `presentation.page.library` and `.itemDetails` — declared, resolved, read by no route.
-2. `assets.roles` — declared, unbound, blocked on #117's package format and integrity model. It maps
+1. `assets.roles` — declared, unbound, blocked on #117's package format and integrity model. It maps
    a role to a PACKAGE-RELATIVE path, and there is no theme package yet, so there is no file a
    loader could resolve.
-3. `source.web.css` — reserved at `kind: "none"`; no isolated compiler boundary exists (RFC-0007 §7).
-4. `recommendations`, a section in the Home vocabulary, has no data source in the modern Home route.
+2. `source.web.css` — reserved at `kind: "none"`; no isolated compiler boundary exists (RFC-0007 §7).
+3. `recommendations`, a section in the Home vocabulary, has no data source in the modern Home route.
    Wiring it needs `/Movies/Recommendations`, and a recipe token whose presence makes a request fire
    would be a theme controlling API queries — forbidden by RFC-0007 §6.1. Offering it always, for
    every theme, is a **product** decision about what Home contains, not a theming one.
@@ -182,7 +185,7 @@ decision recorded as such, not a side effect of a theme.
 
 ---
 
-## 6. The next vertical: Item Details, and what it costs
+## 6. The three verticals, and what each cost
 
 **Home** is done — it needed no migration at all.
 
@@ -198,14 +201,32 @@ and order, and each filter — across six recipes plus a malformed record, and c
 item IDs in order on top of it. Home's ledger compared endpoint names only, which would not have
 caught a shelf layout quietly asking for a smaller page.
 
-**Item Details** is next. It is a legacy `controller` + `view.html` route (§3.2), so binding
-`presentation.page.itemDetails` means first rewriting it in modern React on `src/ui` — a migration,
-not a binding, and a much larger change with a different risk profile. It is the last capability
-between the Web renderer and a complete `presentation.*` surface.
+**Item Details** is done, and it cost by far the most, because it was a **migration before it was a
+binding**. It was a legacy `controller` + `view.html` route and one of the four `renderComponent`
+call sites in the repository, so #129 took it in four steps: inventory the legacy contract (1a),
+rewrite it in modern React on `src/ui` (1b), freeze its complete request and action ledger (1c),
+and only then bind the recipe (2). Splitting it that way is what kept a bounded vertical from
+becoming an unbounded rewrite.
 
-Taking them in this order kept the `libraries/*` hybrid (§3.1) visible as a separate, later item
-rather than folding an unrelated `cardbuilder` migration into a composition change. Library's
-binding touched none of it.
+Step 2 added two invariants to Home's and Library's, both forced by how much product surface this
+route carries:
+
+- **a derived vocabulary, not an exposed one.** The migrated route names 33 surfaces with private
+  `data-detail-section` hooks. Publishing those as theme vocabulary would have made a Web DOM
+  detail into a cross-platform contract, so the eleven published families are derived from what
+  those surfaces MEAN, and `utils/itemDetailsRecipe.ts` is the only place the two vocabularies
+  meet. The derivation is proven per item type rather than per fixture, so it also covers the four
+  surfaces no equivalence class exercises.
+- **fixed regions are structural.** Playback, the track selectors, the user-data controls, the
+  recording editor, permission gates and required warnings are not merely "not offered" — the
+  published enum cannot name them, so no recipe can reach one.
+
+The Web renderer's `presentation.*` surface is now complete. What is left (§5) is `assets.roles`,
+`source.web.css` and one Home data source, and none of the three is a composition problem.
+
+Taking the three in this order kept the `libraries/*` hybrid (§3.1) visible as a separate, later
+item rather than folding an unrelated `cardbuilder` migration into a composition change. None of
+the three bindings touched it.
 
 ---
 

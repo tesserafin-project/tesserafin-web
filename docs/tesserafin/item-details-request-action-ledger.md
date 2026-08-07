@@ -34,8 +34,15 @@ contract. Item Details carries more of each than any other route, so **nothing i
 reachable from a presentation recipe** — before or after Step 2. A recipe orders and selects; it
 never changes which requests the route issues and never changes playback behaviour.
 
-Today `presentation.page.itemDetails` is read by the route: **false**, and
-declared in `WEB_RENDERER_CAPABILITIES`: **false**.
+Today `presentation.page.itemDetails` is read by the route: **true**, and
+declared in `WEB_RENDERER_CAPABILITIES`: **true**.
+
+Both became true in #129 Step 2, together. The statement above them is unchanged and is now proven
+rather than promised: `tests/itemDetails/itemDetails.recipe.test.tsx` replays every row in this
+record under nine recipes — the platform default, Tesserafin Classic, Frosted Glass, a reordered
+recipe, one omitting an applicable content family, a partial recipe, a missing recipe, a malformed
+persisted recipe and one mixing valid and invalid fields — and asserts the request, action and
+`LOCAL_ONLY` sets are identical every time.
 
 ## 2. Route inputs
 
@@ -1897,12 +1904,20 @@ nothing imports any more.
 | `@jellyfin/sdk/lib/generated-client/models/base-item-kind` | `PURE` | — | type constants only |
 | `@jellyfin/sdk/lib/generated-client/models/item-fields` | `PURE` | — | type constants only |
 | `@jellyfin/sdk/lib/generated-client/models/person-kind` | `PURE` | — | type constants only |
+| `ui/presentation/PresentationContext` | `CAPABILITY` | — | #129 Step 2. `usePresentation()` reads an already-resolved value from a context above the app; it issues nothing and reaches no surface. The single call site is `ItemDetailsView`, the composition boundary. |
+| `themes/platform/contract` | `PURE` | — | #129 Step 2. `ITEM_DETAILS_SECTIONS` and the recipe types — the closed vocabulary the composition maps the private `data-detail-section` names onto. |
+| `themes/platform/resolvePresentation` | `PURE` | — | #129 Step 2. `PLATFORM_DEFAULT_PRESENTATION`, read only for the fallback order when a recipe selects nothing renderable. No manifest is parsed and no schema is loaded on this path. |
+| `scripts/settings/userSettings` | `CAPABILITY` | — | #129 Step 2. `detailsBanner()` — the user's own artwork preference, which outranks the theme's hero treatment. A local settings read; it issues no request. |
+
+The four rows at the bottom arrived with the binding, and none of them is outward. That is the
+shape the gate was built to check: Step 2 added a context read, a vocabulary, a default and a
+settings read, and no API, service or mutation. The 37 rows above them are unchanged.
 
 ## 13. What Step 2 must preserve
 
 Step 2 binds `presentation.page.itemDetails`. A recipe **orders and selects**; it must not change
-any of the following, and `compareLedgerRuns` in `tests/itemDetails/support/ledger.ts` is written
-to be re-run against the bound route to prove it:
+any of the following, and `compareLedgerRuns` in `tests/itemDetails/support/ledger.ts` is re-run
+against the bound route in `tests/itemDetails/itemDetails.recipe.test.tsx` to prove it:
 
 1. all 172 request rows, with their exact arguments, identities and cardinalities;
 2. all 93 action rows, with their exact payloads and targets;
@@ -1911,13 +1926,24 @@ to be re-run against the bound route to prove it:
 5. the rule that a section hidden by a recipe **still fetches** — the query is gated on the class
    branch condition, the section on the result, never the other way round.
 
-The open decision surface Step 2 inherits is recorded in
+**Status: all five hold under all nine recipes, for all 24 equivalence classes.**
+
+The open decision surface Step 2 inherited was recorded in
 `docs/tesserafin/item-details-legacy-contract.md` §13 and
 `docs/tesserafin/item-details-migration.md`: the platform default
-(`hero: backdrop`, sections `overview, cast, episodes, related, mediaInfo`) names five
+(`hero: backdrop`, sections `overview, cast, episodes, related, mediaInfo`) named five
 surfaces, while the migrated composition renders up to 33 named sections in a fixed order. No class
-reproduces the declared default, so binding it as written is a visible change and needs an owner
-ruling before Step 2 lands.
+reproduced the declared default, so binding it as written would have been a visible change.
+
+The owner ruling was to keep the default faithful and correct the declaration. The section enum
+widened from five names to eleven — the five are retained verbatim, so every manifest valid before
+is valid now — and `PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections` is that enum in
+order. `tests/fixtures/item-details/pre-binding-composition.json`, captured at
+`1486760c76150970fa8aab7d24d3919a6a7197fa` and checksum-guarded in test source, is what the
+default is measured against; it reproduces all 24 classes exactly. The 33 `data-detail-section`
+identifiers were NOT published: they remain private characterization hooks, and
+`src/apps/modern/features/details/utils/itemDetailsRecipe.ts` is the only place the private and
+public vocabularies meet.
 
 ## 14. Known limits of this record
 

@@ -362,39 +362,86 @@ describe('migrated Item Details ledger — the historical record is untouched', 
     });
 });
 
-describe('migrated Item Details ledger — the route is still unbound', () => {
-    it('presentation.page.itemDetails is absent from WEB_RENDERER_CAPABILITIES', () => {
+describe('migrated Item Details ledger — the route is bound', () => {
+    /*
+     * Inverted by #129 Step 2, as a pair.
+     *
+     * Step 1c asserted both halves were false and said Step 2 must move them together: a route
+     * that reads a recipe it has not DECLARED lets a theme change the page while
+     * `resolvePresentation` cannot report a fallback for it, and a renderer that declares a recipe
+     * no route READS is a contract lying about what it implements. Keeping both assertions —
+     * inverted — is what stops either half regressing on its own.
+     */
+    it('presentation.page.itemDetails is declared by the Web renderer', () => {
         expect(
             LEDGER.presentationBinding.declaredInWebRendererCapabilities
-        ).toBe(false);
-        expect(WEB_RENDERER_CAPABILITIES as readonly string[]).not.toContain(
+        ).toBe(true);
+        expect(WEB_RENDERER_CAPABILITIES as readonly string[]).toContain(
             'presentation.page.itemDetails'
         );
     });
 
-    it('the ledger records the route as not reading a recipe', () => {
-        expect(LEDGER.presentationBinding.readByRoute).toBe(false);
+    it('the ledger records the route as reading a recipe', () => {
+        expect(LEDGER.presentationBinding.readByRoute).toBe(true);
     });
 
     /**
-     * The platform default is unchanged by Step 1c.
+     * The platform default was CORRECTED, not adopted.
      *
-     * Recorded here rather than assumed: the Step 2 decision surface is exactly the gap between this
-     * declaration and the migrated composition, and a quiet edit to either side would erase it.
+     * Step 1c pinned `PLATFORM_DEFAULT_PRESENTATION` to the P5 record's declaration so the Step 2
+     * decision surface — the gap between that declaration and the migrated composition — could not
+     * be erased by a quiet edit. Step 2 closed the gap the only honest way: the declaration was
+     * wrong (0 of 24 classes matched it, by this fixture's own verdicts), so it was widened to name
+     * the families the route actually renders, and the P5 fixture was left byte-identical.
+     *
+     * What replaces the old equality is stronger. The hero is still the P5 value; every section
+     * name the P5 default declared is still published, so no manifest that was valid became
+     * invalid; and the resulting order is proven against the pre-binding capture, class by class,
+     * in `itemDetails.recipe.test.tsx`.
      */
-    it('PLATFORM_DEFAULT_PRESENTATION.page.itemDetails is what the P5 record says it is', () => {
+    it('keeps the P5 hero and every P5 section name, and widens rather than replaces', () => {
         expect(PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.hero).toBe(
             legacyContract.platformDefault.hero
         );
-        expect(PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections).toEqual(
-            legacyContract.platformDefault.sections
-        );
+        for (const section of legacyContract.platformDefault.sections) {
+            expect(
+                PLATFORM_DEFAULT_PRESENTATION.page.itemDetails
+                    .sections as readonly string[]
+            ).toContain(section);
+        }
+        expect(
+            PLATFORM_DEFAULT_PRESENTATION.page.itemDetails.sections.length
+        ).toBeGreaterThan(legacyContract.platformDefault.sections.length);
     });
 
     it('no ledger row mentions a recipe, a theme id or the platform default', () => {
+        // Unchanged, and the point of it is unchanged: the REQUEST AND ACTION rows describe what
+        // the route does outwardly, and no recipe may appear in that description.
         const serialised = JSON.stringify(LEDGER.classes);
         expect(serialised).not.toMatch(
             /usePresentation|PLATFORM_DEFAULT_PRESENTATION|recipe|themeId/i
         );
+    });
+
+    it('the effect frontier gained only non-outward modules', () => {
+        // The binding added a context read, a vocabulary, a default and a settings read. If any of
+        // them had been outward it would name a surface, and the ledger would be describing an
+        // effect a theme could reach.
+        const added = [
+            'ui/presentation/PresentationContext',
+            'themes/platform/contract',
+            'themes/platform/resolvePresentation',
+            'scripts/settings/userSettings'
+        ];
+        for (const module of added) {
+            const entry = LEDGER.effectFrontier.find(
+                (row) => row.module === module
+            );
+            expect(entry, `${module} is unclassified`).toBeDefined();
+            expect(entry?.surface, module).toBeNull();
+            expect(['PURE', 'CAPABILITY'], module).toContain(
+                entry?.classification
+            );
+        }
     });
 });

@@ -83,7 +83,9 @@ renders `data-detail-section="castCollapsible"`.
 `data-detail-section`, `data-detail-action` and `data-detail-select` are **characterization hooks,
 not a theming surface**. They exist so the frozen fixture can judge the migrated route without
 being rewritten. They are not documented as a public styling API, no stylesheet targets them, and
-Step 2's recipe binding will not read them. The presentation vocabulary
+Step 2's recipe binding does not read them: the eleven published content families are derived
+from what these surfaces MEAN, and `utils/itemDetailsRecipe.ts` is the only module that knows
+both vocabularies. The presentation vocabulary
 (`hero`, `overview`, `cast`, `episodes`, `related`, `mediaInfo`) is too small to name most of these
 surfaces — the frozen contract §13 records that, and this migration does not grow it.
 

@@ -75,6 +75,32 @@
 }
 
 /*
+ * The artwork TREATMENT — `presentation.page.itemDetails.hero` (#129 Step 2).
+ *
+ * `data-rf-hero` is the one attribute a theme's hero choice reaches, and the rules below are the
+ * whole of what it does: no treatment changes which images are built, which requests are issued or
+ * which sections render. `backdrop` is deliberately UNSTYLED here — it is the platform default, so
+ * leaving it to the base rules above is what keeps the default page byte-identical to the one that
+ * shipped before the binding, which the committed captures confirm.
+ *
+ * `poster` drops the decorative band (the element is not rendered at all) and gives the poster the
+ * space it frees. `minimal` goes further: a compact poster and tighter headings, for a page that
+ * leads with its text.
+ */
+.rf-item-details[data-rf-hero='poster'] {
+    --rf-item-details-poster-width: 24rem;
+
+    padding-top: var(--rf-spacing-lg, 24px);
+}
+
+.rf-item-details[data-rf-hero='minimal'] {
+    --rf-item-details-poster-width: 12rem;
+
+    gap: var(--rf-spacing-sm, 8px) var(--rf-spacing-lg, 24px);
+    padding-top: var(--rf-spacing-md, 16px);
+}
+
+/*
  * Sections.
  *
  * `hero` sits in the second column, beside the poster; `full` spans both. The legacy template made
@@ -103,6 +129,14 @@
     color: var(--rf-color-text, #fff);
     font-size: var(--rf-typography-font-size-lg, 1.25rem);
     font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+/*
+ * The `minimal` treatment tightens headings too. Placed AFTER the base rule it overrides: a
+ * lower-specificity selector must not follow a higher-specificity one (`no-descending-specificity`).
+ */
+.rf-item-details[data-rf-hero='minimal'] .rf-item-details__section-title {
+    font-size: var(--rf-typography-font-size-md, 1rem);
 }
 
 /* The name block. */

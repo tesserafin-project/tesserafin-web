@@ -23,6 +23,10 @@ import {
     type HomeRecipe,
     type HomeSection,
     type HomeShelfDensity,
+    ITEM_DETAILS_HEROES,
+    ITEM_DETAILS_SECTIONS,
+    type ItemDetailsHero,
+    type ItemDetailsRecipe,
     type ItemDetailsSection,
     LIBRARY_CARD_ASPECTS,
     LIBRARY_FILTER_PRESENTATIONS,
@@ -55,7 +59,7 @@ export interface ResolvedPresentation {
         };
         library: Required<LibraryRecipe>;
         itemDetails: {
-            hero: 'backdrop' | 'poster' | 'minimal';
+            hero: ItemDetailsHero;
             sections: readonly ItemDetailsSection[];
         };
     };
@@ -125,9 +129,27 @@ export const PLATFORM_DEFAULT_PRESENTATION: ResolvedPresentation = {
             cardAspect: 'poster',
             filters: 'inline'
         },
+        /*
+         * Corrected at binding time, the way Home's was, and for the same reason.
+         *
+         * While nothing read it this declared `overview, cast, episodes, related, mediaInfo` —
+         * an order NO equivalence class rendered. `legacy-contract.json` recorded the comparison
+         * honestly at the time: 13 MISMATCH, 11 NOT APPLICABLE, 0 MATCH. Binding the capability
+         * without correcting the declaration would have silently recomposed Item Details for every
+         * user who has never touched a theme, which is precisely what a platform default exists to
+         * prevent.
+         *
+         * The order below is the one the MIGRATED route already rendered, expressed in the
+         * published vocabulary. `tests/fixtures/item-details/pre-binding-composition.json` — 24
+         * classes captured before this line changed, checksum-guarded in test source — is what says
+         * so, and `itemDetails.recipe.test.tsx` replays every class against it.
+         *
+         * `hero: 'backdrop'` is unchanged, because it was already right: the pre-binding route
+         * rendered the backdrop layer for every class that may have one.
+         */
         itemDetails: {
             hero: 'backdrop',
-            sections: ['overview', 'cast', 'episodes', 'related', 'mediaInfo']
+            sections: [...ITEM_DETAILS_SECTIONS]
         }
     }
 };
@@ -276,6 +298,61 @@ function sanitizeLibraryRecipe(
     return clean;
 }
 
+const ITEM_DETAILS_SECTION_NAMES: ReadonlySet<string> = new Set(
+    ITEM_DETAILS_SECTIONS
+);
+const ITEM_DETAILS_HERO_NAMES: ReadonlySet<string> = new Set(
+    ITEM_DETAILS_HEROES
+);
+
+/**
+ * The Item Details recipe has one of each shape the other two recipes have separately — an ordered
+ * array and a scalar enum — so it needs both rules, applied INDEPENDENTLY:
+ *
+ *   - a `sections` that is not an array is ignored entirely, and `hero` survives it;
+ *   - unknown section names are dropped, so a recipe naming a family this build has retired loses
+ *     that family rather than the whole composition;
+ *   - duplicates are dropped keeping the first occurrence, because a content family rendered twice
+ *     is never what a recipe meant, and the schema's `uniqueItems` cannot reach a hand-edited
+ *     `localStorage` record;
+ *   - if nothing survives, `sections` is ignored and the platform default order applies — an Item
+ *     Details page with no content is not a composition anyone chose;
+ *   - an unknown `hero` is ignored on its own, so one bad key never costs the other.
+ *
+ * The last point is the one Step 2 is asked to prove: `{"hero":"cinematic","sections":["cast"]}`
+ * must keep `cast` and fall back to the default hero, not discard both.
+ */
+function sanitizeItemDetailsRecipe(
+    override: ItemDetailsRecipe | undefined
+): ItemDetailsRecipe {
+    if (!override || typeof override !== 'object') return {};
+
+    const clean: ItemDetailsRecipe = {};
+
+    if (Array.isArray(override.sections)) {
+        const seen = new Set<string>();
+        const sections = override.sections.filter(
+            (section): section is ItemDetailsSection => {
+                if (typeof section !== 'string') return false;
+                if (!ITEM_DETAILS_SECTION_NAMES.has(section)) return false;
+                if (seen.has(section)) return false;
+                seen.add(section);
+                return true;
+            }
+        );
+        if (sections.length > 0) clean.sections = sections;
+    }
+
+    if (
+        typeof override.hero === 'string' &&
+        ITEM_DETAILS_HERO_NAMES.has(override.hero)
+    ) {
+        clean.hero = override.hero;
+    }
+
+    return clean;
+}
+
 function mergeGroup<T extends object>(
     defaults: T,
     override: Partial<T> | undefined,
@@ -352,7 +429,7 @@ export function resolvePresentation(
             ),
             itemDetails: mergeGroup(
                 defaults.page.itemDetails,
-                themePresentation.page?.itemDetails,
+                sanitizeItemDetailsRecipe(themePresentation.page?.itemDetails),
                 supports(CAPABILITY_FOR_PAGE_KEY.itemDetails),
                 CAPABILITY_FOR_PAGE_KEY.itemDetails,
                 fallbacks
