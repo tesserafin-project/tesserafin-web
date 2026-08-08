@@ -18,9 +18,10 @@ const client = (
     const updateUserConfiguration = vi.fn().mockResolvedValue(undefined);
     return {
         apiClient: {
-            getUser: vi
-                .fn()
-                .mockResolvedValue({ Configuration: configuration, Policy: policy }),
+            getUser: vi.fn().mockResolvedValue({
+                Configuration: configuration,
+                Policy: policy
+            }),
             updateUserConfiguration
         } as unknown as ApiClient,
         updateUserConfiguration

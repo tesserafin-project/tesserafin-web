@@ -48,6 +48,8 @@ describe('SUGGESTED_CONTENT_PACK_NAMES', () => {
             )
         );
 
-        expect(importers).toEqual(['src/apps/wizard/controllers/packs/index.js']);
+        expect(importers).toEqual([
+            'src/apps/wizard/controllers/packs/index.js'
+        ]);
     });
 });

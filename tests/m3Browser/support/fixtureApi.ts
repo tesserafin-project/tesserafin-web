@@ -259,9 +259,11 @@ export async function installFixtureApi(
         );
         if (!hasToken) ledger.tokenless.push(`${method} ${path}`);
 
-        const json = (body: unknown, status = 200) =>
+        // `statusCode`, not `status`: the sibling helper below is called `status`, and shadowing it
+        // here reads as though the parameter were that function.
+        const json = (body: unknown, statusCode = 200) =>
             route.fulfill({
-                status,
+                status: statusCode,
                 contentType: 'application/json',
                 body: JSON.stringify(body)
             });
