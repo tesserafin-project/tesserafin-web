@@ -2,12 +2,17 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
+import FormLabel from '@mui/material/FormLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import React from 'react';
 
 import globalize from 'lib/globalize';
+
+import { ContentPackBrowsingPreference } from 'apps/modern/features/contentPacks/adapters/browsingPreference';
 
 import type { DisplaySettingsValues } from '../types/displaySettingsValues';
 
@@ -25,6 +30,43 @@ export function LibraryPreferences({
             <Typography variant='h2'>
                 {globalize.translate('HeaderLibraries')}
             </Typography>
+
+            {/*
+             * #139 gate 5 — the same choice the first-run wizard offers, reachable afterwards by
+             * anyone, for themselves. No administrator right and no content-pack permission is
+             * involved: it is written to the caller's own `UserConfiguration`. The labels describe
+             * what the household will see rather than naming the wire values.
+             */}
+            <FormControl fullWidth>
+                <FormLabel id='display-settings-browsing-arrangement-label'>
+                    {globalize.translate('HeaderBrowsingArrangement')}
+                </FormLabel>
+                <RadioGroup
+                    aria-labelledby='display-settings-browsing-arrangement-label'
+                    name='contentPackBrowsingPreference'
+                    value={values.contentPackBrowsingPreference}
+                    onChange={onChange}
+                >
+                    <FormControlLabel
+                        control={<Radio />}
+                        value={ContentPackBrowsingPreference.MediaFamilyFirst}
+                        label={globalize.translate('OptionBrowseByMediaFamily')}
+                    />
+                    <FormControlLabel
+                        control={<Radio />}
+                        value={ContentPackBrowsingPreference.ContentPackFirst}
+                        label={globalize.translate('OptionBrowseByContentPack')}
+                    />
+                </RadioGroup>
+                <FormHelperText id='display-settings-browsing-arrangement-description'>
+                    {globalize.translate(
+                        values.contentPackBrowsingPreference ===
+                            ContentPackBrowsingPreference.ContentPackFirst
+                            ? 'OptionBrowseByContentPackHelp'
+                            : 'OptionBrowseByMediaFamilyHelp'
+                    )}
+                </FormHelperText>
+            </FormControl>
 
             <FormControl fullWidth>
                 <TextField
