@@ -366,16 +366,58 @@ export async function installFixtureApi(
         };
 
         // --- artwork ------------------------------------------------------------------------
-        // A 1x1 PNG, so a card that asked for a picture actually gets one and a capture is not
-        // waiting on a request that will never settle.
-        if (/^\/Items\/[^/]+\/Images\//.test(path)) {
+        /*
+         * Real-looking artwork, not a 1x1 pixel.
+         *
+         * The first version of this fixture answered every image with a single transparent pixel.
+         * It satisfied "the card asked for THIS item's image", which is all the assertions needed —
+         * and it made every capture useless for a human: a mosaic of flat rectangles shows neither
+         * content packs nor media, which is exactly what owner review said. A capture is evidence
+         * for an eye, so the fixture now draws a distinct poster per item: a deterministic hue from
+         * the id, a gradient, a shape and the item's own name.
+         *
+         * SVG rather than a raster: it is a few hundred bytes, it scales to whatever aspect the
+         * card asks for, and it stays readable at every viewport in the matrix.
+         */
+        const artwork = path.match(/^\/Items\/([^/]+)\/Images\//);
+        if (artwork) {
+            const id = artwork[1];
+            const item = [
+                ...(current.items ?? []),
+                ...current.packs.flatMap((p) => p.items)
+            ].find((candidate) => candidate.Id === id);
+            let hash = 0;
+            for (const character of id) {
+                hash = (hash * 31 + character.charCodeAt(0)) % 360;
+            }
+            /*
+             * An episode with no Primary tag of its own inherits its SERIES artwork, so the id in
+             * the URL is the parent's and no item in the profile carries it. Naming the parents
+             * here keeps the drawn poster readable ("Fixture Series", not "series-1") without
+             * pretending the request was for the episode.
+             */
+            const PARENTS: Record<string, { Name: string; Type: string }> = {
+                'series-1': { Name: 'Fixture Series', Type: 'Series' },
+                'season-1': { Name: 'Season 1', Type: 'Season' }
+            };
+            const named = item ?? PARENTS[id];
+            const label = named?.Name ?? id;
+            const kind = named?.Type ?? '';
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 450" width="300" height="450">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="hsl(${hash} 55% 42%)"/>
+<stop offset="1" stop-color="hsl(${(hash + 40) % 360} 50% 18%)"/>
+</linearGradient></defs>
+<rect width="300" height="450" fill="url(#g)"/>
+<circle cx="150" cy="170" r="70" fill="hsl(${(hash + 180) % 360} 60% 70%)" fill-opacity="0.35"/>
+<rect x="0" y="330" width="300" height="120" fill="rgba(0,0,0,0.45)"/>
+<text x="20" y="372" font-family="sans-serif" font-size="26" fill="#fff">${label.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>
+<text x="20" y="404" font-family="sans-serif" font-size="18" fill="#cfd8e3">${kind}</text>
+</svg>`;
             return route.fulfill({
                 status: 200,
-                contentType: 'image/png',
-                body: Buffer.from(
-                    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-                    'base64'
-                )
+                contentType: 'image/svg+xml',
+                body: svg
             });
         }
 

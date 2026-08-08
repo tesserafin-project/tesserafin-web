@@ -63,6 +63,31 @@ export async function capture(
         timeout: 45_000
     });
 
+    /*
+     * Freeze BEFORE reading anything, and wait for whatever was already moving to finish.
+     *
+     * The first version injected this style tag at the very end, after the dialog had been opened.
+     * MUI opens a dialog with a Fade + Grow transition, so the shutter caught the confirmation
+     * half-transparent, at 90% scale, with no backdrop — owner review called it, correctly, a
+     * screenshot-timing problem. Freezing first is not enough on its own either: a transition
+     * already in flight keeps its current computed value, so the harness also waits for every
+     * running animation on the page to settle.
+     */
+    await page.waitForFunction(
+        () =>
+            document
+                .getAnimations()
+                .every((animation) => animation.playState !== 'running'),
+        undefined,
+        { timeout: 15_000 }
+    );
+    await page.addStyleTag({
+        content:
+            '*, *::before, *::after { animation-duration: 0s !important; ' +
+            'animation-delay: 0s !important; transition-duration: 0s !important; ' +
+            'transition-delay: 0s !important; }'
+    });
+
     const evidence = await themeEvidence(page);
     if (evidence.resolvedTheme !== options.theme) {
         throw new Error(
@@ -73,13 +98,6 @@ export async function capture(
     }
 
     await artworkSettled(page);
-    // Freeze anything still moving, so the same state screenshots identically twice.
-    await page.addStyleTag({
-        content:
-            '*, *::before, *::after { animation-duration: 0s !important; ' +
-            'animation-delay: 0s !important; transition-duration: 0s !important; ' +
-            'transition-delay: 0s !important; }'
-    });
 
     const file = `${options.state}.${options.viewport}.${options.theme}.png`;
     await page.screenshot({ path: join(CAPTURE_DIR, file), fullPage: false });
