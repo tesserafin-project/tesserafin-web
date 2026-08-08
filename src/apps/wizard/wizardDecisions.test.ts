@@ -1,7 +1,9 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+
+import { WIZARD_STEPS } from './routes/steps';
 
 /**
  * The wizard's decision ledger, executable.
@@ -152,14 +154,18 @@ describe('the first-run wizard decision ledger', () => {
         ]);
     });
 
+    it('routes every step to a controller module that exists', () => {
+        for (const step of WIZARD_STEPS) {
+            const controller = step.pageProps.controller as string;
+            expect(
+                existsSync(join(WIZARD, `${controller}.js`)),
+                `${controller}.js is routed but missing`
+            ).toBe(true);
+        }
+    });
+
     it('routes exactly those views and nothing else', () => {
-        const routes = readFileSync(
-            join(__dirname, 'routes', 'routes.tsx'),
-            'utf8'
-        );
-        const declared = [...routes.matchAll(/view: '([^']+)'/g)]
-            .map((match) => match[1])
-            .sort();
+        const declared = WIZARD_STEPS.map((step) => step.pageProps.view).sort();
         expect(declared).toEqual([
             'finish/index.html',
             'library.html',

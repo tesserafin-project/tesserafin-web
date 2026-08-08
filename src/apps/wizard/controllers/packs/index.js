@@ -10,7 +10,10 @@ import { saveBrowsingPreference } from 'apps/modern/features/contentPacks/adapte
 import { SUGGESTED_CONTENT_PACK_NAMES } from 'apps/modern/features/contentPacks/constants/suggestedPacks';
 
 import 'styles/dashboard.scss';
-import './packs.scss';
+// Outside `controllers/`: that directory is a webpack lazy context (`require.context`) whose key
+// map is eager, in main.tesserafin.bundle.js, so every file under it costs start-up bytes whether
+// or not it is ever routed to. The stylesheet still ships in this step's own async chunk.
+import '../../packs.scss';
 import 'elements/emby-input/emby-input';
 import 'elements/emby-button/emby-button';
 import 'elements/emby-checkbox/emby-checkbox';
