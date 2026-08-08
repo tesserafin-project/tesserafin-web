@@ -171,7 +171,8 @@
         "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10",
         "test:item-details-browser": "playwright test --config playwright.itemDetails.config.ts",
         "test:delivery-ledger": "playwright test --config playwright.delivery.config.ts",
-        "test:content-packs-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.contentPacks.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs contentPacks.smoke.spec.ts,contentPacks.manager.spec.ts,contentPacks.nonManager.spec.ts,contentPacks.assignment.spec.ts,contentPacks.isolation.spec.ts,contentPacks.states.spec.ts,contentPacks.keyboard.spec.ts,contentPacks.axe.spec.ts,contentPacks.mobile.spec.ts,contentPacks.tv.spec.ts,support/captureSpecBody.ts"
+        "test:content-packs-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.contentPacks.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs contentPacks.smoke.spec.ts,contentPacks.manager.spec.ts,contentPacks.nonManager.spec.ts,contentPacks.assignment.spec.ts,contentPacks.isolation.spec.ts,contentPacks.states.spec.ts,contentPacks.keyboard.spec.ts,contentPacks.axe.spec.ts,contentPacks.mobile.spec.ts,contentPacks.tv.spec.ts,support/captureSpecBody.ts",
+        "test:m3-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.m3.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs m3.onboarding.spec.ts"
     },
     "engines": {
         "node": ">=24.0.0",

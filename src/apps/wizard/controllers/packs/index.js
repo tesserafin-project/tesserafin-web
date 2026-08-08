@@ -24,19 +24,56 @@ import 'elements/emby-radio/emby-radio';
  */
 const createdNames = new Set();
 let submitPending = false;
-const customPackNames = [];
+
+/**
+ * The step's own state, and the reason the rows are not simply read back out of the DOM.
+ *
+ * Adding or removing a pack re-renders the whole list. If selections and edited names lived only in
+ * the inputs, that re-render would silently discard them — tick three suggestions, rename one, add a
+ * pack of your own, and the three ticks and the rename would be gone. So the DOM is synchronised
+ * back into here before every structural change, and the list is rendered from here afterwards.
+ *
+ * `key` is the name the row was created with and never changes; it is what addresses a row after it
+ * has been renamed.
+ */
+let rows = [];
 
 const rowKey = (name) => name.trim().toLowerCase();
+
+function initRows() {
+    rows = SUGGESTED_CONTENT_PACK_NAMES.map((name) => ({
+        key: name,
+        name,
+        // Suggestions start unticked so that "select none" is the resting state, not an action.
+        selected: false,
+        custom: false
+    }));
+}
+
+/** Pull the live inputs back into `rows` before anything re-renders. */
+function syncFromDom(view) {
+    const elements = view.querySelectorAll('.wizardPackRow');
+    elements.forEach((element, index) => {
+        const row = rows[index];
+        if (!row) return;
+        row.name = element.querySelector('.txtPackName').value;
+        row.selected = element.querySelector('.chkPack').checked;
+    });
+}
 
 function renderRows(view) {
     const container = view.querySelector('.wizardPackRows');
     container.innerHTML = '';
 
-    const append = (name, isCustom, index) => {
+    const append = (entry, index) => {
+        const { name, key, custom: isCustom, selected } = entry;
         const id = `${isCustom ? 'custom' : 'suggested'}Pack${index}`;
         const row = document.createElement('div');
         row.className = 'wizardPackRow checkboxContainer';
         row.dataset.custom = String(isCustom);
+        // Addressable by the name the row STARTED with, so a spec (or a person reading the DOM)
+        // can still find a row after it has been renamed.
+        row.dataset.pack = key;
 
         const label = document.createElement('label');
         label.className = 'wizardPackToggle';
@@ -46,9 +83,7 @@ function renderRows(view) {
         checkbox.type = 'checkbox';
         checkbox.className = 'chkPack';
         checkbox.id = `${id}Selected`;
-        // A pack the household typed itself is selected by definition: it exists because they asked
-        // for it. Suggestions start unselected so that "select none" is the resting state.
-        checkbox.checked = isCustom;
+        checkbox.checked = selected;
 
         const labelText = document.createElement('span');
         labelText.textContent = name;
@@ -77,6 +112,10 @@ function renderRows(view) {
             remove.type = 'button';
             remove.className = 'btnRemoveCustomPack';
             remove.dataset.index = String(index);
+            remove.setAttribute(
+                'aria-label',
+                `${globalize.translate('Delete')} — ${name}`
+            );
             remove.textContent = globalize.translate('Delete');
             row.appendChild(remove);
         }
@@ -84,11 +123,8 @@ function renderRows(view) {
         container.appendChild(row);
     };
 
-    SUGGESTED_CONTENT_PACK_NAMES.forEach((name, index) => {
-        append(name, false, index);
-    });
-    customPackNames.forEach((name, index) => {
-        append(name, true, index);
+    rows.forEach((entry, index) => {
+        append(entry, index);
     });
 
     updateNoneSelectedHint(view);
@@ -217,7 +253,10 @@ export default function (view) {
         const name = input.value.trim();
         if (!name) return;
 
-        customPackNames.push(name);
+        syncFromDom(view);
+        // A pack the household typed itself is selected by definition: it exists because they asked
+        // for it.
+        rows.push({ key: name, name, selected: true, custom: true });
         input.value = '';
         renderRows(view);
         input.focus();
@@ -227,7 +266,8 @@ export default function (view) {
         const remove = e.target.closest?.('.btnRemoveCustomPack');
         if (!remove) return;
 
-        customPackNames.splice(Number(remove.dataset.index), 1);
+        syncFromDom(view);
+        rows.splice(Number(remove.dataset.index), 1);
         renderRows(view);
     });
 
@@ -243,6 +283,7 @@ export default function (view) {
         document
             .querySelector('.skinHeader')
             .classList.add('noHomeButtonHeader');
+        if (rows.length === 0) initRows();
         renderRows(view);
         loading.hide();
     });
