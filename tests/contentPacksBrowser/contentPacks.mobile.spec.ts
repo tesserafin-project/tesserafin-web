@@ -72,7 +72,12 @@ test.describe('mobile', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
 
         for (const open of [
             () => openList(page),
@@ -115,7 +120,12 @@ test.describe('mobile', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openList(page);
         await settled(page);
 
@@ -134,8 +144,7 @@ test.describe('mobile', () => {
                     };
                 })
                 .filter(
-                    (entry) =>
-                        entry.width < minimum || entry.height < minimum
+                    (entry) => entry.width < minimum || entry.height < minimum
                 );
         }, MIN_TARGET);
 
@@ -146,7 +155,12 @@ test.describe('mobile', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openPack(page, 'pack-weeknights');
         await settled(page);
 
@@ -175,7 +189,12 @@ test.describe('mobile', () => {
         baseURL
     }) => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openList(page);
         await settled(page);
 
@@ -184,9 +203,7 @@ test.describe('mobile', () => {
         await expect(page.locator(sel('mosaic-heading'))).toBeVisible();
 
         const animated = await page.evaluate(() => {
-            return [
-                ...document.querySelectorAll('#contentPacksPage *')
-            ]
+            return [...document.querySelectorAll('#contentPacksPage *')]
                 .map((node) => {
                     const style = getComputedStyle(node);
                     const duration = Number.parseFloat(

@@ -92,10 +92,7 @@ export async function artworkSettled(page: Page): Promise<void> {
 }
 
 /** Every token that differs between two evidence readings. */
-export function tokenDifferences(
-    a: ThemeEvidence,
-    b: ThemeEvidence
-): string[] {
+export function tokenDifferences(a: ThemeEvidence, b: ThemeEvidence): string[] {
     return Object.keys(a.tokens).filter(
         (name) => a.tokens[name] !== b.tokens[name]
     );

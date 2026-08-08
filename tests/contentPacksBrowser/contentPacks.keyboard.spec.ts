@@ -35,7 +35,10 @@ async function tabTo(
     throw new Error(`no matching element within ${limit} tab stops`);
 }
 
-const focusedAttribute = (page: import('@playwright/test').Page, name: string) =>
+const focusedAttribute = (
+    page: import('@playwright/test').Page,
+    name: string
+) =>
     page.evaluate(
         (attribute) => document.activeElement?.getAttribute(attribute) ?? null,
         name
@@ -46,7 +49,12 @@ test.describe('keyboard only', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openList(page);
         await settled(page);
 
@@ -69,7 +77,12 @@ test.describe('keyboard only', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openList(page);
         await settled(page);
 
@@ -90,10 +103,9 @@ test.describe('keyboard only', () => {
                 (outline?.outlineStyle !== 'none' &&
                     outline?.outlineWidth !== '0px') ||
                 (outline?.boxShadow !== 'none' && outline?.boxShadow !== '');
-            expect(
-                hasIndicator,
-                `${marker} must show a focus indicator`
-            ).toBe(true);
+            expect(hasIndicator, `${marker} must show a focus indicator`).toBe(
+                true
+            );
         }
     });
 
@@ -186,7 +198,12 @@ test.describe('keyboard only', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openPack(page, 'pack-weeknights');
         await settled(page);
 
@@ -200,7 +217,8 @@ test.describe('keyboard only', () => {
             const inside = await page.evaluate(() => {
                 const dialog = document.querySelector('[role="dialog"]');
                 return Boolean(
-                    dialog && document.activeElement &&
+                    dialog &&
+                        document.activeElement &&
                         dialog.contains(document.activeElement)
                 );
             });
@@ -219,7 +237,12 @@ test.describe('keyboard only', () => {
         page,
         baseURL
     }) => {
-        await installFixtureApi(page, baseURL as string, DIST, clone(MANAGER_A));
+        await installFixtureApi(
+            page,
+            baseURL as string,
+            DIST,
+            clone(MANAGER_A)
+        );
         await openList(page);
         await settled(page);
 

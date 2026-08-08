@@ -34,7 +34,10 @@ const tvProfile = () => {
     return profile;
 };
 
-const focusedAttribute = (page: import('@playwright/test').Page, name: string) =>
+const focusedAttribute = (
+    page: import('@playwright/test').Page,
+    name: string
+) =>
     page.evaluate(
         (attribute) => document.activeElement?.getAttribute(attribute) ?? null,
         name
@@ -99,7 +102,9 @@ test.describe('TV / remote', () => {
         await openList(page);
         await settled(page);
 
-        const card = page.locator(`${PAGE} [data-rf-slot="media-card"]`).first();
+        const card = page
+            .locator(`${PAGE} [data-rf-slot="media-card"]`)
+            .first();
         await card.focus();
         expect(await focusedAttribute(page, 'data-rf-slot')).toBe('media-card');
 
