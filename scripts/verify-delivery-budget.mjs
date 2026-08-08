@@ -40,7 +40,7 @@
  * not a gate.
  */
 import { constants, brotliCompressSync, gzipSync } from 'node:zlib';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -64,6 +64,8 @@ function parseArgs(argv) {
         mainBudget: join(REPO_ROOT, 'webpack.performance-budget.json'),
         stats: join(REPO_ROOT, 'delivery-stats', 'stats.json'),
         dist: join(REPO_ROOT, 'dist'),
+        // The tree the protected-module rules are checked against for staleness.
+        src: join(REPO_ROOT, 'src'),
         reportJson: null,
         // `--report-only` prints the table and the JSON report but never sets a non-zero exit
         // code. It is the "what do we measure today" command, not a gate, and CI never uses it.
@@ -87,6 +89,8 @@ function parseArgs(argv) {
             args.stats = nextValue(arg);
         } else if (arg === '--dist') {
             args.dist = nextValue(arg);
+        } else if (arg === '--src') {
+            args.src = nextValue(arg);
         } else if (arg === '--report-json') {
             args.reportJson = nextValue(arg);
         } else {
@@ -361,6 +365,84 @@ function resolveChunks(names, fileToChunks, { expectInitial, tier }) {
     return [...chunks.values()];
 }
 
+/**
+ * Module identifiers as webpack's `requestShortener` writes them, and as this file's rules are
+ * authored, always use `/`. A stats file produced by a plugin or a tool that kept the host's
+ * separator would silently match nothing on Windows, which is the same failure as an inert rule and
+ * just as invisible. Normalising here means the rules are written once, in POSIX form, and match on
+ * either host.
+ */
+function normalizeIdentifier(identifier) {
+    return String(identifier).replace(/\\/g, '/');
+}
+
+/**
+ * A rule that matches nothing in the source tree is indistinguishable, in the build output, from a
+ * rule that is doing its job: both report "absent from the start-up graph". That is exactly how a
+ * boundary rots — a directory is renamed, the pattern stops matching anything at all, and the gate
+ * goes on printing PASS for a protection that no longer exists.
+ *
+ * So every rule has to point at something. The check is deliberately against the SOURCE TREE rather
+ * than against the emitted graph: the whole point of a protected module is that it is absent from
+ * the graph the verifier inspects, so "matched no recorded module" cannot be the test.
+ */
+function collectSourcePaths(root) {
+    const found = [];
+    const walk = (dir, prefix) => {
+        let entries;
+        try {
+            entries = readdirSync(dir, { withFileTypes: true });
+        } catch {
+            return;
+        }
+        for (const entry of entries.sort((a, b) =>
+            a.name.localeCompare(b.name)
+        )) {
+            if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
+                continue;
+            }
+            const path = `${prefix}${entry.name}`;
+            if (entry.isDirectory()) {
+                walk(join(dir, entry.name), `${path}/`);
+            } else {
+                found.push(path);
+            }
+        }
+    };
+    walk(root, './');
+    return found;
+}
+
+function checkRulesAreLive(budget, srcRoot) {
+    const paths = collectSourcePaths(srcRoot);
+    if (paths.length === 0) {
+        fail(
+            `no source files were found under ${srcRoot}, so the protected-module rules could not ` +
+                'be checked for staleness. Refusing to report boundaries as clean when the tree ' +
+                'they protect was never read (pass --src if the sources live elsewhere).'
+        );
+    }
+    const stale = budget.protectedModulePatterns.filter((rule) => {
+        const regexp = new RegExp(rule.pattern);
+        return !paths.some((path) => regexp.test(path));
+    });
+    if (stale.length > 0) {
+        fail(
+            'protected-module rule(s) match nothing in the source tree, so they protect nothing ' +
+                'and would report PASS forever:\n' +
+                stale
+                    .map(
+                        (rule) =>
+                            `  "${rule.id}": ${rule.pattern}\n` +
+                            '      Either the paths it names were moved or renamed - update the ' +
+                            'pattern - or the boundary is gone, in which case delete the rule ' +
+                            'deliberately rather than leaving an inert one behind.'
+                    )
+                    .join('\n')
+        );
+    }
+}
+
 function checkBoundaries(budget, countedChunks) {
     const results = [];
     for (const rule of budget.protectedModulePatterns) {
@@ -375,7 +457,8 @@ function checkBoundaries(budget, countedChunks) {
                         'boundary as clean when it was never inspected.'
                 );
             }
-            for (const module of chunk.modules) {
+            for (const recorded of chunk.modules) {
+                const module = normalizeIdentifier(recorded);
                 if (regexp.test(module)) {
                     violations.push({
                         module,
@@ -468,6 +551,7 @@ function run(argv) {
         expectInitial: false,
         tier: 'startup-async'
     });
+    checkRulesAreLive(budget, args.src);
     const boundaries = checkBoundaries(budget, [
         ...initialChunks,
         ...startupChunks

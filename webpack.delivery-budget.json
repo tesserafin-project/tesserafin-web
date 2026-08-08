@@ -47,6 +47,11 @@
             "reason": "Manifest and token validation is authoring/compiler-side work (#115, #117). The viewer resolves an already-valid presentation; it does not validate one at boot."
         },
         {
+            "id": "content-packs",
+            "pattern": "^\\./(apps/modern/(features/contentPacks|routes/contentpacks)|lib/tesserafin-sdk/generated/api/content-packs-api)",
+            "reason": "Content pack management and the generated ContentPacks client are a manager destination and a wizard step (tesserafin-web #139 M3), not something a cold visitor downloads. `content-packs-api.ts` alone is 61 KB of generated operations. The rule is load-bearing rather than decorative: a static import of `ContentPacksApi` into `apps/modern/routes/routes.tsx` - a module that IS in main.tesserafin.bundle.js - fails this boundary, and that is the `eager-feature-import` control in the deliberate-break matrix. Note that `apps/modern/components/AppToolbar` is NOT eager: it is behind `lazy: () => import('../AppLayout')`, so an import there is legitimately async and this rule correctly stays silent about it."
+        },
+        {
             "id": "item-details",
             "pattern": "^\\./apps/modern/(features/details|routes/details)",
             "reason": "Item Details is the largest single viewer route (tesserafin-web #129 Step 1b). It replaced a view-manager controller that was already async, and it must stay async: a cold visitor who never opens an item must never download it. Navigating to /details is what first requests this chunk."

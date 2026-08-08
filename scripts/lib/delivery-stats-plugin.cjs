@@ -78,10 +78,14 @@ function sorted(values) {
  */
 function flattenModule(module, out = []) {
     const inner = module?.modules;
-    if (Array.isArray(inner) && inner.length > 0) {
-        for (const child of inner) flattenModule(child, out);
-    } else if (inner && typeof inner[Symbol.iterator] === 'function') {
-        for (const child of inner) flattenModule(child, out);
+    // Webpack hands the members over as a Set; an array is accepted too, so no caller has to know
+    // which. Anything else - and, critically, an EMPTY member list - is a leaf. Expanding an empty
+    // member list into nothing would delete the module from the recorded graph without a trace,
+    // which is the exact failure this function exists to prevent.
+    const members =
+        inner && typeof inner[Symbol.iterator] === 'function' ? [...inner] : [];
+    if (members.length > 0) {
+        for (const child of members) flattenModule(child, out);
     } else {
         out.push(module);
     }
@@ -243,4 +247,4 @@ class DeliveryStatsPlugin {
     }
 }
 
-module.exports = { DeliveryStatsPlugin, SCHEMA_VERSION };
+module.exports = { DeliveryStatsPlugin, SCHEMA_VERSION, flattenModule };
