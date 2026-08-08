@@ -182,6 +182,7 @@
     "ChannelNumber": "Channel number",
     "Channels": "Channels",
     "CinemaModeConfigurationHelp": "Cinema mode brings the theater experience straight to your living room with the ability to play trailers and custom intros before the main feature.",
+    "MessageContentPackDeleted": "Deleted the content pack \"{0}\". No media was deleted.",
     "MessageContentPackEmpty": "This content pack has nothing to show you.",
     "MessageContentPackNameConflict": "A content pack with that name already exists.",
     "MessageContentPackNameRequired": "Enter a name for this content pack.",

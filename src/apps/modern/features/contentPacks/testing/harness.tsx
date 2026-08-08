@@ -13,7 +13,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, parsePath } from 'react-router-dom';
 
 // React 18's `act` needs this flag or every render logs "not configured to support act(...)".
 (
@@ -89,6 +89,14 @@ export const unmountAll = (): void => {
 export interface MountOptions {
     /** Initial `MemoryRouter` entry. Defaults to `/contentpacks`. */
     path?: string;
+    /**
+     * Location state for that entry.
+     *
+     * The list route reads `location.state` to learn that it was reached by deleting a pack, so a
+     * suite has to be able to arrive there the same way the application does rather than by calling
+     * the component with a prop the router would never pass.
+     */
+    state?: unknown;
     queryClient?: QueryClient;
     /** Mounted at `contentpacks/:packId` instead of at `contentpacks`. */
     detailElement?: ReactElement;
@@ -115,7 +123,18 @@ export const mountRoute = (
             root.render(
                 <QueryClientProvider client={queryClient}>
                     <MemoryRouter
-                        initialEntries={[options.path ?? '/contentpacks']}
+                        initialEntries={[
+                            /*
+                             * `parsePath` and not `{ pathname: path }`: several suites pass a path
+                             * WITH a query string ("/contentpacks/pack%3A1?page=zero"), and the
+                             * object form takes `pathname` literally — the search would end up
+                             * inside the route parameter instead of in `useSearchParams`.
+                             */
+                            {
+                                ...parsePath(options.path ?? '/contentpacks'),
+                                state: options.state ?? null
+                            }
+                        ]}
                     >
                         <Routes>
                             <Route path='/contentpacks' element={next} />

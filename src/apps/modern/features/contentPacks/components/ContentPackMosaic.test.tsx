@@ -263,3 +263,96 @@ describe('no theme-name branching', () => {
         expect(container.innerHTML).not.toMatch(/classic|frosted|glass-theme/i);
     });
 });
+
+/**
+ * Where a viewer lands after deleting a pack from `/contentpacks/:packId` (#138 §7).
+ *
+ * The detail route navigates here with `replace: true` and one piece of location state. Everything
+ * below is about what this route then owes that viewer: a heading that says where they are, focus
+ * on it rather than on the document body, and one announcement of what happened.
+ */
+describe('arriving from a delete', () => {
+    const renderWithState = async (state: unknown) => {
+        const tree = mountRoute(<ContentPackMosaic />, { state });
+        await settle(2);
+        return tree;
+    };
+
+    it('always renders one page heading, in every state', async () => {
+        for (const seed of [
+            () => {
+                packsQuery.isPending = true;
+            },
+            () => {
+                packsQuery.isPending = false;
+                packsQuery.isError = true;
+            },
+            () => {
+                packsQuery.isError = false;
+                packsQuery.data = [];
+            },
+            () => {
+                packsQuery.data = PACKS;
+            }
+        ]) {
+            seed();
+            const { container, unmount } = await render();
+            const headings = container.querySelectorAll('h1');
+            expect(headings).toHaveLength(1);
+            expect(headings[0].getAttribute('data-content-packs')).toBe(
+                'mosaic-heading'
+            );
+            expect(headings[0].textContent).toBe('ContentPacks');
+            unmount();
+        }
+    });
+
+    it('moves focus to the heading and names the deleted pack', async () => {
+        const { container } = await renderWithState({
+            contentPackDeleted: 'Sunday films'
+        });
+
+        const heading = container.querySelector<HTMLElement>(
+            '[data-content-packs="mosaic-heading"]'
+        );
+        expect(document.activeElement).toBe(heading);
+
+        const notice = container.querySelector(
+            '[data-content-packs="deleted-notice"]'
+        );
+        expect(notice?.getAttribute('role')).toBe('status');
+        expect(notice?.textContent).toBe(
+            'MessageContentPackDeleted:Sunday films'
+        );
+    });
+
+    it('keeps the heading out of the tab order', async () => {
+        const { container } = await renderWithState({
+            contentPackDeleted: 'Sunday films'
+        });
+
+        expect(
+            container
+                .querySelector('[data-content-packs="mosaic-heading"]')
+                ?.getAttribute('tabindex')
+        ).toBe('-1');
+    });
+
+    it('says nothing and takes no focus on an ordinary visit', async () => {
+        const { container } = await render();
+
+        expect(
+            container.querySelector('[data-content-packs="deleted-notice"]')
+        ).toBeNull();
+        expect(document.activeElement).toBe(document.body);
+    });
+
+    it('ignores navigation state that is not its own', async () => {
+        const { container } = await renderWithState({ somethingElse: true });
+
+        expect(
+            container.querySelector('[data-content-packs="deleted-notice"]')
+        ).toBeNull();
+        expect(document.activeElement).toBe(document.body);
+    });
+});

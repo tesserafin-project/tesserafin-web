@@ -22,6 +22,7 @@ import {
     useContentPack,
     useContentPackItems
 } from '../api/useContentPackQueries';
+import ContentPackDetailActions from './ContentPackDetailActions';
 
 /** One page of a pack. Matches the paging convention the library grid already uses. */
 export const CONTENT_PACK_PAGE_SIZE = 50;
@@ -214,6 +215,14 @@ const ContentPackBrowse: FC = () => {
             <p data-content-packs='pack-count'>
                 {globalize.translate('ItemCount', pack?.VisibleItemCount ?? 0)}
             </p>
+
+            {/*
+             * Rename and delete for THIS pack, from the route that is showing it. Same dialogs,
+             * same copy, same mutations as the mosaic's manager bar — see
+             * ContentPackDetailActions. Rendered only once the pack is loaded, because both
+             * actions name it.
+             */}
+            {pack ? <ContentPackDetailActions pack={pack} /> : null}
 
             <ContentPackItems
                 itemsQuery={itemsQuery}
