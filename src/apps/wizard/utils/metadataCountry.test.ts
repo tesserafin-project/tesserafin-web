@@ -26,7 +26,9 @@ describe('deriveMetadataCountry', () => {
         expect(deriveMetadataCountry('', SERVER_COUNTRIES)).toBeNull();
         expect(deriveMetadataCountry(null, SERVER_COUNTRIES)).toBeNull();
         expect(deriveMetadataCountry(undefined, SERVER_COUNTRIES)).toBeNull();
-        expect(deriveMetadataCountry('not a locale', SERVER_COUNTRIES)).toBeNull();
+        expect(
+            deriveMetadataCountry('not a locale', SERVER_COUNTRIES)
+        ).toBeNull();
     });
 
     it('never derives anything when the server offers no countries', () => {

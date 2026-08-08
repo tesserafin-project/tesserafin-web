@@ -81,7 +81,9 @@ async function chooseArrangement(
     key: keyof typeof ARRANGEMENT_LABELS
 ) {
     await page.click('#display-settings-browsing-arrangement-label + div');
-    await page.click(`li[role="option"]:has-text("${ARRANGEMENT_LABELS[key]}")`);
+    await page.click(
+        `li[role="option"]:has-text("${ARRANGEMENT_LABELS[key]}")`
+    );
 }
 
 async function openHome(page: Parameters<typeof installFixtureApi>[0]) {

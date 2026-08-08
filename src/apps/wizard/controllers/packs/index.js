@@ -10,6 +10,7 @@ import { saveBrowsingPreference } from 'apps/modern/features/contentPacks/adapte
 import { SUGGESTED_CONTENT_PACK_NAMES } from 'apps/modern/features/contentPacks/constants/suggestedPacks';
 
 import 'styles/dashboard.scss';
+import './packs.scss';
 import 'elements/emby-input/emby-input';
 import 'elements/emby-button/emby-button';
 import 'elements/emby-checkbox/emby-checkbox';
@@ -110,7 +111,10 @@ function renderRows(view) {
             const remove = document.createElement('button');
             remove.setAttribute('is', 'emby-button');
             remove.type = 'button';
-            remove.className = 'btnRemoveCustomPack';
+            // `raised` is not decoration: an unstyled `emby-button` paints its label straight onto
+            // the wizard background and axe scores it a serious colour-contrast violation. The Add
+            // button next to it carries the same class for the same reason.
+            remove.className = 'raised btnRemoveCustomPack';
             remove.dataset.index = String(index);
             remove.setAttribute(
                 'aria-label',

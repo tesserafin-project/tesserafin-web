@@ -1,0 +1,64 @@
+/*
+ * The first-run seeding step's own layout (#139).
+ *
+ * Without this the rows inherit `.checkboxContainer`, which is built for a single full-width
+ * control: the tick and the name field end up at opposite edges of a 1440px screen with a metre of
+ * nothing between them, and the pair stops reading as one row. Each row is its own flex line
+ * instead, capped at a comfortable measure, with the name field taking the remaining space.
+ */
+.wizardPackRows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35em;
+    margin: 1.5em 0;
+}
+
+.wizardPackRow {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    margin: 0;
+    max-width: 46em;
+}
+
+.wizardPackRow .wizardPackToggle {
+    display: flex;
+    align-items: center;
+    flex: 0 0 16em;
+    margin: 0;
+}
+
+.wizardPackRow .txtPackName {
+    flex: 1 1 auto;
+    margin: 0;
+}
+
+.wizardPackRow .btnRemoveCustomPack {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.wizardCustomPackContainer {
+    display: flex;
+    align-items: flex-end;
+    gap: 1em;
+    max-width: 46em;
+}
+
+.wizardCustomPackContainer #txtCustomPackName {
+    flex: 1 1 auto;
+}
+
+.wizardCustomPackContainer .btnAddCustomPack {
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.wizardPacksNoneSelected {
+    max-width: 46em;
+    opacity: 0.85;
+}
+
+.wizardPacksError {
+    max-width: 46em;
+}
