@@ -144,14 +144,33 @@ export interface OriginRecord {
 let declaredCache: ReadonlySet<string> | null = null;
 
 /**
- * Resolved from `testInfo.project.testDir` rather than `__dirname` or `import.meta.url`, so
- * it works identically whichever module format Playwright's transform emits, and does not
- * depend on the working directory the runner was started from.
+ * ONE declared-origin file, named the same way here and in the post-run gate.
+ *
+ * This used to resolve from `testInfo.project.testDir`, which was fine while the instrumented
+ * `test` had exactly one caller. It stopped being fine the moment a SECOND suite
+ * (`tests/contentPacksBrowser`) imported it: a testDir-relative lookup would have wanted a
+ * second copy of the allowlist, and `scripts/verify-runtime-origins.mjs` reads only one — so
+ * the two halves of this gate, which the file's own header says can never disagree, would
+ * have been reading different declarations.
+ *
+ * The path below is the verifier's own default, spelled identically, and both halves honour
+ * the same `TESSERAFIN_E2E_ORIGIN_ALLOWLIST` override. The cwd dependence is not new: the
+ * verifier has always resolved its default against the working directory, and Playwright runs
+ * every config in this repository from the repository root.
  */
-function declaredOrigins(testDir: string): ReadonlySet<string> {
+export const ORIGIN_ALLOWLIST_PATH =
+    process.env.TESSERAFIN_E2E_ORIGIN_ALLOWLIST ??
+    join(
+        process.cwd(),
+        'tests',
+        'e2e',
+        'support',
+        'runtime-origin-allowlist.json'
+    );
+
+function declaredOrigins(): ReadonlySet<string> {
     if (declaredCache) return declaredCache;
-    const file = join(testDir, 'support', 'runtime-origin-allowlist.json');
-    const parsed = JSON.parse(readFileSync(file, 'utf8')) as {
+    const parsed = JSON.parse(readFileSync(ORIGIN_ALLOWLIST_PATH, 'utf8')) as {
         entries: Array<{ origin: string; alsoObservedAs?: string }>;
     };
     declaredCache = new Set(
@@ -230,7 +249,7 @@ function subscribe(context: BrowserContext, testInfo: TestInfo) {
         kind: 'request',
         sample: '(no observation)'
     });
-    const declared = declaredOrigins(testInfo.project.testDir);
+    const declared = declaredOrigins();
     const seen = new Set<string>();
     const offenders: string[] = [];
 
