@@ -9,6 +9,19 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
      * exactly the partial cutover the migration is not allowed to ship.
      */
     { path: 'details', type: AppType.Modern },
+    /*
+     * Content packs (#138), for the same reason and by the same rule as `details` above: a
+     * destination registered in one family only is unreachable under the other layout. There is no
+     * legacy view-manager controller for content packs, so the other layout does not fall back to
+     * an older screen - it falls through to "Page not found", which is what a TV or mobile layout
+     * saw before this entry existed.
+     */
+    { path: 'contentpacks', type: AppType.Modern },
+    {
+        path: 'contentpacks/:packId',
+        page: 'contentpacks',
+        type: AppType.Modern
+    },
     { path: 'mypreferencesmenu', page: 'user/settings' },
     { path: 'quickconnect', page: 'quickConnect' },
     { path: 'search', page: 'search' },

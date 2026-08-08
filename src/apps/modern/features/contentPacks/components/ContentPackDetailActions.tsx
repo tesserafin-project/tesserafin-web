@@ -14,6 +14,8 @@ import ContentPackFormDialog, {
     type ContentPackFormValues
 } from './ContentPackFormDialog';
 
+import './contentPackControls.scss';
+
 /**
  * The route a delete returns to, and the state it hands over.
  *
@@ -120,9 +122,13 @@ const ContentPackDetailActions: FC<{ pack: ContentPackDto }> = ({ pack }) => {
     if (!canManage) return null;
 
     return (
-        <div data-content-packs='detail-manager'>
+        <div
+            className='rf-content-pack-controls'
+            data-content-packs='detail-manager'
+        >
             <button
                 type='button'
+                className='rf-content-pack-control'
                 data-content-packs='detail-rename'
                 aria-label={`${globalize.translate('ButtonRename')}: ${pack.Name ?? ''}`}
                 onClick={(event) => {
@@ -134,6 +140,7 @@ const ContentPackDetailActions: FC<{ pack: ContentPackDto }> = ({ pack }) => {
             </button>
             <button
                 type='button'
+                className='rf-content-pack-control'
                 data-content-packs='detail-delete'
                 aria-label={`${globalize.translate('Delete')}: ${pack.Name ?? ''}`}
                 onClick={(event) => {

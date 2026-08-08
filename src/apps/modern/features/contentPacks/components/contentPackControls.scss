@@ -1,0 +1,83 @@
+/*
+ * The management controls' own layout (#138 §7).
+ *
+ * Why this file exists at all: the controls were plain unstyled `<button>` elements, which a
+ * desktop pointer handles fine and a thumb does not. Measured in the mobile browser suite, every
+ * one of them was 21 px tall — roughly half the smallest target Material and WCAG 2.5.5 consider
+ * usable — so a manager on a phone was aiming at a line of text.
+ *
+ * It is imported from the components themselves, so it lands in the lazy `contentpacks` chunk with
+ * the rest of the slice and adds nothing to the initial or start-up delivery graph.
+ *
+ * Nothing here names a theme. Colours come from the resolved token layer, so Classic and Frosted
+ * both get their own values without this file knowing either exists.
+ */
+
+/* The smallest target WCAG 2.5.5 (AAA) asks for, and what Material already uses for icon buttons. */
+$rf-content-pack-touch-target: 44px;
+
+.rf-content-pack-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.rf-content-pack-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: $rf-content-pack-touch-target;
+    min-height: $rf-content-pack-touch-target;
+    padding: 0 0.75rem;
+    border: 1px solid var(--rf-color-border, currentcolor);
+    border-radius: var(--rf-radius-sm, 4px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+
+    &:disabled {
+        /*
+         * Dimmed AND still announced as disabled — `disabled` on the element is what assistive
+         * technology reads, and this rule only makes the same fact visible. Neither substitutes
+         * for the other.
+         */
+        opacity: 0.45;
+        cursor: default;
+    }
+
+    /*
+     * `:focus-visible` and not `:focus`: a pointer press must not leave a ring behind, but a
+     * keyboard or remote MUST show one. At TV distance this is the only thing telling the viewer
+     * where the cursor is.
+     */
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, currentcolor);
+        outline-offset: 2px;
+    }
+}
+
+.rf-content-pack-manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.rf-content-pack-manage-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.rf-content-pack-manage-name {
+    /* Takes the slack so the controls stay together at the end of the row on a wide screen, and
+     * wraps rather than pushing them off a narrow one. */
+    flex: 1 1 8rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}

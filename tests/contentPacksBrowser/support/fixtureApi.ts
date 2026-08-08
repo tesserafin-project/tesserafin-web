@@ -209,6 +209,26 @@ export interface FixtureProfile {
     /** Items reachable by id for the Item Details assignment scenarios. */
     items?: FixtureItem[];
     faults?: FaultProfile;
+    /**
+     * The theme id to boot with, e.g. `official.classic` or `official.glass`.
+     *
+     * Written into `localStorage` as `<userId>-appTheme` BEFORE the app boots, which is exactly
+     * where `userSettings.theme()` reads it from: `set('appTheme', value, false)` bypasses
+     * DisplayPreferences entirely and goes to `appSettings`, whose key is `userId + '-' + name`.
+     * The server-free suite has no theme picker to drive (that path needs a real server), so this
+     * is the same storage the picker would have written, not a substitute for it.
+     */
+    theme?: string;
+    /**
+     * The layout mode to boot with — `tv` is what actually turns on the remote path.
+     *
+     * `scripts/keyboardNavigation.js` IGNORES every navigation key unless `layoutManager.tv`
+     * (`if (!layoutManager.tv && isNavigationKey(key)) return;`), so a "TV" spec that merely used a
+     * 1920x1080 viewport would be pressing arrows that the application never sees, and would prove
+     * nothing about remote support. `layoutManager` reads the mode from `appSettings.get('layout')`,
+     * which is an un-namespaced `localStorage` key.
+     */
+    layout?: 'tv' | 'mobile' | 'desktop';
 }
 
 const packDto = (pack: FixturePack) => ({
@@ -272,7 +292,7 @@ export async function installFixtureApi(
     state.releaseList = () => releaseList?.();
 
     await page.addInitScript(
-        ([apiOrigin, serverId, userId, token]) => {
+        ([apiOrigin, serverId, userId, token, theme, layout]) => {
             /*
              * Drop React Query's persisted cache before the app boots. `utils/query/queryClient.ts`
              * persists the whole client into IndexedDB (`keyval-store`), so a request-sensitive
@@ -297,8 +317,18 @@ export async function installFixtureApi(
                     ]
                 })
             );
+
+            if (theme) localStorage.setItem(`${userId}-appTheme`, theme);
+            if (layout) localStorage.setItem('layout', layout);
         },
-        [origin, SERVER_ID, state.profile.userId, ACCESS_TOKEN]
+        [
+            origin,
+            SERVER_ID,
+            state.profile.userId,
+            ACCESS_TOKEN,
+            state.profile.theme ?? '',
+            state.profile.layout ?? ''
+        ]
     );
 
     await page.route('**/*', async (route: Route) => {

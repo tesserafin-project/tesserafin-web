@@ -22,6 +22,8 @@ import ContentPackFormDialog, {
     type ContentPackFormValues
 } from './ContentPackFormDialog';
 
+import './contentPackControls.scss';
+
 /**
  * The manager-only surface of `/contentpacks` (#138 §7).
  *
@@ -56,15 +58,37 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
 
     /** Where focus must return once a dialog closes. */
     const restoreFocusTo = useRef<HTMLElement | null>(null);
-    /** Which pack's move control should hold focus after a reorder. */
+    /**
+     * Which pack's move control should hold focus after a reorder, and where it started.
+     *
+     * `fromIndex` is not decoration. A reorder is not optimistic: the request goes out, the list is
+     * re-read, and only then does the pack occupy its new position. Without the index, the effect
+     * below fires on the render that merely SET this state — before the list has changed — reads
+     * the control's `disabled` from the OLD position, decides it is still enabled, focuses it and
+     * clears itself. When the new list then arrives and that control becomes disabled, the browser
+     * drops focus to the document body and nothing is left to catch it. Measured, not theorised:
+     * moving a pack to the last position lost focus entirely.
+     */
     const [focusMoved, setFocusMoved] = useState<{
         packId: string;
         direction: 'up' | 'down';
+        fromIndex: number;
     } | null>(null);
     const moveButtons = useRef(new Map<string, HTMLButtonElement>());
 
     useEffect(() => {
         if (!focusMoved) return;
+
+        const index = packs.findIndex((pack) => pack.Id === focusMoved.packId);
+        // The pack is gone (deleted underneath us): there is nothing to follow.
+        if (index === -1) {
+            setFocusMoved(null);
+            return;
+        }
+        // The server's answer has not arrived yet. Wait for the list that actually moved it,
+        // rather than acting on the positions this render still shows.
+        if (index === focusMoved.fromIndex) return;
+
         const button = moveButtons.current.get(
             `${focusMoved.packId}:${focusMoved.direction}`
         );
@@ -80,6 +104,15 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
         target?.focus();
         setFocusMoved(null);
     }, [focusMoved, packs]);
+
+    /*
+     * A reorder that FAILED never moves the pack, so the effect above would wait forever. The
+     * pending intent is dropped instead: focus stays on the control the viewer pressed, which is
+     * the truthful place for it when nothing happened.
+     */
+    useEffect(() => {
+        if (reorderMutation.isError) setFocusMoved(null);
+    }, [reorderMutation.isError]);
 
     const closeDialogs = useCallback(() => {
         setCreateOpen(false);
@@ -119,7 +152,7 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
             const next =
                 direction === 'up' ? moveUp(ids, index) : moveDown(ids, index);
             if (next === ids) return;
-            setFocusMoved({ packId: ids[index], direction });
+            setFocusMoved({ packId: ids[index], direction, fromIndex: index });
             // The WHOLE ordering, every id exactly once. There is no per-pack move endpoint.
             reorderMutation.mutate(next);
         },
@@ -129,9 +162,10 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
     if (!canManage) return null;
 
     return (
-        <div data-content-packs='manager'>
+        <div className='rf-content-pack-controls' data-content-packs='manager'>
             <button
                 type='button'
+                className='rf-content-pack-control'
                 data-content-packs='create'
                 onClick={(event) => {
                     restoreFocusTo.current = event.currentTarget;
@@ -143,18 +177,27 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
 
             {packs.length > 0 && (
                 <ol
+                    className='rf-content-pack-manage-list'
                     data-content-packs='manage-list'
                     aria-label={globalize.translate('HeaderManageContentPacks')}
                 >
                     {packs.map((pack, index) => {
                         const packId = pack.Id ?? '';
                         return (
-                            <li key={packId} data-content-packs='manage-item'>
-                                <span data-content-packs='manage-name'>
+                            <li
+                                key={packId}
+                                className='rf-content-pack-manage-item'
+                                data-content-packs='manage-item'
+                            >
+                                <span
+                                    className='rf-content-pack-manage-name'
+                                    data-content-packs='manage-name'
+                                >
                                     {pack.Name}
                                 </span>
                                 <button
                                     type='button'
+                                    className='rf-content-pack-control'
                                     data-content-packs='move-up'
                                     aria-label={`${globalize.translate('ContentPackMoveUp')}: ${pack.Name}`}
                                     disabled={index === 0}
@@ -176,6 +219,7 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
                                 </button>
                                 <button
                                     type='button'
+                                    className='rf-content-pack-control'
                                     data-content-packs='move-down'
                                     aria-label={`${globalize.translate('ContentPackMoveDown')}: ${pack.Name}`}
                                     disabled={index === packs.length - 1}
@@ -197,6 +241,7 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
                                 </button>
                                 <button
                                     type='button'
+                                    className='rf-content-pack-control'
                                     data-content-packs='rename'
                                     aria-label={`${globalize.translate('ButtonRename')}: ${pack.Name}`}
                                     onClick={(event) => {
@@ -209,6 +254,7 @@ const ContentPackManagerBar: FC<{ packs: ContentPackDto[] }> = ({ packs }) => {
                                 </button>
                                 <button
                                     type='button'
+                                    className='rf-content-pack-control'
                                     data-content-packs='delete'
                                     aria-label={`${globalize.translate('Delete')}: ${pack.Name}`}
                                     onClick={(event) => {
