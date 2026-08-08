@@ -398,6 +398,13 @@ async function captureSettingsAndNavigation(
             layout
         });
 
+        /*
+         * `about:blank` first. `page.goto` to a URL that differs only in its hash does NOT reload
+         * the document, so the second arrangement would have screenshotted the first one's rendered
+         * page — and did, until the two files came out with the same sha256. A real load is what
+         * makes each arrangement a fresh boot against the profile just installed.
+         */
+        await page.goto('about:blank');
         await page.goto('/#/home');
         // Wait for `UserViewNav` itself, not merely for "an anchor in a toolbar": the generic wait
         // resolves on a skeleton anchor seconds before the navigation actually renders. The
@@ -436,6 +443,7 @@ async function captureSettingsAndNavigation(
 
     // The route reads its subject from `?userId=`; that is the existing contract, not something M3
     // introduced — every link into this page carries the parameter.
+    await page.goto('about:blank');
     await page.goto(`/#/mypreferencesdisplay?userId=${USER_A}`);
     await page.waitForSelector('#displayPreferencesPage', {
         timeout: RESOLVE_TIMEOUT
@@ -569,6 +577,33 @@ export function assertMatchedPairs(
         }
         if (a.layout !== b.layout) {
             throw new Error(`${state}: layouts differ`);
+        }
+        if (a.sha256 === b.sha256) {
+            throw new Error(
+                `${state}: the two themes produced byte-identical images ` +
+                    `(${a.sha256}) - one of them did not resolve what it claims`
+            );
+        }
+    }
+
+    /*
+     * States that are supposed to differ from each other must actually differ. Two captures whose
+     * images hash the same are one capture filed twice, which is how a screen that never re-rendered
+     * gets mistaken for a screen that did.
+     */
+    for (const [theme, byState] of byTheme) {
+        const seen = new Map<string, string>();
+        for (const state of states) {
+            const record = byState.get(state);
+            if (!record) continue;
+            const previous = seen.get(record.sha256);
+            if (previous) {
+                throw new Error(
+                    `${theme}: "${state}" and "${previous}" are byte-identical ` +
+                        `(${record.sha256}) - one of them never re-rendered`
+                );
+            }
+            seen.set(record.sha256, state);
         }
     }
 }
