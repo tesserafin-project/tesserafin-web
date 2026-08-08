@@ -18,6 +18,8 @@ import {
     resolveBrowsingPreference
 } from 'apps/modern/features/contentPacks/adapters/browsingPreference';
 import type { UserConfiguration } from 'lib/tesserafin-sdk/generated/models/user-configuration';
+import events from 'utils/events';
+import { ServerConnections } from 'lib/jellyfin-apiclient';
 
 interface UseDisplaySettingsParams {
     userId?: string | null;
@@ -208,6 +210,20 @@ async function saveDisplaySettings({
     }
 
     await Promise.all(promises);
+
+    /*
+     * Re-read the user and publish it on the same event the sign-in path uses.
+     *
+     * `ApiProvider` holds the current user in React state and only replaces it on
+     * `localusersignedin`. Without this, a surface bound to `user.Configuration` — the primary
+     * navigation, which reads the browsing arrangement from exactly there — would keep rendering the
+     * configuration as it was when the session started, and the choice the household just made would
+     * not appear until the next reload.
+     */
+    if (user.Id) {
+        const refreshed = await api.getUser(user.Id);
+        events.trigger(ServerConnections, 'localusersignedin', [refreshed]);
+    }
 }
 
 function normalizeValue(value: string) {

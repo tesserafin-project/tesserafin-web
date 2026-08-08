@@ -2,9 +2,9 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
-import FormLabel from '@mui/material/FormLabel';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -17,7 +17,10 @@ import { ContentPackBrowsingPreference } from 'apps/modern/features/contentPacks
 import type { DisplaySettingsValues } from '../types/displaySettingsValues';
 
 interface LibraryPreferencesProps {
-    onChange: (event: React.SyntheticEvent) => void;
+    // The page's own handler already accepts both shapes — `UserDisplayPreferences` types it as
+    // `SelectChangeEvent | React.SyntheticEvent` — so widening it here just stops this file from
+    // narrowing it back.
+    onChange: (event: SelectChangeEvent | React.SyntheticEvent) => void;
     values: DisplaySettingsValues;
 }
 
@@ -36,28 +39,37 @@ export function LibraryPreferences({
              * anyone, for themselves. No administrator right and no content-pack permission is
              * involved: it is written to the caller's own `UserConfiguration`. The labels describe
              * what the household will see rather than naming the wire values.
+             *
+             * A `Select`, not a `RadioGroup`, because it is the control every other choice on this
+             * form already uses — and because `Radio`/`RadioGroup`/`FormLabel` are not otherwise in
+             * the bundle: pulling them in cost 1322 B of initial raw JS and pushed
+             * `initial.rawJsBytes` and `startup.rawBytes` over their ceilings, for a control that
+             * looks out of place next to its neighbours anyway.
              */}
             <FormControl fullWidth>
-                <FormLabel id='display-settings-browsing-arrangement-label'>
+                <InputLabel id='display-settings-browsing-arrangement-label'>
                     {globalize.translate('HeaderBrowsingArrangement')}
-                </FormLabel>
-                <RadioGroup
-                    aria-labelledby='display-settings-browsing-arrangement-label'
+                </InputLabel>
+                <Select
+                    aria-describedby='display-settings-browsing-arrangement-description'
+                    inputProps={{ name: 'contentPackBrowsingPreference' }}
+                    labelId='display-settings-browsing-arrangement-label'
+                    label={globalize.translate('HeaderBrowsingArrangement')}
                     name='contentPackBrowsingPreference'
-                    value={values.contentPackBrowsingPreference}
                     onChange={onChange}
+                    value={values.contentPackBrowsingPreference}
                 >
-                    <FormControlLabel
-                        control={<Radio />}
+                    <MenuItem
                         value={ContentPackBrowsingPreference.MediaFamilyFirst}
-                        label={globalize.translate('OptionBrowseByMediaFamily')}
-                    />
-                    <FormControlLabel
-                        control={<Radio />}
+                    >
+                        {globalize.translate('OptionBrowseByMediaFamily')}
+                    </MenuItem>
+                    <MenuItem
                         value={ContentPackBrowsingPreference.ContentPackFirst}
-                        label={globalize.translate('OptionBrowseByContentPack')}
-                    />
-                </RadioGroup>
+                    >
+                        {globalize.translate('OptionBrowseByContentPack')}
+                    </MenuItem>
+                </Select>
                 <FormHelperText id='display-settings-browsing-arrangement-description'>
                     {globalize.translate(
                         values.contentPackBrowsingPreference ===

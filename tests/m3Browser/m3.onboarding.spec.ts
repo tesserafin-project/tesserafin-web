@@ -22,7 +22,10 @@ import {
 
 const PASSWORD = 'wizard-test-Pässwörd-✓';
 
-const freshInstall = (page: Parameters<typeof installFixtureApi>[0], baseURL: string) =>
+const freshInstall = (
+    page: Parameters<typeof installFixtureApi>[0],
+    baseURL: string
+) =>
     installFixtureApi(page, baseURL, DIST, {
         signedIn: false,
         wizardCompleted: false,
@@ -195,7 +198,7 @@ test('a tokenless content-pack write is refused', async ({ page, baseURL }) => {
     });
 
     expect(status).toBe(401);
-    expect(
-        fixture.ledger.tokenless.map((r) => r.toLowerCase())
-    ).toContain('post /contentpacks');
+    expect(fixture.ledger.tokenless.map((r) => r.toLowerCase())).toContain(
+        'post /contentpacks'
+    );
 });

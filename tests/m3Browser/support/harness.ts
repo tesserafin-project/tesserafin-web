@@ -25,9 +25,12 @@ export const USER_PAGE = '#wizardUserPage';
 /** Open a wizard step and wait for its own page element. */
 export async function openWizard(page: Page, step: string): Promise<void> {
     await page.goto(`/#/wizard/${step}`);
-    await page.waitForSelector(`#wizard${step[0].toUpperCase()}${step.slice(1)}Page`, {
-        timeout: 45_000
-    });
+    await page.waitForSelector(
+        `#wizard${step[0].toUpperCase()}${step.slice(1)}Page`,
+        {
+            timeout: 45_000
+        }
+    );
 }
 
 export async function openUserStep(page: Page): Promise<void> {

@@ -62,6 +62,7 @@ export default defineConfig({
             // Playwright, like the four above. It drives the built `dist/` through a same-origin
             // transport fixture and is also the source of the runtime-origin inventory.
             'tests/contentPacksBrowser/**',
+            'tests/m3Browser/**',
             '**/.claude/**',
             'scripts/**'
         ],

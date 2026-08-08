@@ -128,6 +128,15 @@ export interface InstalledFixture {
     createdPackNames: () => string[];
     /** The last body sent to `POST /Users/{id}/Configuration`, or null. */
     lastConfigurationWrite: () => Record<string, unknown> | null;
+    /**
+     * Point the stored session at another account, as signing out and back in would.
+     *
+     * It has to be an init script rather than a `localStorage` write from the test: the install
+     * script re-writes `jellyfin_credentials` on EVERY boot, so an edit made in the page would be
+     * silently overwritten by the next reload and the suite would go on testing the first user
+     * while believing it had switched.
+     */
+    signInAs: (userId: string) => Promise<void>;
 }
 
 export async function installFixtureApi(
@@ -155,6 +164,24 @@ export async function installFixtureApi(
                         w.method === 'POST'
                 )
                 .map((w) => (w.body as { Name?: string })?.Name ?? ''),
+        signInAs: async (userId: string) => {
+            state.profile.currentUserId = userId;
+            await page.addInitScript(
+                ([token, id]) => {
+                    indexedDB.deleteDatabase('keyval-store');
+                    const raw = localStorage.getItem('jellyfin_credentials');
+                    if (!raw) return;
+                    const parsed = JSON.parse(raw);
+                    parsed.Servers[0].UserId = id;
+                    parsed.Servers[0].AccessToken = token;
+                    localStorage.setItem(
+                        'jellyfin_credentials',
+                        JSON.stringify(parsed)
+                    );
+                },
+                [ACCESS_TOKEN, userId] as const
+            );
+        },
         lastConfigurationWrite: () => {
             const writes = ledger.writes.filter((w) =>
                 /^\/users\/[^/]+\/configuration$/.test(w.path.toLowerCase())
@@ -281,9 +308,51 @@ export async function installFixtureApi(
             return json({ CustomPrefs: {} });
         if (lower.startsWith('/branding')) return json({});
         if (lower.startsWith('/quickconnect')) return json(false);
-        if (lower === '/userviews')
-            return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
+        if (lower === '/userviews') {
+            /*
+             * Two media-family destinations, so "content-pack-first hides nothing" is a claim about
+             * observable navigation rather than about an empty list. Authored, in the server's
+             * order — the client never re-sorts them.
+             */
+            const views = [
+                {
+                    Id: 'view-movies',
+                    Name: 'Movies',
+                    CollectionType: 'movies',
+                    Type: 'CollectionFolder',
+                    ServerId: SERVER_ID
+                },
+                {
+                    Id: 'view-music',
+                    Name: 'Music',
+                    CollectionType: 'music',
+                    Type: 'CollectionFolder',
+                    ServerId: SERVER_ID
+                }
+            ];
+            return json({
+                Items: views,
+                TotalRecordCount: views.length,
+                StartIndex: 0
+            });
+        }
         if (lower === '/syncplay/list') return json([]);
+        /*
+         * The home route's own reads. `Items/Latest` answers a BARE ARRAY, not a query result — the
+         * first version of this fixture returned the query-result shape for everything under
+         * `/Items`, the route did `(data ?? []).map(...)` on an object, and React Router replaced the
+         * whole page with an error boundary. The toolbar assertions then failed for a reason that
+         * had nothing to do with navigation.
+         */
+        if (lower.startsWith('/items/latest')) return json([]);
+        if (lower.startsWith('/useritems/resume'))
+            return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
+        if (lower.startsWith('/items') && method === 'GET')
+            return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
+        if (lower.startsWith('/shows') && method === 'GET')
+            return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
+        if (lower.startsWith('/userplayedmedia') && method === 'GET')
+            return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
         if (lower.startsWith('/playback/bitratetest'))
             return route.fulfill({ status: 200, body: 'x'.repeat(1024) });
         if (lower === '/users/public') return json([]);
@@ -305,7 +374,8 @@ export async function installFixtureApi(
             return json({ Name: currentUser().name });
         if (lower === '/startup/user' && method === 'POST') {
             const body = recordWrite() as { Name?: string } | null;
-            if (faults.startupUserStatus) return status(faults.startupUserStatus);
+            if (faults.startupUserStatus)
+                return status(faults.startupUserStatus);
             if (body?.Name) currentUser().name = body.Name;
             return noContent();
         }
