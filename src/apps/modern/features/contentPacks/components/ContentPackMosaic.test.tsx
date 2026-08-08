@@ -82,8 +82,9 @@ const render = async () => {
     return tree;
 };
 
-const cards = (container: HTMLElement) =>
-    [...container.querySelectorAll('[data-rf-slot="media-card"]')];
+const cards = (container: HTMLElement) => [
+    ...container.querySelectorAll('[data-rf-slot="media-card"]')
+];
 
 describe('populated list', () => {
     it('renders one card per pack, in the server order', async () => {
@@ -111,13 +112,13 @@ describe('populated list', () => {
     it('links each card to its own opaque-id route, encoded', async () => {
         const { container } = await render();
 
-        expect(cards(container).map((card) => card.getAttribute('href'))).toEqual(
-            [
-                '#/contentpacks/pack%3Az',
-                '#/contentpacks/pack%3Aa',
-                '#/contentpacks/pack%3Am'
-            ]
-        );
+        expect(
+            cards(container).map((card) => card.getAttribute('href'))
+        ).toEqual([
+            '#/contentpacks/pack%3Az',
+            '#/contentpacks/pack%3Aa',
+            '#/contentpacks/pack%3Am'
+        ]);
     });
 
     it('renders each card as an anchor, so keyboard and remote activation need no extra handler', async () => {
@@ -135,9 +136,9 @@ describe('representative artwork', () => {
         const { container } = await render();
         const [zulu] = cards(container);
 
-        expect(
-            zulu.querySelector('img')?.getAttribute('src')
-        ).toBe('https://example.com/Items/item-1/Images');
+        expect(zulu.querySelector('img')?.getAttribute('src')).toBe(
+            'https://example.com/Items/item-1/Images'
+        );
     });
 
     it('renders the placeholder when the server named no representative', async () => {
@@ -200,11 +201,21 @@ describe('management affordances', () => {
     it('are absent for a user without EnableContentPackManagement', async () => {
         const { container } = await render();
 
-        expect(container.querySelector('[data-content-packs="manager"]')).toBeNull();
-        expect(container.querySelector('[data-content-packs="create"]')).toBeNull();
-        expect(container.querySelector('[data-content-packs="rename"]')).toBeNull();
-        expect(container.querySelector('[data-content-packs="delete"]')).toBeNull();
-        expect(container.querySelector('[data-content-packs="move-up"]')).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="manager"]')
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="create"]')
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="rename"]')
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="delete"]')
+        ).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="move-up"]')
+        ).toBeNull();
         // Ordinary browsing is unaffected.
         expect(cards(container)).toHaveLength(3);
     });
@@ -212,11 +223,16 @@ describe('management affordances', () => {
     it('are absent for an administrator who lacks the capability', async () => {
         apiState.user = {
             Id: 'user-1',
-            Policy: { IsAdministrator: true, EnableContentPackManagement: false }
+            Policy: {
+                IsAdministrator: true,
+                EnableContentPackManagement: false
+            }
         };
         const { container } = await render();
 
-        expect(container.querySelector('[data-content-packs="manager"]')).toBeNull();
+        expect(
+            container.querySelector('[data-content-packs="manager"]')
+        ).toBeNull();
     });
 
     it('appear for a user who has the capability', async () => {

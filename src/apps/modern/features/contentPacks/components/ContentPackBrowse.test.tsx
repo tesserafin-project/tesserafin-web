@@ -144,8 +144,9 @@ const render = async (path = '/contentpacks/pack%3A1') => {
     return tree;
 };
 
-const cards = (container: HTMLElement) =>
-    [...container.querySelectorAll('[data-rf-slot="media-card"]')];
+const cards = (container: HTMLElement) => [
+    ...container.querySelectorAll('[data-rf-slot="media-card"]')
+];
 
 describe('the pack header', () => {
     it('shows the name, the description and the server visible count', async () => {
@@ -180,11 +181,17 @@ describe('the pack header', () => {
         // answer about the pack; the page total is about the page. Neither is derived from the other
         // and nothing here compares them into a hint that hidden members exist.
         packQuery.data = { ...PACK, VisibleItemCount: 4 };
-        itemsQuery.data = { items: MIXED_ITEMS, totalRecordCount: 4, startIndex: 0 };
+        itemsQuery.data = {
+            items: MIXED_ITEMS,
+            totalRecordCount: 4,
+            startIndex: 0
+        };
         const { container } = await render();
 
         expect(container.textContent).toContain('ItemCount:4');
-        expect(container.textContent).not.toMatch(/hidden|more items|restricted/i);
+        expect(container.textContent).not.toMatch(
+            /hidden|more items|restricted/i
+        );
     });
 });
 
@@ -226,7 +233,9 @@ describe('one surface, four media families', () => {
             card.querySelector('img')?.getAttribute('src')
         );
 
-        expect(sources[0]).toContain('/Items/movie-1/Images/Primary?tag=tag-movie');
+        expect(sources[0]).toContain(
+            '/Items/movie-1/Images/Primary?tag=tag-movie'
+        );
         // The episode's artwork comes from its SERIES, not from itself.
         expect(sources[1]).toContain(
             '/Items/series-1/Images/Primary?tag=tag-series'
@@ -235,7 +244,9 @@ describe('one surface, four media families', () => {
         expect(sources[2]).toContain(
             '/Items/album-1/Images/Backdrop?tag=tag-backdrop'
         );
-        expect(sources[3]).toContain('/Items/book-1/Images/Primary?tag=tag-book');
+        expect(sources[3]).toContain(
+            '/Items/book-1/Images/Primary?tag=tag-book'
+        );
     });
 
     it('routes each family to its own destination', async () => {
@@ -277,7 +288,9 @@ describe('paging', () => {
     it('shows no pagination for a single page', async () => {
         const { container } = await render();
 
-        expect(container.querySelector('[data-rf-slot="pagination"]')).toBeNull();
+        expect(
+            container.querySelector('[data-rf-slot="pagination"]')
+        ).toBeNull();
     });
 
     it('shows pagination once the page total exceeds one page', async () => {
@@ -320,7 +333,9 @@ describe('the states a pack can be in', () => {
             container.querySelector('[data-rf-slot="state-error"]')
         ).toBeNull();
         // Nothing suggests which of "absent" or "inaccessible" it was.
-        expect(container.textContent).not.toMatch(/permission|forbidden|deleted/i);
+        expect(container.textContent).not.toMatch(
+            /permission|forbidden|deleted/i
+        );
     });
 
     it('offers a retry for a transport failure, and it refetches both queries', async () => {
@@ -362,7 +377,9 @@ describe('presentation', () => {
     it('renders inside a Surface and never branches on a theme identity', async () => {
         const { container } = await render();
 
-        expect(container.querySelector('[data-rf-slot="surface"]')).not.toBeNull();
+        expect(
+            container.querySelector('[data-rf-slot="surface"]')
+        ).not.toBeNull();
         expect(container.innerHTML).not.toMatch(/classic|frosted/i);
     });
 });
