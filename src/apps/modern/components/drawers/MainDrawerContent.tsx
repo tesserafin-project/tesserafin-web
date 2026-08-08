@@ -57,6 +57,31 @@ const MainDrawerContent = () => {
                         />
                     </ListItemLink>
                 </ListItem>
+                {/*
+                 * Content packs (#138). One destination ALONGSIDE the existing browsing
+                 * structure — the primary media-family navigation below is untouched, and
+                 * reordering or replacing it is #139/M3, not this milestone.
+                 *
+                 * Metadata only: a path, a translated label and an icon. This entry pulls in no
+                 * feature module and no SDK client, which is what keeps `ContentPacksApi` out of
+                 * the start-up graph even though the drawer itself is in it. It is also NOT gated
+                 * on `EnableContentPackManagement`: browsing packs is ordinary authorized
+                 * viewing, and the manager capability gates only the management affordances.
+                 *
+                 * The icon is `@mui/material/Icon` with a ligature name rather than a new
+                 * `@mui/icons-material/*` module, because `Icon` is already imported here for the
+                 * custom menu links and the start-up asset count has zero headroom (45/45).
+                 */}
+                <ListItem disablePadding>
+                    <ListItemLink to='/contentpacks'>
+                        <ListItemIcon>
+                            <Icon>collections_bookmark</Icon>
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={globalize.translate('ContentPacks')}
+                        />
+                    </ListItemLink>
+                </ListItem>
             </List>
 
             {/* CUSTOM LINKS */}
