@@ -176,7 +176,27 @@ async function freeze(page: Page) {
             caret-color: transparent !important;
         }`
     });
-    await page.waitForTimeout(150);
+    /*
+     * Settle before the shutter, not just "wait a bit". Web fonts land after first paint and reflow
+     * the whole page; MUI's ripple and focus ring finish on the next frames. Two runs of the same
+     * commit produced two different images for `settings-display` and for the TV packs step until
+     * this waited for the fonts and for two frames after them.
+     */
+    await page.evaluate(
+        () =>
+            new Promise<void>((resolve) => {
+                const frames = () =>
+                    requestAnimationFrame(() =>
+                        requestAnimationFrame(() => resolve())
+                    );
+                if (document.fonts?.status === 'loaded') return frames();
+                (document.fonts?.ready ?? Promise.resolve()).then(frames);
+            })
+    );
+    // Late-arriving requests (the theme stylesheet the manager fetches at runtime, an icon font)
+    // repaint after the frames above; the TV project is the one where that was still visible.
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(250);
 }
 
 interface Shooter {
