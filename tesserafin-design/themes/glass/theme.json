@@ -42,6 +42,22 @@
                 "layout": "shelf",
                 "cardAspect": "backdrop",
                 "filters": "drawer"
+            },
+            "itemDetails": {
+                "hero": "poster",
+                "sections": [
+                    "overview",
+                    "cast",
+                    "nextUp",
+                    "episodes",
+                    "moreFrom",
+                    "lyrics",
+                    "extras",
+                    "chapters",
+                    "schedule",
+                    "related",
+                    "mediaInfo"
+                ]
             }
         }
     },
@@ -53,7 +69,8 @@
             "presentation.mediaCard",
             "presentation.navigation",
             "presentation.page.home",
-            "presentation.page.library"
+            "presentation.page.library",
+            "presentation.page.itemDetails"
         ]
     },
     "renderers": {
@@ -65,7 +82,8 @@
                 "presentation.mediaCard",
                 "presentation.navigation",
                 "presentation.page.home",
-                "presentation.page.library"
+                "presentation.page.library",
+                "presentation.page.itemDetails"
             ],
             "source": {
                 "kind": "none"

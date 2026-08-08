@@ -119,6 +119,12 @@ export interface UserPolicy {
      */
     'EnableContentDownloading'?: boolean;
     /**
+     * Gets or sets a value indicating whether this instance can manage content packs.
+     * @type {boolean}
+     * @memberof UserPolicy
+     */
+    'EnableContentPackManagement'?: boolean;
+    /**
      * 
      * @type {boolean}
      * @memberof UserPolicy

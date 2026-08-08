@@ -1,0 +1,396 @@
+/**
+ * Item Details layout (tesserafin-web#129 Step 1b).
+ *
+ * Only `--rf-*` custom properties are read here, with static fallbacks. No legacy class name
+ * (`detailPagePrimaryContent`, `detailPageSecondaryContainer`, `detailImageContainer`,
+ * `detailLogo`, `padded-left`) and no id selector: those are the selectors the migration exists to
+ * retire, and reusing them to get styling back would make a legacy selector this route's public
+ * styling surface — invariant 8. Every class below is owned by this slice.
+ *
+ * The `data-detail-*` attributes are characterization hooks, so the layout is keyed on the `hero` /
+ * `full` SLOT rather than on individual section names: adding a section must not require a
+ * stylesheet edit, and no rule here can turn a section name into something a theme targets.
+ */
+
+.rf-item-details {
+    position: relative;
+    display: grid;
+    grid-template-columns:
+        minmax(0, var(--rf-item-details-poster-width, 20rem))
+        minmax(0, 1fr);
+    align-content: start;
+    gap: var(--rf-spacing-md, 16px) var(--rf-spacing-xl, 32px);
+    padding:
+        var(--rf-spacing-xl, 32px) var(--rf-spacing-lg, 24px)
+        var(--rf-spacing-xl, 32px);
+    color: var(--rf-color-text, #fff);
+    font-family: var(--rf-typography-font-family-base, sans-serif);
+}
+
+/* The hero backdrop. Decorative, behind everything, and never rendered for Person or Book. */
+.rf-item-details__backdrop {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 0;
+    height: var(--rf-item-details-backdrop-height, 22rem);
+    background-position: center 20%;
+    background-size: cover;
+
+    /* Fades into the page rather than ending on a hard edge. */
+    mask-image: linear-gradient(to bottom, rgb(0 0 0 / 60%), transparent);
+    pointer-events: none;
+}
+
+.rf-item-details__poster {
+    position: relative;
+    z-index: 1;
+    grid-column: 1;
+    grid-row: 1 / span var(--rf-item-details-poster-span, 12);
+    align-self: start;
+    overflow: hidden;
+    aspect-ratio: 2 / 3;
+    background: var(--rf-color-surface-variant, rgb(255 255 255 / 8%));
+    border-radius: var(--rf-shape-radius-md, 8px);
+}
+
+.rf-item-details__poster-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.rf-item-details__poster-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.rf-item-details__logo {
+    z-index: 1;
+    grid-column: 2;
+    max-width: min(100%, 18rem);
+    max-height: 5rem;
+    object-fit: contain;
+}
+
+/*
+ * The artwork TREATMENT — `presentation.page.itemDetails.hero` (#129 Step 2).
+ *
+ * `data-rf-hero` is the one attribute a theme's hero choice reaches, and the rules below are the
+ * whole of what it does: no treatment changes which images are built, which requests are issued or
+ * which sections render. `backdrop` is deliberately UNSTYLED here — it is the platform default, so
+ * leaving it to the base rules above is what keeps the default page byte-identical to the one that
+ * shipped before the binding, which the committed captures confirm.
+ *
+ * `poster` drops the decorative band (the element is not rendered at all) and gives the poster the
+ * space it frees. `minimal` goes further: a compact poster and tighter headings, for a page that
+ * leads with its text.
+ */
+.rf-item-details[data-rf-hero='poster'] {
+    --rf-item-details-poster-width: 24rem;
+
+    padding-top: var(--rf-spacing-lg, 24px);
+}
+
+.rf-item-details[data-rf-hero='minimal'] {
+    --rf-item-details-poster-width: 12rem;
+
+    gap: var(--rf-spacing-sm, 8px) var(--rf-spacing-lg, 24px);
+    padding-top: var(--rf-spacing-md, 16px);
+}
+
+/*
+ * Sections.
+ *
+ * `hero` sits in the second column, beside the poster; `full` spans both. The legacy template made
+ * the same split with `detailPagePrimaryContent` and the blocks under it (`MAY CHANGE` #2).
+ */
+.rf-item-details__section {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-sm, 8px);
+    min-width: 0;
+}
+
+.rf-item-details__section[data-detail-slot='hero'] {
+    grid-column: 2;
+}
+
+.rf-item-details__section[data-detail-slot='full'] {
+    grid-column: 1 / -1;
+    margin-top: var(--rf-spacing-md, 16px);
+}
+
+.rf-item-details__section-title {
+    margin: 0;
+    color: var(--rf-color-text, #fff);
+    font-size: var(--rf-typography-font-size-lg, 1.25rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+/*
+ * The `minimal` treatment tightens headings too. Placed AFTER the base rule it overrides: a
+ * lower-specificity selector must not follow a higher-specificity one (`no-descending-specificity`).
+ */
+.rf-item-details[data-rf-hero='minimal'] .rf-item-details__section-title {
+    font-size: var(--rf-typography-font-size-md, 1rem);
+}
+
+/* The name block. */
+.rf-item-details__section[data-detail-section='nameContainer'] {
+    gap: var(--rf-spacing-xs, 4px);
+
+    h1 {
+        margin: 0;
+        font-size: var(--rf-typography-font-size-xxl, 2rem);
+        font-weight: var(--rf-typography-font-weight-medium, 500);
+        line-height: 1.15;
+    }
+
+    p {
+        margin: 0;
+        color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+        font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    }
+}
+
+/*
+ * Misc-info lines: the year / runtime / rating row.
+ *
+ * `PrimaryMediaInfo` wraps its items in a single element, so the row has to be laid out on that
+ * wrapper rather than on the section — styling the section alone leaves one stacked column.
+ */
+.rf-item-details__section[data-detail-section^='itemMiscInfo'] {
+    color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+
+    > * {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--rf-spacing-md, 16px);
+        align-items: center;
+    }
+}
+
+/* The action bar. */
+.rf-item-details__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-spacing-sm, 8px);
+}
+
+.rf-item-details__action {
+    display: inline-flex;
+    align-items: center;
+    height: 2.25rem;
+    padding: 0 var(--rf-spacing-md, 16px);
+    color: var(--rf-color-text, #fff);
+    background: var(--rf-color-surface-variant, rgb(255 255 255 / 8%));
+    border: 1px solid transparent;
+    border-radius: var(--rf-shape-radius-sm, 4px);
+    font-family: inherit;
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    cursor: pointer;
+    transition:
+        background-color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease),
+        border-color var(--rf-motion-duration-fast, 150ms)
+        var(--rf-motion-easing-standard, ease);
+
+    &:hover {
+        border-color: var(--rf-color-text, #fff);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, #4dabf7);
+        outline-offset: 2px;
+    }
+}
+
+/* Play is the primary action; nothing else on the page competes with it. */
+.rf-item-details__action[data-detail-action='btnPlay'] {
+    color: var(--rf-color-on-primary, #000);
+    background: var(--rf-color-primary, #4dabf7);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+}
+
+/*
+ * `PlayedButton` and `FavoriteButton` are React components whose icon styling lived in the legacy
+ * stylesheets. They are wrapped rather than restyled from outside: this slice owns the wrapper, and
+ * the legacy sheet is not imported.
+ */
+.rf-item-details__user-data {
+    display: inline-flex;
+    align-items: center;
+
+    button {
+        color: var(--rf-color-text, #fff);
+    }
+}
+
+/* Track selectors: a label / control pair per row. */
+.rf-item-details__tracks {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 26rem);
+    align-items: center;
+    justify-content: start;
+    gap: var(--rf-spacing-xs, 4px) var(--rf-spacing-md, 16px);
+    width: 100%;
+    max-width: 34rem;
+}
+
+.rf-item-details__track {
+    display: contents;
+
+    label {
+        color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+        font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    }
+
+    select {
+        width: 100%;
+        height: 2.25rem;
+        padding: 0 var(--rf-spacing-sm, 8px);
+        color: var(--rf-color-text, #fff);
+        background: var(--rf-color-surface-variant, rgb(255 255 255 / 8%));
+        border: 1px solid var(--rf-color-divider, rgb(255 255 255 / 12%));
+        border-radius: var(--rf-shape-radius-sm, 4px);
+        font-family: inherit;
+        font-size: var(--rf-typography-font-size-sm, 0.875rem);
+
+        &:disabled {
+            color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+            cursor: not-allowed;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--rf-color-focus, #4dabf7);
+            outline-offset: 2px;
+        }
+    }
+}
+
+.rf-item-details__track[hidden] {
+    display: none;
+}
+
+/* Body copy: tagline, overview, tags, links, person facts. */
+.rf-item-details__section[data-detail-slot='hero'] p {
+    margin: 0;
+    max-width: 70ch;
+    line-height: 1.55;
+}
+
+.rf-item-details__section[data-detail-section='tagline'] p {
+    color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+    font-size: var(--rf-typography-font-size-lg, 1.25rem);
+    font-style: italic;
+}
+
+.rf-item-details__overview-toggle {
+    align-self: flex-start;
+    padding: 0;
+    color: var(--rf-color-primary, #4dabf7);
+    background: none;
+    border: 0;
+    font-family: inherit;
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, #4dabf7);
+        outline-offset: 2px;
+    }
+}
+
+.rf-item-details__clamp {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
+.rf-item-details__section[data-detail-section='itemExternalLinks'] ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-spacing-md, 16px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* The metadata lists (Director / Studio / Genre …). */
+.rf-item-details__section[data-detail-section='itemDetailsGroup'] {
+    gap: var(--rf-spacing-xs, 4px);
+}
+
+/* Schedule and programme lists. */
+.rf-item-details__section ul.rf-item-details__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-xs, 4px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+        display: flex;
+        gap: var(--rf-spacing-md, 16px);
+        justify-content: space-between;
+        padding: var(--rf-spacing-xs, 4px) 0;
+        border-bottom:
+            1px solid
+            var(--rf-color-divider, rgb(255 255 255 / 12%));
+    }
+
+    time {
+        color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+        font-size: var(--rf-typography-font-size-sm, 0.875rem);
+        white-space: nowrap;
+    }
+}
+
+/*
+ * Narrow viewports: one column, poster above the name.
+ *
+ * A width query rather than a device test — the legacy route read `dom.getWindowSize()` at RENDER
+ * time to pick a composition, which is `MUST RETIRE` #4. The composition is identical here; only
+ * the layout responds.
+ */
+@media (width <= 60rem) {
+    .rf-item-details {
+        grid-template-columns: minmax(0, 1fr);
+        padding: var(--rf-spacing-md, 16px);
+    }
+
+    .rf-item-details__poster {
+        grid-row: auto;
+        justify-self: center;
+        width: min(60vw, 14rem);
+    }
+
+    .rf-item-details__logo,
+    .rf-item-details__section[data-detail-slot='hero'],
+    .rf-item-details__section[data-detail-slot='full'] {
+        grid-column: 1;
+    }
+
+    .rf-item-details__tracks {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rf-item-details__track label {
+        margin-top: var(--rf-spacing-xs, 4px);
+    }
+}
+
+/* Motion is opt-out, not opt-in. */
+@media (prefers-reduced-motion: reduce) {
+    .rf-item-details__action {
+        transition: none;
+    }
+}

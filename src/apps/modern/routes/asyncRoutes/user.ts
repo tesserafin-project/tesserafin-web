@@ -2,6 +2,9 @@ import { AsyncRoute } from 'components/router/AsyncRoute';
 import { AppType } from 'constants/appType';
 
 export const ASYNC_USER_ROUTES: AsyncRoute[] = [
+    // Item Details (#129 Step 1b). Also registered in the legacy family, for the reason recorded
+    // there: both families must expose the same modern route or the cutover is only half done.
+    { path: 'details', type: AppType.Modern },
     { path: 'home', type: AppType.Modern },
     { path: 'homevideos', type: AppType.Modern },
     { path: 'library/:libraryId', page: 'library', type: AppType.Modern },

@@ -186,7 +186,13 @@ const BASELINE: Readonly<Record<string, readonly string[]>> = {
     // The `filters: 'drawer'` surface is `ui/components/FilterDrawer`, deliberately not MUI's
     // `Drawer`, so no generated class name became the only thing a theme could target.
     'apps/modern/features/library': [],
-    'apps/modern/features/libraries': ['cardbuilder', 'mui-internals']
+    'apps/modern/features/libraries': ['cardbuilder', 'mui-internals'],
+    // The third page vertical, and MIGRATED rather than bound (#129 Step 1b). Empty from the day
+    // it exists: the route that replaced `itemDetails/index.js` composes through published
+    // `src/ui` primitives, so there is no `cardbuilder` DOM, no nested React root and no generated
+    // MUI class name a theme could be forced to target. Step 2 binds a recipe onto this; it must
+    // find the boundary already clean.
+    'apps/modern/features/details': []
 };
 
 describe('the modern/legacy presentation boundary — ratchet', () => {
@@ -241,7 +247,10 @@ describe('no component knows a theme', () => {
     const SCOPES = [
         'ui',
         'apps/modern/features/home',
-        'apps/modern/features/library'
+        'apps/modern/features/library',
+        // Not bound yet, and listed anyway: the migration is what makes a later binding possible,
+        // so a theme id must never reach this slice in the first place.
+        'apps/modern/features/details'
     ];
 
     it.each(SCOPES)('%s names no official theme id', (scope) => {

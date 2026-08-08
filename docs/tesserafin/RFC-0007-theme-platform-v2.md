@@ -157,8 +157,56 @@ state.
 section vocabulary is a closed enum, so a recipe can reorder `continueWatching` before `nextUp`, or
 drop `recommendations`, but it cannot introduce a section the renderer does not implement.
 
-These three capabilities are **defined by this contract and not yet bound by the Web renderer** —
-see §5.3 for what that means in practice and why it is stated rather than hidden.
+All three are now **implemented by the Web renderer**. Each moved from "defined" to "implemented"
+in the commit where its route began reading the resolved recipe, and never before — Home in #127,
+Library in #128, Item Details in #129 Step 2.
+
+#### The Item Details vocabulary
+
+`presentation.page.itemDetails` has two keys.
+
+`hero` — `backdrop` | `poster` | `minimal` — selects an artwork **layout treatment**. It is not a
+data decision, and four things are true of it under every value: it causes no additional image or
+API request, it never overrides the reader's own backdrop setting, a `Person` and a `Book` never
+gain a backdrop, and the poster is rendered.
+
+`sections` orders and selects **content families**:
+
+| Token | The content family it names |
+|---|---|
+| `overview` | Descriptive prose about the item — its tagline and its synopsis |
+| `mediaInfo` | The item's factual panel: dates, birthplace, broadcast day, tags, outward reference links, and the genre/studio/crew lists |
+| `nextUp` | The next thing to play |
+| `episodes` | What the item contains — episodes, tracks, playlist entries, collection members, the further parts of a multi-part video |
+| `lyrics` | Song lyrics |
+| `moreFrom` | Other items from the same artist or the same season |
+| `cast` | The people in it, including guest appearances |
+| `schedule` | What is going to air — a channel's programme guide, a series timer's recordings, a series' upcoming broadcasts |
+| `extras` | Bonus material shipped with the item, and its music videos |
+| `chapters` | An index into the item's own timeline |
+| `related` | Other items connected to this one, and the collections it belongs to |
+
+The enum widened from five names to eleven in #129 Step 2. `overview`, `cast`, `episodes`,
+`related` and `mediaInfo` are **retained verbatim**, so every manifest that was valid before remains
+valid; widening a closed enum is backward-compatible, renaming a member is not. Two of the retained
+names are wider than they sound — `episodes` covers any contained children, `mediaInfo` covers the
+whole fact panel — and that is a cost of compatibility, paid once and documented rather than fixed
+by a rename.
+
+The **private** identifiers the Web renderer's own route uses to name its surfaces are deliberately
+not this vocabulary. They are characterization hooks that let a frozen contract judge a migrated
+route; publishing them would make a Web DOM detail into cross-platform theme vocabulary, and every
+other renderer would inherit a shape it has no reason to have.
+
+#### What no recipe can reach
+
+There is no token for the item's identity or its required primary information, for the playback,
+resume and replay controls, for the media-source, audio, subtitle and video selectors, for the
+played/favourite/rating controls, for permission and administrator gates, for destructive and
+context-menu actions, for recording controls and editors, for required warnings, for the loading,
+empty, error and authorization states, or for keyboard and focus behaviour. These are **fixed
+regions** (§6.1). The mechanism is structural rather than advisory: the vocabulary cannot name
+them, so a recipe cannot select, hide, reorder or enable one.
 
 ### 4.8 Lineage
 
@@ -194,9 +242,9 @@ The capability vocabulary is **closed**:
 | `presentation.surface` | Surface variants | **implemented** |
 | `presentation.mediaCard` | Media-card variants | **implemented** |
 | `presentation.navigation` | Navigation presentation | **implemented** |
-| `presentation.page.home` | Home composition recipe | defined, not yet bound |
-| `presentation.page.library` | Library composition recipe | defined, not yet bound |
-| `presentation.page.itemDetails` | Item-details composition recipe | defined, not yet bound |
+| `presentation.page.home` | Home composition recipe | **implemented** |
+| `presentation.page.library` | Library composition recipe | **implemented** |
+| `presentation.page.itemDetails` | Item-details composition recipe | **implemented** |
 | `source.web.css` | Advanced Web source layer (§7) | defined, not yet bound |
 
 Closed rather than open on purpose: a theme that could claim an undefined capability would be asking

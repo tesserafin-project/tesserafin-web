@@ -14,6 +14,9 @@
 
 // May contain unused imports in some cases
 // @ts-ignore
+import type { ContentPackBrowsingPreference } from './content-pack-browsing-preference';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { SubtitlePlaybackMode } from './subtitle-playback-mode';
 
 /**
@@ -34,6 +37,12 @@ export interface UserConfiguration {
      * @memberof UserConfiguration
      */
     'CastReceiverId'?: string | null;
+    /**
+     * Gets or sets how the user prefers the top level of the library to be arranged.
+     * @type {ContentPackBrowsingPreference}
+     * @memberof UserConfiguration
+     */
+    'ContentPackBrowsingPreference'?: ContentPackBrowsingPreference;
     /**
      * 
      * @type {boolean}

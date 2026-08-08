@@ -9,6 +9,8 @@ export type {
     HomeRecipe,
     HomeSection,
     HomeShelfDensity,
+    ItemDetailsHero,
+    ItemDetailsRecipe,
     ItemDetailsSection,
     LibraryCardAspect,
     LibraryFilterPresentation,
@@ -32,6 +34,8 @@ export type {
 export {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    ITEM_DETAILS_HEROES,
+    ITEM_DETAILS_SECTIONS,
     LIBRARY_CARD_ASPECTS,
     LIBRARY_FILTER_PRESENTATIONS,
     LIBRARY_LAYOUTS,
