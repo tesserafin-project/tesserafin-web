@@ -1,5 +1,10 @@
 import React, { type FC } from 'react';
 
+import Page from 'components/Page';
+import globalize from 'lib/globalize';
+
+import ContentPackMosaic from '../../features/contentPacks/components/ContentPackMosaic';
+
 /**
  * `/contentpacks` — the content-pack mosaic (#138).
  *
@@ -8,6 +13,14 @@ import React, { type FC } from 'react';
  * route chunk, and why neither the feature nor the generated `ContentPacksApi` it imports reaches
  * the initial or start-up delivery graph.
  */
-const ContentPacks: FC = () => <div data-content-packs='list' />;
+const ContentPacks: FC = () => (
+    <Page
+        id='contentPacksPage'
+        className='mainAnimatedPage libraryPage'
+        title={globalize.translate('ContentPacks')}
+    >
+        <ContentPackMosaic />
+    </Page>
+);
 
 export default ContentPacks;
