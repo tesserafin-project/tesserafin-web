@@ -19,8 +19,15 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
      */
     { path: 'contentpacks', type: AppType.Modern },
     {
+        /*
+         * Same `page` as the entry above, so both paths resolve to ONE route module and therefore
+         * to ONE chunk — the same shape `library/:libraryId` and `library/:libraryId/:destination`
+         * already use. Two modules would emit a second JS and a second CSS asset, and the map
+         * entries those add to `runtime.bundle.js` (a start-up asset) put the delivery budget over
+         * its ceiling; see `routes/contentpacks/index.tsx`.
+         */
         path: 'contentpacks/:packId',
-        page: 'contentpacks/pack',
+        page: 'contentpacks',
         type: AppType.Modern
     },
     { path: 'home', type: AppType.Modern },
