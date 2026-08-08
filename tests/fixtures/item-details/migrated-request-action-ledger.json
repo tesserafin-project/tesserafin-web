@@ -117,6 +117,10 @@
         {
             "id": "service.router",
             "description": "react-router-dom"
+        },
+        {
+            "id": "sdk.contentPacks",
+            "description": "getContentPacksApi(api) from lib/tesserafin-sdk, reached only through apps/modern/features/contentPacks/adapters/contentPacksApi.ts and only behind UserPolicy.EnableContentPackManagement (#138 M2)"
         }
     ],
     "effectFrontier": [
@@ -680,6 +684,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Movie\", not \"Series\""
                 },
@@ -871,6 +879,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -1256,6 +1268,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Movie\", not \"Series\""
                 },
@@ -1471,6 +1487,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnInstantMix",
                     "reason": "item.Type \"Movie\" is not in INSTANT_MIX_TYPES, or the item is not playable"
@@ -1891,6 +1911,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Movie\", not \"Series\""
                 },
@@ -2112,6 +2136,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -2493,6 +2521,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Movie\", not \"Series\""
                 },
@@ -2684,6 +2716,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -2946,6 +2982,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Movie\", not \"Series\""
                 },
@@ -3123,6 +3163,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -3441,6 +3485,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.episodes",
                     "reason": "item.Type is \"Series\", not \"Season\""
                 },
@@ -3630,6 +3678,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -3832,6 +3884,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Season\", not \"Series\""
                 },
@@ -4027,6 +4083,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -4232,6 +4292,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Episode\", not \"Series\""
                 },
@@ -4409,6 +4473,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -4743,6 +4811,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"MusicAlbum\", not \"Series\""
                 },
@@ -4920,6 +4992,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -5190,6 +5266,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Audio\", not \"Series\""
                 },
@@ -5352,6 +5432,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -5608,6 +5692,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"MusicArtist\", not \"Series\""
                 },
@@ -5788,6 +5876,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -6013,6 +6105,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Playlist\", not \"Series\""
                 },
@@ -6178,6 +6274,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -6371,6 +6471,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"BoxSet\", not \"Series\""
                 },
@@ -6524,6 +6628,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "the collection's children contain nothing playable (delta D7)"
@@ -6724,6 +6832,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Person\", not \"Series\""
                 },
@@ -6850,6 +6962,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "playbackGates(item).canPlay is false for item.Type \"Person\""
@@ -7064,6 +7180,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Book\", not \"Series\""
                 },
@@ -7243,6 +7363,10 @@
             ],
             "absentActions": [
                 {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
+                {
                     "id": "btnPlay",
                     "reason": "playbackGates(item).canPlay is false for item.Type \"Book\""
                 },
@@ -7411,6 +7535,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Photo\", not \"Series\""
                 },
@@ -7536,6 +7664,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "playbackGates(item).canPlay is false for item.Type \"Photo\""
@@ -7812,6 +7944,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Program\", not \"Series\""
                 },
@@ -7874,6 +8010,10 @@
             ],
             "actions": [],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "the programme is outside its airing window, so no action bar renders at all"
@@ -8099,6 +8239,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Recording\", not \"Series\""
                 },
@@ -8303,6 +8447,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -8548,6 +8696,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Recording\", not \"Series\""
                 },
@@ -8725,6 +8877,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -8971,6 +9127,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"SeriesTimer\", not \"Series\""
                 },
@@ -9088,6 +9248,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "playbackGates(item).canPlay is false for item.Type \"SeriesTimer\""
@@ -9265,6 +9429,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"SeriesTimer\", not \"Series\""
                 },
@@ -9368,6 +9536,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnPlay",
                     "reason": "playbackGates(item).canPlay is false for item.Type \"SeriesTimer\""
@@ -9582,6 +9754,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"TvChannel\", not \"Series\""
                 },
@@ -9732,6 +9908,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -9923,6 +10103,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"Genre\", not \"Series\""
                 },
@@ -10091,6 +10275,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"
@@ -10278,6 +10466,10 @@
             ],
             "absentRequests": [
                 {
+                    "signature": "contentPacks.forItem",
+                    "reason": "#138 M2: the content-pack membership read (sdk.contentPacks.getContentPacksForItem) sits behind the btnContentPacks affordance, and this class's acting user has no UserPolicy.EnableContentPackManagement, so the affordance is not rendered and the query family never becomes enabled"
+                },
+                {
                     "signature": "children.seasons",
                     "reason": "item.Type is \"MusicGenre\", not \"Series\""
                 },
@@ -10464,6 +10656,10 @@
                 }
             ],
             "absentActions": [
+                {
+                    "id": "btnContentPacks",
+                    "reason": "#138 M2: the content-pack assignment affordance is gated on exactly UserPolicy.EnableContentPackManagement === true, which this class's acting user does not have, so no control is rendered and neither addContentPackItem nor removeContentPackItem is reachable"
+                },
                 {
                     "id": "btnReplay",
                     "reason": "no stored resume position, or the item is not playable"

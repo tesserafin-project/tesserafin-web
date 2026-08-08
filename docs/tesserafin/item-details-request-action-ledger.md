@@ -72,6 +72,7 @@ persisted recipe and one mixing valid and invalid fields — and asserts the req
 | `service.events` | utils/events |
 | `service.libraryMenu` | scripts/libraryMenu |
 | `service.router` | react-router-dom |
+| `sdk.contentPacks` | getContentPacksApi(api) from lib/tesserafin-sdk — reached only through the content-pack slice's adapter, and only behind `UserPolicy.EnableContentPackManagement` (#138 M2). No class in this record reaches it. |
 
 ## 4. Causal phases
 
@@ -141,34 +142,62 @@ proof is a declared variant (§9) that selects the *alternate* source, whose id 
 
 | Class | Item type | Requests | Absent reads | Actions | Absent actions | LOCAL_ONLY | Disabled | Delegated | Variants |
 | --- | --- | --: | --: | --: | --: | --: | --: | --: | --: |
-| `movie` | `Movie` | 9 | 14 | 5 | 7 | 4 | 1 | 0 | 2 |
-| `movie-resumable` | `Movie` | 9 | 14 | 6 | 6 | 4 | 1 | 0 | 2 |
-| `movie-grouped-admin` | `Movie` | 11 | 14 | 6 | 6 | 4 | 1 | 0 | 2 |
-| `movie-grouped-regular` | `Movie` | 9 | 14 | 5 | 7 | 4 | 1 | 0 | 2 |
-| `minimal-video` | `Movie` | 6 | 16 | 4 | 8 | 3 | 1 | 0 | 0 |
-| `series` | `Series` | 9 | 13 | 5 | 7 | 1 | 0 | 0 | 0 |
-| `season` | `Season` | 6 | 16 | 5 | 7 | 0 | 0 | 0 | 0 |
-| `episode` | `Episode` | 6 | 16 | 4 | 8 | 3 | 1 | 0 | 0 |
-| `music-album` | `MusicAlbum` | 9 | 13 | 5 | 7 | 0 | 0 | 0 | 0 |
-| `audio` | `Audio` | 9 | 14 | 4 | 8 | 0 | 0 | 0 | 0 |
-| `music-artist` | `MusicArtist` | 8 | 14 | 5 | 7 | 0 | 0 | 0 | 0 |
-| `playlist` | `Playlist` | 8 | 15 | 4 | 8 | 0 | 0 | 0 | 0 |
-| `box-set` | `BoxSet` | 6 | 16 | 3 | 9 | 0 | 0 | 0 | 0 |
-| `person` | `Person` | 6 | 16 | 2 | 10 | 1 | 0 | 0 | 0 |
-| `book` | `Book` | 6 | 17 | 4 | 8 | 0 | 0 | 0 | 0 |
-| `photo` | `Photo` | 5 | 17 | 2 | 10 | 0 | 0 | 0 | 0 |
-| `program` | `Program` | 9 | 15 | 0 | 12 | 0 | 0 | 1 | 1 |
-| `recording` | `Recording` | 6 | 16 | 5 | 7 | 3 | 1 | 0 | 0 |
-| `recording-no-livetv` | `Recording` | 6 | 16 | 4 | 8 | 3 | 1 | 0 | 0 |
-| `series-timer` | `SeriesTimer` | 6 | 16 | 2 | 10 | 0 | 0 | 0 | 0 |
-| `series-timer-no-livetv` | `SeriesTimer` | 5 | 17 | 1 | 11 | 0 | 0 | 0 | 0 |
-| `tv-channel` | `TvChannel` | 6 | 16 | 3 | 9 | 0 | 0 | 0 | 0 |
-| `genre` | `Genre` | 6 | 16 | 4 | 8 | 0 | 0 | 0 | 0 |
-| `music-genre` | `MusicGenre` | 6 | 16 | 5 | 7 | 0 | 0 | 0 | 0 |
-| **total** | | **172** | **367** | **93** | **195** | **30** | **8** | **1** | **9** |
+| `movie` | `Movie` | 9 | 15 | 5 | 8 | 4 | 1 | 0 | 2 |
+| `movie-resumable` | `Movie` | 9 | 15 | 6 | 7 | 4 | 1 | 0 | 2 |
+| `movie-grouped-admin` | `Movie` | 11 | 15 | 6 | 7 | 4 | 1 | 0 | 2 |
+| `movie-grouped-regular` | `Movie` | 9 | 15 | 5 | 8 | 4 | 1 | 0 | 2 |
+| `minimal-video` | `Movie` | 6 | 17 | 4 | 9 | 3 | 1 | 0 | 0 |
+| `series` | `Series` | 9 | 14 | 5 | 8 | 1 | 0 | 0 | 0 |
+| `season` | `Season` | 6 | 17 | 5 | 8 | 0 | 0 | 0 | 0 |
+| `episode` | `Episode` | 6 | 17 | 4 | 9 | 3 | 1 | 0 | 0 |
+| `music-album` | `MusicAlbum` | 9 | 14 | 5 | 8 | 0 | 0 | 0 | 0 |
+| `audio` | `Audio` | 9 | 15 | 4 | 9 | 0 | 0 | 0 | 0 |
+| `music-artist` | `MusicArtist` | 8 | 15 | 5 | 8 | 0 | 0 | 0 | 0 |
+| `playlist` | `Playlist` | 8 | 16 | 4 | 9 | 0 | 0 | 0 | 0 |
+| `box-set` | `BoxSet` | 6 | 17 | 3 | 10 | 0 | 0 | 0 | 0 |
+| `person` | `Person` | 6 | 17 | 2 | 11 | 1 | 0 | 0 | 0 |
+| `book` | `Book` | 6 | 18 | 4 | 9 | 0 | 0 | 0 | 0 |
+| `photo` | `Photo` | 5 | 18 | 2 | 11 | 0 | 0 | 0 | 0 |
+| `program` | `Program` | 9 | 16 | 0 | 13 | 0 | 0 | 1 | 1 |
+| `recording` | `Recording` | 6 | 17 | 5 | 8 | 3 | 1 | 0 | 0 |
+| `recording-no-livetv` | `Recording` | 6 | 17 | 4 | 9 | 3 | 1 | 0 | 0 |
+| `series-timer` | `SeriesTimer` | 6 | 17 | 2 | 11 | 0 | 0 | 0 | 0 |
+| `series-timer-no-livetv` | `SeriesTimer` | 5 | 18 | 1 | 12 | 0 | 0 | 0 | 0 |
+| `tv-channel` | `TvChannel` | 6 | 17 | 3 | 10 | 0 | 0 | 0 | 0 |
+| `genre` | `Genre` | 6 | 17 | 4 | 9 | 0 | 0 | 0 | 0 |
+| `music-genre` | `MusicGenre` | 6 | 17 | 5 | 8 | 0 | 0 | 0 | 0 |
+| **total** | | **172** | **391** | **93** | **219** | **30** | **8** | **1** | **9** |
 
 Unique request signatures: **38**. Unique action signatures: **15**.
 Declared navigation affordances: **56**.
+
+### The #138 (M2) delta
+
+This record was frozen for #129 Step 1c and bound to a recipe by Step 2. #138 (M2) adds the content
+pack slice, and exactly one of its affordances touches this surface. The delta is enumerated here so
+that "everything else is unchanged" is a checkable claim rather than an assurance:
+
+| What | Change |
+| --- | --- |
+| new outward surface | `sdk.contentPacks` — declared in §3, reached by **no** row in this record |
+| new query family | `contentPacks.forItem` (`getContentPacksForItem`) — declared ABSENT in all 24 classes |
+| new affordance | `btnContentPacks` — declared ABSENT in all 24 classes |
+| generated writes behind it | `addContentPackItem` / `removeContentPackItem` — unreachable without the affordance |
+
+Both absences have the same cause and it is the only one: the affordance is gated on exactly
+`UserPolicy.EnableContentPackManagement === true`, and no acting user in the 24 equivalence classes
+has that capability. So the control is not rendered, the membership query never becomes enabled, and
+neither generated write is reachable. `Absent reads` rises 367 → 391 and `Absent actions` 195 → 219,
+one per class in each column; **no request row, action row, LOCAL_ONLY row, disabled control,
+delegated control, navigation affordance or variant changed**, and the totals for those columns are
+identical to the ones Step 2 left.
+
+The affordance is not classified in §12. That section reads the slice's imports from source and
+deliberately ignores relative specifiers, and the content-pack modules are reached from
+`components/DetailActionBar.tsx` by relative path; a classification the gate cannot verify would be
+a claim the ledger could not keep. The assignment dialog is behind its own `lazy()` boundary for the
+delivery reason recorded there, so the generated `ContentPacksApi` is not in the `item-details`
+chunk either.
 
 ## 7. Requests, per class
 
