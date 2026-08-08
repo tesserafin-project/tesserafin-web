@@ -1,4 +1,11 @@
-import React, { useEffect, useRef, useState, type FC } from 'react';
+import React, {
+    Suspense,
+    lazy,
+    useEffect,
+    useRef,
+    useState,
+    type FC
+} from 'react';
 
 import itemContextMenu from 'components/itemContextMenu';
 import { appHost } from 'components/apphost';
@@ -6,6 +13,15 @@ import { AppFeature } from 'constants/appFeature';
 import globalize from 'lib/globalize';
 import PlayedButton from 'elements/emby-playstatebutton/PlayedButton';
 import FavoriteButton from 'elements/emby-ratingbutton/FavoriteButton';
+
+/*
+ * Alias specifiers, not relative ones, and deliberately.
+ * `tests/itemDetails/ledger.effectFrontier.test.ts` reads this slice's imports from source and
+ * skips anything starting with `.`, so a relative import of a NEW outward dependency would be
+ * invisible to the one gate that exists to catch exactly that. Spelled this way both modules are
+ * seen, and the ledger's `effectFrontier` table is required to classify them.
+ */
+import { useContentPackManagement } from 'apps/modern/features/contentPacks/hooks/useContentPackManagement';
 
 import type { DetailItem, DetailUser } from '../adapters/itemDetailsApi';
 import type { DetailActionName } from '../constants/sections';
@@ -21,10 +37,26 @@ import {
     playbackGates
 } from '../utils/itemPredicates';
 
+/**
+ * The content-pack assignment dialog, behind its OWN import boundary (#138 §8).
+ *
+ * `useContentPackManagement` above is a policy read and a type-only import, so it costs nothing.
+ * The dialog is different: it reaches the feature's mutations and therefore the generated
+ * `ContentPacksApi`. Importing it eagerly would pull 61 KB of generated client into the
+ * `item-details` chunk for every viewer, including the ones who will never see the control. This
+ * keeps it in the content-pack chunk, requested when the dialog is first opened.
+ */
+const ContentPackAssignment = lazy(
+    () =>
+        import(
+            'apps/modern/features/contentPacks/components/ContentPackAssignment'
+        )
+);
+
 interface ActionButtonProps {
     name: DetailActionName;
     label: string;
-    onClick: () => void;
+    onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 /**
@@ -74,6 +106,11 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
 
     const moreCommandsRef = useRef<HTMLDivElement>(null);
     const [hasCommands, setHasCommands] = useState(false);
+
+    const canManageContentPacks = useContentPackManagement();
+    const [isContentPacksOpen, setContentPacksOpen] = useState(false);
+    /** The control focus returns to when the assignment dialog closes. */
+    const contentPacksButtonRef = useRef<HTMLElement | null>(null);
 
     /**
      * The context menu is offered only when it has commands.
@@ -195,6 +232,30 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
                     label={globalize.translate('ButtonSplit')}
                     onClick={actions.splitVersions}
                 />
+            ) : null}
+            {canManageContentPacks && item.Id ? (
+                <>
+                    <ActionButton
+                        name='btnContentPacks'
+                        label={globalize.translate('HeaderContentPackAssign')}
+                        onClick={(event) => {
+                            contentPacksButtonRef.current = event.currentTarget;
+                            setContentPacksOpen(true);
+                        }}
+                    />
+                    <Suspense fallback={null}>
+                        {isContentPacksOpen && (
+                            <ContentPackAssignment
+                                open
+                                itemId={item.Id}
+                                onClose={() => {
+                                    setContentPacksOpen(false);
+                                    contentPacksButtonRef.current?.focus();
+                                }}
+                            />
+                        )}
+                    </Suspense>
+                </>
             ) : null}
             {hasCommands ? (
                 <ActionButton

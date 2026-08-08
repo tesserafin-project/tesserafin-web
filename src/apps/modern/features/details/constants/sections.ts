@@ -82,6 +82,15 @@ export const DETAIL_ACTIONS = [
     'btnPlaystate',
     'btnUserRating',
     'btnSplitVersions',
+    /*
+     * The one affordance #138 (M2) adds to this surface: "which content packs is this item in?".
+     * It is named here, with the frozen actions, because the affordance sweep classifies a control
+     * by the `data-detail-action` it carries and an action outside this vocabulary would be
+     * UNCLASSIFIED. It is gated on `UserPolicy.EnableContentPackManagement` and is therefore
+     * ABSENT for every equivalence class in the frozen fixture, all of whose acting users lack the
+     * capability - the ledger records that absence per class rather than leaving it unstated.
+     */
+    'btnContentPacks',
     'btnMoreCommands'
 ] as const;
 

@@ -5,6 +5,31 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
     // Item Details (#129 Step 1b). Also registered in the legacy family, for the reason recorded
     // there: both families must expose the same modern route or the cutover is only half done.
     { path: 'details', type: AppType.Modern },
+    /*
+     * Content packs (#138). Two entries, both `AppType.Modern`, both resolved by
+     * `toAsyncPageRoute` — so the whole slice (its queries, its generated `ContentPacksApi` and
+     * its UI) lands in the `contentpacks`/`contentpacks/pack` chunks and nothing of it reaches the
+     * initial or start-up delivery graph. Registering the path here is also what gives
+     * `isDrawerPath` and the drawer's active-route matching the parametrised detail route for
+     * free (`components/drawers/drawerRoutes.ts`).
+     *
+     * Modern family only, like `home` and `library/:libraryId` and unlike `details`: this is a NEW
+     * destination with no legacy view-manager controller to supersede, so there is no half-done
+     * cutover to avoid — the drawer that links to it is itself modern-only.
+     */
+    { path: 'contentpacks', type: AppType.Modern },
+    {
+        /*
+         * Same `page` as the entry above, so both paths resolve to ONE route module and therefore
+         * to ONE chunk — the same shape `library/:libraryId` and `library/:libraryId/:destination`
+         * already use. Two modules would emit a second JS and a second CSS asset, and the map
+         * entries those add to `runtime.bundle.js` (a start-up asset) put the delivery budget over
+         * its ceiling; see `routes/contentpacks/index.tsx`.
+         */
+        path: 'contentpacks/:packId',
+        page: 'contentpacks',
+        type: AppType.Modern
+    },
     { path: 'home', type: AppType.Modern },
     { path: 'homevideos', type: AppType.Modern },
     { path: 'library/:libraryId', page: 'library', type: AppType.Modern },
