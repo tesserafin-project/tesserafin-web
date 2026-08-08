@@ -58,6 +58,10 @@ export default defineConfig({
             // Server-free Item Details browser suite (`npm run test:item-details-browser`):
             // Playwright, like the three above, and it drives the built `dist/` rather than src.
             'tests/itemDetailsBrowser/**',
+            // Server-free Content packs browser suite (`npm run test:content-packs-browser`):
+            // Playwright, like the four above. It drives the built `dist/` through a same-origin
+            // transport fixture and is also the source of the runtime-origin inventory.
+            'tests/contentPacksBrowser/**',
             '**/.claude/**',
             'scripts/**'
         ],
