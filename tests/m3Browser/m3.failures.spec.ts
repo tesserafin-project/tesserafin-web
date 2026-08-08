@@ -145,7 +145,7 @@ test('a partial seeding failure does not advance, and retry does not duplicate',
 
     // Retry finishes the job instead of doubling it: one more write, for the one that failed.
     await submitPacks(page);
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     expect(fixture.createdPackNames()).toEqual([
         'Music',

@@ -146,6 +146,18 @@ export async function installFixtureApi(
     profile: FixtureProfile
 ): Promise<InstalledFixture> {
     const staticFiles = distFileSet(distDir);
+    /*
+     * The per-user theme key is `${userId}-appTheme`. If the profile's `currentUserId` were not the
+     * id the fixture hands back from `POST /Startup/User` and `AuthenticateByName`, the key would
+     * be written for one user and read for another, the theme would silently resolve to the
+     * default, and nothing would say so. Fail here instead.
+     */
+    if (!profile.users.some((user) => user.id === profile.currentUserId)) {
+        throw new Error(
+            `fixture profile currentUserId "${profile.currentUserId}" is not one of the users it ` +
+                `authors (${profile.users.map((user) => user.id).join(', ')})`
+        );
+    }
     const ledger: ApiLedger = {
         requests: [],
         undeclared: [],
@@ -203,23 +215,52 @@ export async function installFixtureApi(
              */
             indexedDB.deleteDatabase('keyval-store');
 
-            const server: Record<string, unknown> = {
-                Id: serverId,
-                Name: 'Fixture',
-                ManualAddress: apiOrigin,
-                LastConnectionMode: 2,
-                DateLastAccessed: 1
-            };
-            // A wizard boot has no session at all: that is the state a first run is actually in,
-            // and it is what makes the tokenless assertions mean something.
-            if (signedIn) {
-                server.AccessToken = token;
-                server.UserId = userId;
+            /*
+             * A session the APPLICATION created earlier in this same page survives a reload.
+             *
+             * This script runs on every boot, including reloads. Rewriting the credentials
+             * unconditionally meant a reload threw away the session the wizard had just signed in
+             * with — so a resumed wizard came back anonymous, `userSettings.currentUserId` stayed
+             * undefined, and the per-user theme could never resolve. That is not what a browser
+             * does, and it is why the first capture run reported that Frosted Glass "does not
+             * resolve in a server-free wizard run". It resolves; the fixture was deleting the
+             * session before the application could restore it.
+             *
+             * The authored credentials are still written when there is nothing to keep, which is
+             * what makes a wizard boot genuinely tokenless.
+             */
+            let live = null;
+            try {
+                const stored = localStorage.getItem('jellyfin_credentials');
+                const parsed = stored ? JSON.parse(stored) : null;
+                live =
+                    (parsed?.Servers ?? []).find(
+                        (candidate: { AccessToken?: string }) =>
+                            candidate?.AccessToken
+                    ) ?? null;
+            } catch {
+                live = null;
             }
-            localStorage.setItem(
-                'jellyfin_credentials',
-                JSON.stringify({ Servers: [server] })
-            );
+
+            if (!live) {
+                const server: Record<string, unknown> = {
+                    Id: serverId,
+                    Name: 'Fixture',
+                    ManualAddress: apiOrigin,
+                    LastConnectionMode: 2,
+                    DateLastAccessed: 1
+                };
+                // A wizard boot has no session at all: that is the state a first run is actually
+                // in, and it is what makes the tokenless assertions mean something.
+                if (signedIn) {
+                    server.AccessToken = token;
+                    server.UserId = userId;
+                }
+                localStorage.setItem(
+                    'jellyfin_credentials',
+                    JSON.stringify({ Servers: [server] })
+                );
+            }
             if (theme) localStorage.setItem(`${userId}-appTheme`, theme);
             if (layout) localStorage.setItem('layout', layout);
         },

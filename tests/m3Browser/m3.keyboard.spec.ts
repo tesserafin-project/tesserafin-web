@@ -91,7 +91,7 @@ test('the whole seeding step is reachable and operable by keyboard alone', async
     // And so is submit.
     await tabUntil(page, (marker) => marker.includes('button-submit'));
     await page.keyboard.press('Enter');
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     expect(fixture.createdPackNames()).toEqual(['Weeknight music']);
     expect(fixture.lastConfigurationWrite()).toMatchObject({

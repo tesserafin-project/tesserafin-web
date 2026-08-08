@@ -112,7 +112,7 @@ test('the step is navigable and operable with a remote', async ({
 
     await page.locator(`${PACKS_PAGE} button[type="submit"]`).focus();
     await page.keyboard.press('Enter');
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     expect(fixture.createdPackNames().sort()).toEqual([
         'Movies and series',

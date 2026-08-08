@@ -100,7 +100,7 @@ test('the first administrator is created, signed in, and can seed packs', async 
     await shot(page, 'onboarding-packs-populated');
 
     await submitPacks(page);
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     // Exactly the three chosen names, through the same call, with nothing but a name.
     expect(fixture.createdPackNames().sort()).toEqual(
@@ -171,7 +171,7 @@ test('selecting nothing issues no pack writes at all', async ({
     await shot(page, 'onboarding-packs-none-selected');
 
     await submitPacks(page);
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     expect(fixture.createdPackNames()).toEqual([]);
     expect(

@@ -119,7 +119,7 @@ test('the step is reachable and operable by touch, and nothing is clipped', asyn
     await shot(page, 'mobile-packs-populated');
 
     await submitPacks(page);
-    await page.waitForURL(/#\/wizard\/settings/, { timeout: 30_000 });
+    await page.waitForURL(/#\/wizard\/remoteaccess/, { timeout: 30_000 });
 
     expect(fixture.createdPackNames().sort()).toEqual(['Kids', 'Music']);
     expect(fixture.lastConfigurationWrite()).toMatchObject({
