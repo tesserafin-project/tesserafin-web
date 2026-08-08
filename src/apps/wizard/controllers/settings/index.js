@@ -1,6 +1,7 @@
 import loading from 'components/loading/loading';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Dashboard from 'utils/dashboard';
+import { deriveMetadataCountry } from 'apps/wizard/utils/metadataCountry';
 
 import 'elements/emby-button/emby-button';
 import 'elements/emby-checkbox/emby-checkbox';
@@ -12,10 +13,19 @@ function save(page) {
     apiClient
         .getJSON(apiClient.getUrl('Startup/Configuration'))
         .then(function (config) {
-            config.PreferredMetadataLanguage =
-                page.querySelector('#selectLanguage').value;
-            config.MetadataCountryCode =
-                page.querySelector('#selectCountry').value;
+            const language = page.querySelector('#selectLanguage').value;
+            config.PreferredMetadataLanguage = language;
+            // The country is derived from the language rather than asked for. See
+            // `apps/wizard/utils/metadataCountry` for why, and note the null-preserving fallback:
+            // a language CLDR cannot place, or a region the server does not offer, leaves whatever
+            // the server already had.
+            const derived = deriveMetadataCountry(
+                language,
+                availableCountryCodes
+            );
+            if (derived) {
+                config.MetadataCountryCode = derived;
+            }
             apiClient
                 .ajax({
                     type: 'POST',
@@ -47,29 +57,19 @@ function populateLanguages(select, languages) {
     select.innerHTML = html;
 }
 
-function populateCountries(select, allCountries) {
-    let html = '';
-    html += "<option value=''></option>";
-
-    for (let i = 0, length = allCountries.length; i < length; i++) {
-        const culture = allCountries[i];
-        html +=
-            "<option value='" +
-            culture.TwoLetterISORegionName +
-            "'>" +
-            culture.DisplayName +
-            '</option>';
-    }
-
-    select.innerHTML = html;
-}
+/**
+ * Every region code the server is willing to store, captured when the step loads so that the
+ * derivation can refuse to invent one the server does not know.
+ */
+let availableCountryCodes = [];
 
 function reloadData(page, config, cultures, countries) {
+    availableCountryCodes = countries
+        .map((country) => country.TwoLetterISORegionName)
+        .filter(Boolean);
     populateLanguages(page.querySelector('#selectLanguage'), cultures);
-    populateCountries(page.querySelector('#selectCountry'), countries);
     page.querySelector('#selectLanguage').value =
         config.PreferredMetadataLanguage;
-    page.querySelector('#selectCountry').value = config.MetadataCountryCode;
     loading.hide();
 }
 

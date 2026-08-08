@@ -36,6 +36,14 @@ const ROUTES: LegacyRoute[] = [
         }
     },
     {
+        path: 'packs',
+        pageProps: {
+            appType: AppType.Wizard,
+            controller: 'packs/index',
+            view: 'packs/index.html'
+        }
+    },
+    {
         path: 'settings',
         pageProps: {
             appType: AppType.Wizard,

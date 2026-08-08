@@ -11,6 +11,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import LibraryIcon from 'apps/modern/components/LibraryIcon';
+import { isContentPackFirst } from 'apps/modern/features/contentPacks/adapters/browsingPreference';
 import { MetaView } from 'apps/modern/constants/metaView';
 import { useAncestors } from 'apps/modern/features/libraries/hooks/api/useAncestors';
 import {
@@ -84,6 +85,14 @@ const UserViewNav = () => {
     const { user } = useApi();
     const { data: userViews, isPending } = useUserViews({ userId: user?.Id });
 
+    /**
+     * #139 gate 4. Content-pack-first does not hide anything: it puts content packs at the head of
+     * the primary navigation and leaves every media-family destination exactly where it was, in the
+     * same order, on the same routes. Media-family-first is the resolved default, so an
+     * installation that was never asked renders precisely today's arrangement.
+     */
+    const packsLead = isContentPackFirst(user?.Configuration);
+
     const navItems = useMemo(
         () => [...(menuLinks || []), ...(userViews?.Items || [])],
         [menuLinks, userViews]
@@ -152,6 +161,18 @@ const UserViewNav = () => {
 
     return (
         <>
+            {packsLead && (
+                <Button
+                    variant='text'
+                    color='inherit'
+                    startIcon={<Icon>widgets</Icon>}
+                    component={Link}
+                    to='contentpacks'
+                >
+                    {globalize.translate('HeaderFirstRunContentPacks')}
+                </Button>
+            )}
+
             <Button
                 variant='text'
                 color={
