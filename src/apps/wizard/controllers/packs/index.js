@@ -176,7 +176,7 @@ function showError(view, message) {
 }
 
 function nextWizardPage() {
-    Dashboard.navigate('wizard/settings').catch((err) => {
+    Dashboard.navigate('wizard/remoteaccess').catch((err) => {
         console.error('[Wizard > Packs] error navigating to settings', err);
     });
 }
