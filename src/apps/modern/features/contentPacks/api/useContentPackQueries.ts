@@ -34,13 +34,15 @@ import { retryUnlessNotFound } from './contentPackErrors';
  * an api client and a signed-in user. `select` is deliberately absent — re-sorting, filtering or
  * re-counting the list here is exactly what §3.8 reserves to the server.
  */
-export const useContentPacks = () => {
+export const useContentPacks = (options?: { enabled?: boolean }) => {
     const { reefinApi, user } = useApi();
 
     return useQuery({
         queryKey: contentPackKeys.list(user?.Id),
         queryFn: () => fetchContentPacks(reefinApi!),
-        enabled: !!reefinApi && !!user?.Id
+        // `options.enabled` matches the two hooks below: a surface that is mounted but not visible
+        // — a closed dialog, say — must be able to stop issuing this read too.
+        enabled: !!reefinApi && !!user?.Id && (options?.enabled ?? true)
     });
 };
 

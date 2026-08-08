@@ -14,7 +14,14 @@ import globalize from 'lib/globalize';
 import PlayedButton from 'elements/emby-playstatebutton/PlayedButton';
 import FavoriteButton from 'elements/emby-ratingbutton/FavoriteButton';
 
-import { useContentPackManagement } from '../../contentPacks/hooks/useContentPackManagement';
+/*
+ * Alias specifiers, not relative ones, and deliberately.
+ * `tests/itemDetails/ledger.effectFrontier.test.ts` reads this slice's imports from source and
+ * skips anything starting with `.`, so a relative import of a NEW outward dependency would be
+ * invisible to the one gate that exists to catch exactly that. Spelled this way both modules are
+ * seen, and the ledger's `effectFrontier` table is required to classify them.
+ */
+import { useContentPackManagement } from 'apps/modern/features/contentPacks/hooks/useContentPackManagement';
 
 import type { DetailItem, DetailUser } from '../adapters/itemDetailsApi';
 import type { DetailActionName } from '../constants/sections';
@@ -40,7 +47,10 @@ import {
  * keeps it in the content-pack chunk, requested when the dialog is first opened.
  */
 const ContentPackAssignment = lazy(
-    () => import('../../contentPacks/components/ContentPackAssignment')
+    () =>
+        import(
+            'apps/modern/features/contentPacks/components/ContentPackAssignment'
+        )
 );
 
 interface ActionButtonProps {

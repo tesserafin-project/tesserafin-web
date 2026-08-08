@@ -125,6 +125,18 @@
     ],
     "effectFrontier": [
         {
+            "module": "apps/modern/features/contentPacks/hooks/useContentPackManagement",
+            "classification": "CAPABILITY",
+            "surface": null,
+            "note": "#138 M2. UserPolicy.EnableContentPackManagement, read from the session. A policy read; it issues no request."
+        },
+        {
+            "module": "apps/modern/features/contentPacks/components/ContentPackAssignment",
+            "classification": "OUTWARD_MUTATION",
+            "surface": "sdk.contentPacks",
+            "note": "#138 M2. The assignment dialog behind btnContentPacks: getContentPacks / getContentPacksForItem, addContentPackItem / removeContentPackItem. Dynamically imported at click time, so it is not in this route's chunk, and unreachable without the capability above."
+        },
+        {
             "module": "lib/jellyfin-apiclient",
             "classification": "OUTWARD_API",
             "surface": "legacy",

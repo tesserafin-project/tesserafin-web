@@ -192,12 +192,14 @@ one per class in each column; **no request row, action row, LOCAL_ONLY row, disa
 delegated control, navigation affordance or variant changed**, and the totals for those columns are
 identical to the ones Step 2 left.
 
-The affordance is not classified in §12. That section reads the slice's imports from source and
-deliberately ignores relative specifiers, and the content-pack modules are reached from
-`components/DetailActionBar.tsx` by relative path; a classification the gate cannot verify would be
-a claim the ledger could not keep. The assignment dialog is behind its own `lazy()` boundary for the
-delivery reason recorded there, so the generated `ContentPacksApi` is not in the `item-details`
-chunk either.
+Both content-pack modules ARE classified in §12, and that took a deliberate choice at the import
+site. §12 reads the slice's imports from source and skips any specifier starting with `.`, so the
+obvious relative import would have made a new outward dependency invisible to the one gate that
+exists to catch exactly that. `components/DetailActionBar.tsx` therefore spells both as alias
+specifiers, which the gate sees and is then required to classify — the capability read as
+`CAPABILITY` with no surface, the dialog as `OUTWARD_MUTATION` on `sdk.contentPacks`. The dialog is
+additionally behind its own `lazy()` boundary, so the generated `ContentPacksApi` is not in the
+`item-details` chunk.
 
 ## 7. Requests, per class
 
@@ -1897,6 +1899,8 @@ nothing imports any more.
 | Module | Classification | Surface | Note |
 | --- | --- | --- | --- |
 | `lib/jellyfin-apiclient` | `OUTWARD_API` | `legacy` | ServerConnections — the legacy apiClient and the SDK Api for this route |
+| `apps/modern/features/contentPacks/hooks/useContentPackManagement` | `CAPABILITY` | — | #138 M2. `UserPolicy.EnableContentPackManagement`, read from the session. A policy read; it issues no request. |
+| `apps/modern/features/contentPacks/components/ContentPackAssignment` | `OUTWARD_MUTATION` | `sdk.contentPacks` | #138 M2. The assignment dialog behind `btnContentPacks`. Dynamically imported at click time, so it is not in this route's chunk, and unreachable without the capability above. |
 | `@jellyfin/sdk/lib/utils/api/library-api` | `OUTWARD_API` | `sdk` | getItemCollections and getDownloadUrl |
 | `@jellyfin/sdk/lib/websocket` | `OUTWARD_API` | `legacy` | names the UserDataChanged subscription |
 | `components/playback/playbackmanager` | `OUTWARD_SERVICE` | `service.playbackManager` | play, replay, instantMix, shuffle, playTrailers; also the canPlay/getSupportedCommands capability gates |

@@ -38,8 +38,13 @@ const membershipQuery = {
 };
 const forItemEnabled = vi.fn();
 
+const listEnabled = vi.fn();
+
 vi.mock('../api/useContentPackQueries', () => ({
-    useContentPacks: () => packsQuery,
+    useContentPacks: (options?: { enabled?: boolean }) => {
+        listEnabled(options);
+        return packsQuery;
+    },
     useContentPacksForItem: (
         itemId: string | undefined,
         options?: { enabled?: boolean }
@@ -80,6 +85,7 @@ beforeEach(() => {
     removeMutation.isPending = false;
     removeMutation.isError = false;
     forItemEnabled.mockClear();
+    listEnabled.mockClear();
 });
 
 afterEach(() => {
@@ -131,10 +137,11 @@ describe('what the dialog shows', () => {
         expect(labels[1]).toBe('ContentPackAssignRemove: Second');
     });
 
-    it('issues no membership request while it is closed', async () => {
+    it('issues NEITHER read while it is closed', async () => {
         await render(false);
 
         expect(forItemEnabled).toHaveBeenCalledWith(ITEM, { enabled: false });
+        expect(listEnabled).toHaveBeenCalledWith({ enabled: false });
     });
 
     it('shows a loading region rather than an empty list while the reads are pending', async () => {

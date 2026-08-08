@@ -52,7 +52,7 @@ const ContentPackAssignment: FC<ContentPackAssignmentProps> = ({
 }) => {
     // Both reads are switched off entirely while the dialog is closed: an affordance that is not on
     // screen must not be issuing requests behind it.
-    const packsQuery = useContentPacks();
+    const packsQuery = useContentPacks({ enabled: open });
     const membershipQuery = useContentPacksForItem(itemId, { enabled: open });
     const addMutation = useAddContentPackItem();
     const removeMutation = useRemoveContentPackItem();
