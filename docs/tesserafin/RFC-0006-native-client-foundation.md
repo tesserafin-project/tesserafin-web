@@ -1,6 +1,6 @@
 # RFC-0006 — Native-client foundation: shared contract, semantic layer and design primitives
 
-- **Status**: Proposed (2026-08-09)
+- **Status**: Accepted (2026-08-09)
 - **Date**: 2026-08-09
 - **Author**: Tesserafin Project
 - **Repository**: `tesserafin-web`
@@ -43,9 +43,10 @@ it rather than negotiating it again.
 
 ### 1.2 Decision status
 
-**Proposed.** Acceptance is the maintainer's architectural review of the pull request that
-introduces this document. Nothing in the repository changes behaviour when it is accepted; what
-changes is that the first native-client implementation has a contract to conform to.
+**Accepted (2026-08-09).** Acceptance was the maintainer's architectural review of the pull request
+that introduces this document; both review questions it raised were answered yes, with no change to
+the decisions recorded here. Nothing in the repository changes behaviour now that it is accepted;
+what changes is that the first native-client implementation has a contract to conform to.
 
 ### 1.3 Web's place in this
 
