@@ -90,7 +90,21 @@ export interface FixtureProfile {
     packs: Array<{ Id: string; Name: string }>;
     faults?: FixtureFaults;
     theme?: string;
-    layout?: 'tv' | 'mobile' | 'desktop';
+    /**
+     * The value written to the un-namespaced `layout` key `layoutManager` reads before boot.
+     *
+     * `mobile` and `desktop` select the MODERN app — `LegacyLayoutModes` in
+     * `constants/layoutMode.ts` holds only `mobile-legacy`, `desktop-legacy` and `tv`, and
+     * `layoutManager.modern` is `!isLegacyLayout`. So `tv` has always booted the legacy shell here,
+     * and `mobile-legacy` is what a legacy phone actually is.
+     */
+    layout?:
+        | 'tv'
+        | 'mobile'
+        | 'desktop'
+        | 'mobile-legacy'
+        | 'desktop-legacy'
+        | 'modern';
 }
 
 export const administrator = (
