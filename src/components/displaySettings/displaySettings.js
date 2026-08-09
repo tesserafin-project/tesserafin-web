@@ -2,8 +2,9 @@ import escapeHtml from 'escape-html';
 
 import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
-import { getUserQuery } from 'hooks/api/useUser';
+import { getUserQuery, QUERY_KEY as USER_QUERY_KEY } from 'hooks/api/useUser';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
+import { ContentPackBrowsingPreference } from 'lib/tesserafin-sdk/generated/models/content-pack-browsing-preference';
 import { queryClient } from 'utils/query/queryClient';
 
 import layoutManager from '../layoutManager';
@@ -48,6 +49,56 @@ function fillThemes(select, selectedTheme) {
         // set the current theme
         select.value = selectedTheme || defaultTheme.id;
     });
+}
+
+/**
+ * The browsing arrangement (#139 gate 5), on the surface the legacy shells reach.
+ *
+ * `apps/modern`'s Display preferences page offers the same two outcomes through MUI. That page is
+ * never rendered in the legacy phone or television layout, so without this the choice would exist
+ * for one of the three shells this branch ships — and the wizard would have asked a question the
+ * household could not later change.
+ *
+ * The values come from the generated model rather than from string literals in the template: this
+ * is the server's enum, and the two spellings must not be able to drift apart.
+ */
+function fillBrowsingArrangement(select, saved) {
+    select.innerHTML = [
+        [
+            ContentPackBrowsingPreference.MediaFamilyFirst,
+            'OptionBrowseByMediaFamily'
+        ],
+        [
+            ContentPackBrowsingPreference.ContentPackFirst,
+            'OptionBrowseByContentPack'
+        ]
+    ]
+        .map(
+            ([value, key]) =>
+                `<option value="${value}">${escapeHtml(globalize.translate(key))}</option>`
+        )
+        .join('');
+
+    /*
+     * Absent, `undefined` and any value this build does not recognise all resolve to
+     * media-family-first, which is exactly today's arrangement. There is deliberately no third
+     * "unset" state, which is what makes "existing users are not prompted" true without a
+     * migration.
+     */
+    select.value =
+        saved === ContentPackBrowsingPreference.ContentPackFirst
+            ? ContentPackBrowsingPreference.ContentPackFirst
+            : ContentPackBrowsingPreference.MediaFamilyFirst;
+}
+
+function showBrowsingArrangementHelp(context) {
+    context.querySelector('.selectBrowsingArrangementDescription').textContent =
+        globalize.translate(
+            context.querySelector('#selectBrowsingArrangement').value ===
+                ContentPackBrowsingPreference.ContentPackFirst
+                ? 'OptionBrowseByContentPackHelp'
+                : 'OptionBrowseByMediaFamilyHelp'
+        );
 }
 
 function loadScreensavers(context, userSettings) {
@@ -162,6 +213,12 @@ function loadForm(context, user, userSettings) {
     context.querySelector('.chkDisplayMissingEpisodes').checked =
         user.Configuration.DisplayMissingEpisodes || false;
 
+    fillBrowsingArrangement(
+        context.querySelector('#selectBrowsingArrangement'),
+        user.Configuration.ContentPackBrowsingPreference
+    );
+    showBrowsingArrangementHelp(context);
+
     context.querySelector('#chkThemeSong').checked =
         userSettings.enableThemeSongs();
     context.querySelector('#chkThemeVideo').checked =
@@ -207,6 +264,18 @@ function saveUser(context, user, userSettingsInstance, apiClient) {
     user.Configuration.DisplayMissingEpisodes = context.querySelector(
         '.chkDisplayMissingEpisodes'
     ).checked;
+
+    /*
+     * One more key on the configuration the server last returned, exactly as the line above does.
+     *
+     * The whole object goes back in the request, so nothing else on it is lost, and the preference
+     * stays server-owned: there is no browser-side copy of it anywhere in this file. Changing your
+     * own arrangement needs no administrator right and no content-pack permission —
+     * `POST /Users/{userId}/Configuration` is plain `[Authorize]`.
+     */
+    user.Configuration.ContentPackBrowsingPreference = context.querySelector(
+        '#selectBrowsingArrangement'
+    ).value;
 
     if (appHost.supports(AppFeature.DisplayLanguage)) {
         userSettingsInstance.language(
@@ -280,7 +349,35 @@ function saveUser(context, user, userSettingsInstance, apiClient) {
     }
 
     layoutManager.setLayout(context.querySelector('.selectLayout').value);
-    return apiClient.updateUserConfiguration(user.Id, user.Configuration);
+
+    const written = apiClient.updateUserConfiguration(
+        user.Id,
+        user.Configuration
+    );
+
+    if (user.Id !== apiClient.getCurrentUserId()) {
+        return written;
+    }
+
+    /*
+     * Re-read the user and republish it, so the primary navigation shows the arrangement now.
+     *
+     * The legacy nav drawer reads the arrangement off `Configuration`, and it gets there through
+     * `apiClient`'s `_currentUser`, which is filled once at sign-in and which a configuration write
+     * does not invalidate. Without this the drawer would keep the arrangement the session started
+     * with until the next full reload, and the setting would look as though it had not taken.
+     *
+     * `getUser` rather than `getCurrentUser`: the second answers from that same cache. The React
+     * Query entry behind `loadData` is dropped for the same reason.
+     */
+    return written.then(async () => {
+        const refreshed = await apiClient.getUser(user.Id);
+        await queryClient.invalidateQueries({
+            queryKey: [USER_QUERY_KEY, user.Id]
+        });
+        Events.trigger(ServerConnections, 'localusersignedin', [refreshed]);
+        return refreshed;
+    });
 }
 
 function save(
@@ -339,6 +436,11 @@ function embed(options, self) {
     options.element
         .querySelector('form')
         .addEventListener('submit', onSubmit.bind(self));
+    options.element
+        .querySelector('#selectBrowsingArrangement')
+        .addEventListener('change', () =>
+            showBrowsingArrangementHelp(options.element)
+        );
     if (options.enableSaveButton) {
         options.element.querySelector('.btnSave').classList.remove('hide');
     }
