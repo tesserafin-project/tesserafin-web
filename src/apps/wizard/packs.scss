@@ -1,10 +1,19 @@
 /*
  * The first-run seeding step's own layout (#139).
  *
- * Without this the rows inherit `.checkboxContainer`, which is built for a single full-width
- * control: the tick and the name field end up at opposite edges of a 1440px screen with a metre of
- * nothing between them, and the pair stops reading as one row. Each row is its own flex line
- * instead, capped at a comfortable measure, with the name field taking the remaining space.
+ * Written narrow-first, and the reason is a measured defect rather than a preference.
+ *
+ * The first version of this file was one flex line per row with the tick pinned at `flex: 0 0 16em`.
+ * On a 1440px screen that reads correctly. On a Pixel 7 the row has 327px of content width, the
+ * pinned tick takes 230px of it, the gap takes another 14px, and the name field is left with a 64px
+ * editing box holding a value that needs 143px — 360px once somebody renames a pack to something
+ * they would actually type. `emby-input` clips rather than scrolls, so the value was not merely
+ * cramped, it was invisible: the field was unusable.
+ *
+ * So the row is a stack by default and only becomes that pinned line once there is room for one.
+ * `50em` is the breakpoint the rest of the repository already uses to mean "wide enough for a
+ * desktop arrangement" (`styles/site.scss`, `styles/dashboard.scss`), and above it every declaration
+ * below reproduces the original desktop layout exactly.
  */
 .wizardPackRows {
     display: flex;
@@ -15,8 +24,15 @@
 
 .wizardPackRow {
     display: flex;
-    align-items: center;
-    gap: 1em;
+
+    /*
+     * The tick and its label on one line, the editable name on the next, each taking the full width
+     * of the step. Nothing is hidden, nothing is abbreviated, and the field is as wide as the page
+     * can make it.
+     */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35em;
     margin: 0;
     max-width: 46em;
 }
@@ -24,33 +40,35 @@
 .wizardPackRow .wizardPackToggle {
     display: flex;
     align-items: center;
-    flex: 0 0 16em;
     margin: 0;
 }
 
 .wizardPackRow .txtPackName {
-    flex: 1 1 auto;
     margin: 0;
 }
 
+/* A destructive action does not want to be a full-width target under the field it destroys. */
 .wizardPackRow .btnRemoveCustomPack {
-    flex: 0 0 auto;
+    align-self: flex-start;
     margin: 0;
 }
 
 .wizardCustomPackContainer {
     display: flex;
-    align-items: flex-end;
-    gap: 1em;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5em;
     max-width: 46em;
 }
 
-.wizardCustomPackContainer #txtCustomPackName {
-    flex: 1 1 auto;
-}
-
+/*
+ * `#txtCustomPackName` keeps `emby-input`'s own bottom margin on purpose. The wide arrangement below
+ * aligns the Add button to `flex-end` — against that margin box — so zeroing it here lifts the
+ * button by a few pixels on every desktop screen. Measured: it moved the `onboarding-packs-populated`
+ * capture at 1440px, which is a redesign this repair has no business making.
+ */
 .wizardCustomPackContainer .btnAddCustomPack {
-    flex: 0 0 auto;
+    align-self: flex-start;
     margin: 0;
 }
 
@@ -61,4 +79,47 @@
 
 .wizardPacksError {
     max-width: 46em;
+}
+
+/*
+ * Wide enough for the original arrangement, which is restored here unchanged.
+ *
+ * Without this the tick and the name field end up at opposite edges of a 1440px screen with a metre
+ * of nothing between them, and the pair stops reading as one row. Each row is its own flex line
+ * instead, capped at a comfortable measure, with the name field taking the remaining space.
+ */
+@media all and (min-width: 50em) {
+    .wizardPackRow {
+        flex-direction: row;
+        align-items: center;
+        gap: 1em;
+    }
+
+    .wizardPackRow .wizardPackToggle {
+        flex: 0 0 16em;
+    }
+
+    .wizardPackRow .txtPackName {
+        flex: 1 1 auto;
+    }
+
+    .wizardPackRow .btnRemoveCustomPack {
+        flex: 0 0 auto;
+        align-self: auto;
+    }
+
+    .wizardCustomPackContainer {
+        flex-direction: row;
+        align-items: flex-end;
+        gap: 1em;
+    }
+
+    .wizardCustomPackContainer #txtCustomPackName {
+        flex: 1 1 auto;
+    }
+
+    .wizardCustomPackContainer .btnAddCustomPack {
+        flex: 0 0 auto;
+        align-self: auto;
+    }
 }
