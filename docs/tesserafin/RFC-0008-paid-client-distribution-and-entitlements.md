@@ -1,6 +1,6 @@
 # RFC-0008 — Paid native-client distribution, Tesserafin accounts and entitlements
 
-- **Status**: Proposed (2026-08-09)
+- **Status**: Accepted (2026-08-09)
 - **Date**: 2026-08-09
 - **Author**: Tesserafin Project
 - **Repository**: `tesserafin-web`
@@ -45,13 +45,14 @@ This RFC decides those four. It authorises **no implementation** of any kind —
 
 ### 1.2 Decision status
 
-**Proposed.** Acceptance is the maintainer's architectural review of the pull request that introduces
-this document.
+**Accepted (2026-08-09).** Acceptance was the maintainer's architectural review of the pull request
+that introduces this document; the RFC was accepted as a whole, including the eight owner rulings,
+with no change to the decisions recorded here.
 
 The eight questions this RFC originally put to the owner were answered on **2026-08-09**, and those
 rulings are recorded in **§14** and worked into the body sections named there. A reviewer should read
 §14 first: it is the index of what the owner decided and where each decision now lives. §14.9 lists
-what remains open, including acceptance of this RFC as a whole.
+what remains open.
 
 ### 1.3 Method: two kinds of statement, kept apart
 
@@ -1077,8 +1078,6 @@ their own bounded, separately reviewed work:
   Samsung's own sources at that time.
 - **The escrow arrangement itself** (§11.1 item 4) — the legal instrument, the escrow agent and the
   release conditions are a contractual matter, not an architectural one.
-- **Acceptance of this RFC as a whole**, which is the pull request's review, distinct from the eight
-  rulings above.
 
 ---
 
