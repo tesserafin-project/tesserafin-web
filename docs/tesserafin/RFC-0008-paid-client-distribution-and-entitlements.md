@@ -46,8 +46,12 @@ This RFC decides those four. It authorises **no implementation** of any kind —
 ### 1.2 Decision status
 
 **Proposed.** Acceptance is the maintainer's architectural review of the pull request that introduces
-this document. §14 lists every item that is deliberately left for owner acceptance rather than
-decided here; a reviewer should read §14 first and treat the rest as the reasoning behind it.
+this document.
+
+The eight questions this RFC originally put to the owner were answered on **2026-08-09**, and those
+rulings are recorded in **§14** and worked into the body sections named there. A reviewer should read
+§14 first: it is the index of what the owner decided and where each decision now lives. §14.9 lists
+what remains open, including acceptance of this RFC as a whole.
 
 ### 1.3 Method: two kinds of statement, kept apart
 
@@ -106,6 +110,11 @@ This section records what the platform owners' own documentation says today. It 
   `ONE_TIME_PRODUCT_PURCHASED`, `ONE_TIME_PRODUCT_CANCELED` and voided-purchase events over Cloud
   Pub/Sub, and the documentation requires calling the Google Play Developer API after a notification
   "to get the complete status and update your own backend state." <sup>[G-RTDN]</sup>
+- **Free-to-paid is a one-way door.** The Play pricing documentation states: "You can change your app
+  from paid to free," but "Once your app has been offered for free, the app can't be changed to paid.
+  If you want to charge for the app, you need to create a new app with a new package name and set a
+  price." <sup>[G-PRICE]</sup> This is why §4.3 decides the Android pricing model now instead of
+  deferring it: the decision is irreversible under the same package name.
 - **Hardware-backed device keys exist.** The Android Keystore system keeps key material
   non-exportable — "key material never enters the application process" — and can bind it to the TEE
   or a Secure Element; `KeyInfo.getSecurityLevel()` reports `TRUSTED_ENVIRONMENT` or `STRONGBOX`, and
@@ -228,10 +237,16 @@ These are hard boundaries, and each of them is a decision of this RFC:
    database is wiped, no downloaded content is deleted as a licensing action, no server setting is
    altered, no household user is affected. An unentitled installation is an application that will not
    *start its main experience*, not an application that destroys things.
-4. **Essential capability is never behind the entitlement.** "The paid product" is the *official
-   native application as a whole*, not a tier inside it. There is no free-but-crippled native build
-   whose missing pieces are sold back. If a capability is essential to running or watching your own
-   library, it lives in the server or in Tesserafin Web, both free.
+4. **There is no tiering inside the application.** "The paid product" is the *official native
+   application as a whole*. The unlock is all-or-nothing: there is no reduced player, no watermark, no
+   time-limited mode, no feature sold back piece by piece. The application is distributed free of
+   charge and unlocked by a single purchase (§4.3, §4.4) — what is free is the *download and the
+   activation surface*, never a degraded version of the product. An installation that is not yet
+   entitled shows §3.3's activation and recovery surface, and nothing pretends to be a lesser
+   Tesserafin.
+5. **Essential capability is never behind the entitlement.** If a capability is essential to running
+   or watching your own library, it lives in the server or in Tesserafin Web, both free and both
+   requiring no Tesserafin account.
 
 ### 3.3 What the application must still do without a valid entitlement
 
@@ -254,11 +269,15 @@ This is where [A-GL] 3.1.1 bites, and the resolution is structural rather than a
 > is the entitlement authority for that platform. The Tesserafin lease is device activation layered
 > above it — never the sole unlock, and never a licence key sold outside the store.**
 
-Concretely, on iOS and tvOS the app is either sold paid-up-front on the App Store or offered as a
-non-consumable in-app purchase inside the app; in both cases the App Store transaction is what
-entitles the user, exactly as 3.1.1 requires. The Tesserafin account and lease exist to answer
-"*which* of this account's devices may run it, and for how long offline" — a device-management
-question, not an unlock. §4.3 states this per platform.
+**The distribution model is decided (owner ruling, §14.5):** on every store that operates a
+first-party IAP mechanism, the application is a **free download whose full functionality is unlocked
+by a single non-consumable in-app purchase.** The App Store or Play transaction is what entitles the
+user, exactly as [A-GL] 3.1.1 requires. The Tesserafin account and lease exist to answer "*which* of
+this account's devices may run it, and for how long offline" — a device-management question, not an
+unlock. §4.3 and §4.4 state this per platform.
+
+Commercially this remains a dedicated paid product. Free means the download and the activation screen,
+nothing else.
 
 ---
 
@@ -310,6 +329,7 @@ artefacts.
 | Role | Decision |
 | --- | --- |
 | Sales channel | Google Play, using Google Play's billing system. Mandated by [G-POL]; not a Tesserafin preference. |
+| Pricing model | **Free download, full unlock through a single non-consumable in-app purchase.** Decided now and not deferred: [G-PRICE] makes free→paid irreversible under the same package name, so the choice cannot be revisited later without a new package. |
 | Package-signing | Google Play app signing / the Play-managed signing key. |
 | Purchase evidence | A non-consumable `ProductType.INAPP` purchase, evidenced by `Purchase.purchaseToken`. |
 | Restoration path | `queryPurchasesAsync()` on the device, plus server-side re-validation of the token. |
@@ -317,27 +337,44 @@ artefacts.
 | Update authority | Google Play. |
 | Account linkage | `BillingFlowParams.setObfuscatedAccountId()` carrying an **opaque, non-reversible** Tesserafin account identifier — never an email address, never a raw account primary key. |
 
-Anti-steering: the Android app must not present buttons, links or messaging that lead to a non-Play
-payment method [G-POL]. Any web purchase path that exists for other reasons is simply not surfaced
-as a call to action inside this app.
+**Anti-steering, and what cross-platform recognition is allowed to look like.** [G-POL] forbids
+leading users "to a payment method other than Google Play's billing system" through "in-app webviews,
+buttons, links, messaging, advertisements, or other calls to action." The architecture is written to
+stay inside that sentence by construction rather than by interpretation:
+
+- The Android app presents **no call to action** toward any non-Play payment method — no buttons, no
+  links, no messaging, no pricing comparison, nothing.
+- The same full unlock is **always purchasable in-app through Play billing**. That is the only
+  purchase path the app offers.
+- Signing in and restoring an entitlement the account already holds is a **sign-in and restore
+  action, not a purchase flow**. It sells nothing and steers nowhere.
+
+This RFC does **not** claim that Play policy affirmatively permits cross-platform recognition; it
+states what the application does and does not do, which is what the quoted rule constrains.
 
 ### 4.4 iOS and tvOS
 
 | Role | Decision |
 | --- | --- |
 | Sales channel | The App Store, using in-app purchase. Mandated by [A-GL] 3.1.1. |
+| Pricing model | **Free download, full unlock through a single non-consumable in-app purchase** — the same shape as §4.3. Universal Purchase may cover iOS and tvOS as one purchase. |
 | Package-signing | Apple, via the developer program signing and notarisation chain. |
-| Purchase evidence | An App Store transaction — the app sold paid-up-front, or a non-consumable IAP inside it. Universal Purchase may cover iOS and tvOS as one purchase. |
+| Purchase evidence | The App Store non-consumable transaction. |
 | Restoration path | `Transaction.currentEntitlements` and `Transaction.updates` on device [A-CE][A-UP], plus a user-invoked restore action, which 3.1.1 requires. |
 | Tesserafin entitlement authority | The Tesserafin backend, after verifying the transaction through `GET /inApps/v1/transactions/{transactionId}` [A-TX] and consuming `REFUND` / `REVOKE` / `REFUND_REVERSED` notifications [A-NT]. |
 | Update authority | The App Store. |
 | Account linkage | Established after purchase, inside the app, by signing in to a Tesserafin account (§5) — an account link, not a purchase gate. The app must be usable to the extent the store purchase alone allows before any Tesserafin account exists. |
 
 **Compliance shape.** The Tesserafin lease never functions as a licence key that unlocks an otherwise
-locked iOS app, because on iOS the store purchase is what unlocks it. If Tesserafin later wishes to
-honour an entitlement acquired on another platform inside the iOS app, [A-GL] 3.1.3(b) permits that
-**only while the same item is also available as an in-app purchase within the app** — so the iOS IAP
-offering is a precondition of that path, not an alternative to it.
+locked iOS app, because on iOS the store purchase is what unlocks it.
+
+**Cross-platform recognition is adopted (owner ruling, §14.5).** A user who already owns the
+Tesserafin entitlement — bought on another platform's store — may sign in and activate rather than
+buy again. [A-GL] 3.1.3(b) permits exactly this, "provided those items are also available as in-app
+purchases within the app," so the iOS in-app purchase offering is a **precondition** of the path, not
+an alternative to it, and it is therefore permanent for as long as the path is offered. The same
+anti-steering discipline as §4.3 applies: the app presents no call to action toward any non-Apple
+purchase method, and restoring an existing entitlement is a sign-in action, not a purchase flow.
 
 ### 4.5 webOS and Tizen
 
@@ -359,7 +396,7 @@ These two rows are genuinely different from each other, and neither resembles §
 
 | Role | Decision |
 | --- | --- |
-| Sales channel | LG Apps via Seller Lounge. **There is no first-party LG in-app-purchase billing service** — LG's own guide states it "is no longer provided" [L-IAP]. Two shapes remain open: a paid LG Apps listing, or a free listing that activates an entitlement acquired elsewhere. |
+| Sales channel | LG Apps via Seller Lounge. **There is no first-party LG in-app-purchase billing service** — LG's own guide states it "is no longer provided" [L-IAP]. **Decided (owner ruling, §14.6):** a **paid LG Apps listing** where one is genuinely available in the target markets; otherwise a free listing that activates an entitlement the Tesserafin account already holds, **and only after explicit written LG approval of that shape**. |
 | Package-signing | LG's Seller Lounge submission and QA chain [L-ECO]. |
 | Purchase evidence | If a paid LG Apps listing: LG's own purchase record. Otherwise: a Tesserafin entitlement acquired on another channel. |
 | Restoration path | Account-based activation against the Tesserafin backend. |
@@ -367,24 +404,53 @@ These two rows are genuinely different from each other, and neither resembles §
 | Update authority | LG Apps. |
 | Account linkage | Tesserafin account sign-in inside the app. |
 
-The RFC therefore **does not depend on a webOS IAP mechanism existing**, and does not adopt the named
-third-party billing recommendation. Which webOS shape is chosen — and whether a third-party billing
-contract is ever entered into — is an **owner-review item** (§14.6), to be re-checked against LG's
-documentation at the time, not settled here.
+The RFC therefore **does not depend on a webOS IAP mechanism existing**.
 
-### 4.6 What this RFC does not promise
+**No third-party in-TV billing provider is adopted for the initial webOS release** — not the one LG
+names, not any other. Introducing a payment provider for a single TV platform would multiply the
+audit surface, the personal data held, the fraud paths and the restoration behaviours, for the
+smallest platform in the sequence. Since webOS is wave 3, **delaying webOS monetisation is preferable
+to degrading the architecture for it.** Whether to revisit this later is a separate, bounded decision,
+and §2.3 must be re-verified against LG's documentation at that time.
 
-> **No cross-store purchase transfer is promised.** Buying on one store does not entitle you on
-> another store's channel, and this RFC does not describe a flow in which it does.
+The "explicit written LG approval" clause above is a **precondition, not a note**: the free-listing
+shape does not ship without it.
 
-What *is* architecturally available is narrower and safer: **account-based activation**. A Tesserafin
-account may hold an entitlement, and a device on a platform *without* a first-party IAP mechanism —
-webOS as of §2.3 — may activate against that account. On platforms **with** a first-party IAP
-mechanism, honouring an entitlement bought elsewhere is permitted only under that store's own
-conditions ([A-GL] 3.1.3(b) for Apple), and is deferred to §14.5 rather than assumed.
+### 4.6 One entitlement, many store SKUs
 
-This single decision removes the entire class of "flow prohibited by current store rules" risk from
-the rest of the document.
+**Decided (owner ruling, §14.7).** The two extremes are both wrong: a single identical product sold
+uniformly everywhere is not something four stores will allow, and one independent licence per platform
+would make a user pay again for changing device brand. The split is drawn between the *channel* and
+the *right*:
+
+- **Each store has its own SKU and its own purchase evidence.** Google, Apple and Samsung each sell
+  their own product entry through their own mechanism, priced and configured in their own console.
+- **Every one of those SKUs grants the same Tesserafin entitlement:** `Tesserafin Official Apps`.
+- **The Tesserafin account normalises all of them into that single right** (§4.2). That normalisation
+  is the entire reason the account exists on the commercial side.
+- **A user does not pay twice merely for changing platform**, wherever the store's own rules permit
+  recognising an entitlement acquired elsewhere.
+
+This keeps distribution genuinely per-platform without fragmenting the commercial right.
+
+#### 4.6.1 What is still not promised
+
+> **No cross-store purchase *transfer* is promised**, and no store is asked to honour another store's
+> transaction. A purchase always remains where it was made.
+
+Recognition is not transfer. What crosses platforms is the **Tesserafin entitlement** the account
+holds, not the store purchase. And recognition is available only where the store's own current rules
+allow it:
+
+| Channel | Recognition of an entitlement acquired elsewhere |
+| --- | --- |
+| App Store | **Adopted**, under [A-GL] 3.1.3(b), and only while the same unlock is also offered as an in-app purchase in the app (§4.4). |
+| Google Play | Offered as a sign-in and restore action, with no call to action toward any non-Play payment method and the same unlock always purchasable in-app (§4.3). |
+| Samsung Tizen | Not assumed. §2.4 records no rule on the point either way; the question is bounded to the Tizen implementation issue and must be answered from Samsung's documentation at that time. |
+| LG webOS | The primary shape, because no first-party IAP exists (§4.5) — subject to the written-approval precondition. |
+
+The rule that keeps this safe is unchanged from §1.3: **where architecture meets store policy, the
+architecture is written as a conditional, never as a promise.**
 
 ---
 
@@ -425,17 +491,34 @@ in the other. This is the operational restatement of RFC-0006 §7.2.
 - **Public client, no client secret.** A secret shipped in a distributed binary is a published secret
   — RFC-0006 §7.1(4) already makes this permanent for layers 1 and 2, and it holds here.
 
-### 5.4 External identity providers
+### 5.4 Launch identity: first-party only
 
-External IdPs **may prove identity**. They never become the authority for anything commercial:
-purchases, grants, activated devices, revocation and account recovery remain Tesserafin's.
+**Decided (owner ruling, §14.4).** The first release of every official native client ships with
+**Tesserafin sign-in only**:
 
-**Apple 4.8 consequence, decided here:** if the iOS/tvOS app offers any third-party or social login
-service for the primary account, it must also offer an equivalent option meeting 4.8's three
-conditions [A-GL]. The exemption for apps that "exclusively use your company's own account setup and
-sign-in systems" is available if Tesserafin offers only its own sign-in. **Which of the two shapes to
-adopt is an owner-review item (§14.4)** — it is a product decision with a compliance consequence, not
-a purely technical one.
+- **Passkeys first.** A passkey is the primary credential — phishing-resistant, nothing to type,
+  nothing for the application to see.
+- **Magic link / email as the recovery route**, not as the everyday path.
+- **OAuth 2.0 Authorization Code + PKCE in the system browser** (§5.3) carries all of it.
+- **No Google, Facebook, GitHub or any other third-party or social identity provider at launch.**
+
+This is deliberately sober, and it has a compliance consequence worth stating plainly: because
+Tesserafin "exclusively uses your company's own account setup and sign-in systems," [A-GL] 4.8's
+requirement to offer an additional equivalent login service **does not apply**. Tesserafin therefore
+does not adopt Sign in with Apple merely to satisfy a rule it is not subject to.
+
+#### 5.4.1 The forward rule
+
+External IdPs **may** prove identity if one is ever introduced. They never become the authority for
+anything commercial: purchases, grants, activated devices, revocation and account recovery remain
+Tesserafin's.
+
+> **If any third-party or social identity provider is ever added to an Apple-platform client, Sign in
+> with Apple — or another login service meeting [A-GL] 4.8's three conditions — ships in the same
+> release.** Not the next one, not "soon after".
+
+That single sentence is the reason this is in the RFC and not only in a decision log: adding an IdP is
+the kind of change that looks small in a sprint and silently breaks 4.8 compliance the day it ships.
 
 ### 5.5 Sessions and recovery
 
@@ -698,9 +781,14 @@ The grace window is **explicitly signalled**, from the first day, in plain langu
 how long is left, and exactly what will restore it. A grace period the user discovers only when it
 ends is not a grace period.
 
-**This entire policy is an owner-review item (§14.1)**: 30 and 14 are the recommended values, not
-protocol constants, and both must be server-configurable so a future adjustment is a policy change,
-not a client release.
+**Accepted (owner ruling, §14.1) — conditionally.** 30 + 14 is accepted, and the acceptance carries
+one explicit condition: **the durability guarantee of §11.1 must be in place.** A generous offline
+window is only acceptable because a legitimately purchased client cannot be stranded by the licensing
+service disappearing; without §11.1 the offline policy is not accepted, and the two must not be
+separated in implementation planning.
+
+Both numbers remain **server-configurable**, so a future adjustment is a policy change rather than a
+client release. They are policy values, not protocol constants.
 
 ### 8.4 Maximum revocation delay, quantified
 
@@ -734,14 +822,23 @@ and switch it off is a bigger risk to legitimate users than the fraud it prevent
 
 ## 9. Decision 7 — devices and the family-compatible model
 
-### 9.1 Seats, not fingerprints
+### 9.1 Three terms, kept distinct
 
-An entitlement grant carries an **active-device allowance**: a number of concurrently activated
-devices. A device occupies a seat from activation until deactivation; a device is identified by its
-key pair (§7.4).
+Most device-limit systems go wrong by conflating "a person" with "an installation" with "the TV in the
+living room". This RFC separates them:
 
-The allowance is a **server-side property of the grant**, not a constant compiled into a client. This
-is what makes a family product a configuration rather than a redesign.
+| Term | Definition |
+| --- | --- |
+| **Seat** | One authorised *person*. A seat is held by a Tesserafin account. |
+| **Device** | One *activated installation*, identified by its key pair (§7.4) — never by a hardware fingerprint. A device occupies its allowance from activation until deactivation. |
+| **Shared household device** | A *communal* device — a television, a set-top box, a console — that the whole household uses and that belongs to no single seat. It draws from a separate household pool, not from any person's personal allowance. |
+
+The shared-household pool exists because the alternative is worse: without it, the family television
+consumes a specific family member's personal allowance, and whoever set it up quietly pays for the
+household's convenience out of their own devices.
+
+Both allowances are **server-side properties of the grant**, not constants compiled into a client.
+That is what makes a family product a configuration rather than a redesign.
 
 ### 9.2 Self-service
 
@@ -773,12 +870,23 @@ silently blocked — a legitimate user with flaky hardware must not be locked ou
 
 ### 9.5 Family-compatible by construction
 
-A future family product is **the same protocol with a larger allowance**. Nothing about the lease
-(§7.2), activation (§7.5) or device model changes. A "family" grant may additionally carry:
+A family product is **the same protocol with a larger allowance**. Nothing about the lease (§7.2),
+activation (§7.5) or device model changes — only the numbers on the grant.
 
-- a seat allowance greater than the personal default;
-- optionally, sub-holders — additional Tesserafin accounts sharing one grant, each with their own
-  devices and their own seats drawn from the shared allowance.
+**Decided (owner ruling, §14.8):**
+
+| Grant | Seats | Personal devices | Shared household devices |
+| --- | --- | --- | --- |
+| **Individual** | 1 | **5** | — |
+| **Family** | **2 – 6**, configurable | **3 per seat** | **3 for the household** |
+
+So a family of four holds up to 12 personal devices plus 3 shared household devices — generous
+without being unlimited, and every number is a server-side property of the grant.
+
+Each family seat is a distinct Tesserafin account with its own sign-in, its own devices and its own
+privacy boundary. A seat holder cannot see another seat holder's devices, and no seat holder becomes
+an administrator of anyone else's account. Seats are added and removed by the grant holder; removing
+a seat deactivates that seat's devices and does not touch anyone else's.
 
 **Store-native family sharing is a distinct authority and must not double-grant.** Apple raises
 `ONE_TIME_CHARGE` when a "customer receives access to a non-consumable In-App Purchase through Family
@@ -790,9 +898,21 @@ store is the purchase authority (§4.2).
 
 ### 9.6 Numbers are commercial policy, not protocol
 
-A default personal allowance in the region of **3–5 concurrently activated devices** is *suggested* as
-a starting point. **It is an owner-review item (§14.2), not a protocol constant.** Family seat counts,
-the number of plans and all pricing — personal or family — are outside this RFC (§13).
+**Decided (owner ruling, §14.2): five concurrently activated devices for an individual entitlement.**
+A precise number beats a range — 3–5 was a recommendation, and the owner has fixed it at five, sized
+for a real household: phone, tablet, main television, second television, and one replacement or extra
+Android TV.
+
+Two rules travel with the number:
+
+- **Free self-service deactivation from the account**, at any time (§9.2).
+- **No punitive cooling-off period for replacing a lost device.** Losing hardware is not suspicious
+  behaviour, and a "you may only change a device every 90 days" rule punishes the honest user far more
+  reliably than it deters the dishonest one.
+
+Five is **commercial policy, not a protocol constant**: it lives on the grant, server-side, and can be
+changed without a client release. All pricing — individual and family — remains outside this RFC
+(§13).
 
 ---
 
@@ -865,22 +985,28 @@ action — never a crash, never a silent downgrade.
 > **A legitimately purchased Tesserafin client must not become permanently unusable because Tesserafin
 > stopped operating the licensing service.**
 
-This RFC states the principle and the requirement; the mechanism is an **owner-review item (§14.3)**
-because it is a commitment about the future of the business, not a technical detail an ADR should
-settle alone.
+**Decided (owner ruling, §14.3).** The mechanism is a combination, and it is a **precondition of the
+first paid release** — §8.3's acceptance of the 30 + 14 offline policy is explicitly conditional on it.
 
-The requirement: **before** the first paid client ships, there must exist a decided, documented and
-publicly stated wind-down path such that discontinuation of the licence plane does not strand paying
-customers. Candidate mechanisms, to be chosen by the owner:
+1. **A final application update** that removes the renewal obligation entirely.
+2. **A pre-signed perpetual sunset entitlement**, signed and bound to the devices already activated
+   under each grant, so an offline device is covered too.
+3. **Publication of the verifier and the public keys**, so the format stays independently checkable.
+4. **A pre-signed sunset certificate held in escrow**, usable if the company disappears abruptly
+   rather than winding down in an orderly way. This is what covers the case where nobody is left to
+   press the button.
+5. **A minimum twelve months' public notice** for a *planned* discontinuation.
 
-- a final long-lived or non-expiring lease issued to every active grant during a wind-down window;
-- a signed application update that removes the entitlement check entirely;
-- publication of a verification key together with a permanently valid lease format;
-- some combination, with a stated minimum notice period.
+> **The private signing key is never published.** Not at sunset, not in escrow release, not ever.
 
-Two things are decided here regardless of which is chosen: the wind-down path must be **decided before
-launch, not improvised at the end**, and it must not require the user to have been online at the moment
-the service stopped.
+This is worth saying out loud because it is the obvious-looking shortcut and it is a serious mistake:
+publishing the signing key would not end the service gracefully, it would convert the end of the
+service into a permanent, universal forgery capability against every entitlement Tesserafin ever
+issued. The escrowed artefact is a **pre-signed entitlement**, not the key that signs entitlements.
+
+Two properties hold regardless of how the wind-down actually unfolds: the path is **decided before
+launch, not improvised at the end**, and it **must not require the user to have been online at the
+moment the service stopped**.
 
 ---
 
@@ -924,21 +1050,35 @@ Every implementation item is post-ADR and belongs to separately reviewed, bounde
 
 ---
 
-## 14. Owner-review items
+## 14. Owner rulings, recorded 2026-08-09
 
-These are deliberately **not** decided here. Each needs an explicit owner answer before the
-corresponding implementation issue is opened.
+The eight items this RFC put to the owner have been answered. Each ruling is recorded here and worked
+into the body section named beside it; this table is the index, not the decision.
 
-| # | Item | Recommendation offered |
-| --- | --- | --- |
-| **14.1** | Offline lease duration and grace | 30-day lease + 14-day recovery grace; max revocation delay **44 days** (§8.3, §8.4). Both values server-configurable. |
-| **14.2** | Default personal active-device allowance | 3–5 devices, as commercial policy, not a protocol constant (§9.6). |
-| **14.3** | Service-discontinuation exit mechanism | Principle decided (§11.1); mechanism and notice period to be chosen and stated publicly **before** the first paid client ships. |
-| **14.4** | External identity providers on iOS/tvOS | Either offer an [A-GL] 4.8-compliant equivalent login option, or use Tesserafin sign-in exclusively and rely on 4.8's own-systems exemption (§5.4). |
-| **14.5** | Honouring an entitlement acquired on another platform inside a store app | Permitted by [A-GL] 3.1.3(b) **only while the same item is also offered as an in-app purchase in that app**. Whether to take that path at all is an owner decision (§4.6). |
-| **14.6** | webOS channel shape | Paid LG Apps listing, or free listing with account activation. No first-party LG IAP exists [L-IAP]. Whether to enter any third-party billing contract is an owner decision (§4.5). |
-| **14.7** | Product granularity | This RFC assumes one product per platform family with Universal Purchase where a store offers it. Whether Android and iOS are one product or two — and therefore whether a buyer on one platform pays again on the other — is commercial, and §4.6 deliberately promises nothing. |
-| **14.8** | Family product shape | Seat-based model decided (§9.5); seat counts, plan count and pricing are commercial and excluded (§13). |
+| # | Question | Ruling | Where it lives |
+| --- | --- | --- | --- |
+| **14.1** | Offline lease duration and grace | **Accepted: 30-day lease, silent renewal from day 15, 14-day recovery grace, maximum offline revocation delay 44 days.** Accepted **conditionally** on 14.3 being in place. | §8.3, §8.4 |
+| **14.2** | Default personal active-device allowance | **Five** concurrently activated devices for an individual entitlement, with free self-service deactivation and no punitive delay for replacing a lost device. Commercial policy, server-side, not a protocol constant. | §9.6 |
+| **14.3** | Service-discontinuation exit mechanism | **Final app update removing the renewal obligation + a pre-signed perpetual sunset entitlement bound to already-activated devices + published verifier and public keys + a pre-signed sunset certificate in escrow + a minimum 12 months' notice for planned discontinuation. The private signing key is never published.** Precondition of the first paid release. | §11.1 |
+| **14.4** | Identity providers on Apple platforms | **Launch with first-party Tesserafin sign-in only** — passkey-first, magic link for recovery, PKCE in the system browser, no third-party or social IdP. [A-GL] 4.8 therefore does not apply. **If any third-party IdP is ever added, Sign in with Apple ships in the same release.** | §5.4, §5.4.1 |
+| **14.5** | Recognising an entitlement acquired on another platform | **Adopted.** Free download, full unlock by a single non-consumable in-app purchase, and an existing Tesserafin entitlement may be activated instead of re-purchased — while the same unlock remains available as an in-app purchase, per [A-GL] 3.1.3(b). | §3.4, §4.3, §4.4, §4.6.1 |
+| **14.6** | webOS channel shape | **Paid LG Apps listing where genuinely available**; otherwise free listing plus account activation, **only after explicit written LG approval**. **No third-party in-TV billing provider for the initial webOS release** — delay webOS monetisation rather than degrade the architecture. | §4.5 |
+| **14.7** | Product granularity | **Platform-specific store SKUs mapped to one cross-platform `Tesserafin Official Apps` entitlement.** No second purchase merely because the user changes platform, wherever the store's rules permit recognition. | §4.6 |
+| **14.8** | Family product shape | **Variable-seat model accepted.** Individual: 1 seat / 5 devices. Family: 2–6 configurable seats, 3 personal devices per seat, plus a 3-device shared household pool. Pricing excluded. | §9.1, §9.5 |
+
+### 14.9 What remains open after these rulings
+
+Recording the rulings does not make everything decided. Still outside this RFC, and still requiring
+their own bounded, separately reviewed work:
+
+- **All pricing** — individual, family, per-seat supplement, regional and tax treatment (§13).
+- **Tizen cross-platform recognition** — §4.6.1 records that Samsung's documentation says nothing
+  either way; the question is bounded to the Tizen implementation issue and must be answered from
+  Samsung's own sources at that time.
+- **The escrow arrangement itself** (§11.1 item 4) — the legal instrument, the escrow agent and the
+  release conditions are a contractual matter, not an architectural one.
+- **Acceptance of this RFC as a whole**, which is the pull request's review, distinct from the eight
+  rulings above.
 
 ---
 
@@ -952,6 +1092,7 @@ All external sources accessed **2026-08-09**.
 | [G-INT] | Google Play Billing — Integrate the Google Play Billing Library | https://developer.android.com/google/play/billing/integrate |
 | [G-SEC] | Google Play Billing — Security and verifying purchases | https://developer.android.com/google/play/billing/security |
 | [G-RTDN] | Google Play Billing — Getting ready / real-time developer notifications | https://developer.android.com/google/play/billing/getting-ready |
+| [G-PRICE] | Google Play — Set an app's price (free/paid changes) | https://support.google.com/googleplay/android-developer/answer/6334373 |
 | [G-KS] | Android — Keystore system | https://developer.android.com/privacy-and-security/keystore |
 | [A-GL] | Apple — App Store Review Guidelines (3.1.1, 3.1.2, 3.1.3, 4.8, 5.1.1(v)) | https://developer.apple.com/app-store/review/guidelines/ |
 | [A-CE] | Apple — `Transaction.currentEntitlements` | https://developer.apple.com/documentation/storekit/transaction/currententitlements |
@@ -986,16 +1127,22 @@ the same primary sources. A change in §2 changes which channel row applies (§4
 2. Server, Tesserafin Web and media access are permanently outside the entitlement's reach (§3.2).
 3. Store purchase is the platform entitlement authority where a first-party IAP mechanism exists;
    Tesserafin normalises evidence into grants and issues device leases (§4.2).
-4. No cross-store purchase transfer is promised (§4.6).
-5. Sign-in is OAuth 2.0 Authorization Code + PKCE `S256` in the system browser, never an embedded
-   WebView, with no password ever entered in the app (§5.3).
-6. Entitlement is carried by an asymmetrically signed, device-bound, non-bearer lease (§7).
-7. Recommended offline policy: 30-day lease + 14-day grace, max revocation delay 44 days (§8).
-8. Devices are key pairs with a server-configurable seat allowance; family products are the same
-   protocol with a larger allowance (§9).
-9. The privacy allow/deny table is explicit and its deny side is the shipped default (§10).
-10. Every failure mode has a defined, non-destructive recovery path, including service discontinuation
-    (§11).
+4. Free download, full unlock by a single non-consumable in-app purchase, on every store with a
+   first-party IAP mechanism — decided now because [G-PRICE] makes it irreversible (§3.4, §4.3, §4.4).
+5. Platform-specific store SKUs all grant one cross-platform `Tesserafin Official Apps` entitlement;
+   no cross-store purchase *transfer* is promised, and recognition is conditional per channel (§4.6).
+6. Sign-in is OAuth 2.0 Authorization Code + PKCE `S256` in the system browser, never an embedded
+   WebView, with no password ever entered in the app (§5.3); launch identity is first-party only,
+   passkey-first, and any future third-party IdP on Apple platforms ships with Sign in with Apple in
+   the same release (§5.4).
+7. Entitlement is carried by an asymmetrically signed, device-bound, non-bearer lease (§7).
+8. Offline policy: 30-day lease + 14-day grace, maximum revocation delay 44 days — accepted
+   conditionally on the §11.1 sunset guarantee (§8).
+9. Devices are key pairs; seat, device and shared household device are distinct; individual is
+   1 seat / 5 devices, family is 2–6 seats × 3 devices plus a 3-device household pool (§9).
+10. The privacy allow/deny table is explicit and its deny side is the shipped default (§10).
+11. Every failure mode has a defined, non-destructive recovery path, and service discontinuation has a
+    decided exit mechanism that never publishes the private signing key (§11).
 
 ### 16.2 Enabled later, not started here
 
@@ -1004,7 +1151,7 @@ activation surfaces, and the family product. Each needs its own bounded, separat
 
 ### 16.3 Deliberately deferred
 
-Everything in §13, and every item in §14.
+Everything in §13, and everything in §14.9.
 
 ### 16.4 Compatibility impact
 
