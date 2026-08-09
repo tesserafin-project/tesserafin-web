@@ -1,7 +1,11 @@
 # Native Wave 1 — M0 evidence register
 
-- **Status**: Draft, iteration 1. Supports
-  [`M0-product-and-delivery-discovery.md`](./M0-product-and-delivery-discovery.md).
+- **Status**: **Accepted 2026-08-09** alongside
+  [`M0-product-and-delivery-discovery.md`](./M0-product-and-delivery-discovery.md), which it supports.
+  Acceptance of the discovery packet **closed no evidence gap**: the thirteen gaps in §F were open on
+  2026-08-09 and are open still. Nothing here is marked researched because a decision was taken
+  around it.
+- **Accountable maintainer**: [`all3f0r1`](https://github.com/all3f0r1).
 - **Milestone**: [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222),
   under the umbrella [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221).
 - **Access date for every external source below**: **2026-08-09**. Where a page publishes its own
@@ -687,16 +691,42 @@ missing rows.
 
 | ID | Gap | Why it matters | How it closes |
 | --- | --- | --- | --- |
-| G-01 | **Android version distribution / real ecosystem reach.** No first-party, citable, dated source for the share of active devices per API level was obtained. | A `minSdk` recommendation that quotes a reach percentage without a source would be an invented number. | Read the distribution figures in Android Studio's *New Project* dialog (first-party, dated) on the maintainer's machine, or an official Google post carrying a date, and record it as a row here before M1 fixes `minSdk`. Until then the recommendation in the discovery document is argued from capability and maintenance cost only. |
-| G-02 | **Android TV OS version floor in the field.** Which Android TV / Google TV OS versions are actually present on shipping devices. | Sets the realistic TV `minSdk`, and interacts with P-15 (TV PiP needs API 34+). | Same route as G-01, plus the maintainer's own device inventory (Q5). |
-| G-03 | **Play Console TV form-factor mechanics.** Whether TV distribution is an opt-in toggle on one app entry, and whether a TV build is reviewed separately. | Directly decides Q1 (one listing or two) beyond the manifest evidence in P-08. | Read the Play Console form-factor help page, or observe the Console itself once a developer account exists (Q4). |
+| G-01 | **Android version distribution / real ecosystem reach.** No first-party, citable, dated source for the share of active devices per API level was obtained. | A `minSdk` recommendation that quotes a reach percentage without a source would be an invented number. | Read the distribution figures in Android Studio's *New Project* dialog (first-party, dated) on the maintainer's machine, or the Play Console's *Reach and devices* data, or an official Google post carrying a date, and record it as a row here. **Still open.** M1 fixes `minSdk` at 26 by owner decision (discovery §14 Q3) **without** this gap being closed; the decision is argued from capability, maintenance cost and the cost asymmetry of raising versus lowering a floor. Re-evaluation is mandatory **before M3 implementation and again before the first public release**. |
+| G-02 | **Android TV OS version floor in the field.** Which Android TV / Google TV OS versions are actually present on shipping devices. | Sets the realistic TV `minSdk`, and interacts with P-15 (TV PiP needs API 34+). | Same route as G-01, plus real-device evidence — cloud real-device evaluation at M4 and the physical release gate (discovery §10.3, §10.4). **Still open.** The owner set one conservative floor (`minSdk 26`) for both form factors rather than asserting a TV-specific one; re-measured with G-01 before M3 and before first public release. |
+| G-03 | **Play Console TV form-factor mechanics.** Whether TV distribution is an opt-in toggle on one app entry, and whether a TV build is reviewed separately. | Directly decides Q1 (one listing or two) beyond the manifest evidence in P-08. | Read the Play Console form-factor help page, or observe the Console itself once a developer account exists (Q4). **Still open.** Q1 was decided in favour of one listing with this gap named; it is retained as a **pre-store-registration gate** and does not block a single-package M1 architecture. |
 | G-04 | **Closed-testing requirement for personal Play accounts.** P-19 states the requirement exists for personal accounts created after 13 November 2023 but defers its content. | Changes the release-channel plan and the time-to-first-public-release if the account is personal. | Read the linked Play Console help article; answer depends on Q4. |
 | G-05 | **Credential Manager minimum API level.** P-17 did not state one. | Interacts with the `minSdk` recommendation *only* for the Tesserafin-account path, which is not in the first vertical. | Read the Credential Manager overview/implementation guides before the account milestone, not before M1. |
 | G-06 | **TV safe-area/overscan margins and minimum text size in dp.** P-11 publishes neither. | Needed before any TV layout is built; not needed for an empty TV shell. | Read the Android TV layout guide; defer to the milestone that builds TV screens. |
 | G-07 | **Android text-scaling requirement.** Neither P-21 nor the accessibility principles page states one. | RFC-0006 §5.3 makes accessibility an invariant; text scaling is part of it. | Read the Android accessibility testing guidance before the shell's accessibility gate is written. |
 | G-08 | **Server-side session revocation semantics.** Beyond `/Sessions/Logout` (I-02), how an administrator revokes another device's session and what the client observes was not established. | RFC-0006 §3.2 makes "what a client must do when a session becomes invalid mid-use" a layer-2 semantic, and `#221`'s wave gate 2 requires revocation to be observable. | Exercise a running server; belongs to the milestone that implements session handling, not to M0. |
 | G-09 | **Auto-discovery reliability on real home networks.** I-04 shows the mechanism exists and defaults on; it does not show it works through client isolation, VLANs or broadcast suppression. | Decides whether "discover a server" can be the *primary* first-run path or must be presented alongside manual entry. | Measure on the maintainer's own network during the first vertical. The discovery document does not assume discovery succeeds. |
-| G-10 | **Which playback-diagnostic fields are populated on a default server.** I-06 records RFC-0006's statement that they are `null` by default; it was not re-measured. | Decides how much of the Direct Play / remux / transcode explanation the first vertical can honestly show. | Query `/Items/{itemId}/PlaybackInfo` and `/System/PlaybackDiagnostics/Sessions/{id}` against a running server before the playback-explanation work. |
-| G-11 | **AppLlama free-tier catalogue.** See A-04. | The Pro decision. | The maintainer capture sheet. |
+| G-10 | **Which playback-diagnostic fields are populated on a default server.** I-06 records RFC-0006's statement that they are `null` by default; it was not re-measured. | Decides how much of the Direct Play / remux / transcode explanation the first vertical can honestly show. | Query `/Items/{itemId}/PlaybackInfo` and `/System/PlaybackDiagnostics/Sessions/{id}` against a running server before the playback-explanation work. **Still open, deferred to M3** — the first milestone at which a real server and a real playback request both exist. |
+| G-11 | **AppLlama free-tier catalogue.** See A-04. | The Pro decision. | The maintainer capture sheet. **Still open, deferred to the visual-design milestone** (owner decision Q8: `DEFER PRO UNTIL VISUAL DESIGN`). It was **not** inspected, and no sign-in, purchase or subscription is authorised. |
 | G-12 | **Ten reference products (X-08 – X-17).** | Breadth of the flow study. | Manual inspection, or first-party documentation fetched from a session that is not blocked by bot protection. |
-| G-13 | **Runtime availability floor of `KeyInfo.getSecurityLevel()`.** P-07 conditions its use on the app *targeting* API 29 or higher, and does not state the API level at which the method exists on a device. | It is quoted in owner question Q3 as part of the `minSdk` argument. Because `targetSdk 36` already satisfies "targets API 29+", this source does **not** by itself justify `minSdk 29` over `minSdk 26`; the Q3 recommendation is therefore argued from maintenance cost, and this gap is named so the argument is not read as stronger than it is. | Read the `KeyInfo` API reference for the added-in level before M1 fixes `minSdk`. |
+| G-13 | **Runtime availability floor of `KeyInfo.getSecurityLevel()`.** P-07 conditions its use on the app *targeting* API 29 or higher, and does not state the API level at which the method exists on a device. | It is quoted in owner question Q3 as part of the `minSdk` argument. Because `targetSdk 36` already satisfies "targets API 29+", this source does **not** by itself justify `minSdk 29` over `minSdk 26`; the Q3 recommendation is therefore argued from maintenance cost, and this gap is named so the argument is not read as stronger than it is. | Read the `KeyInfo` API reference for the added-in level. **Still open.** M1 fixes `minSdk 26` without it; the owner explicitly judged the API-29 security argument insufficient for exactly the reason this gap records. |
+
+### F.1 Disposition at acceptance (2026-08-09)
+
+**Thirteen gaps were named. Thirteen remain open.** Acceptance of the discovery packet resolved
+decisions, not evidence. This table records only *who must close each gap and when* — a decision taken
+around a gap is never recorded as the gap being closed, and no optional research is claimed as
+performed.
+
+| Gap | Disposition | Owning milestone |
+| --- | --- | --- |
+| G-01, G-02, G-13 | Future compatibility measurement. `minSdk 26` was chosen conservatively **because** the data is missing, so the gap no longer blocks M1 | Before **M3** implementation, and again before **first public release** |
+| G-03 | Pre-store-registration verification. Does not block a single-package M1 architecture | Before any **store resource** is registered (needs Q4) |
+| G-04 | Depends on Q4's outcome | Before the first release track |
+| G-05, G-06, G-07 | As recorded in the rows above | The milestones named there |
+| G-08 | Server session-revocation semantics | The session-handling milestone |
+| G-09 | Discovery on a real household LAN | **M3** |
+| G-10 | Needs a real server **and** a real playback request | **M3** |
+| G-11 | AppLlama free catalogue — **not inspected**, optional | The **visual-design** milestone |
+| G-12 | Breadth of the reference-product study | Optional; no conclusion rests on it |
+
+**Not an evidence gap, and recorded here so it is not mistaken for one:** the cloud real-device
+providers named in discovery §10.3 (AWS Device Farm, Suitest, TestingBot, RobusTest) are a
+**shortlist to be re-verified**, not observed capacity. Nothing was subscribed, trialled or
+activated; the TestingBot conditions in §10.3 require **written** vendor confirmation precisely
+because its published pages contradict each other. **No physical hardware is confirmed available to
+this project**, and cloud availability does not change that fact.

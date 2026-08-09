@@ -1,6 +1,9 @@
 # Native Wave 1 — M0: product and delivery discovery
 
-- **Status**: Draft for maintainer review. **M0 is not complete and is not proposed for closure.**
+- **Status**: **Accepted by the maintainer on 2026-08-09.** M0 is complete; see §15 for the acceptance
+  record and for the future validation gates that acceptance deliberately leaves open.
+- **Accountable maintainer**: [`all3f0r1`](https://github.com/all3f0r1) — owner of every decision in
+  §14 and of every flow in both inventories (§5.4, §7.6).
 - **Milestone**: [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222)
 - **Umbrella**: [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221)
 - **Fixed inputs**: [RFC-0006 — Native-client foundation](../RFC-0006-native-client-foundation.md)
@@ -13,23 +16,35 @@
   `tesserafin` `master` = `1cca371cbaeef63a03e055eab158b8a51759f92f` (I-09).
 
 > **This document creates no application, no repository, no dependency and no store resource.**
-> `tesserafin-mobile` does not exist and is not created here. No Android or Kotlin code is written.
-> No library or version is selected. No package identifier is registered.
+> No Android or Kotlin code is written. No library or version is selected. No package identifier is
+> registered with any store. The maintainer has **authorised** the creation of the private
+> `tesserafin-mobile` repository (§14 Q10) — that creation is a separate act, performed after this
+> record merges, and this document performs none of it.
 
 ## Reading convention
 
-Four kinds of statement appear below, and they are never blended into one sentence:
+Five kinds of statement appear below, and they are never blended into one sentence:
 
 | Tag | Meaning |
 | --- | --- |
 | **`FACT`** | Evidenced. Carries an evidence ID. If the source moves, the fact moves with it. |
-| **`REC`** | A recommendation this document makes, and defends. Reviewable, arguable, not yet decided. |
+| **`REC`** | A recommendation this document made, and defended, before acceptance. Retained as the reasoning behind a decision — never as the decision itself. |
 | **`ASSUMPTION`** | Provisional. Stated explicitly so it can be falsified cheaply rather than discovered late. |
-| **`OWNER`** | Not this document's to decide. Every one of these appears in §14. |
+| **`OWNER`** | The maintainer's decision, recorded and dated. All ten are resolved in §14 on 2026-08-09. |
+| **`GATE`** | A **future validation** that acceptance does not perform: a measurement, a store observation or a hardware test, with the milestone that must perform it. Never a decision, and never evidence. |
 
 Where a statement would otherwise read as a platform rule but is Tesserafin's own judgement, it is
-tagged **`REC`**. That distinction is load-bearing: `minSdk`, for example, is a Tesserafin decision
-with consequences, not something any store requires.
+tagged **`REC`** where it was argued and **`OWNER`** where it was decided. That distinction is
+load-bearing: `minSdk`, for example, is a Tesserafin decision with consequences, not something any
+store requires — and the maintainer decided it **against** this document's recommendation (§14 Q3).
+
+Three categories are kept apart throughout, and the acceptance in §15 depends on them staying apart:
+
+- an **owner decision** — what Tesserafin has chosen, dated, with an accountable name;
+- a **current platform fact** — what a platform, store or Tesserafin's own contract does today, with
+  an evidence ID and an access date;
+- a **future validation gate** — what remains unmeasured, and which milestone must measure it. A gate
+  is never marked researched merely because a decision was taken around it.
 
 ---
 
@@ -69,7 +84,15 @@ repository boundary, a reduced M1 proposal and ten owner questions.
 
 **What this iteration did not settle**, and says so rather than guessing: thirteen named evidence gaps
 (register §F), of which G-01 (Android version reach) and G-03 (Play Console TV form-factor
-mechanics) are the two that most directly limit §4 and §14 Q1/Q3.
+mechanics) are the two that most directly limit §4 and §14 Q1/Q3. **Acceptance did not close any of
+them.** The maintainer decided *around* G-01 by choosing the conservative floor (`minSdk 26`, §14 Q3)
+and *around* G-03 by accepting a single-package architecture whose store mechanics are verified
+before store registration rather than before M1. Both remain open gates in §15.
+
+**Acceptance.** On 2026-08-09 the maintainer accepted this packet and resolved all ten questions in
+§14. One decision goes **against** this document's recommendation: `minSdk` is **26**, not the
+recommended 29. The recommendation and the reasoning that produced it are retained in §14 Q3 rather
+than rewritten, so the decision can be re-litigated on evidence later.
 
 **No hard stop fired.** RFC-0006 and RFC-0008 do not contradict each other on any M0 decision; no
 current store rule makes an accepted D2 decision impossible (§2.3); no branch or PR already owns this
@@ -128,10 +151,10 @@ Statuses are limited to the seven `#222` permits: `fixed`, `supported by current
 | Tesserafin account, purchase, lease, activation | RFC-0008 §5–§9 | Nothing exists — no account service, no entitlement issuer | Every commercial surface | **commercial-service prerequisite** |
 | Passkey-first sign-in on Android | RFC-0008 §5.4 | — | Digital Asset Links hosted on a Tesserafin-controlled domain (P-17) | commercial-service prerequisite |
 | Sunset / exit mechanism | RFC-0008 §11.1 | — | Precondition of the **first paid release**, and the condition on which the 30 + 14 offline policy was accepted (T-18, T-21) | commercial-service prerequisite |
-| Application identifier and store topology | RFC-0008 §4.3 | — | Permanent under P-02 | **unresolved owner decision** (Q1, Q2) |
-| Play developer account ownership | RFC-0008 §4.3 | — | Determines signing (P-18) and testing obligations (P-19, G-04) | **unresolved owner decision** (Q4) |
-| Supported Android / Android TV range | — | — | A Tesserafin recommendation, not a store rule | **unresolved owner decision** (Q3) |
-| `tesserafin-mobile` creation | RFC-0006 §2.1 | Repository absent (I-09) | Explicit maintainer approval (`#222` criterion 7) | **unresolved owner decision** (Q10) |
+| Application identifier and store topology | RFC-0008 §4.3 | — | Permanent under P-02 | **fixed** — decided 2026-08-09: one listing, one application ID, `org.tesserafin.android` (Q1, Q2) |
+| Play developer account ownership | RFC-0008 §4.3 | — | Determines signing (P-18) and testing obligations (P-19, G-04) | **commercial-service prerequisite** — direction decided (organisation account preferred, Q4); no account is created before M6 |
+| Supported Android / Android TV range | — | — | A Tesserafin decision, not a store rule | **fixed** — decided 2026-08-09: `minSdk 26`, `targetSdk 36`, both form factors (Q3), with a mandatory re-evaluation gate before M3 and before first public release |
+| `tesserafin-mobile` creation | RFC-0006 §2.1 | Repository absent at the time of writing (I-09) | Explicit maintainer approval (`#222` criterion 7) | **fixed** — authorised 2026-08-09, private, after this record merges (Q10) |
 | iOS / tvOS, webOS / Tizen | RFC-0006 §2.2; RFC-0008 §4.1 | — | Waves 2 and 3 | deferred |
 
 ### 2.3 RFC-0008 §15 currency re-check (required before any derived implementation issue)
@@ -186,9 +209,14 @@ in-app and launcher labels are the only place a divergence could appear.
 
 ### 3.2 Provisional application identifier
 
-**`OWNER`** — Q2. Not registered here, and irreversible in practice (P-02).
+**`OWNER`** — **Decided 2026-08-09 (Q2): `org.tesserafin.android`**, a single application ID for
+phone, tablet and TV. The identifier is **provisional until the first store resource is registered**,
+because nothing outside this repository has yet been told about it; it becomes irreversible in
+practice at that moment (P-02). No Play Console application and no package registration is authorised
+by this record.
 
-**`REC`** **`org.tesserafin.android`**, single application ID for phone, tablet and TV.
+**`REC`** *(the recommendation that produced the decision, retained)* **`org.tesserafin.android`**,
+single application ID for phone, tablet and TV.
 
 **Reason.** RFC-0008 §5.1 names `tesserafin.org` as the official infrastructure domain (T-16), so
 `org.tesserafin.*` is the corpus-consistent reverse-domain form and is the same namespace the
@@ -220,7 +248,12 @@ here and is flagged for the milestone that writes it.
 
 ### 4.1 One listing or two
 
-**`REC`** **One Play listing, one application ID, one artefact serving phone, tablet and Android TV.**
+**`OWNER`** — **Decided 2026-08-09 (Q1): one Google Play listing, one application ID, one Android App
+Bundle release line.** Phone, tablet and Android TV are delivered as supported **form factors of the
+same official application**, not as separate products.
+
+**`REC`** *(the recommendation that produced the decision, retained)* **One Play listing, one
+application ID, one artefact serving phone, tablet and Android TV.**
 
 **`FACT`** The supported mechanism is documented (P-08): a `LEANBACK_LAUNCHER` activity marks the app
 as TV-enabled, `<uses-feature android:name="android.software.leanback" android:required="false" />`
@@ -250,8 +283,13 @@ television should not meet a purchase screen.
 **`ASSUMPTION`** That a single Play entry can be distributed to the TV form factor without a separate
 app record. P-08 and P-20 both describe TV distribution as a property of an app rather than a
 separate app, but the Play Console mechanics — a form-factor opt-in switch, and whether a TV build is
-reviewed separately — were not confirmed (**G-03**). This assumption is cheap to falsify in the Play
-Console once an account exists (Q4) and does not block M1.
+reviewed separately — were not confirmed (**G-03**).
+
+**`GATE`** — **G-03 is retained as a pre-store-registration gate.** Play Console form-factor behaviour
+must be verified in the Console itself **before any store resource is registered** (which requires a
+developer account, Q4). It does **not** block a single-package M1 architecture, and the decision in
+this section was taken with the gate open and named. A future *confirmed* Play Console constraint may
+force the topology to change; an unverified possibility does not.
 
 ### 4.2 Release-channel topology
 
@@ -328,6 +366,16 @@ Assessed separately in §7. It is **not** the phone vertical with a larger font 
 one `#222` explicitly forbids, and §7.4 shows why it would fail at step two.
 
 ### 5.4 Phone/tablet flow inventory
+
+**`OWNER`** — **Flow ownership rule, decided 2026-08-09.**
+[`all3f0r1`](https://github.com/all3f0r1) is the **accountable maintainer for every flow in both
+inventories** — all eighteen phone/tablet rows in §5.4 (F-01 – F-18) and all eighteen Android TV rows
+in §7.6 (T-01 – T-18), thirty-six in total, whatever their first-vertical status. This one rule is the
+per-flow owner assignment; it is stated once because repeating a single name in thirty-six cells would
+add no information and would obscure the moment ownership genuinely divides. **When a flow's owner
+ceases to be `all3f0r1`, that flow gets its own explicit owner cell and this rule stops covering it.**
+Ownership here means accountability for the flow's acceptance purpose — that it is built, or
+deliberately deferred, against the success state and test method recorded in its row.
 
 Twelve flow families, phone and tablet. **Actor** is `user` unless stated. **Server dep.** means the
 household server; **Account dep.** means a Tesserafin commercial account; **Entitlement dep.** means a
@@ -587,6 +635,10 @@ on phone — treats the stricter of platform floor and theme value as binding.
 conditions, the failure modes and the test methods all differ, and T-03 has no phone equivalent at
 all.
 
+**Owner.** The flow ownership rule in §5.4 covers every row of this inventory as well:
+[`all3f0r1`](https://github.com/all3f0r1) is the accountable maintainer for T-01 – T-18. Separation
+from §5.4 is a *requirements* separation, not an ownership one.
+
 | # | Flow | Entry condition | Steps | Success state | Recoverable failures | Destructive / irreversible | Server dep. | Account dep. | Entitlement dep. | First vertical? | Test method |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | T-01 | **First launch from the leanback launcher** | Installed; banner present in the TV launcher | Launcher tile selected → shell renders with a **deterministic initial focus** | A screen with one unambiguously focused element | Rendering only | None | none | none | none (see §8.2 in the shipped product) | **In** | Instrumented UI on the TV emulator; TV-LM/TV-LB/TV-BN (P-09) verified on a device |
@@ -792,19 +844,121 @@ name a device the maintainer has not confirmed, and does not infer one from anyt
 
 | Category | Status |
 | --- | --- |
-| Hardware **confirmed available** | **None recorded.** Q5 asks the maintainer to fill this in. |
-| Hardware the maintainer **must identify** | At least one Android phone; at least one Android TV or Google TV device. Without the second, no TV criterion in P-09 can be verified on real hardware. |
+| Hardware **confirmed available** | **None recorded**, and confirmed as such by the maintainer on 2026-08-09 (Q5). The inventory is empty, not merely unasked — and it stays a present fact regardless of what cloud capacity is later reachable. |
 | **Emulator coverage** | Adequate for: phone and tablet window size classes (P-14), back and edge-to-edge behaviour on API 36 (P-13), the Android TV emulator for leanback launch and basic D-pad traversal (P-08, P-10), accessibility scanning (P-21). Not adequate for: real remote-control ergonomics, decode/transcode behaviour, ten-foot legibility, discovery on a real network (G-09), StrongBox availability (P-07). |
-| **Recommended physical purchases** | Deferred until Q5 is answered. Recommending a purchase before knowing what exists would be guessing. |
-| Needed **only before public release** | A second TV device of a different vendor (remote layouts and launcher behaviour vary), and one low-end phone at the chosen `minSdk`. |
+| **Cloud real-device capacity** | **`GATE`** — a *future validation resource*, not proof already obtained. Nothing is subscribed, activated or trialled. See §10.3. |
+| **Physical purchases** | **None authorised** (Q5). No device is named that the maintainer has not confirmed, and exact models stay unselected until M3 and M4 expose the real codec, performance and OS-version requirements. |
+| Needed **only before public release** | The physical release gate of §10.4. |
 
-**`FACT`** The Android TV OS versions actually present on shipping devices were not established
-(**G-02**), which is why Q3 asks the maintainer for a TV floor rather than this document asserting
-one.
+**`OWNER`** — **Decided 2026-08-09 (Q5).** **M1 is emulator-verifiable in full**, so the empty
+inventory blocks nothing now. **Physical playback, network discovery on a real household LAN,
+remote-control ergonomics and hardware-backed key storage cannot be declared proven by an emulator** —
+a passing emulator run is evidence about the emulator, and the acceptance records for M3 and M4 must
+say which of the two they are reporting.
+
+**`GATE`** The Android TV OS versions actually present on shipping devices were not established
+(**G-02**). Acceptance did not close it: the maintainer chose a conservative floor for both form
+factors (`minSdk 26`, §14 Q3) rather than asserting a TV-specific one. G-02 is re-measured together
+with G-01 before M3 and again before the first public release.
+
+### 10.3 Layered verification strategy
+
+**`OWNER`** — **Decided 2026-08-09 (Q5).** Verification is layered, and each layer is entered only at
+the milestone that needs it:
+
+1. **Emulator and simulator** — daily development, every milestone.
+2. **Cloud real-device testing** — at the relevant implementation milestone, on a bounded trial or
+   pay-as-you-go basis.
+3. **A small physical-device release gate** — before public distribution (§10.4).
+
+**`FACT`** **Nothing is procured by this record.** No device-farm subscription, no account creation,
+no trial activation and no physical-device purchase is authorised in the loop that accepted M0.
+
+| Milestone | Layer | What it must cover | Status |
+| --- | --- | --- | --- |
+| **M1** | Emulator only | Android phone emulator; tablet window-size coverage; Android TV emulator; D-pad/focus automation; release/debug artefact inspection | **Sufficient.** No cloud farm and no physical hardware blocks M1 |
+| **M3** — phone/tablet | Local emulators first, then cloud | Installation and upgrade; several Android versions and OEM variants; system Back behaviour; rotation and window sizes; network interruption; protected-storage behaviour; performance on a non-flagship device | **`GATE`** Evaluate **AWS Device Farm** (one-time trial or pay-as-you-go) **before M3 acceptance**. **Not activated in this loop.** AWS Device Farm is **not** treated as an Android TV service |
+| **M4** — Android TV | Android TV emulator during implementation, then cloud | Installation on a real Android TV device; D-pad-only completion; deterministic focus; Back behaviour; ten-foot legibility; sleep/resume; local-network or securely tunnelled server access; video and audio playback; subtitle and audio-track changes; remote-control ergonomics | **`GATE`** Request or use a **bounded Suitest Public Lab trial before M4 acceptance**. **Not requested in this loop** |
+
+**Why Suitest is the primary TV candidate.** Its public laboratory documents real Android, Fire OS,
+LG webOS, Roku, whaleOS and Samsung Tizen devices — the only currently verified candidate covering the
+ten-foot half of wave 1.
+
+**`GATE`** **TestingBot must not be counted as Android TV coverage** unless the vendor confirms **in
+writing**: that an Android TV model is currently available; that it is **physical rather than
+emulated**; that native APK installation is supported; that remote-control input is exposed; that
+audio/video streaming is available; that local or tunnelled server access works; and that the
+applicable price or trial includes that device. Its marketing page and its technical support page
+currently **disagree** on Android TV availability, and that disagreement is the reason for the
+condition.
+
+**`GATE`** **RobusTest** remains a comparison candidate only, subject to a live demonstration, an
+exact model inventory, a security review and written pricing.
+
+**`GATE`** **The shortlist above is re-verified at the start of M3, M4 and each later platform wave.**
+Model inventories, prices and platform support are commercially mutable; a name recorded here on
+2026-08-09 is a starting point for that re-verification, never a standing procurement decision.
+
+**Later waves — recorded, not authorised.** Tizen: evaluate Samsung Remote Test Lab first, then
+Suitest where additional models are needed. webOS: LG's official simulator during development, then
+Suitest or another verified real-device provider before release. tvOS: Xcode simulation and a verified
+physical Apple TV provider, during wave 2. **Nothing is bought or subscribed for a later wave during
+Android wave 1.**
+
+### 10.4 Physical release gate
+
+**`OWNER`** — **Decided 2026-08-09 (Q5).** Cloud access reduces purchases; it does not eliminate the
+final physical gate. **Before Android wave 1 public release**, at minimum:
+
+- **one real Android phone**, preferably non-flagship;
+- **one real Android TV or Google TV television or box, with its normal remote**.
+
+Exact models stay unselected until M3 and M4 expose the relevant codec, performance and OS-version
+requirements. **No iPhone, Apple TV, Samsung Tizen television or LG webOS television is required for
+Android wave 1.**
+
+### 10.5 Media validation boundary
+
+**`OWNER`** — **Decided 2026-08-09 (Q5).** Wave 1 must verify the self-hosted media behaviour that
+actually applies to it: **H.264**; **HEVC** where the selected device supports it; **AV1** where the
+selected device supports it; **Direct Play, remux and transcode transitions**; subtitles; multiple
+audio tracks; seeking; network interruption and recovery; sleep/resume; audio passthrough where
+applicable; and **honest reporting of unsupported codecs** (T-06's fail-closed-with-a-reason, applied
+to decoding).
+
+**`FACT`** **Widevine, FairPlay and PlayReady are not wave 1 requirements**, and are not to be added
+merely because commercial streaming applications use them. **Tesserafin's application entitlement is
+separate from media DRM and from the user's server-to-client media path** — RFC-0008 §3.2's separation
+of the licensing control plane from media access (T-10, T-12) is the same boundary, seen from the
+codec side.
+
+### 10.6 Cloud test security boundary
+
+**`OWNER`** — **Decided 2026-08-09 (Q5).** Any cloud-device test runs under all of the following, with
+no exceptions negotiated per provider:
+
+- a **disposable test user**;
+- **synthetic or freely redistributable media** only;
+- **no real household credentials**;
+- **no personal library**;
+- **no production entitlement**;
+- **short-lived network access**;
+- **explicit test-data cleanup**;
+- **logs reviewed for secrets before retention**.
+
+**Where a provider cannot guarantee complete cleanup**, store nothing outside application-private
+storage and **revoke the disposable server session immediately after the test**. A provider's cleanup
+promise is not evidence of cleanup; the revocation is the control that does not depend on it.
 
 ---
 
-## 11. M1 proposal
+## 11. M1 scope, accepted
+
+**`OWNER`** — **Decided 2026-08-09 (Q10): §11.2 is accepted as the M1 *ceiling*.** A ceiling is not a
+target: M1 may deliver less and still be complete, and may deliver nothing outside it. The M1 issue
+carries this scope forward verbatim, adds repository-level gates, and requires its own preflight
+dependency and version research before implementation — **M0 authorised responsibilities, not library
+versions**, and nothing in this document selects one.
 
 ### 11.1 The recommended ceiling, reduced
 
@@ -823,7 +977,11 @@ verification script can actually fail. Everything else in the suggested ceiling 
 
 **In (conceptually — no file is created by this document):**
 
-- The `tesserafin-mobile` repository, **private**, created only on explicit maintainer approval (Q10).
+- The `tesserafin-mobile` repository, **private** — **authorised 2026-08-09 (Q10)**, to be created
+  after this record merges. Private is a standing constraint, not a starting state: no open-source
+  licence is granted, and no licence file is added.
+- **`org.tesserafin.android`** as the single application ID (Q1, Q2), with `minSdk 26` and
+  `targetSdk 36` on both form factors (Q3).
 - A minimal Kotlin Multiplatform project structure with the module boundary of §9.2 expressed as
   empty modules — the shared layer and the two application modules — so the boundary is enforced by
   the build graph from the first commit rather than by convention.
@@ -851,7 +1009,8 @@ verification script can actually fail. Everything else in the suggested ceiling 
 | Provenance skeleton | §11.1 |
 | Any dependency selection beyond what an empty Android/KMP build cannot start without | RFC-0006 §9.3 defers this to implementation; M0 defines responsibilities, M1 selects only what a shell literally requires |
 | Theme/token consumption | No Compose renderer exists (I-08) |
-| Any store submission | No developer account decision yet (Q4) |
+| Any store submission, store resource or package registration | No Play developer account exists, and none is authorised before M6 (Q4) |
+| Any signing secret, or the lease signing key of RFC-0008 §7.3 | Neither belongs in a repository (§4.3, T-21) |
 
 ### 11.3 Acceptance gates
 
@@ -863,26 +1022,31 @@ verification script can actually fail. Everything else in the suggested ceiling 
    `enableOnBackInvokedCallback="false"` (P-12, P-13).
 5. The phone screen reports the correct window size class across the 600dp and 840dp boundaries
    (P-14).
-6. `targetSdk` is 36, satisfying both the standard and the Android TV rows of P-01.
+6. `targetSdk` is 36, satisfying both the standard and the Android TV rows of P-01, and `minSdk` is
+   26 on both form factors (§14 Q3).
 7. The build graph makes it impossible for an application module to be depended on by the shared
    module.
 8. **The release artefact contains no reference to the debug entitlement source set** — asserted
    mechanically, and passing trivially because that source set is empty (§9.4).
 9. CI runs all of the above on every push.
 
-### 11.4 Decisions that must be answered before M1 begins
+### 11.4 Decisions that had to be answered before M1 — all answered
 
-- **Q10** — approval to create `tesserafin-mobile`. Nothing starts without it.
-- **Q2** — the application identifier. It is written into the build on the first commit and it is
-  permanent in practice (P-02).
-- **Q3** — `minSdk` for phone and for TV. `targetSdk` is determined by P-01 and is not an owner
-  question.
-- **Q1** — one listing or two, because it decides whether M1 produces one application ID or two.
+**`OWNER`** — all four M1-blocking questions were resolved on 2026-08-09:
+
+| Question | Decision |
+| --- | --- |
+| **Q10** — approval to create `tesserafin-mobile` | **Authorised**, private, after this record merges |
+| **Q2** — the application identifier | **`org.tesserafin.android`**, provisional until the first store resource is registered |
+| **Q3** — `minSdk` for phone and for TV | **`minSdk 26`** on both, with `targetSdk 36`. This is **against** the recommendation in §14 Q3 |
+| **Q1** — one listing or two | **One** listing, one application ID, one App Bundle release line |
 
 **`FACT`** Q4 (developer account), Q5 (hardware), Q6 (first-vertical boundary), Q7 (TV pairing
-ambition), Q8 (AppLlama) and Q9 (documentation location) **do not block M1**.
+ambition), Q8 (AppLlama) and Q9 (documentation location) never blocked M1, and their answers
+(§14) do not change the ceiling above.
 
-**`FACT`** The M1 issue is **not created** by this document.
+**`FACT`** The M1 issue is **not created** by this document. It is created separately, in
+`tesserafin-project/tesserafin`, as the next sub-issue of `#221`.
 
 ---
 
@@ -928,6 +1092,14 @@ RFC-scale rigour applies: Pro is recommended only if **all five** conditions hol
 ### 12.4 Verdict
 
 > ### **`DEFER PRO UNTIL VISUAL DESIGN`**
+
+**`OWNER`** — **Decided 2026-08-09 (Q8).** The verdict above is the maintainer's decision, not only
+this document's recommendation. **No purchase, subscription or sign-in is authorised.** The free
+catalogue capture sheet in §12.5 remains useful but is **optional** — M0 closes without it, and G-11
+stays open rather than being marked researched.
+
+**`GATE`** — **G-11 is deferred to the visual-design milestone**, the first one that actually designs
+screens. It is the milestone that re-runs §12.3's five-condition test, not this one.
 
 **`FACT`** Conditions 2, 3 and 5 fail for M0. `PRO NOT NEEDED FOR M0` would be defensible on those
 three alone, but it overstates the case going forward: when a milestone actually designs phone
@@ -983,7 +1155,9 @@ never a platform rule, and it is recorded in the evidence register as
 | A confident Direct Play / remux / transcode verdict | After G-10 is measured | RFC-0006 §3.2 forbids a confident wrong explanation |
 | TV first-sign-in pairing without an existing session | A **separately authorised server prerequisite** | §7.4; it changes the server's authentication surface |
 | QR-code pairing | Indefinitely | No RFC requires it; nothing in the contract offers it (I-03) |
-| Physical device purchase recommendations | After Q5 | Recommending a purchase without knowing the inventory is guessing |
+| Physical device purchases | The pre-release physical gate (§10.4) | Q5 decided a layered strategy: emulators, then cloud real devices at M3/M4, then a small physical gate before public release. Exact models stay unselected until M3 and M4 expose the real requirements |
+| Cloud device-farm subscriptions, trials and accounts | M3 (phone) and M4 (TV) | Evaluated at the milestone that needs them (§10.3); **none activated** by this record |
+| DRM (Widevine, FairPlay, PlayReady) | Out of wave 1 entirely | Not required by self-hosted media; the application entitlement is separate from media DRM (§10.5) |
 | Provenance skeleton | M2 | §11.1 |
 | iOS/tvOS, webOS/Tizen | Waves 2 and 3 | T-03 |
 | All pricing | Outside both RFCs | RFC-0008 §13, §14.9 |
@@ -997,8 +1171,11 @@ there (T-01's repository field, and RFC-0008's). The chosen path
 `docs/tesserafin/` (`bench-hdr/`, `captures/`).
 
 **`FACT`** This **does not decide** the future source-code repository boundary, which RFC-0006 §2.1
-already settled in favour of `tesserafin-mobile` (T-02). Q9 asks whether the M0 record should move
-when that repository exists.
+already settled in favour of `tesserafin-mobile` (T-02).
+
+**`OWNER`** — **Decided 2026-08-09 (Q9): these documents stay in `tesserafin-web`.** They are **not**
+moved into `tesserafin-mobile` when it is created. Revisit only if the documentation structure becomes
+demonstrably confusing — a `git mv` and a link update remain available at any time.
 
 ### 13.3 Not touched
 
@@ -1008,16 +1185,42 @@ worktree or untracked file was disturbed.
 
 ---
 
-## 14. Maintainer questions
+## 14. Maintainer decisions
 
-Ten questions. Each carries a recommendation, because an unranked menu is a way of not doing the
-work. None of them asks the maintainer to re-decide something an accepted RFC already fixed.
+**All ten are resolved.** Decided by [`all3f0r1`](https://github.com/all3f0r1) on **2026-08-09**.
+
+Each entry keeps the analysis that was put to the maintainer — the recommendation, the viable
+alternative and the consequences — and adds the decision that was taken. The analysis is not rewritten
+to agree with the outcome: **Q3 was decided against the recommendation**, and the record says so, so
+that a later reader can see what was weighed rather than only what was chosen.
+
+| # | Question | Decision | Followed the recommendation? |
+| --- | --- | --- | --- |
+| Q1 | Play topology | One listing, one application ID, one App Bundle release line | Yes |
+| Q2 | Application identifier | `org.tesserafin.android`, provisional until first store registration | Yes |
+| Q3 | Android versions | **`minSdk 26`**, `targetSdk 36` | **No — the recommendation was 29** |
+| Q4 | Play developer account | Organisation account preferred; none created before M6 | Yes |
+| Q5 | Hardware | Inventory empty and confirmed empty; no purchase authorised | Yes |
+| Q6 | First vertical | §5.2 accepted as written | Yes |
+| Q7 | TV pairing | Quick Connect **and** on-screen credentials; first-client pairing deferred | Yes |
+| Q8 | AppLlama Pro | `DEFER PRO UNTIL VISUAL DESIGN` | Yes |
+| Q9 | Documentation location | Stays in `tesserafin-web` | Yes |
+| Q10 | Repository creation | Authorised, private, after this record merges; §11.2 accepted as a ceiling | Yes |
+
+None of them asked the maintainer to re-decide something an accepted RFC already fixed, and none of
+the answers reopens RFC-0006 or RFC-0008.
 
 ---
 
 ### Q1 — One combined Play listing, or separate phone and TV listings?
 
-- **Decision**: whether phone, tablet and Android TV ship from one Play entry and one application ID,
+> **`OWNER` — RESOLVED 2026-08-09: one Google Play listing, one application ID, one Android App
+> Bundle release line.** Phone, tablet and Android TV are delivered as supported form factors of the
+> same official application. A future **confirmed** Play Console constraint may force a change; an
+> unverified possibility does not, and does not block M1. **`GATE`** G-03 stays open as a
+> pre-store-registration verification (§4.1).
+
+- **Question**: whether phone, tablet and Android TV ship from one Play entry and one application ID,
   or two.
 - **Evidence**: P-08 (single-app recommendation, leanback + `required="false"` mechanism), P-20 (TV
   listing assets), X-01/X-02 (Jellyfin's two-package split and why its reason does not transfer),
@@ -1035,7 +1238,13 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q2 — Provisional reverse-domain application identifier?
 
-- **Decision**: the application ID, which P-02 makes permanent in practice under the free-download
+> **`OWNER` — RESOLVED 2026-08-09: `org.tesserafin.android`.** Accepted as the **provisional**
+> identifier. It stays provisional until the first store resource is registered — the moment P-02
+> makes it permanent in practice — and **no Play Console application and no package registration is
+> authorised** before then. M1 writes it into the build; that is a repository fact, not a store one,
+> and it is still cheap to change while the repository is private and unpublished.
+
+- **Question**: the application ID, which P-02 makes permanent in practice under the free-download
   model.
 - **Evidence**: P-02 (free → paid impossible under the same package name), T-16 (`tesserafin.org` is
   the official infrastructure domain), P-17 (passkeys bind to a domain Tesserafin controls), T-02
@@ -1052,7 +1261,39 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q3 — Minimum supported Android and Android TV versions?
 
-- **Decision**: `minSdk` for phone/tablet and for Android TV. `targetSdk` is **not** an owner
+> **`OWNER` — RESOLVED 2026-08-09, AGAINST THE RECOMMENDATION BELOW: `minSdk 26`, `targetSdk 36`,
+> on both form factors.**
+>
+> The recommendation was `minSdk 29`. It was **not** accepted. The maintainer's reasoning, recorded
+> so the decision can be re-litigated on evidence rather than on preference:
+>
+> 1. **Android TV hardware has slower OS replacement than phones**, and Android TV is a first-class
+>    wave 1 target rather than an afterthought — so the phone-shaped intuition about how quickly a
+>    floor becomes free does not govern here.
+> 2. **This packet contains no sourced evidence quantifying the reach lost at API 29** (**G-01**,
+>    **G-02**). It says so itself and declines to invent a figure, which is correct — but a floor
+>    argued without reach data should be the *conservative* one, not the convenient one.
+> 3. **The security argument offered for API 29 is insufficient**, as this document already concedes:
+>    P-07 conditions the hardware-backed-key security-level check on the app **targeting** API 29+,
+>    which `targetSdk 36` satisfies at any `minSdk`, and the method's runtime availability floor was
+>    never established (**G-13**).
+> 4. **Beginning at API 26 preserves compatibility** that would otherwise be discarded before it was
+>    ever measured.
+> 5. **Raising the minimum later is straightforward** — a build-file change plus the removal of
+>    compatibility branches that were exercised the whole time.
+> 6. **Recovering API 26 compatibility after building around API-29-only assumptions is materially
+>    more expensive** than the reverse. The asymmetry, not a reach estimate, is what decides this.
+>
+> **No market-share percentage is asserted anywhere in this record, and none is to be invented.**
+>
+> **`GATE` — mandatory re-evaluation, twice.** `minSdk 26` is re-evaluated **before M3
+> implementation** and again **before the first public release**, using the distribution figures in
+> Android Studio's *New Project* dialog or the Play Console's *Reach and devices* data once either is
+> available to this project. Both are first-party and dated; neither has been read. **G-01, G-02 and
+> G-13 remain open** — the decision was taken around them, not by closing them, and nothing in this
+> record may be read as claiming that research was performed.
+
+- **Question**: `minSdk` for phone/tablet and for Android TV. `targetSdk` is **not** an owner
   question — P-01 fixes it at 36, which satisfies both the standard row and the Android TV row (34+).
 - **Evidence**: P-01 (target-API rule, enforcement 31 August 2026), P-07 (the hardware-backed-key
   security-level check is documented for apps targeting API 29 or higher), P-15 (PiP needs API 26; TV
@@ -1078,7 +1319,14 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q4 — Play developer-account ownership model?
 
-- **Decision**: personal account, or organisation account, and in whose name.
+> **`OWNER` — RESOLVED 2026-08-09: an organisation account is preferred.** **No Play developer
+> account is created now.** Obtaining the legal entity and settling account ownership is a
+> **commercial prerequisite for M6**, non-blocking before then. **A personal account is not to be
+> substituted merely to make progress** — the reason for preferring an organisation account is that a
+> paid product's obligations (refunds, disputes, the RFC-0008 §11.1 escrow arrangement) should not
+> bind one individual, and that reason does not weaken because the entity is slow to obtain.
+
+- **Question**: personal account, or organisation account, and in whose name.
 - **Evidence**: P-18 (Google holds the app signing key; the developer holds the upload key), P-19
   (closed-testing requirement for personal accounts created after 13 November 2023), **G-04** (the
   content of that requirement was not read), RFC-0008 §4.2 (the seven authorities, and the split
@@ -1097,7 +1345,29 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q5 — What phone, tablet and TV hardware is actually available for tests?
 
-- **Decision**: the real device inventory. **This document names no device**, because none has been
+> **`OWNER` — RESOLVED 2026-08-09: no physical device inventory is confirmed, and verification is
+> layered rather than purchased.** The full strategy is §10.2; the decision in short:
+>
+> 1. **Emulators and simulators** during daily development.
+> 2. **Cloud real-device testing** at the relevant implementation milestone — AWS Device Farm
+>    evaluated before M3 acceptance for phone/tablet; a bounded Suitest Public Lab trial evaluated
+>    before M4 acceptance for Android TV.
+> 3. **A small physical-device release gate** before public distribution: at least one real Android
+>    phone, preferably non-flagship, and at least one real Android TV or Google TV television or box
+>    with its normal remote.
+>
+> **Nothing is procured in this loop.** No device-farm subscription, no account creation, no trial
+> activation and no physical-device purchase is authorised. **M1 remains entirely
+> emulator-verifiable** and no cloud farm or physical device blocks it.
+>
+> **`GATE`** Cloud-device availability is a **future validation resource, not proof already
+> obtained** — "no physical hardware currently confirmed" remains a present fact. Physical playback,
+> discovery on a real household LAN, remote-control ergonomics and hardware-backed key storage cannot
+> be declared proven by an emulator, and the shortlist in §10.2 is **re-verified at the start of M3,
+> M4 and each later platform wave**, because model inventories, prices and platform support are
+> commercially mutable.
+
+- **Question**: the real device inventory. **This document names no device**, because none has been
   confirmed (§10.2).
 - **Evidence**: §10.2, P-09 (TV criteria that only real hardware can verify), P-07 (StrongBox
   availability is device-dependent), **G-02**, **G-09**.
@@ -1115,7 +1385,12 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q6 — Is the recommended first-vertical boundary right?
 
-- **Decision**: whether §5.2's amended ten steps are the first vertical.
+> **`OWNER` — RESOLVED 2026-08-09: §5.2 is accepted as written.** The first vertical is local
+> discovery and manual connection; household-server authentication; browse; item details; read-only
+> content-pack semantics; a playback request; an **honest playback-decision explanation**; the
+> player; and logout. **Background playback and picture-in-picture are deferred.**
+
+- **Question**: whether §5.2's amended ten steps are the first vertical.
 - **Evidence**: §5.2 in full; I-02, I-04, I-05, I-06; **G-09**, **G-10**; T-05 (what layer 2 owns).
 - **Recommended**: **accept §5.2** — full flow, content packs read-only, the playback explanation
   honest about absence, background playback and PiP out.
@@ -1132,7 +1407,14 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q7 — How much TV discovery and pairing ambition for the first vertical?
 
-- **Decision**: whether the TV client ships credential entry alongside Quick Connect, or waits for a
+> **`OWNER` — RESOLVED 2026-08-09: ship both paths.** Quick Connect is supported **when another
+> authenticated client exists**, and **on-screen household credential entry remains the required
+> fallback** — it is the only path open to a household whose first client is the television.
+> First-client, text-free pairing is a **separately authorised server prerequisite**, not wave 1
+> client work. **No QR or client-only pairing protocol is to be invented**; this document's refusal
+> to design one is endorsed rather than merely accepted.
+
+- **Question**: whether the TV client ships credential entry alongside Quick Connect, or waits for a
   server capability that does not exist.
 - **Evidence**: **I-03** (`/QuickConnect/Authorize` requires an authenticated session; QuickConnect
   enabled by default), I-04 (discovery on by default), X-03, X-04, §7.4.
@@ -1154,7 +1436,12 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q8 — AppLlama Pro?
 
-- **Decision**: whether to buy Pro now.
+> **`OWNER` — RESOLVED 2026-08-09: `DEFER PRO UNTIL VISUAL DESIGN`.** The free catalogue capture
+> sheet (§12.5) remains useful but is **optional** — M0 closes without it. **No purchase, no
+> subscription and no sign-in is authorised.** **`GATE`** G-11 stays open and is **not** marked
+> researched; the visual-design milestone re-runs §12.3's five-condition test.
+
+- **Question**: whether to buy Pro now.
 - **Evidence**: A-01 (iOS-only corpus, 28,600+ screens / 700+ apps), A-02 and A-03 (terms permit the
   research, forbid the shortcuts), **A-04 / G-11** (free catalogue not inspected), §12.3's five-condition
   test.
@@ -1172,7 +1459,11 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q9 — Where should the M0 record live?
 
-- **Decision**: whether these documents stay in `tesserafin-web` or move once `tesserafin-mobile`
+> **`OWNER` — RESOLVED 2026-08-09: the M0 documents stay in `tesserafin-web`.** They are **not**
+> moved into `tesserafin-mobile`. Revisit only if the documentation structure becomes demonstrably
+> confusing — not on a schedule, and not because the new repository exists.
+
+- **Question**: whether these documents stay in `tesserafin-web` or move once `tesserafin-mobile`
   exists.
 - **Evidence**: §13.2, T-01 (RFC-0006's repository field), T-02 (`tesserafin-mobile` is decided but
   uncreated), I-09.
@@ -1188,7 +1479,17 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ### Q10 — What are the approval criteria for creating `tesserafin-mobile`?
 
-- **Decision**: what must be true before the repository is created. `#222` acceptance criterion 7
+> **`OWNER` — RESOLVED 2026-08-09: creation is AUTHORISED.** The recommended gate was met — Q1, Q2
+> and Q3 are answered and **the reduced M1 scope of §11.2 is approved as a ceiling**. The
+> authorisation carries four standing constraints:
+>
+> - the repository is created **after this record merges**, not before;
+> - it **must remain private**, and **no open-source licence is granted**;
+> - **no store resource is created** by its existence;
+> - **M1 implementation remains separately reviewable** — authorising the repository authorises no
+>   code.
+
+- **Question**: what must be true before the repository is created. `#222` acceptance criterion 7
   makes maintainer approval mandatory; this question asks what that approval should test.
 - **Evidence**: T-02 (RFC-0006 §2.1 names the repository and declines to create it), `#222`
   criterion 7, §11.
@@ -1205,32 +1506,52 @@ work. None of them asks the maintainer to re-decide something an accepted RFC al
 
 ---
 
-## 15. M0 acceptance status
+## 15. M0 acceptance record
 
-**`FACT`** M0 is **not** complete and this document does not propose closing `#222`.
+> **M0 is COMPLETE.**
+> **Accepted by [`all3f0r1`](https://github.com/all3f0r1) on 2026-08-09.**
+> Recorded in [`tesserafin-web#148`](https://github.com/tesserafin-project/tesserafin-web/pull/148);
+> milestone [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222) closes as
+> completed. The umbrella
+> [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221) **remains open**.
+
+**What acceptance is, and what it is not.** Acceptance settles the ten decisions of §14 and the M1
+ceiling of §11.2. It does **not** close a single evidence gap, and no gap below is marked researched.
+Thirteen gaps were named on 2026-08-09 and **thirteen remain open**; what changed is that each now has
+an owner decision taken *around* it and a named milestone that must close it. Optional research that
+was not performed is recorded as not performed.
 
 Against `#222`'s seven acceptance criteria:
 
 | # | Criterion | Status |
 | --- | --- | --- |
-| 1 | Every target flow has an owner and an acceptance purpose | **Partial.** Thirty-six flows are inventoried across two separate inventories (§5.4, F-01 – F-18; §7.6, T-01 – T-18), each with an entry condition, a success state, recoverable failures, dependencies and a test method. Per-flow *owners* are not assigned — this project has one maintainer, and inventing owner names would be theatre. Recommend closing this by naming the maintainer as owner of every flow and recording it once. |
-| 2 | Android and Android TV requirements are separated | **Met.** §6 and §7 are separate, §5.4 and §7.6 are separate inventories, and §7.3/§7.4/T-11 show three places where merging them would produce a wrong answer. |
-| 3 | Every unresolved decision is explicit — named, with who decides and when | **Met.** Ten owner questions (§14) and thirteen evidence gaps (register §F), each with a named route to closure. |
-| 4 | Fixed RFC decisions are not reopened | **Met.** §2.1 lists the inputs; nothing below contradicts one. §2.3 re-verifies RFC-0008 §2 as §15 requires, and reports it unchanged. |
-| 5 | AppLlama Pro justified or declared unnecessary, with a reason | **Met.** `DEFER PRO UNTIL VISUAL DESIGN`, with the five-condition test worked through (§12.3) and a manual capture sheet supplied (§12.5). |
-| 6 | The proposed M1 is small enough for one reviewable pull request | **Met, and reduced** — the provenance skeleton is moved to M2 (§11.1). |
-| 7 | The maintainer has approved creation of `tesserafin-mobile` | **Not met, deliberately.** Q10. |
+| 1 | Every target flow has an owner and an acceptance purpose | **Met.** Thirty-six flows are inventoried across two separate inventories (§5.4, F-01 – F-18; §7.6, T-01 – T-18), each with an entry condition, a success state, recoverable failures, dependencies and a test method. Ownership is assigned by the single explicit rule in §5.4, which names [`all3f0r1`](https://github.com/all3f0r1) as accountable for **all thirty-six rows across both inventories** and states when it stops applying. One unambiguous rule, not thirty-six repetitions of one name. |
+| 2 | Android and Android TV requirements are separated | **Met.** §6 and §7 are separate, §5.4 and §7.6 are separate inventories, and §7.3/§7.4/T-11 show three places where merging them would produce a wrong answer. Acceptance did not merge them: §10.3 keeps even the *verification* routes separate, and records that AWS Device Farm is not an Android TV service. |
+| 3 | Every unresolved decision is explicit — named, with who decides and when | **Met.** Ten owner decisions (§14), all resolved and dated, and thirteen evidence gaps (register §F), **all still open**, each with a named route to closure and the milestone that owns it — listed again below so acceptance cannot be mistaken for closure. |
+| 4 | Fixed RFC decisions are not reopened | **Met.** §2.1 lists the inputs; nothing below contradicts one. §2.3 re-verifies RFC-0008 §2 as its §15 requires, and reports it unchanged. **Acceptance changed no RFC**: RFC-0006 and RFC-0008 remain Accepted 2026-08-09 and unmodified. |
+| 5 | AppLlama Pro justified or declared unnecessary, with a reason | **Met.** `DEFER PRO UNTIL VISUAL DESIGN` — the maintainer's decision (Q8), with the five-condition test worked through (§12.3) and a manual capture sheet supplied (§12.5). **No purchase was made and none is authorised.** |
+| 6 | The proposed M1 is small enough for one reviewable pull request | **Met, and reduced** — the provenance skeleton is moved to M2 (§11.1), and §11.2 is accepted as a **ceiling** rather than a target (§11). |
+| 7 | The maintainer has approved creation of `tesserafin-mobile` | **Met.** Authorised 2026-08-09 (Q10): private, created after this record merges, no open-source licence, no store resource, M1 implementation separately reviewable. |
 
-**What a second M0 iteration should do**, in priority order:
+### Future validation gates that acceptance leaves open
 
-1. Close **G-01** (Android reach) — it is the only thing standing between Q3 and a fully evidenced
-   answer.
-2. Close **G-03** (Play Console TV form-factor mechanics) — it converts Q1's `ASSUMPTION` into a
-   `FACT`.
-3. Assign flow owners (criterion 1) once the maintainer confirms the trivial answer.
-4. Close **G-10** (which playback-diagnostic fields populate on a default server) — it decides how
-   much of §5.2 step 8 is honestly shippable.
-5. Optionally, close **G-11** via the §12.5 capture sheet.
+Acceptance is not evidence. These remain **open**, and none of them was researched in order to close
+M0:
 
-**`FACT`** Until criterion 7 is met, no mobile repository exists, no native application code is
-written, and no dependency is selected.
+| Gate | Owning milestone | What must actually happen |
+| --- | --- | --- |
+| **G-01, G-02, G-13** — Android and Android TV version reach; `KeyInfo.getSecurityLevel()` availability floor | **Before M3 implementation, and again before first public release** | Read first-party dated distribution data (Android Studio *New Project*, or Play Console *Reach and devices*) and re-evaluate `minSdk 26`. No market-share figure is asserted until then |
+| **G-03** — Play Console TV form-factor mechanics | **Before any store resource is registered** | Observe the Console once a developer account exists (Q4) |
+| **G-04** — closed-testing requirement for personal Play accounts | With Q4, before the first release track | Read the linked Play Console article |
+| **G-08** — server-side session revocation semantics | The milestone that implements session handling | Exercise a running server |
+| **G-09** — auto-discovery reliability on real home networks | M3 | Measure on a real household LAN |
+| **G-10** — which playback-diagnostic fields populate on a default server | **M3**, where a real server and a real playback request exist | Query `/Items/{itemId}/PlaybackInfo` and `/System/PlaybackDiagnostics/Sessions/{id}` |
+| **G-11** — AppLlama free catalogue | **The visual-design milestone** | The §12.5 capture sheet, if the maintainer chooses to run it |
+| **G-05, G-06, G-07, G-12** | The milestones named in register §F | As recorded there |
+| **Hardware** — no confirmed physical device | **M3** (phone) and **M4** (TV), with the physical release gate of §10.4 before public distribution | Cloud real-device evaluation (§10.3) then real hardware. Cloud capacity is a *future resource*, not proof obtained |
+| **Cloud provider shortlist** | Start of **M3**, **M4** and each later platform wave | Re-verify inventories, prices and platform support; the TestingBot conditions in §10.3 are written confirmations, not assumptions |
+
+**`FACT`** At the moment of acceptance, `tesserafin-mobile` did not yet exist, no native application
+code had been written, no dependency had been selected, no store or package resource had been
+registered, and no purchase, subscription or trial had been activated. **Authorising the repository
+authorises none of those.**
