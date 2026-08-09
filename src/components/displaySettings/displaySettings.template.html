@@ -238,6 +238,19 @@
         ${HeaderLibraries}
     </h2>
 
+    <!--
+        #139 gate 5, for the legacy phone and television shells.
+
+        The same two outcomes the first-run step offers and the modern Display preferences page
+        offers, on the surface those two shells actually reach. The options are filled from the
+        generated model in `displaySettings.js` rather than spelled here, so the wire values cannot
+        drift from the server's enum.
+    -->
+    <div class="selectContainer selectContainer-withDescription fldBrowsingArrangement">
+        <select is="emby-select" id="selectBrowsingArrangement" label="${HeaderBrowsingArrangement}"></select>
+        <div class="fieldDescription selectBrowsingArrangementDescription"></div>
+    </div>
+
     <div class="inputContainer inputContainer-withDescription">
         <input is="emby-input" type="number" id="txtLibraryPageSize" pattern="[0-9]*" required="required" min="0" max="1000" step="1" label="${LabelLibraryPageSize}" />
         <div class="fieldDescription">${LabelLibraryPageSizeHelp}</div>

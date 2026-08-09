@@ -13,6 +13,13 @@ import type { DisplaySettingsValues } from '../types/displaySettingsValues';
 import { useThemes } from 'hooks/useThemes';
 import { Theme } from 'types/webConfig';
 import { FALLBACK_THEME_ID } from 'hooks/useUserTheme';
+import {
+    ContentPackBrowsingPreference,
+    resolveBrowsingPreference
+} from 'apps/modern/features/contentPacks/adapters/browsingPreference';
+import type { UserConfiguration } from 'lib/tesserafin-sdk/generated/models/user-configuration';
+import events from 'utils/events';
+import { ServerConnections } from 'lib/jellyfin-apiclient';
 
 interface UseDisplaySettingsParams {
     userId?: string | null;
@@ -99,6 +106,12 @@ async function loadDisplaySettings({
     await settings.setUserInfo(userId, api);
 
     const displaySettings = {
+        // Absent, undefined and any unrecognised value all resolve to media-family-first, which is
+        // the arrangement every existing installation already has. That is what makes "existing
+        // users are not prompted" true without a migration.
+        contentPackBrowsingPreference: resolveBrowsingPreference(
+            user?.Configuration as UserConfiguration | undefined
+        ),
         customCss: settings.customCss() || '',
         dashboardTheme:
             settings.dashboardTheme() || defaultTheme?.id || FALLBACK_THEME_ID,
@@ -186,10 +199,31 @@ async function saveDisplaySettings({
     if (user.Id && user.Configuration) {
         user.Configuration.DisplayMissingEpisodes =
             newDisplaySettings.displayMissingEpisodes;
+        // The whole configuration object the server last returned is sent back with one more key
+        // changed, so nothing else on it is lost. Changing your own arrangement needs no
+        // administrator right and no content-pack permission: this endpoint is plain `[Authorize]`.
+        (
+            user.Configuration as UserConfiguration
+        ).ContentPackBrowsingPreference =
+            newDisplaySettings.contentPackBrowsingPreference as ContentPackBrowsingPreference;
         promises.push(api.updateUserConfiguration(user.Id, user.Configuration));
     }
 
     await Promise.all(promises);
+
+    /*
+     * Re-read the user and publish it on the same event the sign-in path uses.
+     *
+     * `ApiProvider` holds the current user in React state and only replaces it on
+     * `localusersignedin`. Without this, a surface bound to `user.Configuration` — the primary
+     * navigation, which reads the browsing arrangement from exactly there — would keep rendering the
+     * configuration as it was when the session started, and the choice the household just made would
+     * not appear until the next reload.
+     */
+    if (user.Id) {
+        const refreshed = await api.getUser(user.Id);
+        events.trigger(ServerConnections, 'localusersignedin', [refreshed]);
+    }
 }
 
 function normalizeValue(value: string) {

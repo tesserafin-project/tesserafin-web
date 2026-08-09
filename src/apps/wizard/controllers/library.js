@@ -467,7 +467,9 @@ function getVirtualFolderHtml(page, virtualFolder, index) {
 
 window.WizardLibraryPage = {
     next: function () {
-        Dashboard.navigate('wizard/settings');
+        // Content packs come after libraries so the household is choosing groupings with their own
+        // media already in mind. The library step itself is unchanged (#139 explicit exclusion).
+        Dashboard.navigate('wizard/packs');
     }
 };
 pageClassOn('pageshow', 'mediaLibraryPage', function () {

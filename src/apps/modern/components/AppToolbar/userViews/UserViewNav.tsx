@@ -12,6 +12,7 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import LibraryIcon from 'apps/modern/components/LibraryIcon';
 import { MetaView } from 'apps/modern/constants/metaView';
+import { ContentPackBrowsingPreference } from 'lib/tesserafin-sdk/generated/models/content-pack-browsing-preference';
 import { useAncestors } from 'apps/modern/features/libraries/hooks/api/useAncestors';
 import {
     isDetailsPath,
@@ -84,6 +85,30 @@ const UserViewNav = () => {
     const { user } = useApi();
     const { data: userViews, isPending } = useUserViews({ userId: user?.Id });
 
+    /**
+     * #139 gate 4. Content-pack-first does not hide anything: it puts content packs at the head of
+     * the primary navigation and leaves every media-family destination exactly where it was, in the
+     * same order, on the same routes. Anything other than an explicit `ContentPackFirst` — absent,
+     * `undefined`, or a value this build does not know — is media-family-first, which is today's
+     * arrangement, so an installation that was never asked is not prompted and does not move.
+     *
+     * The comparison is written out here rather than delegated to
+     * `features/contentPacks/adapters/browsingPreference`, whose `resolveBrowsingPreference` says
+     * exactly this. This component is in `main.tesserafin.bundle.js`; pulling that module in cost
+     * 166 B gzip against 45 B of measured start-up headroom. The enum still comes from the generated
+     * model, so the wire value is never spelled as a literal.
+     *
+     * `useApi` still hands back `@jellyfin/sdk`'s `UserDto`, whose `UserConfiguration` predates this
+     * field; the cast is on the *shape*, not on the value, and erases entirely at runtime.
+     */
+    const packsLead =
+        (
+            user?.Configuration as
+                | { ContentPackBrowsingPreference?: string }
+                | undefined
+        )?.ContentPackBrowsingPreference ===
+        ContentPackBrowsingPreference.ContentPackFirst;
+
     const navItems = useMemo(
         () => [...(menuLinks || []), ...(userViews?.Items || [])],
         [menuLinks, userViews]
@@ -152,6 +177,18 @@ const UserViewNav = () => {
 
     return (
         <>
+            {packsLead && (
+                <Button
+                    variant='text'
+                    color='inherit'
+                    startIcon={<Icon>widgets</Icon>}
+                    component={Link}
+                    to='contentpacks'
+                >
+                    {globalize.translate('ContentPacks')}
+                </Button>
+            )}
+
             <Button
                 variant='text'
                 color={

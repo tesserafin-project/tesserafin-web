@@ -37,6 +37,8 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { flattenModule } from './lib/delivery-stats-plugin.cjs';
+
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const VERIFIER = join(REPO_ROOT, 'scripts', 'verify-delivery-budget.mjs');
 const FIXTURE = join(REPO_ROOT, 'scripts', 'fixtures', 'delivery-budget');
@@ -73,7 +75,10 @@ function stage(name) {
         mainBudget: join(dir, 'main-budget.json'),
         // Named `emitted/`, not `dist/`: the repository's .gitignore excludes `dist` at any
         // depth, and a committed fixture that git refuses to track is not a fixture.
-        dist: join(dir, 'emitted')
+        dist: join(dir, 'emitted'),
+        // The tree the protected-module staleness check reads. The fixture carries its own so a
+        // case cannot pass or fail because of the repository it happens to sit in.
+        src: join(dir, 'src')
     };
 }
 
@@ -96,6 +101,8 @@ function verify(paths, extraArgs = []) {
             paths.stats,
             '--dist',
             paths.dist,
+            '--src',
+            paths.src,
             ...extraArgs
         ],
         { encoding: 'utf8' }
@@ -386,6 +393,192 @@ expectRefusal(
             stats.schemaVersion = 99;
         }),
     'schema version'
+);
+
+/*
+ * PROGRESSIVE-DELIVERY BOUNDARIES
+ * ------------------------------------------------------------------------------------------------
+ * The boundaries are the half of this gate that byte ceilings cannot express: a protected module
+ * can enter the start-up graph while every ceiling still passes, because tree-shaking makes the
+ * first eager import of a large feature cheap. Until this block existed they were proven by one
+ * whole production build, once, by hand.
+ *
+ * Everything below drives `checkBoundaries`/`checkRulesAreLive` through the real verifier against a
+ * synthetic graph, so each shape - direct, transitive, correctly lazy, similarly named, stale rule,
+ * host path separator - is a case rather than an assumption. Module concatenation is the one shape
+ * that cannot be posed here, because it is resolved before the graph is written: it is covered
+ * against `flattenModule` at the end of this file.
+ */
+const eager = (paths, ...modules) =>
+    editJson(paths.stats, (stats) => {
+        stats.chunks
+            .find((chunk) => chunk.id === 'main')
+            .modules.push(...modules);
+    });
+
+console.log('\n[test:delivery-budget] BOUNDARIES');
+
+expectRefusal(
+    'a protected module imported directly into an initial chunk',
+    (paths) => eager(paths, './apps/modern/features/themeStudio/index.tsx'),
+    'boundary "theme-studio"'
+);
+
+expectRefusal(
+    'a protected module reached transitively from an initial chunk',
+    (paths) =>
+        eager(
+            paths,
+            './apps/modern/features/themeStudio/index.tsx',
+            './apps/modern/features/themeStudio/panels/TokenPanel.tsx'
+        ),
+    './apps/modern/features/themeStudio/panels/TokenPanel.tsx'
+);
+
+expectRefusal(
+    'a protected module recorded with Windows path separators',
+    (paths) =>
+        eager(paths, '.\\apps\\modern\\features\\themeStudio\\index.tsx'),
+    'boundary "theme-studio"'
+);
+
+expectRefusal(
+    'a protected module in a boot-time async chunk, which start-up still downloads',
+    (paths) =>
+        editJson(paths.stats, (stats) => {
+            stats.chunks
+                .find((chunk) => chunk.id === 'boot')
+                .modules.push('./apps/modern/features/themeStudio/index.tsx');
+        }),
+    'boundary "theme-studio"'
+);
+
+expectRefusal(
+    'a rule whose pattern matches nothing in the source tree',
+    (paths) =>
+        editJson(paths.budget, (budget) => {
+            budget.protectedModulePatterns[0].pattern =
+                '^\\./apps/modern/features/themeAtelier/';
+        }),
+    'match nothing in the source tree'
+);
+
+expectPass(
+    'the protected module in its own async chunk, which is what the rule is FOR',
+    (paths) =>
+        editJson(paths.stats, (stats) => {
+            stats.chunks.find((chunk) => chunk.id === 'studio').modules = [
+                './apps/modern/features/themeStudio/index.tsx',
+                './apps/modern/features/themeStudio/panels/TokenPanel.tsx'
+            ];
+        }),
+    (output) =>
+        output.includes('theme-studio') &&
+        output.includes('absent from the start-up graph')
+            ? null
+            : 'the boundary was not reported as clean'
+);
+
+expectPass(
+    'a similarly named module the rule must NOT claim',
+    (paths) =>
+        eager(paths, './apps/modern/features/themeStudioHelpers/format.ts'),
+    (output) =>
+        output.includes('absent from the start-up graph')
+            ? null
+            : 'the boundary fired on an unrelated module'
+);
+
+expectRefusal(
+    'a second rule, added and immediately broken',
+    (paths) => {
+        editJson(paths.budget, (budget) => {
+            budget.protectedModulePatterns.push({
+                id: 'item-details',
+                pattern: '^\\./apps/modern/routes/details',
+                reason: 'fixture mirror of the production Item Details boundary'
+            });
+        });
+        eager(paths, './apps/modern/routes/details/index.tsx');
+    },
+    'boundary "item-details"'
+);
+
+/*
+ * MODULE CONCATENATION
+ * ------------------------------------------------------------------------------------------------
+ * `ModuleConcatenationPlugin` merges scope-hoistable modules into one `ConcatenatedModule` whose
+ * `readableIdentifier` is a SUMMARY - `./index.jsx + 8 modules`. Recording that summary would hide
+ * every merged member from the boundaries above: a protected module concatenated into an initial
+ * chunk simply would not appear in the graph, and the boundary would report clean because it never
+ * saw it. `flattenModule` is what prevents that, and this is where it is proven.
+ */
+console.log('\n[test:delivery-budget] MODULE CONCATENATION');
+
+const identifier = (name) => ({
+    readableIdentifier: () => name
+});
+const concatenation = (name, members) => ({
+    readableIdentifier: () => `${name} + ${members.length - 1} modules`,
+    modules: members
+});
+
+const flattened = (module) =>
+    flattenModule(module).map((leaf) => leaf.readableIdentifier());
+
+const expectFlattened = (label, module, expected) => {
+    const actual = flattened(module);
+    if (JSON.stringify(actual) === JSON.stringify(expected)) {
+        ok(`${label} - ${JSON.stringify(actual)}`);
+        return;
+    }
+    bad(
+        label,
+        `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`
+    );
+};
+
+expectFlattened('a plain module is its own leaf', identifier('./RootApp.tsx'), [
+    './RootApp.tsx'
+]);
+
+expectFlattened(
+    'a concatenation yields its members, not its summary',
+    concatenation('./index.jsx', [
+        identifier('./index.jsx'),
+        identifier('./apps/modern/features/themeStudio/index.tsx')
+    ]),
+    ['./index.jsx', './apps/modern/features/themeStudio/index.tsx']
+);
+
+expectFlattened(
+    'a concatenation inside a concatenation is expanded too',
+    concatenation('./index.jsx', [
+        identifier('./index.jsx'),
+        concatenation('./RootApp.tsx', [
+            identifier('./RootApp.tsx'),
+            identifier('./apps/modern/routes/details/index.tsx')
+        ])
+    ]),
+    ['./index.jsx', './RootApp.tsx', './apps/modern/routes/details/index.tsx']
+);
+
+expectFlattened(
+    'a Set of members, which is the shape webpack actually hands over',
+    {
+        readableIdentifier: () => './index.jsx + 1 modules',
+        modules: new Set([
+            identifier('./index.jsx'),
+            identifier('./apps/modern/features/themeStudio/index.tsx')
+        ])
+    },
+    ['./index.jsx', './apps/modern/features/themeStudio/index.tsx']
+);
+
+expectFlattened(
+    'an empty member list is not mistaken for a concatenation',
+    { readableIdentifier: () => './empty.ts', modules: [] },
+    ['./empty.ts']
 );
 
 console.log(`\n[test:delivery-budget] ${passed} passed, ${failed} failed.`);

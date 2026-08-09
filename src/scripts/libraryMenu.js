@@ -5,6 +5,7 @@ import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
 import { getUserViewsQuery } from 'hooks/api/useUserViews';
 import globalize from 'lib/globalize';
+import { ContentPackBrowsingPreference } from 'lib/tesserafin-sdk/generated/models/content-pack-browsing-preference';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { EventType } from 'constants/eventType';
 import { queryClient } from 'utils/query/queryClient';
@@ -487,7 +488,29 @@ function updateLibraryMenu(user) {
     if (libraryMenuOptions) {
         getUserViews(apiClient, userId).then(function (result) {
             const items = result;
-            let html = `<h3 class="sidebarHeader">${globalize.translate('HeaderMedia')}</h3>`;
+            /*
+             * #139 gate 4, in the shell the legacy phone and television layouts actually use.
+             *
+             * The nav drawer IS the legacy primary navigation — `apps/modern`'s `UserViewNav`
+             * toolbar is never rendered here — so the arrangement has to reach it, or the choice
+             * the household made in the wizard would apply to one of the three shells this branch
+             * ships.
+             *
+             * Content-pack-first puts content packs at the head of the drawer and changes nothing
+             * else: every media destination below stays on its own route, in its existing relative
+             * order, under its existing header. Anything other than an explicit `ContentPackFirst`
+             * — absent, undefined, or a value this build does not know — is media-family-first,
+             * which is today's arrangement, so an installation that was never asked does not move.
+             */
+            let html =
+                user.Configuration?.ContentPackBrowsingPreference ===
+                ContentPackBrowsingPreference.ContentPackFirst
+                    ? `<a is="emby-linkbutton" data-itemid="contentpacks" class="lnkMediaFolder navMenuOption navMenuOptionContentPacks" href="#/contentpacks">
+                                    <span class="material-icons navMenuOptionIcon widgets" aria-hidden="true"></span>
+                                    <span class="sectionName navMenuOptionText">${globalize.translate('ContentPacks')}</span>
+                                  </a>`
+                    : '';
+            html += `<h3 class="sidebarHeader">${globalize.translate('HeaderMedia')}</h3>`;
             html += items
                 .map(function (i) {
                     const icon =
@@ -682,8 +705,27 @@ function refreshLibraryDrawer(user) {
     loadNavDrawer();
     currentDrawerType = 'library';
 
-    if (user) {
-        Promise.resolve(user);
+    /*
+     * `currentUser` before `ServerConnections.user()`, and the difference matters for #139 gate 4.
+     *
+     * `ServerConnections.user()` answers out of `apiClient`'s own `_currentUser`, which is filled
+     * once at sign-in and is never invalidated by a configuration write. The drawer reads the
+     * browsing arrangement off `Configuration`, so served from that cache it would rebuild with the
+     * arrangement the session started with and the choice the household just made would not appear
+     * until the next full reload. `currentUser` is whatever the last `localusersignedin` carried,
+     * which is what a surface that has just written the configuration re-reads and republishes.
+     */
+    const known = user || currentUser?.localUser;
+
+    if (known) {
+        // Both, and in this order: `refreshLibraryInfoInDrawer` is what creates the
+        // `.libraryMenuOptions` container that `updateLibraryMenu` then fills.
+        refreshLibraryInfoInDrawer(
+            currentUser?.localUser === known
+                ? currentUser
+                : { localUser: known }
+        );
+        updateLibraryMenu(known);
     } else {
         ServerConnections.user(getCurrentApiClient()).then(
             function (userResult) {
@@ -885,6 +927,7 @@ Events.on(ServerConnections, 'apiclientcreated', (e, newApiClient) => {
 
 Events.on(ServerConnections, 'localusersignedin', function (e, user) {
     const currentApiClient = ServerConnections.getApiClient(user.ServerId);
+    const hadLibraryDrawer = currentDrawerType === 'library';
 
     currentDrawerType = null;
     currentUser = {
@@ -893,9 +936,30 @@ Events.on(ServerConnections, 'localusersignedin', function (e, user) {
 
     loadNavDrawer();
 
+    /*
+     * A drawer that is already on screen is rebuilt now, rather than at the next page change.
+     *
+     * This event is published in two situations. At sign-in there is no drawer yet, and clearing
+     * `currentDrawerType` is enough: the first page change builds it. But a surface that has just
+     * written the user's own configuration publishes the same event to announce the new value —
+     * `components/displaySettings` does, for the browsing arrangement — and there the drawer is
+     * already built and already on the page. Waiting for a page change there is a race the
+     * household loses: navigate before the re-read resolves and the drawer keeps the arrangement it
+     * was built with, which reads as the setting not having taken.
+     */
+    if (hadLibraryDrawer) refreshLibraryDrawer(user);
+
     ServerConnections.user(currentApiClient).then(function (userResult) {
-        currentUser = userResult;
-        updateUserInHeader(userResult);
+        /*
+         * The event payload wins on `localUser`.
+         *
+         * `ServerConnections.user()` is here for the display name and the avatar URL, which it
+         * derives once. Its `localUser` comes from `apiClient`'s sign-in-time cache, so taking it
+         * wholesale would throw away exactly the freshly re-read configuration a surface publishes
+         * this event to announce — see `refreshLibraryDrawer`.
+         */
+        currentUser = { ...userResult, localUser: user };
+        updateUserInHeader(currentUser);
     });
 });
 

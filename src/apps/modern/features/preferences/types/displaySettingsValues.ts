@@ -1,4 +1,10 @@
 export interface DisplaySettingsValues {
+    /**
+     * `MediaFamilyFirst` or `ContentPackFirst`, server-owned on `UserConfiguration` (#139 gate 5).
+     * A string rather than the generated enum because every field on this form is the primitive the
+     * form control produces; the enum is applied where the value is read and written.
+     */
+    contentPackBrowsingPreference: string;
     customCss: string;
     dashboardTheme: string;
     dateTimeLocale: string;

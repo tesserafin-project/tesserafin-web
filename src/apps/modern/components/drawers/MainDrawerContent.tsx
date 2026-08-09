@@ -17,6 +17,7 @@ import { useUserViews } from 'hooks/api/useUserViews';
 import { useApi } from 'hooks/useApi';
 import { useWebConfig } from 'hooks/useWebConfig';
 import globalize from 'lib/globalize';
+import { ContentPackBrowsingPreference } from 'lib/tesserafin-sdk/generated/models/content-pack-browsing-preference';
 
 import LibraryIcon from '../LibraryIcon';
 import DrawerHeaderLink from './DrawerHeaderLink';
@@ -32,6 +33,44 @@ const MainDrawerContent = () => {
         location.pathname === '/home' &&
         (!location.search || location.search === '?tab=0');
 
+    /*
+     * #139 gate 4, for the layout that has a drawer instead of a toolbar.
+     *
+     * On a phone `AppToolbar` renders no `UserViewNav` at all — `isDrawerAvailable` is true and the
+     * navigation moves in here — so a modern phone would otherwise see no effect from the choice the
+     * wizard asked for.
+     *
+     * Content-pack-first moves the content-pack destination to the head of the drawer. It does not
+     * add, remove or reorder anything else: Home, Favourites, the custom links and every
+     * media-family destination stay exactly where M2 put them, in the same order, on the same
+     * routes. Anything other than an explicit `ContentPackFirst` leaves the drawer as M2 shipped it.
+     *
+     * The comparison is written out rather than delegated to
+     * `features/contentPacks/adapters/browsingPreference`: this component is in the start-up graph,
+     * where the measured gzip headroom is 43 bytes. The enum still comes from the generated model,
+     * so the wire value is never spelled as a literal. `useApi` hands back `@jellyfin/sdk`'s
+     * `UserDto`, whose `UserConfiguration` predates this field; the cast is on the shape, not the
+     * value, and erases at runtime.
+     */
+    const packsLead =
+        (
+            user?.Configuration as
+                | { ContentPackBrowsingPreference?: string }
+                | undefined
+        )?.ContentPackBrowsingPreference ===
+        ContentPackBrowsingPreference.ContentPackFirst;
+
+    const contentPacksItem = (
+        <ListItem disablePadding>
+            <ListItemLink to='/contentpacks'>
+                <ListItemIcon>
+                    <Icon>collections_bookmark</Icon>
+                </ListItemIcon>
+                <ListItemText primary={globalize.translate('ContentPacks')} />
+            </ListItemLink>
+        </ListItem>
+    );
+
     return (
         <>
             {/* MAIN LINKS */}
@@ -39,6 +78,7 @@ const MainDrawerContent = () => {
                 <ListItem disablePadding>
                     <DrawerHeaderLink />
                 </ListItem>
+                {packsLead && contentPacksItem}
                 <ListItem disablePadding>
                     <ListItemLink to='/home' selected={isHomeSelected}>
                         <ListItemIcon>
@@ -59,8 +99,7 @@ const MainDrawerContent = () => {
                 </ListItem>
                 {/*
                  * Content packs (#138). One destination ALONGSIDE the existing browsing
-                 * structure — the primary media-family navigation below is untouched, and
-                 * reordering or replacing it is #139/M3, not this milestone.
+                 * structure — the primary media-family navigation below is untouched.
                  *
                  * Metadata only: a path, a translated label and an icon. This entry pulls in no
                  * feature module and no SDK client, which is what keeps `ContentPacksApi` out of
@@ -71,17 +110,11 @@ const MainDrawerContent = () => {
                  * The icon is `@mui/material/Icon` with a ligature name rather than a new
                  * `@mui/icons-material/*` module, because `Icon` is already imported here for the
                  * custom menu links and the start-up asset count has zero headroom (45/45).
+                 *
+                 * Under content-pack-first the same item is rendered at the head of this list
+                 * instead — see `packsLead` above. It appears once either way.
                  */}
-                <ListItem disablePadding>
-                    <ListItemLink to='/contentpacks'>
-                        <ListItemIcon>
-                            <Icon>collections_bookmark</Icon>
-                        </ListItemIcon>
-                        <ListItemText
-                            primary={globalize.translate('ContentPacks')}
-                        />
-                    </ListItemLink>
-                </ListItem>
+                {!packsLead && contentPacksItem}
             </List>
 
             {/* CUSTOM LINKS */}
