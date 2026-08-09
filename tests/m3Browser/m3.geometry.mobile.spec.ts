@@ -119,7 +119,19 @@ const describe = (f: FieldGeometry) =>
  */
 async function expectUsableFields(
     page: Parameters<typeof installFixtureApi>[0],
-    where: string
+    where: string,
+    /*
+     * Whether the suggestion names must fit their field without scrolling.
+     *
+     * True at every width this repository shows a phone user. False at 200% page zoom, where the
+     * viewport is 206 CSS pixels and "Photos and home video" fits in NO field the layout could
+     * build — the field is already the full width of the step. What must still hold there is that
+     * the field is full width, focusable and scrollable with the caret, and that the row's own
+     * LABEL wraps rather than truncating, which is what keeps the row readable. Asserting a fit
+     * that is geometrically impossible would be asserting that the product must abbreviate its own
+     * copy, which this repair is explicitly not allowed to do.
+     */
+    suggestionsMustFit = true
 ) {
     const viewport = await page.evaluate(() => ({
         width: document.documentElement.clientWidth,
@@ -162,15 +174,38 @@ async function expectUsableFields(
      * scrolling inside the field. A value the household typed may legitimately be longer than the
      * screen; a label the product chose may not.
      */
-    const clippedSuggestions = fields.filter(
-        (f) =>
-            f.id.startsWith('suggestedPack') &&
-            f.value !== LONG_NAME &&
-            f.contentWidth > f.editableWidth + 1
+    if (suggestionsMustFit) {
+        const clippedSuggestions = fields.filter(
+            (f) =>
+                f.id.startsWith('suggestedPack') &&
+                f.value !== LONG_NAME &&
+                f.contentWidth > f.editableWidth + 1
+        );
+        expect(
+            clippedSuggestions.map(describe),
+            `${where}: suggestion names clipped by their own field`
+        ).toEqual([]);
+    }
+
+    /*
+     * At every width, including the zoom case: the row's own label wraps rather than truncating.
+     *
+     * This is what stops a narrow row from becoming the "unusable strip" — a tick next to a
+     * horizontally cut-off word. A wrapped label is two lines and completely readable.
+     */
+    const truncatedLabels = await page.$$eval(
+        `${PACKS_PAGE} .wizardPackToggle`,
+        (nodes) =>
+            nodes
+                .filter((node) => node.scrollWidth > node.clientWidth + 1)
+                .map(
+                    (node) =>
+                        `${node.textContent?.trim()} ${node.clientWidth}<${node.scrollWidth}`
+                )
     );
     expect(
-        clippedSuggestions.map(describe),
-        `${where}: suggestion names clipped by their own field`
+        truncatedLabels,
+        `${where}: row labels cut off instead of wrapping`
     ).toEqual([]);
 }
 
@@ -252,7 +287,14 @@ test('a focused field can always be scrolled to, at the phone width and below', 
     const viewports = [
         { width: 412, height: 839, label: 'Pixel 7' },
         { width: 412, height: 420, label: 'Pixel 7 with a software keyboard' },
-        { width: 320, height: 640, label: '320px stress case' }
+        { width: 320, height: 640, label: '320px stress case' },
+        /*
+         * Page zoom is not a separate mechanism: zooming to 200% halves the viewport measured in
+         * CSS pixels, which is what the layout responds to. 206x640 is the Pixel 7 at 200%, and it
+         * is the only faithful way to model zoom here — Playwright cannot set a browser zoom level.
+         * Like the 320px row this is a stress case, not a new support promise.
+         */
+        { width: 206, height: 640, label: 'Pixel 7 at 200% page zoom' }
     ];
 
     for (const viewport of viewports) {
@@ -260,7 +302,7 @@ test('a focused field can always be scrolled to, at the phone width and below', 
             width: viewport.width,
             height: viewport.height
         });
-        await expectUsableFields(page, viewport.label);
+        await expectUsableFields(page, viewport.label, viewport.width >= 320);
 
         // Every editable field, and the primary action, can be brought fully into view and focused.
         const targets = await page.$$eval(
