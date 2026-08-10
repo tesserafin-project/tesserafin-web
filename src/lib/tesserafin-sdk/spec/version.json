@@ -7,10 +7,10 @@
     "versionSkewNote": null,
     "openapi": "3.0.4",
     "pathCount": 307,
-    "schemaCount": 416,
-    "source": "~/.tesserafin-m1p/server/openapi/openapi.json",
-    "sourceCommit": "1d0e91b77978cdbf69eef4117702383115e65826",
-    "sourceRef": "1d0e91b77978cdbf69eef4117702383115e65826",
-    "specSha256": "d234d2a8e7775cb8473ebfde4abf2c298478cc26bc827c136853b6d31b5e4030",
-    "generatedAt": "2026-08-07T18:52:58.698Z"
+    "schemaCount": 415,
+    "source": "~/Repos/tesserafin/.git/wt-i226/openapi/openapi.json",
+    "sourceCommit": "9bcbd557493d7282ba5b05eb304aff8ab095e82c",
+    "sourceRef": "9bcbd557493d7282ba5b05eb304aff8ab095e82c",
+    "specSha256": "e8952f1fdb0387fe77099bcc6161e8eab1b9e30aef521a0cabd05669b476836e",
+    "generatedAt": "2026-08-10T17:04:49.967Z"
 }

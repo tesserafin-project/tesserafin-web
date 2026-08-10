@@ -58,6 +58,17 @@ const PINNED_VERSION_PATH = join(SPEC_DIR, 'version.json');
 const GENERATED_DIR = join(SDK_DIR, 'generated');
 
 /**
+ * Template overrides for the `typescript-axios` generator (#226).
+ *
+ * openapi-generator resolves every template from this directory FIRST and falls back to its own
+ * built-in copy for each file absent here, so only the one template that needs correcting is
+ * vendored. `scripts/verify-openapi-templates.mjs` fails if the vendored copy differs from the
+ * generator's built-in template by anything other than the single intended hunk, so the override
+ * cannot silently drift as the pinned generator version moves.
+ */
+const TEMPLATE_DIR = join(__dirname, 'openapi-templates', 'typescript-axios');
+
+/**
  * Path of the canonical contract *inside* the `reefin` server repo. This is the file the server
  * lane generates and commits (with its own drift gate on that side); it is the only spec source
  * this repo treats as authoritative.
@@ -302,8 +313,35 @@ export function demoteMediaRanges(node) {
     }
 }
 
+/**
+ * Detects a server contract that describes an opaque identifier with its CLR shape — an object
+ * carrying a single `Value` member — instead of the scalar the wire actually carries.
+ *
+ * HISTORY, AND WHY THIS NO LONGER REWRITES ANYTHING. This function used to silently unwrap such
+ * a schema so the generated client would take a scalar. That worked, and that was the problem:
+ * it made a real server-side contract defect invisible on this side. Issue #226 is exactly that
+ * defect — `PlaybackSessionId` was described as `{ Value: uuid }` while the model binder accepted
+ * only the scalar, so every request an honest generator could build from the contract was answered
+ * HTTP 400 — and it went unnoticed here for as long as this transform quietly papered over it.
+ *
+ * The server fixed the contract (server PR #227): the canonical document now describes the scalar
+ * directly, and this transform matches nothing. Rather than delete it and lose the detector along
+ * with the workaround, it is kept and INVERTED. It normalizes nothing; it refuses.
+ *
+ * If a future contract reintroduces an ID-object, generation stops with the schema named, and the
+ * fix belongs in the server contract — not in a quiet rewrite here.
+ *
+ * Note the deliberately narrow predicate: a single property named exactly `Value`. This contract
+ * carries around thirty legitimate single-property DTOs (`PingRequestDto`, `SeekRequestDto`,
+ * `QuickConnectDto`, …) whose sole property is named something else; none of them is an opaque
+ * identifier and none is affected.
+ *
+ * @returns {string[]} the offending schema names — always empty on a healthy contract.
+ * @throws {Error} if the contract describes any ID-object.
+ */
 export function unwrapIdSchemas(spec) {
     const schemas = (spec.components || {}).schemas || {};
+    const offenders = [];
     for (const [name, schema] of Object.entries(schemas)) {
         const properties =
             schema && typeof schema === 'object'
@@ -315,16 +353,27 @@ export function unwrapIdSchemas(spec) {
             Object.keys(properties).length === 1 &&
             Object.keys(properties)[0] === 'Value'
         ) {
-            const description = schema.description;
-            schemas[name] = {
-                ...properties.Value,
-                ...(description ? { description } : {})
-            };
-            console.log(
-                `[generate-tesserafin-sdk] Unwrapped single-property ID schema: ${name}`
-            );
+            offenders.push(name);
         }
     }
+
+    if (offenders.length > 0) {
+        throw new Error(
+            `the canonical contract describes ${offenders.length} opaque identifier(s) with a CLR ` +
+                `object shape instead of the scalar the wire carries: ${offenders.join(', ')}.\n` +
+                'This is a server-side contract defect of exactly the kind issue #226 fixed, and it ' +
+                'is NOT corrected here: a generated client that quietly reshapes the contract hides ' +
+                'the defect from everyone downstream who does not use this generator.\n' +
+                'Fix the description on the server (see server PR #227 for the pattern: a Swashbuckle ' +
+                '`MapType` for the identifier type), regenerate the contract, then re-pin here.'
+        );
+    }
+
+    console.log(
+        '[generate-tesserafin-sdk] ID-object check: 0 schema(s) describe an identifier as ' +
+            '{ Value: ... }; nothing to correct.'
+    );
+    return offenders;
 }
 
 /**
@@ -511,6 +560,9 @@ function runGenerator() {
             PINNED_SPEC_PATH,
             '--generator-name',
             'typescript-axios',
+            // See TEMPLATE_DIR: overrides only, with built-in fallback per file.
+            '--template-dir',
+            TEMPLATE_DIR,
             '--output',
             GENERATED_DIR,
             '--additional-properties',
@@ -527,6 +579,16 @@ function runGenerator() {
         ],
         { cwd: REPO_ROOT, stdio: 'inherit' }
     );
+
+    // Validate the vendored template override against the generator's own copy. This runs AFTER
+    // the generator, on purpose: the pinned jar is downloaded lazily on first use, so before this
+    // point it may simply not exist yet. Running it here makes the check impossible to skip -
+    // every regeneration, including the one `verify:tesserafin-sdk-fresh` performs (and therefore
+    // the server's SDK Provenance gate), has to satisfy it.
+    execFileSync('node', [join(__dirname, 'verify-openapi-templates.mjs')], {
+        cwd: REPO_ROOT,
+        stdio: 'inherit'
+    });
 }
 
 /** Removes generator boilerplate irrelevant to a committed-in-app SDK, and dead lint headers. */
