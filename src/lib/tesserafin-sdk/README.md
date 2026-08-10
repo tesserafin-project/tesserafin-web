@@ -64,12 +64,52 @@ under `generator-cli.version`). `@openapitools/openapi-generator-cli` itself is 
 devDependency (`2.34.0` - the exact version `@jellyfin/sdk` uses to build itself), invoked through
 `npx` so it always resolves to that pinned local copy.
 
-The script also unwraps single-property "ID wrapper" component schemas (`unwrapIdSchemas()`) -
-Reefin's strongly-typed IDs (e.g. `PlaybackSessionId { Value: string }`) serialize as a plain string
-on the wire via a custom converter Swashbuckle's schema reflection doesn't know about, so without
-this the generator produces route parameters typed as an object (`id: PlaybackSessionId`) that get
-interpolated into the URL as `"[object Object]"`. See the function's doc comment in the script for
-the full story.
+### ID-object detection (`unwrapIdSchemas()`) - now a detector, not a rewrite
+
+This function used to *unwrap* single-property "ID wrapper" component schemas: strongly-typed IDs
+(e.g. `PlaybackSessionId { Value: string }`) travel as a plain string on the wire, but Swashbuckle's
+schema reflection described the CLR object, so without a correction the generator produced route
+parameters typed as an object and interpolated `"[object Object]"` into the URL.
+
+**That workaround is why the defect went unnoticed here for so long.** It made the generated client
+correct while the *published contract* stayed wrong for every other consumer - including the mobile
+client, which does not use this generator. That is server issue #226, fixed by server PR #227: the
+canonical contract now describes the scalar directly.
+
+The transform is therefore **kept and inverted** rather than deleted. It normalizes nothing. It
+scans, and if a future contract reintroduces an ID-object it **throws**, naming every offending
+schema, and generation stops. Deleting it would have been smaller, but it would also have thrown
+away the only thing on this side that can notice the next occurrence of this class of defect - and
+the whole lesson of #226 is that silent normalization is the hazard.
+
+Its predicate is deliberately narrow: a single property named exactly `Value`. This contract carries
+around thirty legitimate single-property DTOs (`PingRequestDto`, `SeekRequestDto`, `QuickConnectDto`,
+…) whose sole property is named something else; none is an opaque identifier and none is affected.
+
+Current state against the pinned contract: **0 affected schemas**. Pinned by
+`src/lib/tesserafin-sdk/idObjectContract.test.ts`, which asserts both that it is a no-op today and
+that it fails loudly - rather than silently correcting - if the shape returns.
+
+### deepObject query serialization (`scripts/openapi-templates/`)
+
+The corrected contract declares `explode: true` on the eight `streamOptions` parameters, naming
+`?streamOptions[key]=value`. openapi-generator's stock `typescript-axios` template expands an
+exploded object *without* the parameter name, emitting `?key=value`. This server's model binder
+accepts that too, but acceptance by one binder is not permission for a generated client to ignore
+the contract it was generated from.
+
+Generation therefore passes `--template-dir scripts/openapi-templates/typescript-axios`, which
+overrides exactly one template (`apiInner.mustache`); openapi-generator falls back to its built-in
+copy for every other file. The corrected branch is the generator's own
+exploded/non-primitive/non-array branch - i.e. precisely deepObject semantics - so it names no
+route, parameter or operation, and scalar and array serialization are untouched.
+
+Because a vendored template is a fork, `npm run verify:openapi-templates` fails if the vendored copy
+differs from the pinned generator's built-in template by anything other than the single declared
+hunk. A generator bump that touches this template fails loudly instead of silently reverting the
+correction or discarding an upstream fix. The resulting URLs are pinned by
+`src/lib/tesserafin-sdk/deepObjectSerialization.test.ts`, which drives the real client through a stub
+axios and asserts the query string actually produced.
 
 Finally, the script strips the `/* eslint-disable */` line the `typescript-axios` template
 unconditionally emits in every generated file's header (`stripEslintDisableHeaders()`) - dead

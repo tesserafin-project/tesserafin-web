@@ -421,7 +421,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             }
 
             if (streamOptions !== undefined) {
-                localVarQueryParameter['streamOptions'] = streamOptions;
+                for (const [key, value] of Object.entries(streamOptions)) {
+                    localVarQueryParameter[`streamOptions[${key}]`] = value;
+                }
             }
 
             if (enableAudioVbrEncoding !== undefined) {
@@ -704,7 +706,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             }
 
             if (streamOptions !== undefined) {
-                localVarQueryParameter['streamOptions'] = streamOptions;
+                for (const [key, value] of Object.entries(streamOptions)) {
+                    localVarQueryParameter[`streamOptions[${key}]`] = value;
+                }
             }
 
             if (enableAudioVbrEncoding !== undefined) {
@@ -988,7 +992,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             }
 
             if (streamOptions !== undefined) {
-                localVarQueryParameter['streamOptions'] = streamOptions;
+                for (const [key, value] of Object.entries(streamOptions)) {
+                    localVarQueryParameter[`streamOptions[${key}]`] = value;
+                }
             }
 
             if (enableAudioVbrEncoding !== undefined) {
@@ -1271,7 +1277,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             }
 
             if (streamOptions !== undefined) {
-                localVarQueryParameter['streamOptions'] = streamOptions;
+                for (const [key, value] of Object.entries(streamOptions)) {
+                    localVarQueryParameter[`streamOptions[${key}]`] = value;
+                }
             }
 
             if (enableAudioVbrEncoding !== undefined) {

@@ -9719,11 +9719,6 @@
         ],
         "type": "string"
       },
-      "PlaybackSessionId": {
-        "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
-        "format": "uuid",
-        "type": "string"
-      },
       "PlaybackSessionListItem": {
         "additionalProperties": false,
         "description": "One row in the admin playback-diagnostics session list (docs/pr92-design-playback-api-and-diagnostics.md\n§4.3, PR113): the same stable projection Tesserafin.Api.Models.PlaybackSessionDtos.PlaybackSessionResponse already exposes,\nplus whether a richer diagnostic is available for this session's `{id}` detail route. Never\nthe internal `Tesserafin.Controller.MediaEncoding.PlaybackSession` record - same rule as the\ndetail endpoint.",
@@ -18698,6 +18693,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -19179,6 +19175,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -19663,6 +19660,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -20145,6 +20143,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -44218,12 +44217,9 @@
             "name": "id",
             "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PlaybackSessionId"
-                }
-              ],
-              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession."
+              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -44320,12 +44316,9 @@
             "name": "id",
             "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PlaybackSessionId"
-                }
-              ],
-              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession."
+              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -44516,12 +44509,9 @@
             "name": "id",
             "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PlaybackSessionId"
-                }
-              ],
-              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession."
+              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
+              "format": "uuid",
+              "type": "string"
             }
           },
           {
@@ -56046,12 +56036,9 @@
             "name": "id",
             "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PlaybackSessionId"
-                }
-              ],
-              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession."
+              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -56150,12 +56137,9 @@
             "name": "id",
             "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/PlaybackSessionId"
-                }
-              ],
-              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession."
+              "description": "Opaque identifier for a Tesserafin.Controller.MediaEncoding.PlaybackSession.",
+              "format": "uuid",
+              "type": "string"
             }
           }
         ],
@@ -61644,6 +61628,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -62143,6 +62128,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -62644,6 +62630,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {
@@ -63143,6 +63130,7 @@
           },
           {
             "description": "Optional. The streaming options.",
+            "explode": true,
             "in": "query",
             "name": "streamOptions",
             "schema": {

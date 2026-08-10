@@ -142,6 +142,7 @@
         "typecheck:watch": "tsc --noEmit --watch",
         "generate:tesserafin-sdk": "node scripts/generate-tesserafin-sdk.mjs",
         "generate:tokens": "node tesserafin-design/scripts/generate-web-tokens.mjs",
+        "verify:openapi-templates": "node scripts/verify-openapi-templates.mjs",
         "verify:tesserafin-sdk-fresh": "node scripts/verify-tesserafin-sdk-fresh.mjs",
         "verify:version-single-source": "node scripts/verify-version-single-source.mjs",
         "verify:no-new-reefin": "node scripts/verify-no-new-reefin.mjs",
