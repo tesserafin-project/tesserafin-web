@@ -858,6 +858,16 @@ function main() {
                 `${Object.keys((spec.components || {}).schemas || {}).length} schemas)`
         );
 
+        // Clear `generated/` first, so regeneration is a REPLACEMENT rather than an overlay.
+        //
+        // Without this, a file nobody generates is never removed: it survives every regeneration
+        // untouched, `verify:tesserafin-sdk-fresh`'s `git status --porcelain` comparison has
+        // nothing to report, and — once it is committed and listed in generated-manifest.json —
+        // every content check agrees with it too, because the tree, the manifest and the recorded
+        // digest are all self-consistent. Nothing downstream can distinguish "generated" from
+        // "added by hand next to the generated files" after that point. Wiping first is what makes
+        // `generated/` mean exactly the generator's output.
+        rmSync(GENERATED_DIR, { recursive: true, force: true });
         mkdirSync(GENERATED_DIR, { recursive: true });
         runGenerator();
         cleanupGeneratedOutput();
