@@ -63,6 +63,11 @@ export default defineConfig({
             // transport fixture and is also the source of the runtime-origin inventory.
             'tests/contentPacksBrowser/**',
             'tests/m3Browser/**',
+            // S4 playback-credential probe (`npx playwright test --config
+            // playwright.credential.config.ts`): Playwright, and it needs a real server serving the
+            // built `dist/`. Only the SPEC is excluded - the suite's vitest containment tests live
+            // in the same directory and must keep running here.
+            'tests/playbackCredential/**/*.spec.ts',
             '**/.claude/**',
             'scripts/**'
         ],

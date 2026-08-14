@@ -380,7 +380,9 @@ export class HtmlVideoPlayer {
 
             loading.show();
 
-            console.debug(`prefetching hls playlist: ${hlsPlaylistUrl}`);
+            // The url is deliberately absent: a transcoding playlist url carries the session's
+            // access token in its query string.
+            console.debug('prefetching hls playlist');
 
             return ServerConnections.getApiClient(item.ServerId)
                 .ajax({
@@ -389,17 +391,13 @@ export class HtmlVideoPlayer {
                 })
                 .then(
                     function () {
-                        console.debug(
-                            `completed prefetching hls playlist: ${hlsPlaylistUrl}`
-                        );
+                        console.debug('completed prefetching hls playlist');
 
                         loading.hide();
                         streamInfo.url = hlsPlaylistUrl;
                     },
                     function () {
-                        console.error(
-                            `error prefetching hls playlist: ${hlsPlaylistUrl}`
-                        );
+                        console.error('error prefetching hls playlist');
 
                         loading.hide();
                     }
@@ -512,8 +510,11 @@ export class HtmlVideoPlayer {
     async setCurrentSrc(elem, options) {
         elem.removeEventListener('error', this.onError);
 
+        // #75 / S4: the playback url carries `ApiKey=<the session's access token>` (built in
+        // playbackmanager), so printing it published the caller's durable credential to the browser
+        // console on every playback. Nothing is logged here; the url still reaches the media element
+        // unchanged, and the play session is observable through the server's own /Sessions surface.
         let val = options.url;
-        console.debug(`playing url: ${val}`);
 
         // Convert to seconds
         const seconds = (options.playerStartPositionTicks || 0) / 10000000;
