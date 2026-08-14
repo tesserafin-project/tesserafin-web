@@ -53,11 +53,15 @@ import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-    demoteMediaRanges,
+    applyTransforms,
+    buildGeneratedManifest,
     findServerRepo,
-    fixSchema,
+    PROVENANCE_SCHEMA_VERSION,
     readCanonicalSpecFromGit,
-    unwrapIdSchemas
+    readGeneratorIdentity,
+    serializeGeneratedManifest,
+    SERVER_REPOSITORY,
+    TRANSFORM_VERSION
 } from './generate-tesserafin-sdk.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -66,7 +70,9 @@ const SDK_RELATIVE = 'src/lib/tesserafin-sdk';
 const GENERATED_RELATIVE = `${SDK_RELATIVE}/generated`;
 const PINNED_SPEC_RELATIVE = `${SDK_RELATIVE}/spec/openapi.json`;
 const VERSION_JSON_RELATIVE = `${SDK_RELATIVE}/spec/version.json`;
+const MANIFEST_RELATIVE = `${SDK_RELATIVE}/spec/generated-manifest.json`;
 const VERSION_JSON_PATH = join(REPO_ROOT, VERSION_JSON_RELATIVE);
+const MANIFEST_PATH = join(REPO_ROOT, MANIFEST_RELATIVE);
 
 const REQUIRED_EXPLICIT_VERSION_FIELDS = [
     'version',
@@ -79,6 +85,54 @@ const REQUIRED_EXPLICIT_VERSION_FIELDS = [
     'sourceCommit',
     'specSha256'
 ];
+
+/**
+ * Additional fields a schema-2 pin must carry, on top of the schema-1 set above (C4-LH, #246).
+ *
+ * Schema 2 stops using git ancestry as the compatibility predicate, so every one of these is
+ * load-bearing rather than decorative: they are what replaces ancestry with content.
+ */
+const REQUIRED_V2_VERSION_FIELDS = [
+    'sourceRepository',
+    'canonicalSpecSha256',
+    'transformVersion',
+    'generator',
+    'generatedManifestSha256',
+    'generatedFileCount'
+];
+
+/**
+ * The CLOSED key set of a schema-2 `version.json`.
+ *
+ * Unknown keys are rejected rather than ignored. A verifier that skips over metadata it does not
+ * recognise cannot distinguish "a field that means nothing" from "a field a future, stricter
+ * verifier would have refused", and the failure mode of guessing wrong is silent acceptance. A
+ * closed set makes adding a field a deliberate, reviewed change to both verifiers — which is the
+ * point, because both of them have to agree on what the metadata means.
+ */
+const ALLOWED_V2_VERSION_KEYS = new Set([
+    'provenanceSchema',
+    'title',
+    'version',
+    'xTesserafinVersion',
+    'serverVersion',
+    'webAppVersion',
+    'versionSkewNote',
+    'openapi',
+    'pathCount',
+    'schemaCount',
+    'source',
+    'sourceRepository',
+    'sourceCommit',
+    'sourceRef',
+    'canonicalSpecSha256',
+    'specSha256',
+    'transformVersion',
+    'generator',
+    'generatedManifestSha256',
+    'generatedFileCount',
+    'generatedAt'
+]);
 
 const PINNED_SPEC_PATH = join(REPO_ROOT, PINNED_SPEC_RELATIVE);
 
@@ -110,6 +164,223 @@ const PINNED_SPEC_PATH = join(REPO_ROOT, PINNED_SPEC_RELATIVE);
  * on purpose is legitimate (it is how a pre-existing-drift baseline is separated from a
  * contract change), and making it fatal would force unrelated contract bumps into every PR.
  */
+/**
+ * Which provenance protocol this pin speaks. Anything other than a version both this script and
+ * the server's `ci/verify-sdk-provenance.sh` implement is a hard failure, never a "treat it as the
+ * newest one I know" guess: a pin written by a future, stricter schema must not be validated by
+ * today's looser rules.
+ *
+ * @returns {1 | 2 | null} null means "rejected, already reported"
+ */
+function resolveSchema(version) {
+    const raw = version.provenanceSchema;
+    if (raw === undefined || raw === null) {
+        // Schema 1 predates the field and is identified by its absence. It keeps its original
+        // ancestry-based semantics on the server side; nothing here relaxes for it.
+        return 1;
+    }
+    if (raw === PROVENANCE_SCHEMA_VERSION) {
+        return 2;
+    }
+    fail(
+        `${VERSION_JSON_RELATIVE} records provenanceSchema ${JSON.stringify(raw)}, which this ` +
+            `verifier does not implement (it implements 1 and ${PROVENANCE_SCHEMA_VERSION}). ` +
+            'An unrecognised provenance schema is refused rather than assumed compatible.'
+    );
+    return null;
+}
+
+/** Structural validation of a schema-2 pin: closed key set, required fields, field shapes. */
+function checkV2Metadata(version) {
+    const unknown = Object.keys(version).filter(
+        (key) => !ALLOWED_V2_VERSION_KEYS.has(key)
+    );
+    if (unknown.length > 0) {
+        fail(
+            `${VERSION_JSON_RELATIVE} contains key(s) this verifier does not know: ` +
+                `${unknown.join(', ')}. Schema ${PROVENANCE_SCHEMA_VERSION} has a closed key ` +
+                'set - an unrecognised field is rejected, not ignored, because a field this ' +
+                'verifier skips is a field it cannot enforce.'
+        );
+        return false;
+    }
+
+    const missing = REQUIRED_V2_VERSION_FIELDS.filter(
+        (field) => version[field] === undefined || version[field] === null
+    );
+    if (missing.length > 0) {
+        fail(
+            `${VERSION_JSON_RELATIVE} declares provenanceSchema ${PROVENANCE_SCHEMA_VERSION} but ` +
+                `is missing: ${missing.join(', ')}. These fields are what replaces git ancestry ` +
+                'as the compatibility predicate; a pin without them cannot be verified by content.'
+        );
+        return false;
+    }
+
+    if (version.sourceRepository !== SERVER_REPOSITORY) {
+        fail(
+            `${VERSION_JSON_RELATIVE} names sourceRepository "${version.sourceRepository}"; the ` +
+                `only server repository this SDK may be generated from is "${SERVER_REPOSITORY}".`
+        );
+        return false;
+    }
+    if (!/^[0-9a-f]{64}$/.test(version.canonicalSpecSha256)) {
+        fail(
+            `${VERSION_JSON_RELATIVE} records canonicalSpecSha256 ` +
+                `"${version.canonicalSpecSha256}", which is not a 64-character sha256 digest.`
+        );
+        return false;
+    }
+    if (version.transformVersion !== TRANSFORM_VERSION) {
+        fail(
+            `${VERSION_JSON_RELATIVE} records transformVersion ${version.transformVersion} but ` +
+                `this repository applies transform pipeline ${TRANSFORM_VERSION}. The pinned ` +
+                'mirror was produced by a different canonical-to-mirror transformation, so ' +
+                'comparing it against the canonical contract would compare the wrong bytes.'
+        );
+        return false;
+    }
+    if (!/^[0-9a-f]{64}$/.test(version.generatedManifestSha256)) {
+        fail(
+            `${VERSION_JSON_RELATIVE} records generatedManifestSha256 ` +
+                `"${version.generatedManifestSha256}", which is not a 64-character sha256 digest.`
+        );
+        return false;
+    }
+    return true;
+}
+
+/**
+ * The generator that produced `generated/` must be the generator this repository pins.
+ *
+ * `generatorVersion` (openapitools.json) is the jar that actually decides the emitted TypeScript;
+ * `cliVersion` (package.json) is the npm wrapper that fetches it. Drift in either means the
+ * committed tree and a fresh regeneration are not guaranteed to agree, which would make the
+ * regeneration proof below meaningless rather than merely stale.
+ */
+function checkGeneratorIdentity(version) {
+    const expected = readGeneratorIdentity(REPO_ROOT);
+    const recorded = version.generator;
+    if (typeof recorded !== 'object' || recorded === null) {
+        fail(`${VERSION_JSON_RELATIVE} records no generator object.`);
+        return false;
+    }
+    const recordedKeys = Object.keys(recorded).sort();
+    const expectedKeys = Object.keys(expected).sort();
+    if (recordedKeys.join(',') !== expectedKeys.join(',')) {
+        fail(
+            `${VERSION_JSON_RELATIVE} generator has keys [${recordedKeys.join(', ')}], expected ` +
+                `exactly [${expectedKeys.join(', ')}].`
+        );
+        return false;
+    }
+    for (const key of expectedKeys) {
+        if (recorded[key] !== expected[key]) {
+            fail(
+                `${VERSION_JSON_RELATIVE} records generator.${key} "${recorded[key]}" but this ` +
+                    `repository pins "${expected[key]}" (package.json / openapitools.json). ` +
+                    'Regenerate the SDK with the pinned generator and commit the result.'
+            );
+            return false;
+        }
+    }
+    console.log(
+        `[verify:tesserafin-sdk-fresh] Generator identity matches the pin ` +
+            `(${expected.name}, cli ${expected.cliVersion}, generator ${expected.generatorVersion}).`
+    );
+    return true;
+}
+
+/**
+ * The generated tree, addressed by content.
+ *
+ * The regeneration check in main() proves that every file the generator produces matches what is
+ * committed. It cannot prove the converse, because `generate-tesserafin-sdk.mjs` does not clear
+ * `generated/` first: a file nobody generates is never removed, so regeneration leaves an injected
+ * file untouched and `git status --porcelain` reports nothing. That is the hole this closes.
+ *
+ * Two independent bindings, neither of which trusts a written-down number:
+ *   1. the manifest rebuilt from the files actually on disk must serialise to exactly the
+ *      committed `generated-manifest.json` bytes;
+ *   2. the sha256 of those committed bytes must equal `generatedManifestSha256` in version.json.
+ */
+function checkGeneratedManifest(version) {
+    let committedText;
+    try {
+        committedText = readFileSync(MANIFEST_PATH, 'utf-8');
+    } catch {
+        fail(
+            `${MANIFEST_RELATIVE} is missing. A schema-${PROVENANCE_SCHEMA_VERSION} pin must ` +
+                'carry a manifest of every generated file. Run `npm run generate:tesserafin-sdk`.'
+        );
+        return false;
+    }
+
+    const rebuiltText = serializeGeneratedManifest(buildGeneratedManifest());
+    if (rebuiltText !== committedText) {
+        const rebuilt = JSON.parse(rebuiltText);
+        const committed = JSON.parse(committedText);
+        const rebuiltByPath = new Map(
+            rebuilt.files.map((f) => [f.path, f.sha256])
+        );
+        const committedByPath = new Map(
+            committed.files.map((f) => [f.path, f.sha256])
+        );
+        const extra = [...rebuiltByPath.keys()].filter(
+            (p) => !committedByPath.has(p)
+        );
+        const absent = [...committedByPath.keys()].filter(
+            (p) => !rebuiltByPath.has(p)
+        );
+        const edited = [...rebuiltByPath.keys()].filter(
+            (p) =>
+                committedByPath.has(p) &&
+                committedByPath.get(p) !== rebuiltByPath.get(p)
+        );
+        fail(
+            `${MANIFEST_RELATIVE} does not describe the tree on disk: ` +
+                `${extra.length} file(s) present but unlisted (${extra.slice(0, 5).join(', ') || 'none'}), ` +
+                `${absent.length} listed but absent (${absent.slice(0, 5).join(', ') || 'none'}), ` +
+                `${edited.length} with different bytes (${edited.slice(0, 5).join(', ') || 'none'}). ` +
+                'Run `npm run generate:tesserafin-sdk` and commit the result.'
+        );
+        return false;
+    }
+
+    const actual = createHash('sha256')
+        .update(committedText, 'utf-8')
+        .digest('hex');
+    if (actual !== version.generatedManifestSha256) {
+        fail(
+            `${MANIFEST_RELATIVE} hashes to ${actual} but ${VERSION_JSON_RELATIVE} records ` +
+                `generatedManifestSha256 ${version.generatedManifestSha256} - one of the two was ` +
+                'edited by hand instead of regenerated.'
+        );
+        return false;
+    }
+
+    const manifest = JSON.parse(committedText);
+    if (manifest.fileCount !== manifest.files.length) {
+        fail(
+            `${MANIFEST_RELATIVE} declares fileCount ${manifest.fileCount} but lists ` +
+                `${manifest.files.length} files.`
+        );
+        return false;
+    }
+    if (version.generatedFileCount !== manifest.fileCount) {
+        fail(
+            `${VERSION_JSON_RELATIVE} records generatedFileCount ${version.generatedFileCount} ` +
+                `but ${MANIFEST_RELATIVE} lists ${manifest.fileCount} files.`
+        );
+        return false;
+    }
+    console.log(
+        `[verify:tesserafin-sdk-fresh] Generated tree matches its manifest exactly ` +
+            `(${manifest.fileCount} files, manifest sha256 ${actual}).`
+    );
+    return true;
+}
+
 function checkProvenance(version) {
     const pinnedText = readFileSync(PINNED_SPEC_PATH, 'utf-8');
     const actualSha = createHash('sha256')
@@ -160,11 +431,33 @@ function checkProvenance(version) {
         return false;
     }
 
-    const spec = JSON.parse(canonical.text);
-    // Must stay in lockstep with generate-tesserafin-sdk.mjs's main(): same transforms, same order.
-    fixSchema(spec);
-    demoteMediaRanges(spec);
-    unwrapIdSchemas(spec);
+    // Schema 2 records a digest of the RAW canonical bytes, so recompute it here from the bytes
+    // git actually holds at `sourceCommit` and require the recorded value to match. This is what
+    // makes the recorded digest evidence rather than an assertion - and it is the digest the
+    // server's gate compares against its own canonical contract, so if it were ever accepted
+    // without recomputation the whole content-addressed chain would rest on a written-down number.
+    if (version.provenanceSchema === PROVENANCE_SCHEMA_VERSION) {
+        const actualCanonicalSha = createHash('sha256')
+            .update(canonical.text, 'utf-8')
+            .digest('hex');
+        if (actualCanonicalSha !== version.canonicalSpecSha256) {
+            fail(
+                `the canonical contract at ${version.sourceCommit} hashes to ` +
+                    `${actualCanonicalSha}, but ${VERSION_JSON_RELATIVE} records ` +
+                    `canonicalSpecSha256 ${version.canonicalSpecSha256}. The recorded content ` +
+                    'address does not describe the commit it names.'
+            );
+            return false;
+        }
+        console.log(
+            '[verify:tesserafin-sdk-fresh] Recorded canonicalSpecSha256 recomputed from the ' +
+                `bytes at ${version.sourceCommit}: ${actualCanonicalSha}.`
+        );
+    }
+
+    // Must stay in lockstep with generate-tesserafin-sdk.mjs's main(): same transforms, same
+    // order. `applyTransforms` is that single definition, and `transformVersion` names it.
+    const spec = applyTransforms(JSON.parse(canonical.text));
     const expected = JSON.stringify(spec, null, 2) + '\n';
     if (expected !== pinnedText) {
         const a = JSON.parse(expected).components?.schemas ?? {};
@@ -269,7 +562,10 @@ function main() {
         '--porcelain',
         '--',
         GENERATED_RELATIVE,
-        PINNED_SPEC_RELATIVE
+        PINNED_SPEC_RELATIVE,
+        // The manifest is a pure function of the generated tree, so it is part of the
+        // reproducibility comparison rather than churn to be reset like version.json's timestamp.
+        MANIFEST_RELATIVE
     ]).trim();
 
     if (diff.length > 0) {
@@ -306,6 +602,27 @@ function main() {
         console.log(
             `[verify:tesserafin-sdk-fresh] NOTE: ${version.versionSkewNote}`
         );
+    }
+
+    const schema = resolveSchema(version);
+    if (schema === null) {
+        return;
+    }
+    console.log(
+        `[verify:tesserafin-sdk-fresh] Provenance schema ${schema}` +
+            (schema === 1 ? ' (legacy, ancestry-bound on the server side).' : '.')
+    );
+
+    if (schema === PROVENANCE_SCHEMA_VERSION) {
+        if (!checkV2Metadata(version)) {
+            return;
+        }
+        if (!checkGeneratorIdentity(version)) {
+            return;
+        }
+        if (!checkGeneratedManifest(version)) {
+            return;
+        }
     }
 
     if (!checkProvenance(version)) {
