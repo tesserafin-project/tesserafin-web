@@ -72,6 +72,12 @@ jobs:
           # has to be re-proven on every change rather than once, at the moment
           # the override was added.
           - test:epub-xmldom-fallback
+          # #75 / S4. A playback or api url carries `ApiKey=<the session access
+          # token>`, so a `console.*` handed a url publishes a full-privilege
+          # credential. The gate refuses one; the controls prove the gate
+          # refuses the exact line #75 was opened about.
+          - verify:console-url-hygiene
+          - test:console-url-hygiene
 
     steps:
       - name: Checkout ⬇️

@@ -1,0 +1,61 @@
+{
+    "_comment": [
+        "Justified exceptions to the console-url hygiene gate (#75 / S4).",
+        "",
+        "The gate exists because a PLAYBACK or API url carries `ApiKey=<the session access token>`.",
+        "An exception is only defensible when the value can never be one of those. Two classes",
+        "qualify today, and each entry below says which one it is and why:",
+        "",
+        "  server-address — an ORIGIN the user typed or the server advertised (`http://host:8096`).",
+        "                   No path, no query string, therefore no credential. These are the",
+        "                   connection-diagnostic lines, and an address is the only thing that",
+        "                   makes a failed connection diagnosable at all.",
+        "  app-route      — an in-app route the router was asked to show. It never leaves the",
+        "                   client and is never authenticated; it carries item ids at worst.",
+        "",
+        "Anything that is or may become a media url, a `/Videos`, `/Audio` or api url, or any url",
+        "built by `playbackmanager`, does NOT qualify. Log an endpoint category instead",
+        "(src/utils/urlCategory.ts).",
+        "",
+        "An entry that stops matching fails the gate, so this file cannot rot into a blanket",
+        "permission. `expression` is matched on the argument's source text, whitespace-collapsed."
+    ],
+    "exceptions": [
+        {
+            "file": "src/lib/jellyfin-apiclient/connectionManager.js",
+            "expression": "'getTryConnectPromise ' + url",
+            "class": "server-address",
+            "reason": "`url` is a server origin from the connection candidate list; the request built from it appends `/System/Info/Public` and is unauthenticated. Which candidate was tried is the diagnosis."
+        },
+        {
+            "file": "src/lib/jellyfin-apiclient/connectionManager.js",
+            "expression": "'Reconnect succeeded to ' + url",
+            "class": "server-address",
+            "reason": "Same origin value as the line above, on the success branch. No credential is reachable from it."
+        },
+        {
+            "file": "src/lib/jellyfin-apiclient/connectionManager.js",
+            "expression": "'Reconnect failed to ' + url",
+            "class": "server-address",
+            "reason": "Same origin value as the line above, on the failure branch. Which address failed is the only useful thing to say here."
+        },
+        {
+            "file": "src/lib/jellyfin-apiclient/connectionManager.js",
+            "expression": "`connectToAddress ${urls[i]} failed`",
+            "class": "server-address",
+            "reason": "`urls` is built two lines up as `http://${address}` — an origin and nothing else."
+        },
+        {
+            "file": "src/utils/dashboard.js",
+            "expression": "urls",
+            "class": "server-address",
+            "reason": "The server-address candidate list, printed before each is probed at `/System/Info/Public`. Origins only, no query string."
+        },
+        {
+            "file": "src/elements/emby-button/LinkButton.tsx",
+            "expression": "url",
+            "class": "app-route",
+            "reason": "The in-app route `appRouter.show` rejected. It is client-side, unauthenticated, and never a media or api url."
+        }
+    ]
+}

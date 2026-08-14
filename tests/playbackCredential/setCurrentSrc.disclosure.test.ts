@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi
+} from 'vitest';
 
 /**
  * S4 — THE PLAYBACK URL MUST NOT REACH THE CONSOLE.
@@ -162,8 +170,34 @@ const options = (extra: Record<string, unknown> = {}) => ({
     ...extra
 });
 
+// The players' module graphs reach the legacy shell and cost seconds to transform on a cold run.
+// Paying that inside the first `it()` made it race vitest's 5 s default and fail as a timeout - a
+// red that says nothing about disclosure. The graph is imported once here, under a hook timeout
+// that is generous on purpose, and the tests below assert against the already-loaded modules.
+const PLAYER_LOAD_TIMEOUT_MS = 60000;
+const PLAYER_TEST_TIMEOUT_MS = 30000;
+
+let HtmlVideoPlayer: new () => {
+    setCurrentSrc: (
+        elem: HTMLElement,
+        options: Record<string, unknown>
+    ) => Promise<unknown>;
+};
+let HtmlAudioPlayer: new () => {
+    play: (options: Record<string, unknown>) => Promise<unknown>;
+};
+
 describe('playback url disclosure', () => {
     let watch: ConsoleWatch;
+
+    beforeAll(async () => {
+        ({ HtmlVideoPlayer } = await import(
+            '../../src/plugins/htmlVideoPlayer/plugin'
+        ));
+        ({ default: HtmlAudioPlayer } = await import(
+            '../../src/plugins/htmlAudioPlayer/plugin'
+        ));
+    }, PLAYER_LOAD_TIMEOUT_MS);
 
     beforeEach(() => {
         // NOT `vi.resetModules()`: re-importing the players re-runs `elements/emby-*`'s custom
@@ -176,51 +210,50 @@ describe('playback url disclosure', () => {
         watch.restore();
     });
 
-    it('the video player logs no console argument containing the credential', async () => {
-        const { HtmlVideoPlayer } = await import(
-            '../../src/plugins/htmlVideoPlayer/plugin'
-        );
-        const player = new HtmlVideoPlayer();
-        const elem = document.createElement('video') as HTMLVideoElement & {
-            src: string;
-        };
+    it(
+        'the video player logs no console argument containing the credential',
+        async () => {
+            const player = new HtmlVideoPlayer();
+            const elem = document.createElement('video') as HTMLVideoElement & {
+                src: string;
+            };
 
-        await player.setCurrentSrc(elem, options());
+            await player.setCurrentSrc(elem, options());
 
-        watch.restore();
-        expect(
-            watch.offenders,
-            'a console method emitted the playback credential'
-        ).toEqual([]);
-        // The url still reached the media element, unchanged: `applySrc` is the real one, so this
-        // is the element the product would have played.
-        expect(elem.src).toBe(PLAYBACK_URL);
-    });
+            watch.restore();
+            expect(
+                watch.offenders,
+                'a console method emitted the playback credential'
+            ).toEqual([]);
+            // The url still reached the media element, unchanged: `applySrc` is the real one, so
+            // this is the element the product would have played.
+            expect(elem.src).toBe(PLAYBACK_URL);
+        },
+        PLAYER_TEST_TIMEOUT_MS
+    );
 
-    it('the video player still appends the start-position fragment', async () => {
-        const { HtmlVideoPlayer } = await import(
-            '../../src/plugins/htmlVideoPlayer/plugin'
-        );
-        const player = new HtmlVideoPlayer();
-        const elem = document.createElement('video') as HTMLVideoElement & {
-            src: string;
-        };
+    it(
+        'the video player still appends the start-position fragment',
+        async () => {
+            const player = new HtmlVideoPlayer();
+            const elem = document.createElement('video') as HTMLVideoElement & {
+                src: string;
+            };
 
-        // 30 s expressed in ticks, the unit the player converts from.
-        await player.setCurrentSrc(
-            elem,
-            options({ playerStartPositionTicks: 300000000 })
-        );
+            // 30 s expressed in ticks, the unit the player converts from.
+            await player.setCurrentSrc(
+                elem,
+                options({ playerStartPositionTicks: 300000000 })
+            );
 
-        watch.restore();
-        expect(watch.offenders).toEqual([]);
-        expect(elem.src).toBe(`${PLAYBACK_URL}#t=30`);
-    });
+            watch.restore();
+            expect(watch.offenders).toEqual([]);
+            expect(elem.src).toBe(`${PLAYBACK_URL}#t=30`);
+        },
+        PLAYER_TEST_TIMEOUT_MS
+    );
 
     it('the audio player logs no console argument containing the credential', async () => {
-        const { default: HtmlAudioPlayer } = await import(
-            '../../src/plugins/htmlAudioPlayer/plugin'
-        );
         const player = new HtmlAudioPlayer();
 
         await player.play(options());

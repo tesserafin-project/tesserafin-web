@@ -33,6 +33,92 @@ The console sinks only. After this change, both playback modes play with real by
 before it, each mode produced one. The structural exposure is untouched: **the credential still
 travels in the URL**, and the loop that produced this document explicitly does not claim otherwise.
 
+## What S4-B contains
+
+S4-A removed the five playback sinks. S4-B closes the rest of the same class and stops it coming
+back:
+
+* `src/utils/fetch.js` printed the full URL on **six** paths — the request, the response with its
+  status, the failure, and three inside `fetchWithTimeout`. `getFetchPromise` appends the query
+  string to that URL before the request goes out, so an api-client call carrying `api_key`/`ApiKey`
+  published the session credential on an ordinary request, with no playback involved. Those six now
+  print the HTTP method, the status and an **endpoint category** — the first path segment and
+  nothing else (`src/utils/urlCategory.ts`). No origin, no query string, no fragment, no identifier.
+* `playbackmanager` printed `item.Url` when no player matched; it prints the item id instead.
+* The sign-in page printed the `url` query parameter it had failed to decode — an
+  attacker-supplyable redirect target arriving on the sign-in URL. The value is gone; the decode
+  failure is the diagnosis.
+* `scripts/verify-console-url-hygiene.mjs` is the permanent guard. It walks a TypeScript AST over
+  `src/` and fails the build when any `console.*` is handed a URL-valued expression — including
+  ``console.debug(`playing url: ${val}`)``, where only the prose says what the value is, so renaming
+  the variable does not defeat it. A message that merely mentions the word does not fail. Exceptions
+  live in `scripts/console-url-hygiene.allowlist.json` with a written reason and a class; an
+  exception that stops matching fails the gate, so the file cannot rot into a blanket permission.
+  Today there are six, all server **origins** (connection diagnostics) or in-app routes.
+  `scripts/console-url-hygiene.test.mjs` proves the gate refuses the exact line #75 was opened
+  about, and each shape it could return in.
+
+## The disclosure is not playback-scoped
+
+Found by the bundle scan above, and it is the larger finding of the two.
+
+`jellyfin-apiclient@1.11.0` — a runtime dependency, present in the production bundle as
+`node_modules.jellyfin-apiclient.bundle.js` — does this in `openWebSocket`:
+
+```
+var e = this.accessToken();
+… url += "api_key=" + e; url += "&deviceId=" + this.deviceId();
+console.log("opening web socket with url: " + url)
+```
+
+So the session access token is written to the console **on sign-in**, with no playback involved.
+The same package also ships its own `ajax`/`fetchWithTimeout`/`ConnectionManager` copies of the
+url-printing lines this repository just retired.
+
+Consequences, stated plainly:
+
+* The affected population is *everyone who signed in*, not *everyone who played something*. S4-A's
+  framing — a disclosure on every play — understated it.
+* Nothing in this repository fixes it. `overrides` pins versions; it does not rewrite a dependency's
+  `console.log`. A patch mechanism (`patch-package` or a vendored fork) is a new install-time hook
+  and a new supply-chain surface, and belongs in its own change with its own review, not on a P0
+  branch that is otherwise clean.
+* The bundle gate therefore **reports** dependency sinks on every run and **fails** only on ours.
+  A gate that cannot be satisfied gets deleted; one that keeps saying the same true thing every run
+  keeps the debt visible.
+
+## Exposure assessment
+
+**Measured on this tree, 2026-08-14.** The question is whether the console entry ever left the
+browser.
+
+* **No console capture exists in this client.** There is no `console` wrapping or reassignment, no
+  `window.onerror` or `unhandledrejection` handler that records anything, and no error-boundary
+  path that ships a payload.
+* **No third-party error reporter or analytics is a dependency.** Neither `dependencies` nor
+  `devDependencies` contains Sentry, Bugsnag, Rollbar, LogRocket, Datadog, PostHog, Mixpanel,
+  Amplitude, Raygun, TrackJS or New Relic — none, under any name.
+* **The server's client-log upload is never called.** `POST /ClientLog/Document` exists only as a
+  generated SDK wrapper (`src/lib/tesserafin-sdk/generated/api/system-api.ts`) and as the
+  `AllowClientLogUpload` server setting. No application code calls it, so no console content was
+  written to the server's log directory by this client. The dashboard's log view reads the
+  **server's** own logs; it never sees a browser console.
+
+**Therefore there are no accessible traces to purge and no tokens to revoke on this evidence.** The
+disclosure was confined to the browser console of the person signed in, where it was readable by
+anyone with access to that session: devtools, a screen-share or recording, a browser extension with
+console access, or a console dump pasted into a support thread. That is a real disclosure — it is
+simply not one this client collected centrally.
+
+Three limits, stated rather than glossed. The dependency sink above is **not fixed** — after this
+change the shipped client still prints the token on sign-in, from `jellyfin-apiclient`. Operators
+who deploy their own capture (a wrapper injected
+by a reverse proxy, a browser extension, a managed-browser policy) are outside what this repository
+can measure, and should treat playback-era console dumps as credential-bearing and re-authenticate
+the affected users. And the console was never the only exposure: **the credential is still in the
+URL**, so it still reaches reverse-proxy access logs and the network panel. That is the transport
+defect, tracked separately from this one.
+
 ## Candidate contracts
 
 | | A. keep token in URL, redact logs | B. HttpOnly cookie | C. short-lived playback capability | D. header injection (fetch/MSE/service worker) |
@@ -79,8 +165,10 @@ changes none of them.
 * **Demonstrated prerequisites:** to *see* the console entry, an attacker needs access to the
   browser session (devtools, a screen-share, an extension, or a support dump). Reading it from a
   reverse-proxy access log needs access to that log.
-* **Plausible but unproven here:** referrer leakage, cache/history retention, third-party error
-  reporters. None was measured, and none is claimed.
+* **Measured and negative:** central collection of the console. No capture path, no reporter
+  dependency, no call to the server's client-log upload — see *Exposure assessment* above.
+* **Plausible but unproven here:** referrer leakage and cache/history retention. Neither was
+  measured, and neither is claimed.
 * **Not claimed:** remote compromise. Nothing here shows an unauthenticated remote path to the
   credential.
 
