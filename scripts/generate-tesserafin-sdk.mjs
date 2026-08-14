@@ -55,7 +55,49 @@ const SDK_DIR = join(REPO_ROOT, 'src', 'lib', 'tesserafin-sdk');
 const SPEC_DIR = join(SDK_DIR, 'spec');
 const PINNED_SPEC_PATH = join(SPEC_DIR, 'openapi.json');
 const PINNED_VERSION_PATH = join(SPEC_DIR, 'version.json');
+const GENERATED_MANIFEST_PATH = join(SPEC_DIR, 'generated-manifest.json');
 const GENERATED_DIR = join(SDK_DIR, 'generated');
+
+/**
+ * Provenance schema version recorded in `spec/version.json` (C4-LH, server #246).
+ *
+ * Schema 1 identified a generated SDK by the git commit its contract came from, and the server's
+ * `ci/verify-sdk-provenance.sh` required that commit to be an ANCESTOR of the server commit under
+ * test. On a branch with `required_linear_history` that is unsatisfiable for a contract change:
+ * the only commit carrying the new bytes before the merge is on the PR branch, and every merge
+ * method available on such a branch rewrites its SHA, so the pin is non-ancestral the moment it
+ * lands.
+ *
+ * Schema 2 identifies a generated SDK by the CONTENT it was generated from. The generator below
+ * consumes exactly one thing from the server — the canonical `openapi/openapi.json` bytes — so two
+ * server commits carrying byte-identical locked canonical contracts produce a byte-identical
+ * transport boundary regardless of what GitHub did to the commit identity. `sourceCommit` stays
+ * mandatory audit evidence (it must exist, resolve, and its bytes and contract lock must both
+ * match); it simply stops being the load-bearing compatibility predicate.
+ *
+ * That trade is only sound because schema 2 records strictly MORE than schema 1 did, and every
+ * recorded digest is recomputed from bytes by both verifiers rather than trusted as written:
+ * `sourceRepository`, `canonicalSpecSha256` (the raw server bytes), `transformVersion`,
+ * `generator`, and `generatedManifestSha256` (every file under `generated/`).
+ */
+export const PROVENANCE_SCHEMA_VERSION = 2;
+
+/**
+ * Version of the transform pipeline applied between the canonical server contract and the pinned
+ * mirror — `fixSchema` → `demoteMediaRanges` → `unwrapIdSchemas`, in that order (`applyTransforms`).
+ *
+ * Recorded so that "the pinned spec does not match the canonical contract" can be distinguished
+ * from "the pinned spec was produced by a different transform pipeline". Bump it whenever the set
+ * or the order of those transforms changes; a verifier that knows a different value must refuse
+ * rather than silently compare against transforms the pin was never produced by.
+ */
+export const TRANSFORM_VERSION = 1;
+
+/** The one server repository whose canonical contract this SDK may be generated from. */
+export const SERVER_REPOSITORY = 'tesserafin-project/tesserafin';
+
+/** Repository-relative root the generated-file manifest covers. Nothing under it is excluded. */
+export const GENERATED_MANIFEST_ROOT = 'src/lib/tesserafin-sdk/generated';
 
 /**
  * Template overrides for the `typescript-axios` generator (#226).
@@ -479,43 +521,228 @@ function normalizeSourcePath(source) {
  * bytes originally came from - but re-pinning *different* content must not inherit it either, or
  * the recorded provenance would be a lie. So: carry forward only on an exact byte match.
  *
- * @param {string} nextSpecText @returns {{sourceCommit: string|null, sourceRef: string|null}}
+ * `canonicalSpecSha256` and `sourceRepository` carry forward under the same rule and for the same
+ * reason: regenerating from the pinned mirror never sees the raw canonical bytes, so it cannot
+ * recompute that digest, and dropping it would make every `verify:tesserafin-sdk-fresh` run
+ * silently downgrade a schema-2 pin to an unusable one. The byte-equality precondition is what
+ * keeps that from being an inheritance of someone else's provenance.
+ *
+ * @param {string} nextSpecText
+ * @returns {{sourceCommit: string|null, sourceRef: string|null,
+ *            canonicalSpecSha256: string|null, sourceRepository: string|null}}
  */
 function carryForwardProvenance(nextSpecText) {
+    const none = {
+        sourceCommit: null,
+        sourceRef: null,
+        canonicalSpecSha256: null,
+        sourceRepository: null
+    };
     if (!existsSync(PINNED_VERSION_PATH) || !existsSync(PINNED_SPEC_PATH)) {
-        return { sourceCommit: null, sourceRef: null };
+        return none;
     }
     const previousSpec = readFileSync(PINNED_SPEC_PATH, 'utf-8');
     if (previousSpec !== nextSpecText) {
-        return { sourceCommit: null, sourceRef: null };
+        return none;
     }
     const previous = JSON.parse(readFileSync(PINNED_VERSION_PATH, 'utf-8'));
     return {
         sourceCommit: previous.sourceCommit ?? null,
-        sourceRef: previous.sourceRef ?? null
+        sourceRef: previous.sourceRef ?? null,
+        canonicalSpecSha256: previous.canonicalSpecSha256 ?? null,
+        sourceRepository: previous.sourceRepository ?? null
     };
 }
 
-/** Writes the pinned spec copy and its version.json metadata; returns `spec.info` for logging. */
-function pinSpec(spec, source, commit, ref) {
-    const info = spec.info || {};
-    const { webAppVersion, serverVersion, versionSkewNote } =
-        computeVersionSkew(info);
+/**
+ * The canonical-contract → pinned-mirror transform pipeline, in one place.
+ *
+ * `verify-tesserafin-sdk-fresh.mjs` and the server's provenance gate both have to apply the EXACT
+ * same transforms in the EXACT same order to decide whether the pinned mirror still corresponds to
+ * the canonical contract. Three call sites each spelling out `fixSchema` → `demoteMediaRanges` →
+ * `unwrapIdSchemas` is three chances for one of them to drift and start reporting phantom
+ * differences — or, worse, to mask a real one. `TRANSFORM_VERSION` names this exact sequence.
+ *
+ * Mutates `spec` in place and returns it for convenience.
+ *
+ * @param {object} spec @returns {object}
+ */
+export function applyTransforms(spec) {
+    fixSchema(spec);
+    demoteMediaRanges(spec);
+    unwrapIdSchemas(spec);
+    return spec;
+}
 
+/** Byte-order comparison, so the manifest sorts identically on every platform and locale. */
+function compareOrdinal(a, b) {
+    if (a < b) {
+        return -1;
+    }
+    if (a > b) {
+        return 1;
+    }
+    return 0;
+}
+
+/** Every file under `dir`, as POSIX-separated paths relative to it. Directories are not listed. */
+function listFilesRecursively(dir, prefix = '') {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) {
+            out.push(...listFilesRecursively(join(dir, entry.name), rel));
+        } else {
+            out.push(rel);
+        }
+    }
+    return out;
+}
+
+/**
+ * A content address for the whole generated tree.
+ *
+ * WHY THIS EXISTS AND REGENERATION IS NOT ENOUGH. `verify:tesserafin-sdk-fresh` proves the tree by
+ * regenerating it and requiring `git status --porcelain` to stay clean. That catches a modified or
+ * a deleted file, but NOT an EXTRA one: `main()` below only `mkdirSync`s `generated/` before
+ * running the generator, so a file nobody generates is never removed, regeneration leaves it
+ * untouched, and `git status` has nothing to report. An injected file under `generated/` — which
+ * `src/lib/tesserafin-sdk/index.ts` could then re-export — is exactly the kind of thing a
+ * provenance gate is supposed to make impossible. It changes this manifest.
+ *
+ * COVERAGE, precisely: every file of any kind under `src/lib/tesserafin-sdk/generated/`,
+ * recursively. Nothing is excluded — not dotfiles, not empty files, not files the generator
+ * itself later removes in `cleanupGeneratedOutput()`. Each entry is the file's path relative to
+ * that root (POSIX separators) and the sha256 of its exact bytes. Entries are sorted by path in
+ * byte order. Nothing OUTSIDE that root is covered: the pinned spec has its own `specSha256`, and
+ * the hand-written SDK surface (`client.ts`, `index.ts`, `versions.ts`) is reviewed source, not
+ * generated output.
+ *
+ * @returns {{ provenanceSchema: number, root: string, algorithm: string, fileCount: number,
+ *             files: Array<{ path: string, sha256: string }> }}
+ */
+export function buildGeneratedManifest() {
+    const files = listFilesRecursively(GENERATED_DIR)
+        .sort(compareOrdinal)
+        .map((path) => ({
+            path,
+            sha256: createHash('sha256')
+                .update(readFileSync(join(GENERATED_DIR, path)))
+                .digest('hex')
+        }));
+    return {
+        provenanceSchema: PROVENANCE_SCHEMA_VERSION,
+        root: GENERATED_MANIFEST_ROOT,
+        algorithm: 'sha256',
+        fileCount: files.length,
+        files
+    };
+}
+
+/**
+ * The manifest's committed byte representation. `generatedManifestSha256` in version.json covers
+ * exactly these bytes, so a verifier rebuilds the manifest from the tree on disk, serialises it
+ * through this function, and compares BOTH against the committed file and against the recorded
+ * digest — two independent bindings, neither of which trusts a written-down number.
+ *
+ * @param {object} manifest @returns {string}
+ */
+export function serializeGeneratedManifest(manifest) {
+    // biome formats committed JSON with 4-space indent; match it so a regeneration never trips
+    // the formatter check on generated-manifest.json.
+    return JSON.stringify(manifest, null, 4) + '\n';
+}
+
+/**
+ * The generator this repo is pinned to, read from the two files that actually control it rather
+ * than from anything a regeneration could restate. `cliVersion` is the npm wrapper pinned in
+ * package.json; `generatorVersion` is the openapi-generator jar pinned in openapitools.json, which
+ * is what actually decides the emitted TypeScript.
+ *
+ * @param {string} [repoRoot] @returns {{ name: string, cliVersion: string, generatorVersion: string }}
+ */
+export function readGeneratorIdentity(repoRoot = REPO_ROOT) {
+    const pkg = JSON.parse(
+        readFileSync(join(repoRoot, 'package.json'), 'utf-8')
+    );
+    const tools = JSON.parse(
+        readFileSync(join(repoRoot, 'openapitools.json'), 'utf-8')
+    );
+    const cliVersion =
+        pkg.devDependencies?.['@openapitools/openapi-generator-cli'] ??
+        pkg.dependencies?.['@openapitools/openapi-generator-cli'] ??
+        null;
+    return {
+        name: 'typescript-axios',
+        cliVersion,
+        generatorVersion: tools['generator-cli']?.version ?? null
+    };
+}
+
+/**
+ * Writes the pinned spec copy — and only that. The generator needs this file on disk to read it
+ * as `--input-spec`; the provenance metadata deliberately does NOT get written here, because
+ * `generatedManifestSha256` cannot be known until the generator has run. See
+ * `writeProvenanceMetadata()`.
+ *
+ * @returns {{ info: object, specText: string, specSha256: string, provenance: object }}
+ */
+function pinSpec(spec, source, commit, ref, canonicalSpecSha256) {
+    const info = spec.info || {};
     const specText = JSON.stringify(spec, null, 2) + '\n';
     const specSha256 = createHash('sha256')
         .update(specText, 'utf-8')
         .digest('hex');
     const provenance = commit
-        ? { sourceCommit: commit, sourceRef: ref ?? null }
+        ? {
+              sourceCommit: commit,
+              sourceRef: ref ?? null,
+              canonicalSpecSha256: canonicalSpecSha256 ?? null,
+              sourceRepository: SERVER_REPOSITORY
+          }
         : carryForwardProvenance(specText);
 
     mkdirSync(SPEC_DIR, { recursive: true });
     writeFileSync(PINNED_SPEC_PATH, specText, 'utf-8');
+    return { info, specText, specSha256, provenance, source };
+}
+
+/**
+ * Writes `spec/version.json` and `spec/generated-manifest.json`, AFTER generation.
+ *
+ * The ordering matters and is the whole reason `pinSpec()` was split. `generatedManifestSha256`
+ * addresses the generated tree, so it does not exist until the tree does; writing version.json
+ * before generation and patching it afterwards would mean two writes of a security-relevant file,
+ * and `verify:tesserafin-sdk-fresh` resets version.json in a `finally` block that would race the
+ * second one. One write, after everything it describes exists.
+ *
+ * FIELD SEMANTICS. Compatibility-bearing: `provenanceSchema`, `sourceRepository`, `sourceCommit`,
+ * `canonicalSpecSha256`, `specSha256`, `transformVersion`, `generator`, `generatedManifestSha256`.
+ * Informational only, and explicitly excluded from every compatibility decision by both verifiers:
+ * `generatedAt`, `source`, `sourceRef`, `title`, `pathCount`, `schemaCount`, `versionSkewNote`.
+ *
+ * `canonicalSpecSha256` covers the RAW `openapi/openapi.json` bytes as committed in the server
+ * repository. `specSha256` covers the TRANSFORMED mirror written above. They are different
+ * digests of different bytes, related by `applyTransforms` at `transformVersion`, and a verifier
+ * that conflated them would accept a mirror produced by a different pipeline.
+ */
+function writeProvenanceMetadata(spec, pinned) {
+    const { info, specSha256, provenance, source } = pinned;
+    const { webAppVersion, serverVersion, versionSkewNote } =
+        computeVersionSkew(info);
+
+    const manifest = buildGeneratedManifest();
+    const manifestText = serializeGeneratedManifest(manifest);
+    writeFileSync(GENERATED_MANIFEST_PATH, manifestText, 'utf-8');
+    const generatedManifestSha256 = createHash('sha256')
+        .update(manifestText, 'utf-8')
+        .digest('hex');
+
     writeFileSync(
         PINNED_VERSION_PATH,
         JSON.stringify(
             {
+                provenanceSchema: PROVENANCE_SCHEMA_VERSION,
                 title: info.title ?? null,
                 version: info.version ?? null,
                 xTesserafinVersion: info['x-tesserafin-version'] ?? null,
@@ -531,9 +758,15 @@ function pinSpec(spec, source, commit, ref) {
                 // re-reads `sourceCommit` out of the server repo and re-compares when a checkout
                 // is available. `specSha256` covers the pinned file itself so a hand-edit of
                 // spec/openapi.json is caught even with no server repo around.
+                sourceRepository: provenance.sourceRepository,
                 sourceCommit: provenance.sourceCommit,
                 sourceRef: provenance.sourceRef,
+                canonicalSpecSha256: provenance.canonicalSpecSha256,
                 specSha256,
+                transformVersion: TRANSFORM_VERSION,
+                generator: readGeneratorIdentity(),
+                generatedManifestSha256,
+                generatedFileCount: manifest.fileCount,
                 generatedAt: new Date().toISOString()
             },
             null,
@@ -543,7 +776,6 @@ function pinSpec(spec, source, commit, ref) {
         ) + '\n',
         'utf-8'
     );
-    return info;
 }
 
 function runGenerator() {
@@ -616,21 +848,38 @@ function cleanupGeneratedOutput() {
 
 function main() {
     return resolveSpec().then(({ text, source, commit, ref }) => {
-        const spec = JSON.parse(text);
-        fixSchema(spec);
-        demoteMediaRanges(spec);
-        unwrapIdSchemas(spec);
+        // The RAW canonical bytes, hashed before any transform touches them - this is the digest
+        // schema 2 uses as the SDK's compatibility identity, and it has to address what the server
+        // committed, not what this script derived from it.
+        const canonicalSpecSha256 = createHash('sha256')
+            .update(text, 'utf-8')
+            .digest('hex');
 
-        const info = pinSpec(spec, source, commit, ref);
+        const spec = applyTransforms(JSON.parse(text));
+
+        const pinned = pinSpec(spec, source, commit, ref, canonicalSpecSha256);
         console.log(
-            `[generate-tesserafin-sdk] Pinned spec: ${info.title} ${info.version} ` +
+            `[generate-tesserafin-sdk] Pinned spec: ${pinned.info.title} ${pinned.info.version} ` +
                 `(${Object.keys(spec.paths || {}).length} paths, ` +
                 `${Object.keys((spec.components || {}).schemas || {}).length} schemas)`
         );
 
+        // Clear `generated/` first, so regeneration is a REPLACEMENT rather than an overlay.
+        //
+        // Without this, a file nobody generates is never removed: it survives every regeneration
+        // untouched, `verify:tesserafin-sdk-fresh`'s `git status --porcelain` comparison has
+        // nothing to report, and — once it is committed and listed in generated-manifest.json —
+        // every content check agrees with it too, because the tree, the manifest and the recorded
+        // digest are all self-consistent. Nothing downstream can distinguish "generated" from
+        // "added by hand next to the generated files" after that point. Wiping first is what makes
+        // `generated/` mean exactly the generator's output.
+        rmSync(GENERATED_DIR, { recursive: true, force: true });
         mkdirSync(GENERATED_DIR, { recursive: true });
         runGenerator();
         cleanupGeneratedOutput();
+
+        // Only now can the generated tree be addressed; see writeProvenanceMetadata().
+        writeProvenanceMetadata(spec, pinned);
 
         console.log(
             '[generate-tesserafin-sdk] Done. Review the diff under src/lib/tesserafin-sdk/ before committing.'

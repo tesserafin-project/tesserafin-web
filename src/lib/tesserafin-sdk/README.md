@@ -18,6 +18,8 @@ src/lib/tesserafin-sdk/
   spec/
     openapi.json      # pinned copy of the last spec used to generate (committed)
     version.json       # metadata about that spec: title, version, path/schema counts, source, timestamp
+                       # PLUS the provenance record - see "Provenance (schema 2)" below
+    generated-manifest.json  # path + sha256 of every file under generated/ (committed, generated)
   generated/            # openapi-generator-cli output (typescript-axios). Committed. Do not hand-edit.
   versions.ts           # MINIMUM_VERSION derived from the pinned spec, NOT from @jellyfin/sdk's
   index.ts              # barrel re-export of generated/, PLUS the TesserafinSdk/TesserafinApi/createTesserafinApi
@@ -153,6 +155,87 @@ docker run --rm -v "$PWD":/workspace -w /workspace node:24-bookworm bash -c "
 
 (`openapi-generator-cli` needs a JVM - `node:24-bookworm` doesn't ship one, hence the `apt-get`
 step; `node:24` per `.nvmrc`.)
+
+## Provenance (schema 2)
+
+`spec/version.json` records where the pinned bytes came from, and the server repository's
+`ci/verify-sdk-provenance.sh` checks that record against its own canonical contract on every pull
+request and every push to its default branch.
+
+### Why the schema changed
+
+Schema 1 identified a generated SDK by **the git commit its contract came from**, and the server
+gate required that commit to be an *ancestor* of the server commit under test. That requirement is
+unsatisfiable on a branch with `required_linear_history`, which the server's `master` has:
+
+- to generate the SDK for a contract change, you need a server commit that already carries the new
+  canonical bytes — before the merge, the only one is on the pull request branch;
+- after the merge, `master` carries those bytes at a **different** commit, because squash and
+  rebase — the only merge methods such a branch permits — both rewrite the SHA.
+
+Both conditions cannot hold at once. Proven on server PR #245: head `32413914a5…` is not an
+ancestor of the `master` it produced. Every previous contract move worked around it by merging
+knowingly red and repairing afterwards (server #218/#219, #227/#230).
+
+### What replaced it
+
+Schema 2 identifies the SDK by **the content it was generated from**. `scripts/generate-tesserafin-sdk.mjs`
+consumes exactly one thing from the server — the canonical `openapi/openapi.json` bytes — so two
+server commits carrying byte-identical *locked* canonical contracts produce a byte-identical
+transport boundary, whatever GitHub did to the commit identity in between.
+
+`sourceCommit` is still mandatory. It stopped being the compatibility predicate; it did not stop
+being audit evidence, and it must still exist, resolve in the server repository, be a full
+40-character SHA, and have both its canonical bytes and its contract lock match.
+
+This is not the old rule with a hole in it. Schema 2 records — and both verifiers **recompute from
+bytes**, never read as an assertion:
+
+| Field | Covers |
+|---|---|
+| `provenanceSchema` | `2`. Dispatches the verification mode. An unknown value is refused, never assumed compatible |
+| `sourceRepository` | the exact `owner/name` of the server repository |
+| `sourceCommit` | full 40-character server commit SHA |
+| `canonicalSpecSha256` | the **raw** `openapi/openapi.json` bytes as committed on the server |
+| `specSha256` | the **transformed** `spec/openapi.json` bytes in this repository |
+| `transformVersion` | which canonical→mirror pipeline produced one from the other (`applyTransforms`) |
+| `generator` | `name`, `cliVersion` (package.json), `generatorVersion` (openapitools.json) |
+| `generatedManifestSha256` | the exact bytes of `spec/generated-manifest.json` |
+| `generatedFileCount` | how many files that manifest lists |
+
+`generatedAt`, `source`, `sourceRef`, `title`, `pathCount`, `schemaCount` and `versionSkewNote` are
+informational and take part in no compatibility decision.
+
+The key set is **closed**: an unrecognised field is a failure, not something to ignore. A field no
+verifier reads is a field no verifier enforces.
+
+### `generated-manifest.json`
+
+Every file under `generated/`, recursively — path and sha256, sorted by path in byte order.
+Nothing is excluded, not even dotfiles such as `.openapi-generator/FILES`. Nothing outside that
+directory is covered.
+
+It exists because regeneration alone could never prove the tree. The freshness check regenerates
+and requires `git status` to stay clean, which catches a *modified* or *deleted* file — but an
+**extra** file was invisible: the generator used to only `mkdirSync` `generated/`, so a file nobody
+generates was never removed, regeneration left it untouched and `git status` had nothing to say.
+Two things now close that: the generator clears `generated/` first, and an unlisted file fails the
+manifest comparison.
+
+### Reporting
+
+The server gate reports the ancestry it computed even though it no longer requires it:
+
+- `ANCESTOR` — the pin is on the server's history, as during an ordinary regeneration;
+- `CONTENT_EQUIVALENT_NON_ANCESTOR` — the pin was rewritten by a squash or rebase, and every
+  content proof passed anyway.
+
+The second is a successful result **only** after all fourteen proofs pass. It is a label on a
+verified pin, never a reason to skip a check.
+
+See server issue #246 for the full protocol, and `ci/verify-web-provenance.sh` plus
+`ci/tests/web-provenance-fixtures.test.sh` in the server repository for the implementation and its
+35 synthetic-history controls.
 
 ## Client construction wrapper (`index.ts`)
 
