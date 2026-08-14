@@ -610,7 +610,9 @@ function main() {
     }
     console.log(
         `[verify:tesserafin-sdk-fresh] Provenance schema ${schema}` +
-            (schema === 1 ? ' (legacy, ancestry-bound on the server side).' : '.')
+            (schema === 1
+                ? ' (legacy, ancestry-bound on the server side).'
+                : '.')
     );
 
     if (schema === PROVENANCE_SCHEMA_VERSION) {

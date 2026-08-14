@@ -576,7 +576,13 @@ export function applyTransforms(spec) {
 
 /** Byte-order comparison, so the manifest sorts identically on every platform and locale. */
 function compareOrdinal(a, b) {
-    return a < b ? -1 : a > b ? 1 : 0;
+    if (a < b) {
+        return -1;
+    }
+    if (a > b) {
+        return 1;
+    }
+    return 0;
 }
 
 /** Every file under `dir`, as POSIX-separated paths relative to it. Directories are not listed. */

@@ -69,8 +69,17 @@ const REQUIRED_KEYS = [
     'generatedFileCount'
 ];
 
-function sha256(text: string | Buffer): string {
-    return createHash('sha256').update(text).digest('hex');
+/**
+ * `readFileSync` returns a `Buffer`, which does not structurally satisfy `BinaryLike` under this
+ * repository's TypeScript settings; a `Uint8Array` view over the same bytes does, and hashes
+ * identically.
+ */
+function sha256(bytes: string | Uint8Array): string {
+    return createHash('sha256').update(bytes).digest('hex');
+}
+
+function fileBytes(path: string): Uint8Array {
+    return new Uint8Array(readFileSync(path));
 }
 
 function listFiles(dir: string, prefix = ''): string[] {
@@ -104,7 +113,10 @@ describe('SDK provenance metadata (schema 2)', () => {
             expect(version[key], `version.json is missing ${key}`).not.toBe(
                 null
             );
-            expect(version[key], `version.json is missing ${key}`).toBeDefined();
+            expect(
+                version[key],
+                `version.json is missing ${key}`
+            ).toBeDefined();
         }
     });
 
@@ -193,8 +205,7 @@ describe('generated-file manifest', () => {
         const mismatched = manifest.files
             .filter(
                 (f: { path: string; sha256: string }) =>
-                    sha256(readFileSync(join(GENERATED_DIR, f.path))) !==
-                    f.sha256
+                    sha256(fileBytes(join(GENERATED_DIR, f.path))) !== f.sha256
             )
             .map((f: { path: string }) => f.path);
         expect(mismatched).toEqual([]);
