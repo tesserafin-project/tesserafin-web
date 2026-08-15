@@ -14,8 +14,11 @@
  * used only to prove it never reaches the patcher's own output.
  */
 import { spawnSync } from 'node:child_process';
+import { closeSync } from 'node:fs';
 import {
     existsSync,
+    lstatSync,
+    readdirSync,
     mkdirSync,
     mkdtempSync,
     readFileSync,
@@ -37,8 +40,19 @@ const {
     PATCHED_SHA256,
     REQUIRED_VERSION,
     UNSAFE_FRAGMENTS,
+    openVerified,
     sha256
 } = await import(PATCHER);
+
+/** The fixed, predictable temporary name the pre-repair patcher used. Nothing may touch it now. */
+const RETIRED_TMP_NAME = 'jellyfin-apiclient.js.s4d1.tmp';
+
+/** Every file left in the package's `dist/` — used to prove no temporary artifact survives. */
+function distEntries(root) {
+    return readdirSync(
+        join(root, 'node_modules', 'jellyfin-apiclient', 'dist')
+    ).sort();
+}
 
 const CANARY = 'S4D1-CONTROL-VALUE-NOT-A-REAL-TOKEN';
 
@@ -303,6 +317,148 @@ for (const [label, make, expected] of refusals) {
                 `replacement #${i} still interpolates a url-valued variable`
         )
     ]);
+}
+
+// ── the portable path: O_NOFOLLOW unavailable, as on Windows ─────────────────────────────────
+//
+// `--root` plus `noFollow: null` drives the REAL lifecycle down the branch a Windows host takes.
+// This is an explicit parameter, not a mocked `process.platform`, so what runs here is what runs
+// there.
+{
+    const root = stage();
+    const result = runPatcher(root, ['--no-o-nofollow']);
+    const after = readFileSync(patchedPath(root), 'utf8');
+    check(
+        'with O_NOFOLLOW unavailable, a regular target still patches to the pinned digest',
+        [
+            result.status !== 0 && `expected exit 0, got ${result.status}`,
+            sha256(after) !== PATCHED_SHA256 &&
+                'the portable path produced different bytes from the O_NOFOLLOW path',
+            UNSAFE_FRAGMENTS.some((f) => after.includes(f.unsafe)) &&
+                'an unsafe fragment survived the portable path'
+        ]
+    );
+}
+
+{
+    // The symlink refusal must survive the loss of O_NOFOLLOW. Without the unconditional `lstat`
+    // check this is exactly where the guarantee used to evaporate.
+    const real = stage();
+    const decoy = stage();
+    const sentinel = patchedPath(decoy);
+    const before = readFileSync(sentinel, 'utf8');
+    const target = patchedPath(real);
+    rmSync(target, { force: true });
+    symlinkSync(sentinel, target, 'file');
+    const result = runPatcher(real, ['--no-o-nofollow']);
+    check('with O_NOFOLLOW unavailable, a symlinked target is still refused', [
+        result.status !== 1 && `expected exit 1, got ${result.status}`,
+        !/symlink/.test(result.stderr) &&
+            'the message did not name the symlink',
+        readFileSync(sentinel, 'utf8') !== before &&
+            'the sentinel outside the package was modified through the link'
+    ]);
+}
+
+// ── the temporary file: exclusive creation, and cleanup that owns only what it made ──────────
+{
+    // The pre-repair patcher wrote a FIXED name with plain `writeFileSync`, which follows a symlink
+    // already sitting there. Planting that exact name as a link to an external sentinel proves the
+    // old behaviour is gone: the sentinel must be untouched, and so must the planted link.
+    const root = stage();
+    const outside = mkdtempSync(join(tmpdir(), 'jf-apiclient-sentinel-'));
+    staged.push(outside);
+    const sentinel = join(outside, 'sentinel.txt');
+    writeFileSync(sentinel, 'SENTINEL MUST NOT CHANGE\n');
+    const planted = join(
+        root,
+        'node_modules',
+        'jellyfin-apiclient',
+        'dist',
+        RETIRED_TMP_NAME
+    );
+    symlinkSync(sentinel, planted, 'file');
+
+    const result = runPatcher(root);
+    const after = readFileSync(patchedPath(root), 'utf8');
+    check(
+        'a symlink planted at the retired temporary name is never followed, read or removed',
+        [
+            result.status !== 0 &&
+                `the patch itself must still succeed, got exit ${result.status}`,
+            sha256(after) !== PATCHED_SHA256 &&
+                'the patch did not produce the pinned digest',
+            readFileSync(sentinel, 'utf8') !== 'SENTINEL MUST NOT CHANGE\n' &&
+                'the sentinel outside the package was written through the planted link',
+            !existsSync(planted) &&
+                'the planted path was consumed — cleanup must own only what it created',
+            existsSync(planted) &&
+                !lstatSync(planted).isSymbolicLink() &&
+                'the planted symlink was replaced by a regular file'
+        ]
+    );
+}
+
+{
+    // Same invariant for an ordinary file: a name that merely resembles a temporary of ours is not
+    // ours, and must be neither overwritten nor deleted.
+    const root = stage();
+    const occupied = join(
+        root,
+        'node_modules',
+        'jellyfin-apiclient',
+        'dist',
+        RETIRED_TMP_NAME
+    );
+    writeFileSync(occupied, 'NOT OURS\n');
+    const result = runPatcher(root);
+    check(
+        'an ordinary file at the retired temporary name is neither overwritten nor deleted',
+        [
+            result.status !== 0 &&
+                `the patch itself must still succeed, got exit ${result.status}`,
+            !existsSync(occupied) && 'the pre-existing file was deleted',
+            readFileSync(occupied, 'utf8') !== 'NOT OURS\n' &&
+                'the pre-existing file was overwritten'
+        ]
+    );
+}
+
+{
+    // No temporary artifact may survive a successful run, and a second run must add none.
+    const root = stage();
+    runPatcher(root);
+    const afterFirst = distEntries(root);
+    runPatcher(root);
+    const afterSecond = distEntries(root);
+    check('no temporary artifact survives, and a second run adds none', [
+        afterFirst.some((e) => e.includes('.tmp')) &&
+            `a temporary artifact survived: ${afterFirst.filter((e) => e.includes('.tmp')).length} entr(ies)`,
+        afterSecond.join('|') !== afterFirst.join('|') &&
+            'the second run changed the set of files in dist/',
+        afterFirst.includes('jellyfin-apiclient.js.map') &&
+            'the source map is still present'
+    ]);
+}
+
+{
+    // The identity protocol itself: a descriptor is returned, it is a regular file, and on this
+    // host the strong (inode) branch is the one that engaged.
+    const root = stage();
+    const opened = openVerified(patchedPath(root), { noFollow: null });
+    const isNumber = typeof opened.fd === 'number';
+    closeSync(opened.fd);
+    check(
+        'openVerified returns a verified descriptor and reports its identity basis',
+        [
+            !isNumber && 'no descriptor was returned',
+            typeof opened.identified !== 'boolean' &&
+                'the identity basis was not reported'
+        ]
+    );
+    console.log(
+        `      note: identity basis on ${process.platform} = ${opened.identified ? 'inode+device' : 'corroboration only'}`
+    );
 }
 
 // ── 11. the patcher's own output can never carry a credential ────────────────────────────────

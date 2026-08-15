@@ -75,11 +75,13 @@
  *   No branch of this script prints file content, a matched fragment's surroundings, or any value
  *   read from the package. Diagnostics name a fragment by its INDEX in the table below.
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import {
     closeSync,
     constants as fsConstants,
     existsSync,
+    fstatSync,
+    fsyncSync,
     lstatSync,
     openSync,
     readFileSync,
@@ -87,9 +89,20 @@ import {
     renameSync,
     rmSync,
     statSync,
+    unlinkSync,
     writeFileSync
 } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
+
+/**
+ * `O_NOFOLLOW` exists only where the platform's `fcntl.h` defines it — Node exports it inside
+ * `#ifdef O_NOFOLLOW`, and Windows does not have it. `O_RDONLY` is unconditional and is 0, so the
+ * obvious `O_RDONLY | fsConstants.O_NOFOLLOW` evaluates to `0 | undefined` === `0` there: a plain,
+ * symlink-FOLLOWING open, with no error and no warning. Resolving it into an explicit `null` is what
+ * stops a missing constant from being indistinguishable from "no extra flags".
+ */
+const NO_FOLLOW =
+    typeof fsConstants.O_NOFOLLOW === 'number' ? fsConstants.O_NOFOLLOW : null;
 
 export const PACKAGE_NAME = 'jellyfin-apiclient';
 export const REQUIRED_VERSION = '1.11.0';
@@ -227,36 +240,152 @@ function readVersion(packageDir) {
 }
 
 /**
- * Read the target through a single `open(O_NOFOLLOW)` + read on the SAME descriptor.
+ * Open the target once, prove what was opened, and hand back the descriptor.
  *
- * The obvious form — `lstatSync(p).isSymbolicLink()` then `readFileSync(p)` — is a check-then-use
- * race: the path can be replaced with a symlink between the two calls. `O_NOFOLLOW` moves the
- * refusal into the open itself, so there is no window at all, and the read is of the descriptor
- * rather than of the name.
+ * WHY THIS IS NOT JUST `open(O_NOFOLLOW)`
+ *
+ *   `O_NOFOLLOW` is the strongest form and is used wherever it exists: the refusal happens inside
+ *   the open, so there is no window at all. It does not exist on Windows, and OR-ing an undefined
+ *   constant silently produces a plain follow-the-symlink open (see NO_FOLLOW above). Failing every
+ *   Windows install is not an acceptable answer either, so the guarantee is reconstructed from
+ *   metadata instead — and the SAME checks run on both paths, so the two converge rather than one
+ *   being a weaker cousin:
+ *
+ *     1. `fstat` the descriptor: it must be a regular file.
+ *     2. `lstat` the pathname WITHOUT following it: it must be a regular file and not a symlink.
+ *        This is the check that rejects a symlinked target where `O_NOFOLLOW` is unavailable.
+ *     3. Compare identity: the object behind the descriptor must be the object the pathname names,
+ *        so a swap between the open and the check cannot redirect anything.
+ *
+ *   Every read is then of the DESCRIPTOR, never of the pathname again.
+ *
+ * @param {string} target
+ * @param {{ noFollow?: number | null }} [options] Test seam: pass `noFollow: null` to exercise the
+ *   portable path on a host that does have `O_NOFOLLOW`. It is a parameter rather than an
+ *   environment variable so nothing outside the process can weaken production execution.
  */
-function readNoFollow(target) {
+export function openVerified(target, { noFollow = NO_FOLLOW } = {}) {
+    const flags =
+        noFollow === null
+            ? fsConstants.O_RDONLY
+            : fsConstants.O_RDONLY | noFollow;
     let fd;
     try {
-        fd = openSync(target, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+        fd = openSync(target, flags);
     } catch (error) {
-        if (error && error.code === 'ELOOP')
+        if (error && (error.code === 'ELOOP' || error.code === 'EMLINK'))
             throw new PatchError(
                 'the target file is a symlink; refusing to patch'
             );
         throw new PatchError('the target file could not be opened');
     }
     try {
-        return readFileSync(fd, 'utf8');
+        const viaDescriptor = fstatSync(fd, { bigint: true });
+        const viaPath = lstatSync(target, { bigint: true });
+        if (!viaDescriptor.isFile())
+            throw new PatchError(
+                'the opened target is not a regular file; refusing to patch'
+            );
+        // Unconditional, on BOTH paths: where O_NOFOLLOW applied this is redundant, and where it
+        // was unavailable this IS the guarantee.
+        if (viaPath.isSymbolicLink())
+            throw new PatchError(
+                'the target file is a symlink; refusing to patch'
+            );
+        if (!viaPath.isFile())
+            throw new PatchError(
+                'the target path is not a regular file; refusing to patch'
+            );
+        const identified = viaDescriptor.ino !== 0n && viaPath.ino !== 0n;
+        if (identified) {
+            if (
+                viaDescriptor.ino !== viaPath.ino ||
+                viaDescriptor.dev !== viaPath.dev
+            )
+                throw new PatchError(
+                    'the target changed identity between opening and checking it; refusing to patch'
+                );
+        } else if (
+            viaDescriptor.size !== viaPath.size ||
+            viaDescriptor.mtimeNs !== viaPath.mtimeNs
+        ) {
+            // HONEST LABEL: where the filesystem reports no inode this is CORROBORATION, not
+            // identity — for the file just opened it is nearly always trivially true. The guarantee
+            // on such a host is carried by the non-symlink `lstat` above, not by this branch.
+            throw new PatchError(
+                'the target could not be corroborated between descriptor and path; refusing to patch'
+            );
+        }
+        return { fd, mode: Number(viaDescriptor.mode) & 0o777, identified };
+    } catch (error) {
+        closeSync(fd);
+        throw error;
+    }
+}
+
+/** Read a verified target, always through the descriptor that was verified. */
+export function readVerified(target, options) {
+    const { fd } = openVerified(target, options);
+    try {
+        return readFileSync(fd, { encoding: 'utf8' });
     } finally {
         closeSync(fd);
     }
 }
 
-/** Replace the file through a temp sibling + rename, so no reader ever sees a half-written file. */
-function writeAtomic(target, content) {
-    const temporary = `${target}.s4d1.tmp`;
-    writeFileSync(temporary, content, { encoding: 'utf8', mode: 0o644 });
-    renameSync(temporary, target);
+/**
+ * Replace the target through an EXCLUSIVELY created temporary sibling, then rename.
+ *
+ * The previous form wrote a fixed name with plain `writeFileSync`, which was a write-anywhere
+ * primitive: `writeFileSync` FOLLOWS a symlink already sitting at that path, and the name was
+ * predictable, so anyone able to create one file in `dist/` could redirect an `npm ci` write to any
+ * path the installing user could reach. Two changes close that:
+ *
+ *   - the name is unpredictable per invocation, so it cannot be pre-planted;
+ *   - it is created with `wx` (`O_CREAT | O_EXCL | O_WRONLY`), which refuses with `EEXIST` if
+ *     ANYTHING is already there — regular file, directory or symlink — and so never follows one.
+ *
+ * CLEANUP OWNERSHIP: the only path ever unlinked is the one this invocation exclusively created.
+ * A pre-existing file whose name merely resembles a temporary of ours is never read, written or
+ * deleted.
+ */
+function writeAtomicExclusive(target, content, mode) {
+    const temporary = join(
+        dirname(target),
+        `.${basename(target)}.${randomBytes(12).toString('hex')}.tmp`
+    );
+    let fd;
+    try {
+        fd = openSync(temporary, 'wx', mode);
+    } catch {
+        throw new PatchError(
+            'could not create an exclusive temporary file next to the target; refusing to patch'
+        );
+    }
+    let ours = true;
+    try {
+        writeFileSync(fd, content, { encoding: 'utf8' });
+        try {
+            fsyncSync(fd);
+        } catch {
+            // Durability is not part of this contract, and some filesystems refuse fsync here. A
+            // completed write followed by a rename is what is being promised.
+        }
+        closeSync(fd);
+        fd = undefined;
+        renameSync(temporary, target);
+        // The bytes ARE the target now; no temporary of ours remains to clean up.
+        ours = false;
+    } finally {
+        if (fd !== undefined) closeSync(fd);
+        if (ours) {
+            try {
+                unlinkSync(temporary);
+            } catch {
+                // Best effort, and only ever this invocation's own exclusively created path.
+            }
+        }
+    }
 }
 
 /**
@@ -313,7 +442,10 @@ function assertClean(content, where) {
 export function run({
     root = process.cwd(),
     verify = false,
-    log = console.log
+    log = console.log,
+    // Test seam, mirrored from `openVerified`: `null` forces the portable descriptor/path identity
+    // path on a host that does have `O_NOFOLLOW`, so the Windows branch is exercised everywhere.
+    noFollow = NO_FOLLOW
 } = {}) {
     const packageDir = resolvePackageDir(root);
     if (packageDir === null) {
@@ -335,7 +467,13 @@ export function run({
         );
 
     const target = join(packageDir, TARGET_RELATIVE);
-    const content = readNoFollow(target);
+    const opened = openVerified(target, { noFollow });
+    let content;
+    try {
+        content = readFileSync(opened.fd, { encoding: 'utf8' });
+    } finally {
+        closeSync(opened.fd);
+    }
     const state = classify(content);
 
     if (state === 'patched') {
@@ -370,9 +508,9 @@ export function run({
     assertFragments(content);
     const patched = applyFragments(content);
     assertClean(patched, 'the patched output');
-    writeAtomic(target, patched);
+    writeAtomicExclusive(target, patched, opened.mode);
 
-    const written = readNoFollow(target);
+    const written = readVerified(target, { noFollow });
     assertClean(written, 'the file on disk');
     const writtenDigest = sha256(written);
     if (writtenDigest !== PATCHED_SHA256)
@@ -396,6 +534,7 @@ function main(argv) {
     const options = { root: process.cwd(), verify: false };
     for (let i = 0; i < argv.length; i += 1) {
         if (argv[i] === '--verify') options.verify = true;
+        else if (argv[i] === '--no-o-nofollow') options.noFollow = null;
         else if (argv[i] === '--root') {
             options.root = resolve(argv[i + 1]);
             i += 1;

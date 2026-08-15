@@ -86,6 +86,35 @@ content is accepted unchanged; **anything else is a failure**, never a silent sk
 changed version, a changed pristine hash, a missing or duplicated fragment, partially patched
 content, a symlinked package directory, and a path that escapes the package root.
 
+### Reading and writing the target safely
+
+Both filesystem operations are install-time, security-sensitive code, and both were repaired after
+review:
+
+**Reading.** `O_NOFOLLOW` is the strongest symlink guard and is used wherever it exists. Node
+exports it only under `#ifdef O_NOFOLLOW`, and Windows does not define it — so the obvious
+`O_RDONLY | fsConstants.O_NOFOLLOW` evaluates to `0 | undefined` === `0` there: a plain,
+symlink-**following** open, with no error and no warning, while every Ubuntu check stays green.
+`openVerified()` resolves the constant into an explicit `null` instead, and reconstructs the same
+guarantee from metadata so the two paths converge:
+
+1. `fstat` the descriptor — it must be a regular file;
+2. `lstat` the pathname without following it — it must be a regular file and **not** a symlink
+   (unconditional, so this is redundant with `O_NOFOLLOW` and *is* the guarantee without it);
+3. compare identity — the object behind the descriptor must be the object the pathname names, so a
+   swap between the open and the check cannot redirect anything.
+
+Every read is then of the descriptor, never of the pathname again. Where a filesystem reports no
+inode, the fallback comparison is corroboration rather than identity, and the non-symlink `lstat`
+carries the guarantee — that is stated plainly in the code rather than dressed up.
+
+**Writing.** The temporary sibling is created with `wx` (`O_CREAT | O_EXCL | O_WRONLY`) under an
+unpredictable per-invocation name, and written through that descriptor. The previous form wrote a
+fixed `.s4d1.tmp` name with plain `writeFileSync`, which **follows** a symlink already sitting there
+— a write-anywhere primitive at `npm ci` time for anyone able to create one file in `dist/`.
+Cleanup unlinks only the path this invocation exclusively created; a pre-existing file whose name
+merely resembles one of ours is never read, written or deleted.
+
 `dist/jellyfin-apiclient.js.map` is deleted, and the pointer to it removed as part of the hashed
 transform. The map embeds the pre-minification sources, so it carries every fragment being removed;
 leaving it would make "no unsafe fragment remains in the installed package" false. Nothing consumes a
