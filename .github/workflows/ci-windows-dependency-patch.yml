@@ -1,0 +1,83 @@
+name: Windows dependency patch 🪟🔒
+
+# WHY THIS JOB EXISTS
+#
+#   `scripts/patch-jellyfin-apiclient.mjs` runs from `postinstall`, so it executes on every
+#   developer and CI machine that installs this repository — Windows included. Its symlink guard
+#   used to be `open(O_RDONLY | O_NOFOLLOW)`, and Node exports `O_NOFOLLOW` only where the platform
+#   defines it. On Windows the constant is `undefined`, `O_RDONLY` is 0, and `0 | undefined` is 0:
+#   the guard silently became an ordinary follow-the-symlink open, with every Ubuntu check still
+#   green. A portable descriptor/path identity protocol replaced it, and this job is the part that
+#   keeps the claim honest — the whole defect was that Linux CI could not see it.
+#
+#   Deliberately narrow. It does not duplicate the Linux quality matrix; it proves the install-time
+#   patch lifecycle on the platform the Linux matrix structurally cannot cover, by invoking the same
+#   committed patcher and the same committed controls. No production logic is reimplemented here.
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - 'scripts/patch-jellyfin-apiclient.mjs'
+      - 'scripts/jellyfin-apiclient-patch.test.mjs'
+      - '.github/workflows/ci-windows-dependency-patch.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions: {}
+
+jobs:
+  windows-patch:
+    name: Patch lifecycle on Windows 🪟
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout ⬇️
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          show-progress: false
+
+      - name: Setup node environment ⚙️
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          check-latest: true
+
+      # This is the lifecycle under test: `postinstall` must apply the patch on Windows.
+      - name: Install dependencies 📦
+        run: npm ci --no-audit
+
+      - name: Assert the installed artifact carries the pinned patched digest 🔑
+        shell: pwsh
+        run: |
+          $expected = node -e "import('./scripts/patch-jellyfin-apiclient.mjs').then(m => console.log(m.PATCHED_SHA256))"
+          $target = 'node_modules/jellyfin-apiclient/dist/jellyfin-apiclient.js'
+          $actual = (Get-FileHash -Algorithm SHA256 -Path $target).Hash.ToLower()
+          Write-Host "expected $expected"
+          Write-Host "actual   $actual"
+          if ($actual -ne $expected) { throw 'the installed bundle does not match the pinned patched digest' }
+
+      - name: Assert the source map is absent 🗺️
+        shell: pwsh
+        run: |
+          if (Test-Path 'node_modules/jellyfin-apiclient/dist/jellyfin-apiclient.js.map') {
+            throw 'the source map, which embeds the pre-patch sources, is still present'
+          }
+
+      - name: Assert no temporary artifact survives 🧹
+        shell: pwsh
+        run: |
+          $residue = Get-ChildItem -Force -Path 'node_modules/jellyfin-apiclient/dist' -Filter '*.tmp'
+          if ($residue) { throw "a temporary artifact survived: $($residue.Name -join ', ')" }
+
+      - name: Run verify:jellyfin-apiclient-patch 🔍
+        run: npm run verify:jellyfin-apiclient-patch
+
+      # The same committed control suite the Linux matrix runs. Its portable-path cases drive the
+      # branch Windows actually takes, and one case reports which identity basis this host provided.
+      - name: Run test:jellyfin-apiclient-patch 🧪
+        run: npm run test:jellyfin-apiclient-patch

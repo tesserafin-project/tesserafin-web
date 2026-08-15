@@ -168,7 +168,7 @@
         "captures": "npm run build:captures && node tests/captures/prepare-tokens.mjs && playwright test --config playwright.captures.config.ts",
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
-        "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback && npm run verify:console-url-hygiene && npm run test:console-url-hygiene",
+        "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback && npm run verify:console-url-hygiene && npm run test:console-url-hygiene && npm run verify:jellyfin-apiclient-patch && npm run test:jellyfin-apiclient-patch",
         "validate:full": "npm run validate && npm run test:delivery-budget && npm run build:production && npm run verify:console-url-hygiene:bundle && npm run verify:bundle-budget && npm run verify:delivery-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source",
         "secret-scan:controls": "./ci/tests/secret-scan.test.sh",
         "secret-scan:tree": "./ci/secret-scan.sh --mode tree --repo-name tesserafin-web",
@@ -176,7 +176,10 @@
         "test:item-details-browser": "playwright test --config playwright.itemDetails.config.ts",
         "test:delivery-ledger": "playwright test --config playwright.delivery.config.ts",
         "test:content-packs-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.contentPacks.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs contentPacks.smoke.spec.ts,contentPacks.manager.spec.ts,contentPacks.nonManager.spec.ts,contentPacks.assignment.spec.ts,contentPacks.isolation.spec.ts,contentPacks.states.spec.ts,contentPacks.keyboard.spec.ts,contentPacks.axe.spec.ts,contentPacks.mobile.spec.ts,contentPacks.tv.spec.ts,support/captureSpecBody.ts",
-        "test:m3-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.m3.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs m3.onboarding.spec.ts,m3.failures.spec.ts,m3.navigation.spec.ts,m3.keyboard.spec.ts,m3.axe.spec.ts,m3.captures.spec.ts,m3.mobile.spec.ts,m3.geometry.mobile.spec.ts,m3.matrix.spec.ts,m3.matrix.mobile.spec.ts,m3.matrix.tv.spec.ts,m3.tv.spec.ts,m3Captures.mobile.spec.ts,m3Captures.tv.spec.ts"
+        "test:m3-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.m3.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs m3.onboarding.spec.ts,m3.failures.spec.ts,m3.navigation.spec.ts,m3.keyboard.spec.ts,m3.axe.spec.ts,m3.captures.spec.ts,m3.mobile.spec.ts,m3.geometry.mobile.spec.ts,m3.matrix.spec.ts,m3.matrix.mobile.spec.ts,m3.matrix.tv.spec.ts,m3.tv.spec.ts,m3Captures.mobile.spec.ts,m3Captures.tv.spec.ts",
+        "postinstall": "node scripts/patch-jellyfin-apiclient.mjs",
+        "verify:jellyfin-apiclient-patch": "node scripts/patch-jellyfin-apiclient.mjs --verify",
+        "test:jellyfin-apiclient-patch": "node scripts/jellyfin-apiclient-patch.test.mjs"
     },
     "engines": {
         "node": ">=24.0.0",

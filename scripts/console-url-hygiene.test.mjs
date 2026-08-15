@@ -18,9 +18,10 @@
  *   - the endpoint-category replacement the fix uses — which must NOT fail, or there is no way to
  *     comply;
  *   - an allowlist entry that no longer matches, which must fail so the file cannot rot;
- *   - a dependency sink, whose two properties are proven SEPARATELY: that it stays non-fatal, and
- *     that it is still reported by name. Only the second reads stdout, and only the second fails if
- *     the reporting loop is deleted — the exit status cannot tell the difference.
+ *   - a dependency sink, which since #152 is FATAL exactly like a first-party one. Its two
+ *     properties are still proven separately: that it fails the build, and that the diagnostic
+ *     still names it as a dependency and points at the patcher — because that classification is
+ *     what tells a maintainer which file to repair, and only stdout can show it.
  *
  * The last case runs against the REAL repository, so the committed allowlist is checked too.
  *
@@ -269,15 +270,35 @@ checkDist('a clean bundle, including the messages that were kept', 'accept', {
 });
 
 checkDist(
-    'a DEPENDENCY bundle is reported but does not fail the build',
-    'accept',
+    'a DEPENDENCY bundle carrying the sink is FATAL too (#152)',
+    'refuse',
     {
-        // webpack's own name for a vendor chunk. `jellyfin-apiclient@1.11.0` really does this, on
-        // sign-in and not on playback; no edit here removes it, so the gate reports and moves on.
+        // webpack's own name for a vendor chunk. `jellyfin-apiclient@1.11.0` really did this, on
+        // sign-in and not on playback. It used to be reported and tolerated, because nothing under
+        // `src/` could remove it; scripts/patch-jellyfin-apiclient.mjs removes it at install time,
+        // so zero is reachable and anything else fails the build.
         'node_modules.jellyfin-apiclient.bundle.js':
             'console.log("opening web socket with url: ".concat(t));\n'
     }
 );
+
+for (const signature of [
+    'requesting url: ',
+    'connecting to url',
+    'request failed to url',
+    ', url: ',
+    'playing url',
+    'prefetching hls playlist: ',
+    'requested media: http'
+]) {
+    checkDist(
+        `a DEPENDENCY bundle carrying "${signature}" is fatal`,
+        'refuse',
+        {
+            'node_modules.jellyfin-apiclient.bundle.js': `console.log("x${signature}y");\n`
+        }
+    );
+}
 
 checkDist('the same sink in one of OUR assets is still fatal', 'refuse', {
     'main.tesserafin.bundle.js':
@@ -285,44 +306,47 @@ checkDist('the same sink in one of OUR assets is still fatal', 'refuse', {
 });
 
 {
-    // REPORTING is a different property from SEVERITY, and it needs its own proof.
+    // CLASSIFICATION is a different property from SEVERITY, and it still needs its own proof.
     //
-    // The case above only reads an exit status, and the exit status cannot see the `note ` line:
-    // `checkBundle` derives its summary from `vendor.length`, not from whether the reporting loop
-    // ran. Deleting `for (const hit of vendor) { … }` outright therefore leaves every existing
-    // control green while the dependency disclosure silently stops being mentioned — and a
-    // disclosure that stops being mentioned stops being remembered, which is the entire reason the
-    // gate reports vendor hits instead of ignoring them. So this control asserts on stdout.
+    // Severity is now uniform — every hit is fatal — so an exit status can no longer tell a
+    // dependency hit from a first-party one. What must survive is the DIAGNOSTIC: a maintainer who
+    // sees a dependency hit has to repair the patcher, and one who sees a first-party hit has to
+    // edit `src/`. If the wording stops distinguishing them, the gate still fails correctly but
+    // sends every reader to the wrong file, so this control reads stdout/stderr rather than a code.
     //
     // The fixture carries a synthetic, non-functional stand-in for a credential in its url, and the
     // control asserts it appears NOWHERE in the verifier's output: the gate must name the asset and
     // the signature it matched, never the matching text.
     const CANARY = 'S4-CONTROL-VALUE-NOT-A-REAL-TOKEN';
-    const label = 'a DEPENDENCY sink is REPORTED by name, not merely tolerated';
+    const label =
+        'a DEPENDENCY hit is fatal AND still named as a dependency, without echoing the payload';
     const dist = stageDist({
         'node_modules.jellyfin-apiclient.bundle.js': `console.log("opening web socket with url: ".concat("wss://h/socket?api_key=${CANARY}"));\n`
     });
     const result = spawnSync(process.execPath, [VERIFIER, '--dist', dist], {
         encoding: 'utf8'
     });
+    const output = `${result.stdout}${result.stderr}`;
     const problems = [];
-    if (result.status !== 0)
+    if (result.status !== 1)
         problems.push(
-            `a dependency sink must stay non-fatal, but the exit status was ${result.status}`
+            `a dependency sink must now FAIL the build, but the exit status was ${result.status}`
         );
     if (
-        !/^note {2}node_modules\.jellyfin-apiclient\.bundle\.js: a DEPENDENCY carries a url sink — "opening web socket with url"/m.test(
-            result.stdout
+        !/node_modules\.jellyfin-apiclient\.bundle\.js: the shipped bundle carries a retired url sink — "opening web socket with url" \[DEPENDENCY\]/.test(
+            output
         )
     )
         problems.push(
-            'no `note` line named the dependency asset and the signature it matched'
+            'the diagnostic did not name the asset, the signature, and the DEPENDENCY classification'
         );
-    if (!result.stdout.includes('1 dependency sink(s) noted above'))
+    if (!/1 first-party, 1 dependency|0 first-party, 1 dependency/.test(output))
+        problems.push('the summary did not account for the hit by origin');
+    if (!output.includes('scripts/patch-jellyfin-apiclient.mjs'))
         problems.push(
-            'the summary line did not account for the reported dependency sink'
+            'the diagnostic did not point a dependency hit at the patcher, which is its repair'
         );
-    if (`${result.stdout}${result.stderr}`.includes(CANARY))
+    if (output.includes(CANARY))
         problems.push(
             'the verifier echoed the fixture credential back into its own output'
         );
