@@ -28,7 +28,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '..');
@@ -42,7 +42,10 @@ const {
     UNSAFE_FRAGMENTS,
     openVerified,
     sha256
-} = await import(PATCHER);
+    // `import()` of a bare absolute path fails on Windows with ERR_UNSUPPORTED_ESM_URL_SCHEME —
+    // `D:\\...` is read as the protocol `d:`. The ESM loader wants a file:// URL, which is exactly the
+    // normalisation the patcher's own entry-point check needed.
+} = await import(pathToFileURL(PATCHER).href);
 
 /** The fixed, predictable temporary name the pre-repair patcher used. Nothing may touch it now. */
 const RETIRED_TMP_NAME = 'jellyfin-apiclient.js.s4d1.tmp';
