@@ -11,12 +11,34 @@
  *   HTML players did on every play, and what `utils/fetch` did on every request.
  *
  *   Deleting those specific lines does not keep them deleted. This gate is the part that does: it
- *   fails the build when ANY `console.*` call is handed a url-valued expression, so the next
- *   `console.debug(\`playing url: ${val}\`)` cannot land unnoticed.
+ *   fails the build when a DIRECT `console.<method>(…)` call is handed a url-valued expression, so
+ *   the next `console.debug(\`playing url: ${val}\`)` cannot land unnoticed.
+ *
+ * WHAT THIS GATE DOES AND DOES NOT PROVE
+ *
+ *   The enforced invariant is SYNTACTIC, and is deliberately stated as such. It covers a call whose
+ *   callee is the property access `console.<method>`, and within that call's arguments it covers
+ *   identifiers, property accesses, element accesses, template literals, `+` concatenations and any
+ *   nesting of those — the exact rules are WHAT COUNTS AS A VIOLATION, below.
+ *
+ *   It is NOT an interprocedural data-flow analysis, and nothing in this repository should be read
+ *   as claiming that it is. Three shapes are known to pass it. Each was measured, not assumed:
+ *
+ *     - a computed console access — `console['debug'](…)`, whose callee is an element access;
+ *     - an aliased console — `const c = console; c.debug(…)`;
+ *     - a url read into a differently-named local on an earlier line and then interpolated into a
+ *       message whose prose does not announce a url: `const q = options.url;` followed by
+ *       `console.debug(\`starting playback at ${q}\`)`.
+ *
+ *   That is the accepted boundary of a syntactic gate, not a defect papered over. The backstop for
+ *   all three is the runtime disclosure suite, `tests/playbackCredential/**`, which drives the real
+ *   modules and asserts on the console output they actually emit: every one of the three shapes
+ *   above turns it red. Source gate and runtime suite are complementary, and neither on its own is
+ *   the containment guarantee.
  *
  * WHAT COUNTS AS A VIOLATION
  *
- *   An argument to `console.<method>(…)` that either
+ *   An argument to a direct `console.<method>(…)` call that either
  *
  *     (a) reads a url-valued name — `url`, `urls`, `uri`, `href`, `src`, `link`, in any casing,
  *         as an identifier, a property (`item.Url`), or an element access (`urls[i]`) — anywhere

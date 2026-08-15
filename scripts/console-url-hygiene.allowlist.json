@@ -43,7 +43,7 @@
             "file": "src/lib/jellyfin-apiclient/connectionManager.js",
             "expression": "`connectToAddress ${urls[i]} failed`",
             "class": "server-address",
-            "reason": "`urls` is built two lines up as `http://${address}` — an origin and nothing else."
+            "reason": "`urls` is the connection-candidate list built a few lines up in `connectToAddress`, and it has TWO branches, both of them server origins. An address that carries no protocol is expanded into `https://${address}` and `http://${address}`; an address that already carries one (`/^[^:]+:\\/\\//`) is pushed through as the user typed it. Neither branch is a media or api url and neither is built by `playbackmanager`: the value is only ever a server the user asked this client to connect to, probed at `/System/Info/Public`, and which candidate failed is the whole diagnosis. The second branch means the printed value is user-supplied rather than strictly synthesised, so it is an origin by construction only in the first branch — it still carries no session credential, because the token does not exist until a connection succeeds."
         },
         {
             "file": "src/utils/dashboard.js",

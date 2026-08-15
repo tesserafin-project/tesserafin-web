@@ -17,7 +17,10 @@
  *     will be disabled by the first person it annoys;
  *   - the endpoint-category replacement the fix uses — which must NOT fail, or there is no way to
  *     comply;
- *   - an allowlist entry that no longer matches, which must fail so the file cannot rot.
+ *   - an allowlist entry that no longer matches, which must fail so the file cannot rot;
+ *   - a dependency sink, whose two properties are proven SEPARATELY: that it stays non-fatal, and
+ *     that it is still reported by name. Only the second reads stdout, and only the second fails if
+ *     the reporting loop is deleted — the exit status cannot tell the difference.
  *
  * The last case runs against the REAL repository, so the committed allowlist is checked too.
  *
@@ -280,6 +283,58 @@ checkDist('the same sink in one of OUR assets is still fatal', 'refuse', {
     'main.tesserafin.bundle.js':
         'console.log("opening web socket with url: ".concat(t));\n'
 });
+
+{
+    // REPORTING is a different property from SEVERITY, and it needs its own proof.
+    //
+    // The case above only reads an exit status, and the exit status cannot see the `note ` line:
+    // `checkBundle` derives its summary from `vendor.length`, not from whether the reporting loop
+    // ran. Deleting `for (const hit of vendor) { … }` outright therefore leaves every existing
+    // control green while the dependency disclosure silently stops being mentioned — and a
+    // disclosure that stops being mentioned stops being remembered, which is the entire reason the
+    // gate reports vendor hits instead of ignoring them. So this control asserts on stdout.
+    //
+    // The fixture carries a synthetic, non-functional stand-in for a credential in its url, and the
+    // control asserts it appears NOWHERE in the verifier's output: the gate must name the asset and
+    // the signature it matched, never the matching text.
+    const CANARY = 'S4-CONTROL-VALUE-NOT-A-REAL-TOKEN';
+    const label = 'a DEPENDENCY sink is REPORTED by name, not merely tolerated';
+    const dist = stageDist({
+        'node_modules.jellyfin-apiclient.bundle.js': `console.log("opening web socket with url: ".concat("wss://h/socket?api_key=${CANARY}"));\n`
+    });
+    const result = spawnSync(process.execPath, [VERIFIER, '--dist', dist], {
+        encoding: 'utf8'
+    });
+    const problems = [];
+    if (result.status !== 0)
+        problems.push(
+            `a dependency sink must stay non-fatal, but the exit status was ${result.status}`
+        );
+    if (
+        !/^note {2}node_modules\.jellyfin-apiclient\.bundle\.js: a DEPENDENCY carries a url sink — "opening web socket with url"/m.test(
+            result.stdout
+        )
+    )
+        problems.push(
+            'no `note` line named the dependency asset and the signature it matched'
+        );
+    if (!result.stdout.includes('1 dependency sink(s) noted above'))
+        problems.push(
+            'the summary line did not account for the reported dependency sink'
+        );
+    if (`${result.stdout}${result.stderr}`.includes(CANARY))
+        problems.push(
+            'the verifier echoed the fixture credential back into its own output'
+        );
+    if (problems.length) {
+        failures++;
+        console.error(
+            `FAIL  ${label}\n${problems.map((p) => `      - ${p}`).join('\n')}`
+        );
+    } else {
+        console.log(`ok    ${label}`);
+    }
+}
 
 {
     // An empty dist must not read as a pass: a gate that reports ok on nothing is worse than none.
