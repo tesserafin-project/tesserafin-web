@@ -78,6 +78,15 @@ jobs:
           # refuses the exact line #75 was opened about.
           - verify:console-url-hygiene
           - test:console-url-hygiene
+          # #152. `jellyfin-apiclient@1.11.0` ships a `console.log` of the
+          # WebSocket url built with `api_key=<the session access token>`, plus
+          # twelve more credential-capable url lines. `postinstall` rewrites
+          # them; this leg asserts the install actually did, so a skipped
+          # lifecycle hook (`npm ci --ignore-scripts`) cannot produce a green
+          # build. The controls prove the patcher refuses every state it does
+          # not recognise rather than silently leaving a sink in place.
+          - verify:jellyfin-apiclient-patch
+          - test:jellyfin-apiclient-patch
 
     steps:
       - name: Checkout ⬇️
