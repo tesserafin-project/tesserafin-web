@@ -253,6 +253,27 @@ for (const [label, make, expected] of refusals) {
     ]);
 }
 
+// ── a symlinked TARGET FILE, which is a different path from a symlinked directory ────────────
+{
+    const real = stage();
+    const decoy = stage();
+    const target = patchedPath(real);
+    rmSync(target, { force: true });
+    symlinkSync(patchedPath(decoy), target, 'file');
+    const before = readFileSync(patchedPath(decoy), 'utf8');
+    const result = runPatcher(real);
+    check(
+        'a symlinked target FILE is refused by the open itself, not by a prior check',
+        [
+            result.status !== 1 && `expected exit 1, got ${result.status}`,
+            !/symlink/.test(result.stderr) &&
+                'the message did not name the symlink',
+            readFileSync(patchedPath(decoy), 'utf8') !== before &&
+                'the patcher wrote through the symlink to its target'
+        ]
+    );
+}
+
 // ── 9-10. what the patched output must and must not contain ──────────────────────────────────
 {
     const root = stage();

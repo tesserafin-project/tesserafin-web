@@ -77,12 +77,16 @@
  */
 import { createHash } from 'node:crypto';
 import {
+    closeSync,
+    constants as fsConstants,
     existsSync,
     lstatSync,
+    openSync,
     readFileSync,
     realpathSync,
     renameSync,
     rmSync,
+    statSync,
     writeFileSync
 } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
@@ -222,6 +226,32 @@ function readVersion(packageDir) {
     return manifest.version;
 }
 
+/**
+ * Read the target through a single `open(O_NOFOLLOW)` + read on the SAME descriptor.
+ *
+ * The obvious form — `lstatSync(p).isSymbolicLink()` then `readFileSync(p)` — is a check-then-use
+ * race: the path can be replaced with a symlink between the two calls. `O_NOFOLLOW` moves the
+ * refusal into the open itself, so there is no window at all, and the read is of the descriptor
+ * rather than of the name.
+ */
+function readNoFollow(target) {
+    let fd;
+    try {
+        fd = openSync(target, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+    } catch (error) {
+        if (error && error.code === 'ELOOP')
+            throw new PatchError(
+                'the target file is a symlink; refusing to patch'
+            );
+        throw new PatchError('the target file could not be opened');
+    }
+    try {
+        return readFileSync(fd, 'utf8');
+    } finally {
+        closeSync(fd);
+    }
+}
+
 /** Replace the file through a temp sibling + rename, so no reader ever sees a half-written file. */
 function writeAtomic(target, content) {
     const temporary = `${target}.s4d1.tmp`;
@@ -305,17 +335,18 @@ export function run({
         );
 
     const target = join(packageDir, TARGET_RELATIVE);
-    if (lstatSync(target).isSymbolicLink())
-        throw new PatchError('the target file is a symlink; refusing to patch');
-
-    const content = readFileSync(target, 'utf8');
+    const content = readNoFollow(target);
     const state = classify(content);
 
     if (state === 'patched') {
         assertClean(content, 'the installed bundle');
         // The map embeds the pre-minification sources verbatim. A tree whose .js is patched but
         // whose map was restored still has every fragment on disk, and the .js hash cannot see it.
-        if (existsSync(join(packageDir, MAP_RELATIVE)))
+        if (
+            statSync(join(packageDir, MAP_RELATIVE), {
+                throwIfNoEntry: false
+            }) !== undefined
+        )
             throw new PatchError(
                 'the bundle is patched but its source map is present again; the map carries the ' +
                     'pre-patch sources verbatim'
@@ -341,7 +372,7 @@ export function run({
     assertClean(patched, 'the patched output');
     writeAtomic(target, patched);
 
-    const written = readFileSync(target, 'utf8');
+    const written = readNoFollow(target);
     assertClean(written, 'the file on disk');
     const writtenDigest = sha256(written);
     if (writtenDigest !== PATCHED_SHA256)
