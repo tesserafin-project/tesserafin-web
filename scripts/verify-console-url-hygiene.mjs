@@ -70,13 +70,18 @@
  *   `` `playing url: ${val}` `` still contains `playing url: ` in the shipped bundle — which makes
  *   this the production-bundle guard that needs no server, no media and no session.
  *
- *   FIRST-PARTY ASSETS ARE FATAL; VENDOR ASSETS ARE REPORTED. `jellyfin-apiclient@1.11.0` ships
- *   the same sinks — and one this repository never had, `openWebSocket`'s
- *   `console.log("opening web socket with url: " + url)`, where the url was built with
- *   `api_key=<accessToken()>`. That is a real disclosure, on sign-in rather than on playback, and
- *   it is tracked as its own issue; no edit in this repository can make a dependency's bundled
- *   `console.log` go away, so failing the build on it would only make the gate undeployable. The
- *   scan reports vendor hits every run so they stay visible, and fails only on ours.
+ *   EVERY HIT IS FATAL, WHOEVER WROTE IT (#152). This gate used to fail only on first-party assets
+ *   and merely REPORT dependency ones, because `jellyfin-apiclient@1.11.0` shipped the same sinks —
+ *   plus one this repository never had, `openWebSocket`'s
+ *   `console.log("opening web socket with url: " + url)`, built with `api_key=<accessToken()>` — and
+ *   nothing under `src/` could remove a dependency's bundled `console.log`. A gate that cannot be
+ *   satisfied gets deleted, so it reported instead of failing.
+ *
+ *   `scripts/patch-jellyfin-apiclient.mjs` removed that constraint: the package's credential-capable
+ *   statements are now rewritten at install time, so zero is reachable. The scan therefore requires
+ *   ZERO across the whole shipped bundle. The first-party/dependency classification survives only in
+ *   the diagnostic wording, because it changes the REPAIR — edit `src/`, or re-pin the patcher — and
+ *   never whether the build may ship. There is no dependency exception left to widen.
  *
  *   One signature, `, url: `, is a deliberate BROAD tripwire rather than an anchored prefix: the
  *   two sinks it covers put the url after an interpolation (`…timeoutMs: ${ms}, url: ${url}`), so
@@ -160,7 +165,7 @@ const RETIRED_SINKS = [
     },
     {
         signature: 'opening web socket with url',
-        origin: 'jellyfin-apiclient openWebSocket — the socket url built with `api_key=<accessToken()>`; a dependency sink, reported not enforced'
+        origin: 'jellyfin-apiclient openWebSocket — the socket url built with `api_key=<accessToken()>` (#152); removed at install time by scripts/patch-jellyfin-apiclient.mjs, so a hit means the patch did not run'
     }
 ];
 
@@ -399,34 +404,34 @@ function checkBundle(options) {
         console.log(
             JSON.stringify({ scanned: scripts.length, ours, vendor }, null, 2)
         );
-        process.exit(ours.length ? 1 : 0);
+        process.exit(found.length ? 1 : 0);
     }
 
-    // Always printed, pass or fail: a dependency disclosure that stops being mentioned stops being
-    // remembered.
-    for (const hit of vendor) {
-        console.log(
-            `note  ${hit.asset}: a DEPENDENCY carries a url sink — "${hit.signature}" (${hit.origin})`
+    // EVERY hit is fatal, whoever wrote it. The classification survives only in the wording, because
+    // knowing whether a sink is ours or a dependency's changes the REPAIR (edit `src/`, or re-pin
+    // `scripts/patch-jellyfin-apiclient.mjs`), never whether the build may ship.
+    for (const hit of found) {
+        console.error(
+            `${hit.asset}: the shipped bundle carries a retired url sink — "${hit.signature}" ` +
+                `[${hit.vendor ? 'DEPENDENCY' : 'first-party'}] (${hit.origin})`
         );
     }
-    for (const hit of ours) {
+    if (found.length) {
         console.error(
-            `${hit.asset}: the shipped bundle still carries a retired url sink — "${hit.signature}" (${hit.origin})`
-        );
-    }
-    if (ours.length) {
-        console.error(
-            `\n${ours.length} retired sink(s) are in our own production bundle. A playback or api ` +
-                'url carries `ApiKey=<the session access token>`, so this ships a credential ' +
-                'disclosure to every user.'
+            `\n${found.length} retired sink(s) are in the production bundle ` +
+                `(${ours.length} first-party, ${vendor.length} dependency). A playback or api url ` +
+                'carries `ApiKey=<the session access token>`, so this ships a credential disclosure ' +
+                'to every user.\n' +
+                (vendor.length
+                    ? 'For a DEPENDENCY hit the repair is scripts/patch-jellyfin-apiclient.mjs — ' +
+                      'check that `postinstall` ran and that the package version is still pinned.\n'
+                    : '')
         );
         process.exit(1);
     }
     console.log(
-        `console-url hygiene (bundle): ok — ${scripts.length} built script(s), none of ours carries any of the ${RETIRED_SINKS.length} retired url sinks` +
-            (vendor.length
-                ? `; ${vendor.length} dependency sink(s) noted above.`
-                : '.')
+        `console-url hygiene (bundle): ok — ${scripts.length} built script(s), none of them carries ` +
+            `any of the ${RETIRED_SINKS.length} retired url sinks, first-party or dependency.`
     );
 }
 
