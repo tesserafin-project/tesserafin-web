@@ -93,6 +93,7 @@ import {
     writeFileSync
 } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 /**
  * `O_NOFOLLOW` exists only where the platform's `fcntl.h` defines it — Node exports it inside
@@ -566,5 +567,11 @@ function main(argv) {
     }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`)
+// `file://${process.argv[1]}` is a POSIX-only shortcut. On Windows argv[1] is
+// `D:\\a\\...\\patch-jellyfin-apiclient.mjs` while `import.meta.url` is
+// `file:///D:/a/.../patch-jellyfin-apiclient.mjs`, so the two are NEVER equal, `main()` never runs,
+// and the script becomes a silent no-op that exits 0 with the credential sinks still in place.
+// `pathToFileURL` applies the drive-letter and separator normalisation that makes the comparison
+// mean the same thing on every platform.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
     main(process.argv.slice(2));

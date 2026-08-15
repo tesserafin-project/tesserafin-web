@@ -461,6 +461,27 @@ for (const [label, make, expected] of refusals) {
     );
 }
 
+// ── the CLI entry point must actually execute, on every platform ─────────────────────────────
+//
+// `import.meta.url === `file://${process.argv[1]}`` is POSIX-only: on Windows argv[1] carries a
+// drive letter and backslashes while import.meta.url is a normalised file URL, so they never match
+// and `main()` silently never runs. The script then exits 0 having patched nothing — which is how a
+// credential sink ships while every check is green. Any invocation must SAY something.
+{
+    const root = mkdtempSync(join(tmpdir(), 'jf-apiclient-entry-'));
+    staged.push(root);
+    mkdirSync(join(root, 'node_modules'), { recursive: true });
+    const result = runPatcher(root);
+    check(
+        'the CLI entry point runs and reports, rather than exiting silently',
+        [
+            `${result.stdout}${result.stderr}`.trim() === '' &&
+                'the patcher produced no output at all — `main()` did not run',
+            result.status !== 0 && `expected exit 0, got ${result.status}`
+        ]
+    );
+}
+
 // ── 11. the patcher's own output can never carry a credential ────────────────────────────────
 {
     const root = stage({
