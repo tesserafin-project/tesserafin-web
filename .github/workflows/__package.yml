@@ -45,6 +45,13 @@ jobs:
           JELLYFIN_VERSION: ${{ inputs.commit || github.sha }}
         run: npm run build:production
 
+      # #75 / S4. The AST gate in the quality matrix reads the SOURCE; this reads what would
+      # actually ship. Minification keeps string literals, so a retired url sink is still
+      # recognisable in the bundle by its message prefix. Runs here, against the build that was
+      # just produced, rather than against a second one.
+      - name: Verify no retired url sink shipped
+        run: npm run verify:console-url-hygiene:bundle
+
       # Aggregate initial/start-up delivery budget (webpack.delivery-budget.json). Runs HERE
       # rather than as its own job so that it is covered by the already-required "Build 🏗️ / Run
       # production build 🏗️" status check, and so that it measures the very build that was just

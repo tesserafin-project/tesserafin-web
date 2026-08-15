@@ -253,11 +253,10 @@ export default function (view, params) {
             try {
                 return decodeURIComponent(params.url);
             } catch (err) {
-                console.warn(
-                    '[LoginPage] unable to decode url param',
-                    params.url,
-                    err
-                );
+                // The value is deliberately absent (#75 / S4): this is an attacker-supplyable
+                // redirect target that arrives on the sign-in url, and the decode failure is
+                // the whole diagnosis.
+                console.warn('[LoginPage] unable to decode url param', err);
             }
         }
 

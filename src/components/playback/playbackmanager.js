@@ -3459,8 +3459,11 @@ export class PlaybackManager {
                 return promise.then(() => {
                     cancelPlayback();
                     loading.hide();
+                    // The item id, not `item.Url`: a media url is exactly what this module
+                    // builds with `ApiKey: apiClient.accessToken()` (#75 / S4), and the id
+                    // identifies the same item for a developer reading this.
                     console.error(
-                        `No player found for the requested media: ${item.Url}`
+                        `No player found for the requested media: item ${item.Id}`
                     );
                     showPlaybackInfoErrorMessage(self, 'ErrorPlayerNotFound');
                 });

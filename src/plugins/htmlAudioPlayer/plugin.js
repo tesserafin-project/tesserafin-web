@@ -121,8 +121,9 @@ class HtmlAudioPlayer {
             unBindEvents(elem);
             bindEvents(elem);
 
+            // #75 / S4: same disclosure as the video player - the url carries the session's
+            // access token as `ApiKey`, so it is never logged.
             let val = options.url;
-            console.debug('playing url: ' + val);
             import('../../scripts/settings/userSettings')
                 .then((userSettings) => {
                     let normalizationGain;
