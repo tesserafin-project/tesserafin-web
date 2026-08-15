@@ -264,6 +264,37 @@ function readVersion(packageDir) {
  *   portable path on a host that does have `O_NOFOLLOW`. It is a parameter rather than an
  *   environment variable so nothing outside the process can weaken production execution.
  */
+/**
+ * The object behind the descriptor must be the object the pathname names, so that a swap between
+ * the open and the check cannot redirect anything.
+ *
+ * Returns whether the STRONG basis (inode + device) was available. Where a filesystem reports no
+ * inode the comparison falls back to size and modification time, which is CORROBORATION rather than
+ * identity — for the file just opened it is nearly always trivially true. On such a host the
+ * guarantee is carried by the caller's non-symlink `lstat`, not by this.
+ */
+function assertSameObject(viaDescriptor, viaPath) {
+    const identified = viaDescriptor.ino !== 0n && viaPath.ino !== 0n;
+    if (identified) {
+        if (
+            viaDescriptor.ino !== viaPath.ino ||
+            viaDescriptor.dev !== viaPath.dev
+        )
+            throw new PatchError(
+                'the target changed identity between opening and checking it; refusing to patch'
+            );
+        return true;
+    }
+    if (
+        viaDescriptor.size !== viaPath.size ||
+        viaDescriptor.mtimeNs !== viaPath.mtimeNs
+    )
+        throw new PatchError(
+            'the target could not be corroborated between descriptor and path; refusing to patch'
+        );
+    return false;
+}
+
 export function openVerified(target, { noFollow = NO_FOLLOW } = {}) {
     const flags =
         noFollow === null
@@ -296,26 +327,7 @@ export function openVerified(target, { noFollow = NO_FOLLOW } = {}) {
             throw new PatchError(
                 'the target path is not a regular file; refusing to patch'
             );
-        const identified = viaDescriptor.ino !== 0n && viaPath.ino !== 0n;
-        if (identified) {
-            if (
-                viaDescriptor.ino !== viaPath.ino ||
-                viaDescriptor.dev !== viaPath.dev
-            )
-                throw new PatchError(
-                    'the target changed identity between opening and checking it; refusing to patch'
-                );
-        } else if (
-            viaDescriptor.size !== viaPath.size ||
-            viaDescriptor.mtimeNs !== viaPath.mtimeNs
-        ) {
-            // HONEST LABEL: where the filesystem reports no inode this is CORROBORATION, not
-            // identity — for the file just opened it is nearly always trivially true. The guarantee
-            // on such a host is carried by the non-symlink `lstat` above, not by this branch.
-            throw new PatchError(
-                'the target could not be corroborated between descriptor and path; refusing to patch'
-            );
-        }
+        const identified = assertSameObject(viaDescriptor, viaPath);
         return { fd, mode: Number(viaDescriptor.mode) & 0o777, identified };
     } catch (error) {
         closeSync(fd);
