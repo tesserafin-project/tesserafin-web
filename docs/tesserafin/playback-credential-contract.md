@@ -158,6 +158,57 @@ reverse-proxy logs, browser history and referrers.
 and the generated SDK, and must be sequenced **after** R1-P's reconciliation of those files. S4-A
 changes none of them.
 
+## C is selected, and A0 built it
+
+**Decided.** C is the transport, with B retained only as a bounded same-origin mode. R1-P's
+reconciliation landed (server master `3700ed42`, web `ade4fa52`), so the sequencing constraint above
+is satisfied and #153-A0 implemented the server primitives against it.
+
+The authoritative server contract — TTLs, renewal window, scope set, query parameter names, error
+vocabulary, revocation seams, restart behaviour and the multi-instance limit — lives in the **server**
+repository at `docs/playback-credential-server-contract.md`. It is not duplicated here, because two
+copies of a frozen contract drift and the server's is the one the code has to satisfy. The summary:
+
+| | |
+|---|---|
+| playback capability | `playbackCapability`, 15 min, renewable only in its final 5 min |
+| WebSocket ticket | `webSocketTicket`, 30 s, one successful consumption |
+| entropy | 256 bits, SHA-256 verifier at rest, presented value never stored |
+| bound to | user, session, device, play session, item, media source, scope set |
+| revoked by | logout, device deletion, password change, session end, play-session end |
+| restart | in-memory, so both die with the process — matching sessions, which already do |
+
+### Four things A0 measured that this document did not know
+
+**1. The web client does not build the credential URL.** Every `ApiKey=`/`api_key=` occurrence under
+`src/` is a *comment describing* the defect — including the ones in this document's own supporting
+files. The construction is inside `jellyfin-apiclient`, a prebuilt dependency bundle, in `getUrl` and
+`openWebSocket`. There is no web line to edit that would change the transport, which is why A0 is
+server-only and why the eventual migration has to go through the dependency.
+
+**2. The primary direct-stream routes are not authorization-gated at all.** `GetVideoStream` and
+`GetAudioStream` carry no `[Authorize]`, and the server has no global fallback policy. The credential
+in the URL is not what admits those requests at the MVC layer. This matters for scoping the fix: A0
+could not simply add the new policy to them without rejecting requests that succeed today, so the
+capability *narrows* a presented credential there rather than becoming required.
+
+**3. Fourteen HLS routes are invisible to the contract.** `DynamicHlsController` and
+`HlsSegmentController` are both `[ApiExplorerSettings(IgnoreApi = true)]`, so `master.m3u8`,
+`main.m3u8`, `live.m3u8` and every segment route appear nowhere in `openapi/openapi.json`. The
+OpenAPI diff for A0 is therefore **not** the list of routes the capability protects.
+
+**4. No behavioural test can prove the general-API boundary on its own.** A capability presented to
+`/Items` is refused today because the value is not a device token, not because the boundary held. A
+hostile control that taught `AuthorizationContext` to read `playbackCapability` — the one change that
+would make a capability a general-API credential — left the integration suite green. The boundary is
+now held by a gate that asserts the query keys that path may read are exactly `{ApiKey, api_key}`.
+
+### What is still true
+
+The credential is **still in the URL** after A0. The primitives exist and are proven; no runtime
+consumer uses them yet, and #153 stays open until the web players and the WebSocket client migrate.
+Nothing in A0 claims the exposure is closed.
+
 ## Classification
 
 * **Proven, with evidence:** disclosure to the console (fixed here); the credential in the URL; its
