@@ -2,11 +2,11 @@
     "provenanceSchema": 2,
     "root": "src/lib/tesserafin-sdk/generated",
     "algorithm": "sha256",
-    "fileCount": 489,
+    "fileCount": 496,
     "files": [
         {
             "path": ".openapi-generator/FILES",
-            "sha256": "4448cb7ff1b1494ccb7f62e4359c6957c4dfb4297d692acc12364202c4092184"
+            "sha256": "432f6e01c7cf80aab3024fb0a344bf11b278f48d678d3ca267b03ea49d566359"
         },
         {
             "path": ".openapi-generator/VERSION",
@@ -14,7 +14,7 @@
         },
         {
             "path": "api.ts",
-            "sha256": "e22dfe3f2f71fffac8d8cd498ace396c9440146c76f4d1296b50267a7651129f"
+            "sha256": "6ca2b01949142539c96060f726ddbe93ed705ae3ee56bedda28a43ee88970a60"
         },
         {
             "path": "api/artist-api.ts",
@@ -129,6 +129,10 @@
             "sha256": "366bf667bb6c571a28f2eea5029cae7ba4ffa3164ceeaf8b2eb348930b95fef5"
         },
         {
+            "path": "api/playback-credentials-api.ts",
+            "sha256": "bf16bb7a28555ab71e09755106e49560e396bb5b311b08a44f2ef01f4491c136"
+        },
+        {
             "path": "api/playlist-api.ts",
             "sha256": "a3b46ef3f4d82f2f36bba148f31722597551117a9d3c730450472dee68a68d0d"
         },
@@ -207,6 +211,10 @@
         {
             "path": "api/video-api.ts",
             "sha256": "9d35032b8e821f287682b3feebba788fdde9f753085de6cffecb8330940972e2"
+        },
+        {
+            "path": "api/web-socket-tickets-api.ts",
+            "sha256": "0d16cb589a8cb84d0a7fd2dd9dae782984605f22cdeb4ab11a6ce69a1f2b0ee2"
         },
         {
             "path": "api/year-api.ts",
@@ -758,7 +766,7 @@
         },
         {
             "path": "models/index.ts",
-            "sha256": "240d3ea008064c928bd78f33558453d5850174d7bc356fbe79877785c3de885a"
+            "sha256": "7f656e4fe69ae0d5c3a0b3023a4c14584ed034bae652b8b320b1d4977be8ed45"
         },
         {
             "path": "models/installation-info.ts",
@@ -1091,6 +1099,22 @@
         {
             "path": "models/play-request.ts",
             "sha256": "f6978eb7cd5f4f22c2100ecfce84a97a1f3e458cfe26eb397a673148a6bec89a"
+        },
+        {
+            "path": "models/playback-capability-dto.ts",
+            "sha256": "fa04cbb0bfcb9c2742b8ff4a9d09a2f36bc461df1ac0be983d02c2288b675ced"
+        },
+        {
+            "path": "models/playback-capability-renewal-dto.ts",
+            "sha256": "dc355cf6dae167aff0f5b8ef7f8d998b9132668c51a45dca7d8283598ba7d11f"
+        },
+        {
+            "path": "models/playback-capability-request-dto.ts",
+            "sha256": "8a9ce849c0b40ba88feb71721b8a6515a57f84398154f164e94b6c9bfac3a26b"
+        },
+        {
+            "path": "models/playback-capability-scope.ts",
+            "sha256": "5a5f44d62592e4b87efb0a8f807e229fcdf77fd6681d3bc0c949bd8503f9aa3d"
         },
         {
             "path": "models/playback-decision-audio-codec-capability.ts",
@@ -1955,6 +1979,10 @@
         {
             "path": "models/web-socket-message.ts",
             "sha256": "fff806568c7b1d4c1fa7bd283cc5e5c50071c5d91054398eb33c98446703cfe6"
+        },
+        {
+            "path": "models/web-socket-ticket-dto.ts",
+            "sha256": "90c2fdff4fed2ee12cc8a5c1b3bd4f1ac7ee6231ba1211913fbf62920652faae"
         },
         {
             "path": "models/xbmc-metadata-options.ts",
