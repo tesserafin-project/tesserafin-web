@@ -30,6 +30,7 @@ api/movie-api.ts
 api/music-genre-api.ts
 api/person-api.ts
 api/playback-api.ts
+api/playback-credentials-api.ts
 api/playlist-api.ts
 api/plugin-api.ts
 api/remote-access-diagnostics-api.ts
@@ -50,6 +51,7 @@ api/user-api.ts
 api/user-data-api.ts
 api/user-view-api.ts
 api/video-api.ts
+api/web-socket-tickets-api.ts
 api/year-api.ts
 base.ts
 common.ts
@@ -272,6 +274,10 @@ models/play-queue-update-reason.ts
 models/play-queue-update.ts
 models/play-request-dto.ts
 models/play-request.ts
+models/playback-capability-dto.ts
+models/playback-capability-renewal-dto.ts
+models/playback-capability-request-dto.ts
+models/playback-capability-scope.ts
 models/playback-decision-audio-codec-capability.ts
 models/playback-decision-audio-stream-snapshot.ts
 models/playback-decision-client-capabilities.ts
@@ -488,4 +494,5 @@ models/video-type.ts
 models/video3-dformat.ts
 models/virtual-folder-info.ts
 models/web-socket-message.ts
+models/web-socket-ticket-dto.ts
 models/xbmc-metadata-options.ts

@@ -41,6 +41,7 @@ export * from './api/movie-api';
 export * from './api/music-genre-api';
 export * from './api/person-api';
 export * from './api/playback-api';
+export * from './api/playback-credentials-api';
 export * from './api/playlist-api';
 export * from './api/plugin-api';
 export * from './api/remote-access-diagnostics-api';
@@ -61,5 +62,6 @@ export * from './api/user-api';
 export * from './api/user-data-api';
 export * from './api/user-view-api';
 export * from './api/video-api';
+export * from './api/web-socket-tickets-api';
 export * from './api/year-api';
 
