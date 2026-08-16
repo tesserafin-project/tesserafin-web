@@ -43,6 +43,7 @@ export * from './api/person-api';
 export * from './api/playback-api';
 export * from './api/playlist-api';
 export * from './api/plugin-api';
+export * from './api/remote-access-diagnostics-api';
 export * from './api/remote-image-api';
 export * from './api/scheduled-task-api';
 export * from './api/search-api';
