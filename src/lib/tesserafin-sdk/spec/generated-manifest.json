@@ -2,11 +2,11 @@
     "provenanceSchema": 2,
     "root": "src/lib/tesserafin-sdk/generated",
     "algorithm": "sha256",
-    "fileCount": 472,
+    "fileCount": 489,
     "files": [
         {
             "path": ".openapi-generator/FILES",
-            "sha256": "3d87c1d267649baf4790efae029703c0d2fa30216244078a086a2d9aa559799b"
+            "sha256": "4448cb7ff1b1494ccb7f62e4359c6957c4dfb4297d692acc12364202c4092184"
         },
         {
             "path": ".openapi-generator/VERSION",
@@ -14,7 +14,7 @@
         },
         {
             "path": "api.ts",
-            "sha256": "0686f86ac66a66c497c102a448249518a3603431a816ff1256d2e35ea0637bf0"
+            "sha256": "e22dfe3f2f71fffac8d8cd498ace396c9440146c76f4d1296b50267a7651129f"
         },
         {
             "path": "api/artist-api.ts",
@@ -135,6 +135,10 @@
         {
             "path": "api/plugin-api.ts",
             "sha256": "43636aad6d21daf8e8051df42f53372e24ba9cf46ca81d3d8aaa972b5a3c9660"
+        },
+        {
+            "path": "api/remote-access-diagnostics-api.ts",
+            "sha256": "ba46671142434e9ac924332714fc21da881218f46efb72731748327ac4d8bd78"
         },
         {
             "path": "api/remote-image-api.ts",
@@ -754,7 +758,7 @@
         },
         {
             "path": "models/index.ts",
-            "sha256": "bdde212920051e1e22116fc3ded85402e4c1177256d4d1f56248c7f37eae2c11"
+            "sha256": "240d3ea008064c928bd78f33558453d5850174d7bc356fbe79877785c3de885a"
         },
         {
             "path": "models/installation-info.ts",
@@ -1407,6 +1411,70 @@
         {
             "path": "models/refresh-progress-message.ts",
             "sha256": "f5c466969371a590c3d7961c986062f776dfc198488147620fb83482fde65187"
+        },
+        {
+            "path": "models/remote-access-backend-bind-posture.ts",
+            "sha256": "aafb25cac8cc8bf54c0d1eca0d0aa445eb4e2505b7f2d6fde127157dc3c38756"
+        },
+        {
+            "path": "models/remote-access-backend-observation-dto.ts",
+            "sha256": "723a2ed76710cb98f480d97b66eac16d0514d2599b34096923fd53431f7e6e2d"
+        },
+        {
+            "path": "models/remote-access-diagnostics-report-dto.ts",
+            "sha256": "ce3773a9b0fdec029200b67c825ac8b7b4f180c243d54f0495657f3d3e40f490"
+        },
+        {
+            "path": "models/remote-access-diagnostics-request-dto.ts",
+            "sha256": "c04b9c79d8b7228d218265db09a6c647cee92c1a95ebf4a0099b01462acc36af"
+        },
+        {
+            "path": "models/remote-access-dns-observation-dto.ts",
+            "sha256": "5c60885e2cd25b48d16a52e26b0306c988744af8174474c1ef7a9a4675264123"
+        },
+        {
+            "path": "models/remote-access-dns-outcome.ts",
+            "sha256": "940d9e8db2a4677e991f21ad3656a26d5f1f59fb90c12d1c36a595c0767f3c56"
+        },
+        {
+            "path": "models/remote-access-finding-code.ts",
+            "sha256": "8d912a1243d04be9890a15bbe73a3e120ee98851120101bd829ef29ee1a945a0"
+        },
+        {
+            "path": "models/remote-access-finding-confidence.ts",
+            "sha256": "ea56c3778bba44e2e1aadbe33aa28a710e66e35a449fe5ae5840954fe00ddcc1"
+        },
+        {
+            "path": "models/remote-access-finding-dto.ts",
+            "sha256": "05c3650589f8f8d9542bf7be4f59646a2499f52ab475778cd21c37f85036331b"
+        },
+        {
+            "path": "models/remote-access-finding-severity.ts",
+            "sha256": "2323e42a386f0d35a662892d517675dbcbb7484b2836a3b55f2ba3f9710e7e32"
+        },
+        {
+            "path": "models/remote-access-listener-observation-dto.ts",
+            "sha256": "8cb70b490d3672a440b97af8271caed0ecc3963099011ff3cdc09ffd30cf8fe6"
+        },
+        {
+            "path": "models/remote-access-listener-outcome.ts",
+            "sha256": "13710aadfcf713ea3938955a4ccfee194995a4de3ff8eb4577fd79f50d9b8476"
+        },
+        {
+            "path": "models/remote-access-local-address-census-dto.ts",
+            "sha256": "8424f6c1a45d2867fdd9ac46fde3e1c1ccb198916edf5ee60ea7f4a37b8e9d89"
+        },
+        {
+            "path": "models/remote-access-policy-input-dto.ts",
+            "sha256": "889d48d206f79806379b74f34d1f27155681e1e8fc58af3a7812aa8ce50cbae2"
+        },
+        {
+            "path": "models/remote-access-proxy-trust-observation-dto.ts",
+            "sha256": "709da7613d7d1798919a62004e6faf5d057ad09c16a97e6cdff20f15d638ebef"
+        },
+        {
+            "path": "models/remote-access-publication-policy.ts",
+            "sha256": "5f870d14a514c2b8e685b2a893c9c7098a48a080bb843e026c4d6a03cea433af"
         },
         {
             "path": "models/remote-image-info.ts",
