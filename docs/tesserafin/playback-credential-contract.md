@@ -163,8 +163,9 @@ changes none of them.
 **Decided.** C is the transport, with B retained only as a bounded same-origin mode. R1-P's
 reconciliation landed (server master `3700ed42`, web `ade4fa52`), so the sequencing constraint above
 is satisfied and #153-A0 implemented the server primitives against it. **A0-R1 then repaired four
-defects in that implementation**, so the accepted server source is now `d57d780a`, not A0's original
-`3c12e19f` — which is superseded evidence, for the reason finding 2 below records.
+defects in that implementation, and A0-R2 a fifth**, so the accepted server source is now
+`d3c02e46`. Both `3c12e19f` (A0) and `d57d780a` (R1) are superseded evidence, for the reasons
+findings 2 and 6 below record.
 
 The authoritative server contract — TTLs, renewal window, scope set, query parameter names, error
 vocabulary, revocation seams, restart behaviour and the multi-instance limit — lives in the **server**
@@ -180,7 +181,7 @@ copies of a frozen contract drift and the server's is the one the code has to sa
 | revoked by | logout, device deletion, password change, session end, play-session end |
 | restart | in-memory, so both die with the process — matching sessions, which already do |
 
-### Five things A0, and its R1 repair, measured that this document did not know
+### Six things A0, and its R1 and R2 repairs, measured that this document did not know
 
 **1. The web client does not build the credential URL.** Every `ApiKey=`/`api_key=` occurrence under
 `src/` is a *comment describing* the defect — including the ones in this document's own supporting
@@ -243,6 +244,34 @@ R1 also found that binding was compared only when the capability *and* the route
 something, so a capability minted for one item satisfied every route that did not name one; and that
 minting validated nothing at all — any item id, any media source, any play session, any integer in
 the scopes array. Both are repaired, and both now have request-level evidence.
+
+**6. The WebSocket ticket authenticated the handshake and produced a socket nobody could use.**
+*New in R2, and only visible through the real upgrade pipeline.* A ticket-only upgrade completed —
+the socket reported `Open` — and was then torn down: the session listener's watchlist stayed empty
+and the first send failed with *"The remote end closed the connection"*. The durable-token upgrade
+was unaffected.
+
+`WebSocketManager.AuthenticateUpgrade` returned an `AuthorizationInfo` and left `context.User`
+anonymous, while every WebSocket listener re-derives its session from the **principal**:
+`SessionWebSocketListener.ProcessWebSocketConnectedAsync` calls
+`RequestHelpers.GetSession(httpContext)`, which reads the user id, client, version, device id and
+device name off `context.User`. With an anonymous principal that resolves nothing and throws. The
+durable-token path never hit it because the authentication middleware had already populated the
+principal by the time the upgrade ran.
+
+The primitive tests could not see this, and neither could the contract: `ConsumeWebSocketTicket`
+was correct in every respect. What was missing was everything downstream of consumption. The fix
+builds the same internal claims a durable token produces, sourced from the session the ticket
+names — a session is identified downstream by `(deviceId, client, version)`, so guessing would have
+attached the socket to a *different* session from the one the ticket is bound to.
+
+Two of R2's own tests were also wrong, and hostile controls said so. A replay test that closed the
+socket before replaying was refused by session revocation rather than by single-use consumption, so
+it would have passed against a store with no single-use guarantee at all. And logout turned out to
+revoke through **two** seams — `RevokeDevice` in `Logout` and `RevokeSession` in `OnSessionEnded` —
+so no single-seam mutation could ever be anything but inert. That redundancy is deliberate and the
+source says so; it is recorded here because "the control removes two calls" should read as
+necessity, not convenience.
 
 ### What is still true
 
