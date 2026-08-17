@@ -144,6 +144,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -227,6 +230,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (container !== undefined) {
                 localVarQueryParameter['container'] = container;
@@ -517,6 +523,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
             if (_static !== undefined) {
                 localVarQueryParameter['static'] = _static;
             }
@@ -798,6 +807,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             const localVarRequestOptions = { method: 'HEAD', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (container !== undefined) {
                 localVarQueryParameter['container'] = container;
@@ -1087,6 +1099,9 @@ export const VideoApiAxiosParamCreator = function (configuration?: Configuration
             const localVarRequestOptions = { method: 'HEAD', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (_static !== undefined) {
                 localVarQueryParameter['static'] = _static;
