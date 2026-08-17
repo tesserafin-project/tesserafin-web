@@ -162,7 +162,9 @@ changes none of them.
 
 **Decided.** C is the transport, with B retained only as a bounded same-origin mode. R1-P's
 reconciliation landed (server master `3700ed42`, web `ade4fa52`), so the sequencing constraint above
-is satisfied and #153-A0 implemented the server primitives against it.
+is satisfied and #153-A0 implemented the server primitives against it. **A0-R1 then repaired four
+defects in that implementation**, so the accepted server source is now `d57d780a`, not A0's original
+`3c12e19f` — which is superseded evidence, for the reason finding 2 below records.
 
 The authoritative server contract — TTLs, renewal window, scope set, query parameter names, error
 vocabulary, revocation seams, restart behaviour and the multi-instance limit — lives in the **server**
@@ -174,11 +176,11 @@ copies of a frozen contract drift and the server's is the one the code has to sa
 | playback capability | `playbackCapability`, 15 min, renewable only in its final 5 min |
 | WebSocket ticket | `webSocketTicket`, 30 s, one successful consumption |
 | entropy | 256 bits, SHA-256 verifier at rest, presented value never stored |
-| bound to | user, session, device, play session, item, media source, scope set |
+| bound to | user, session, device, play session, item, media source, scope set — compared **exactly**, in both directions, since A0-R1 |
 | revoked by | logout, device deletion, password change, session end, play-session end |
 | restart | in-memory, so both die with the process — matching sessions, which already do |
 
-### Four things A0 measured that this document did not know
+### Five things A0, and its R1 repair, measured that this document did not know
 
 **1. The web client does not build the credential URL.** Every `ApiKey=`/`api_key=` occurrence under
 `src/` is a *comment describing* the defect — including the ones in this document's own supporting
@@ -186,16 +188,40 @@ files. The construction is inside `jellyfin-apiclient`, a prebuilt dependency bu
 `openWebSocket`. There is no web line to edit that would change the transport, which is why A0 is
 server-only and why the eventual migration has to go through the dependency.
 
-**2. The primary direct-stream routes are not authorization-gated at all.** `GetVideoStream` and
-`GetAudioStream` carry no `[Authorize]`, and the server has no global fallback policy. The credential
-in the URL is not what admits those requests at the MVC layer. This matters for scoping the fix: A0
-could not simply add the new policy to them without rejecting requests that succeed today, so the
-capability *narrows* a presented credential there rather than becoming required.
+**2. The primary direct-stream routes were not authorization-gated at all — and that was a live
+disclosure, not a scoping note.** `GetVideoStream` and `GetAudioStream` carried no `[Authorize]`,
+and the server sets `DefaultPolicy` with no `FallbackPolicy`, so an endpoint without `[Authorize]`
+is genuinely anonymous. A0 read this as a compatibility constraint and made the capability *narrow*
+a presented credential on those routes rather than become required, on the grounds that requiring
+it would reject requests that succeed today.
+
+R1 measured what those requests actually were. Against a real seeded item, with **no credential of
+any kind**:
+
+```
+GET  /Videos/{id}/stream?static=true          -> 200, the source file byte for byte
+GET  /Audio/{id}/stream?static=true           -> 200, the source file byte for byte
+GET  /Videos/{id}/stream (Range: bytes=0-15)  -> 206
+HEAD /Videos/{id}/stream?static=true          -> 200, the real Content-Length
+GET  /Videos/{id}/{ms}/Subtitles/2/Stream.vtt -> 200, the real cue text
+```
+
+Fourteen endpoints in all, counting the `GET`/`HEAD` pairs, the two legacy HLS segment families and
+the attachment route; plus two Live TV stream routes anonymous for the same reason. The requests
+A0 declined to reject were requests carrying no credential. **R1 requires the policy on all
+fourteen**, which costs no compatibility: the routes that already carried it answer identically
+with the token in the `ApiKey` query parameter, because `AuthorizationContext` reads that key
+before the endpoint is known. This is reported separately as a P0 against `master`, since the
+disclosure predates A0 and exists in every image built from it.
 
 **3. Fourteen HLS routes are invisible to the contract.** `DynamicHlsController` and
 `HlsSegmentController` are both `[ApiExplorerSettings(IgnoreApi = true)]`, so `master.m3u8`,
 `main.m3u8`, `live.m3u8` and every segment route appear nowhere in `openapi/openapi.json`. The
-OpenAPI diff for A0 is therefore **not** the list of routes the capability protects.
+OpenAPI diff for A0 is therefore **not** the list of routes the capability protects. R1's route
+inventory reads `EndpointDataSource` rather than controller `MethodInfo` for exactly this reason —
+`ApiExplorerSettings` hides an endpoint from the explorer, not from routing — and counts the two
+controllers by `ControllerActionDescriptor.ControllerTypeInfo`, which is what settles the figure at
+fourteen against actual metadata.
 
 **4. No behavioural test can prove the general-API boundary on its own.** A capability presented to
 `/Items` is refused today because the value is not a device token, not because the boundary held. A
@@ -203,11 +229,32 @@ hostile control that taught `AuthorizationContext` to read `playbackCapability` 
 would make a capability a general-API credential — left the integration suite green. The boundary is
 now held by a gate that asserts the query keys that path may read are exactly `{ApiKey, api_key}`.
 
+**5. A0's own evidence could not see A0's own defects.** The most important measurement R1 made is
+about the evidence rather than the code. With the anonymous direct-video hole reopened as a hostile
+control, **all eighty of A0's own tests stayed green** — the structural route table (26), the
+credential primitives in isolation (45), and the nine general-endpoint requests. The structural test
+cannot see it: removing a policy adds no offender to its "outside the inventory" sweep, and its
+per-route theory only asks whether the `[RequiresPlaybackCapability]` attribute is present, which it
+still is. R1's request-level matrix and endpoint-metadata inventory both go red on the same
+mutation. This is finding 4 one level up: evidence passing for a reason unrelated to the property it
+claims to prove.
+
+R1 also found that binding was compared only when the capability *and* the route both named
+something, so a capability minted for one item satisfied every route that did not name one; and that
+minting validated nothing at all — any item id, any media source, any play session, any integer in
+the scopes array. Both are repaired, and both now have request-level evidence.
+
 ### What is still true
 
-The credential is **still in the URL** after A0. The primitives exist and are proven; no runtime
-consumer uses them yet, and #153 stays open until the web players and the WebSocket client migrate.
-Nothing in A0 claims the exposure is closed.
+The credential is **still in the URL** after A0 and after R1. The primitives exist and are proven;
+no runtime consumer uses them yet, and #153 stays open until the web players and the WebSocket
+client migrate. Nothing here claims the exposure is closed. R1 closed a *different* exposure that
+was open the whole time.
+
+**Reserved to A1, and not proven here:** renewal across a long read — that a capability survives a
+playback longer than its fifteen-minute lifetime by renewing inside its final five minutes, against
+a real long read rather than a hand-moved clock. R1 proves the renewal window at the primitive and
+HTTP levels only.
 
 ## Classification
 
