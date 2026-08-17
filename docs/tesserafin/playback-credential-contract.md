@@ -181,7 +181,7 @@ copies of a frozen contract drift and the server's is the one the code has to sa
 | revoked by | logout, device deletion, password change, session end, play-session end |
 | restart | in-memory, so both die with the process — matching sessions, which already do |
 
-### Six things A0, and its R1 and R2 repairs, measured that this document did not know
+### Seven things A0, and its R1, R2 and R3 repairs, measured that this document did not know
 
 **1. The web client does not build the credential URL.** Every `ApiKey=`/`api_key=` occurrence under
 `src/` is a *comment describing* the defect — including the ones in this document's own supporting
@@ -273,9 +273,46 @@ so no single-seam mutation could ever be anything but inert. That redundancy is 
 source says so; it is recorded here because "the control removes two calls" should read as
 necessity, not convenience.
 
+**7. R2's own repair treated consumption as redemption, and the socket attached to whatever session
+the empty claims happened to name.** *New in R3.* R2 resolved the ticket's session with
+`Sessions.FirstOrDefault(...)` and then read its client, version and device name through `?.`. A
+ticket naming a session that is **no longer live** therefore produced an *authenticated* connection
+carrying three empty strings — and an empty client plus an empty device id is a perfectly usable
+session key, because `RequestHelpers.GetSession` rebuilds the key from exactly those claims and
+`LogSessionActivity` **creates** a session when the key it is handed matches none. The same shape
+held for a user id that no longer resolved, and nothing compared the ticket's own bindings against
+the session it named, so a live ticket could name a live session belonging to a different user or a
+different device.
+
+A consumed ticket proves only that the value was minted, has not expired and has not been used.
+R3 requires four things after consumption and before the socket is accepted: the session must be
+live, the user must still resolve, the session's device must be the ticket's device, and the
+session's user must be the ticket's user. Every failure refuses; none falls back to the durable
+token; the ticket stays spent. Client, version, device id and device name now come from the resolved
+session only — nothing in the identity comes from the request.
+
+R3 also found that the two authentication paths had each written their own copy of the nine-claim
+list, and that the copies **had already drifted**: `CustomAuthenticationHandler` emitted
+`Tesserafin-UserId` as `Guid.Empty` formatted `"N"` when no user resolved, while the ticket path
+emitted an empty string. There is now a single `AuthorizationInfo` → `ClaimsIdentity` projector,
+shared by both; a caller decides only the authentication scheme.
+
+**The instrument mattered more than the tests.** R2 graded acceptance on the session listener's
+watchlist. That watchlist is populated inside `KeepAliveWebSocket`, *downstream* of
+`RequestHelpers.GetSession`, so a socket that **is** accepted and then dies resolving its session
+leaves it untouched and is indistinguishable from a refusal — which is the exact shape every one of
+R3's cases produces. Graded on the watchlist alone, every hostile control would have been inert.
+R3 added a recorder that runs inside the same listener loop, before anything can throw, so
+"did `AcceptWebSocketAsync` return" is answered unconditionally. This is finding 5 a third time:
+evidence that passes for a reason unrelated to the property it claims to prove.
+
+Three of R3's ten cases were **already green** against R2's candidate — exact-session attachment,
+request-override refusal, and principal parity. They are recorded as regression guards, not as
+defect proofs; their whole evidentiary value is that three hostile controls turn them red.
+
 ### What is still true
 
-The credential is **still in the URL** after A0 and after R1. The primitives exist and are proven;
+The credential is **still in the URL** after A0 and after R1, R2 and R3. The primitives exist and are proven;
 no runtime consumer uses them yet, and #153 stays open until the web players and the WebSocket
 client migrate. Nothing here claims the exposure is closed. R1 closed a *different* exposure that
 was open the whole time.
