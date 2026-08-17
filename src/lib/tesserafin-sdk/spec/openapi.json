@@ -19309,6 +19309,29 @@
             },
             "description": "Audio stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -19334,6 +19357,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets an audio stream.",
         "tags": [
           "Audio"
@@ -19791,6 +19822,29 @@
             },
             "description": "Audio stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -19816,6 +19870,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets an audio stream.",
         "tags": [
           "Audio"
@@ -20276,6 +20338,29 @@
             },
             "description": "Audio stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -20301,6 +20386,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets an audio stream.",
         "tags": [
           "Audio"
@@ -20759,6 +20852,29 @@
             },
             "description": "Audio stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -20784,6 +20900,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets an audio stream.",
         "tags": [
           "Audio"
@@ -38195,6 +38319,29 @@
             },
             "description": "Recording stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "content": {
               "application/json": {
@@ -38240,6 +38387,13 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a live tv recording stream.",
         "tags": [
           "LiveTv"
@@ -38281,6 +38435,29 @@
               }
             },
             "description": "Stream returned."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
           },
           "404": {
             "content": {
@@ -38327,6 +38504,13 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a live tv channel stream.",
         "tags": [
           "LiveTv"
@@ -44632,6 +44816,7 @@
     },
     "/Playback/Capabilities": {
       "post": {
+        "description": "WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the\nuser id off the principal and then never asks whether that user may see the item: no library\nrestriction, no blocked tag, no media-source ownership check runs anywhere on the delivery\npath. Whatever a capability is permitted to name here is therefore what it can fetch for its\nwhole lifetime, so this is the only place those restrictions can hold at all. Remote access\nand the parental schedule are the exception and are deliberately NOT re-checked here:\n`MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so\n`DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a\ncapability principal exactly as for a durable token. Checking them twice is how two code\npaths drift into disagreeing.\n            \nWHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\"\nhave to be indistinguishable, or the endpoint becomes an oracle for which items exist on a\nserver the caller cannot browse.",
         "operationId": "MintPlaybackCapability",
         "requestBody": {
           "content": {
@@ -44688,7 +44873,7 @@
                 }
               }
             },
-            "description": "No scope was requested, or an item-bound scope was requested without an item."
+            "description": "The requested scope set is not one a capability can satisfy."
           },
           "401": {
             "content": {
@@ -44702,6 +44887,16 @@
           },
           "403": {
             "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "The item, the media source or the play session is not this caller's to name."
           },
           "503": {
             "content": {
@@ -62568,6 +62763,29 @@
             },
             "description": "Video stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -62593,6 +62811,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a video stream.",
         "tags": [
           "Video"
@@ -63068,6 +63294,29 @@
             },
             "description": "Video stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -63093,6 +63342,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a video stream.",
         "tags": [
           "Video"
@@ -63570,6 +63827,29 @@
             },
             "description": "Video stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -63595,6 +63875,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a video stream.",
         "tags": [
           "Video"
@@ -64070,6 +64358,29 @@
             },
             "description": "Video stream returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -64095,6 +64406,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets a video stream.",
         "tags": [
           "Video"
@@ -64352,6 +64671,29 @@
             },
             "description": "File returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -64377,6 +64719,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets subtitles in a specified format.",
         "tags": [
           "Subtitle"
@@ -64523,6 +64873,29 @@
             },
             "description": "File returned."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "503": {
             "content": {
               "text/html": {}
@@ -64548,6 +64921,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Gets subtitles in a specified format.",
         "tags": [
           "Subtitle"
@@ -64600,6 +64981,29 @@
             },
             "description": "Attachment retrieved."
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"CamelCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json; profile=\"PascalCase\"": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
           "404": {
             "content": {
               "application/json": {
@@ -64645,6 +65049,14 @@
             }
           }
         },
+        "security": [
+          {
+            "CustomAuthentication": [
+              "MediaDelivery",
+              "DefaultAuthorization"
+            ]
+          }
+        ],
         "summary": "Get video attachment.",
         "tags": [
           "Video"

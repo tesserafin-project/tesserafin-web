@@ -266,6 +266,9 @@ export const SubtitleApiAxiosParamCreator = function (configuration?: Configurat
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
             if (itemId !== undefined) {
                 localVarQueryParameter['itemId'] = itemId;
             }
@@ -407,6 +410,9 @@ export const SubtitleApiAxiosParamCreator = function (configuration?: Configurat
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (itemId !== undefined) {
                 localVarQueryParameter['itemId'] = itemId;
