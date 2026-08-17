@@ -105,6 +105,9 @@ export const AudioApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
             if (container !== undefined) {
                 localVarQueryParameter['container'] = container;
             }
@@ -383,6 +386,9 @@ export const AudioApiAxiosParamCreator = function (configuration?: Configuration
             const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (_static !== undefined) {
                 localVarQueryParameter['static'] = _static;
@@ -778,6 +784,9 @@ export const AudioApiAxiosParamCreator = function (configuration?: Configuration
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
+
             if (container !== undefined) {
                 localVarQueryParameter['container'] = container;
             }
@@ -1056,6 +1065,9 @@ export const AudioApiAxiosParamCreator = function (configuration?: Configuration
             const localVarRequestOptions = { method: 'HEAD', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication CustomAuthentication required
+            await setApiKeyToObject(localVarHeaderParameter, "Authorization", configuration)
 
             if (_static !== undefined) {
                 localVarQueryParameter['static'] = _static;

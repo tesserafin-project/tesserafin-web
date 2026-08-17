@@ -22,7 +22,7 @@
         },
         {
             "path": "api/audio-api.ts",
-            "sha256": "1250211bcfe2556432f7fa9093e727fe944d86e2429539374e3005fa963fa1a5"
+            "sha256": "e00e89bdb2c16432c7c6734ab45a56fb2d391ab8f523e90546c7948432280dfe"
         },
         {
             "path": "api/authentication-api.ts",
@@ -94,7 +94,7 @@
         },
         {
             "path": "api/live-tv-api.ts",
-            "sha256": "336faca990d9f996da457a813ea6d74b446fbea3c1269977ff46dbc930a96e03"
+            "sha256": "98242f8e50f0c3722870461fe96ebe156989159275bb67dd912515258ba2f5b2"
         },
         {
             "path": "api/localization-api.ts",
@@ -130,7 +130,7 @@
         },
         {
             "path": "api/playback-credentials-api.ts",
-            "sha256": "bf16bb7a28555ab71e09755106e49560e396bb5b311b08a44f2ef01f4491c136"
+            "sha256": "4efada6fa971f2065256c10f60c4308479e8a37315dd45f7128a2fbe5b6695f3"
         },
         {
             "path": "api/playlist-api.ts",
@@ -174,7 +174,7 @@
         },
         {
             "path": "api/subtitle-api.ts",
-            "sha256": "de99ec92ebc32b4be7fa4181f64d401edbd44692a5f70dcc31d100b0f84e1ad9"
+            "sha256": "6444964e3a3924c5de04585006c9441d31ed1bfeac2c5c606f348ab2e1b49cc6"
         },
         {
             "path": "api/suggestion-api.ts",
@@ -210,7 +210,7 @@
         },
         {
             "path": "api/video-api.ts",
-            "sha256": "9d35032b8e821f287682b3feebba788fdde9f753085de6cffecb8330940972e2"
+            "sha256": "b73482862975a0b1705e3208a0b499e9bffad1b30d4c824946f2fb1764a205de"
         },
         {
             "path": "api/web-socket-tickets-api.ts",

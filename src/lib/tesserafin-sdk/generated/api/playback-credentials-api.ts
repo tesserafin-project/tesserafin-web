@@ -35,7 +35,7 @@ import type { ProblemDetails } from '../models';
 export const PlaybackCredentialsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 
+         * WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the user id off the principal and then never asks whether that user may see the item: no library restriction, no blocked tag, no media-source ownership check runs anywhere on the delivery path. Whatever a capability is permitted to name here is therefore what it can fetch for its whole lifetime, so this is the only place those restrictions can hold at all. Remote access and the parental schedule are the exception and are deliberately NOT re-checked here: `MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so `DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a capability principal exactly as for a durable token. Checking them twice is how two code paths drift into disagreeing.              WHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\" have to be indistinguishable, or the endpoint becomes an oracle for which items exist on a server the caller cannot browse.
          * @summary Mints a playback capability bound to the caller\'s session and play session.
          * @param {PlaybackCapabilityRequestDto} playbackCapabilityRequestDto The item, media source, play session and scopes to bind to.
          * @param {*} [options] Override http request option.
@@ -121,7 +121,7 @@ export const PlaybackCredentialsApiFp = function(configuration?: Configuration) 
     const localVarAxiosParamCreator = PlaybackCredentialsApiAxiosParamCreator(configuration)
     return {
         /**
-         * 
+         * WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the user id off the principal and then never asks whether that user may see the item: no library restriction, no blocked tag, no media-source ownership check runs anywhere on the delivery path. Whatever a capability is permitted to name here is therefore what it can fetch for its whole lifetime, so this is the only place those restrictions can hold at all. Remote access and the parental schedule are the exception and are deliberately NOT re-checked here: `MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so `DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a capability principal exactly as for a durable token. Checking them twice is how two code paths drift into disagreeing.              WHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\" have to be indistinguishable, or the endpoint becomes an oracle for which items exist on a server the caller cannot browse.
          * @summary Mints a playback capability bound to the caller\'s session and play session.
          * @param {PlaybackCapabilityRequestDto} playbackCapabilityRequestDto The item, media source, play session and scopes to bind to.
          * @param {*} [options] Override http request option.
@@ -157,7 +157,7 @@ export const PlaybackCredentialsApiFactory = function (configuration?: Configura
     const localVarFp = PlaybackCredentialsApiFp(configuration)
     return {
         /**
-         * 
+         * WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the user id off the principal and then never asks whether that user may see the item: no library restriction, no blocked tag, no media-source ownership check runs anywhere on the delivery path. Whatever a capability is permitted to name here is therefore what it can fetch for its whole lifetime, so this is the only place those restrictions can hold at all. Remote access and the parental schedule are the exception and are deliberately NOT re-checked here: `MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so `DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a capability principal exactly as for a durable token. Checking them twice is how two code paths drift into disagreeing.              WHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\" have to be indistinguishable, or the endpoint becomes an oracle for which items exist on a server the caller cannot browse.
          * @summary Mints a playback capability bound to the caller\'s session and play session.
          * @param {PlaybackCredentialsApiMintPlaybackCapabilityRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -186,7 +186,7 @@ export const PlaybackCredentialsApiFactory = function (configuration?: Configura
  */
 export interface PlaybackCredentialsApiInterface {
     /**
-     * 
+     * WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the user id off the principal and then never asks whether that user may see the item: no library restriction, no blocked tag, no media-source ownership check runs anywhere on the delivery path. Whatever a capability is permitted to name here is therefore what it can fetch for its whole lifetime, so this is the only place those restrictions can hold at all. Remote access and the parental schedule are the exception and are deliberately NOT re-checked here: `MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so `DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a capability principal exactly as for a durable token. Checking them twice is how two code paths drift into disagreeing.              WHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\" have to be indistinguishable, or the endpoint becomes an oracle for which items exist on a server the caller cannot browse.
      * @summary Mints a playback capability bound to the caller\'s session and play session.
      * @param {PlaybackCredentialsApiMintPlaybackCapabilityRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -243,7 +243,7 @@ export interface PlaybackCredentialsApiRenewPlaybackCapabilityRequest {
  */
 export class PlaybackCredentialsApi extends BaseAPI implements PlaybackCredentialsApiInterface {
     /**
-     * 
+     * WHY THE CHECKS ARE HERE AND NOWHERE ELSE. `StreamingHelpers.GetStreamingState` reads the user id off the principal and then never asks whether that user may see the item: no library restriction, no blocked tag, no media-source ownership check runs anywhere on the delivery path. Whatever a capability is permitted to name here is therefore what it can fetch for its whole lifetime, so this is the only place those restrictions can hold at all. Remote access and the parental schedule are the exception and are deliberately NOT re-checked here: `MediaDeliveryRequirement` subclasses `DefaultAuthorizationRequirement`, so `DefaultAuthorizationHandler` re-evaluates both on every delivery request, for a capability principal exactly as for a durable token. Checking them twice is how two code paths drift into disagreeing.              WHY REFUSALS ARE 404 AND NOT 403. \"You may not see this item\" and \"there is no such item\" have to be indistinguishable, or the endpoint becomes an oracle for which items exist on a server the caller cannot browse.
      * @summary Mints a playback capability bound to the caller\'s session and play session.
      * @param {PlaybackCredentialsApiMintPlaybackCapabilityRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
