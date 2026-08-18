@@ -31,6 +31,17 @@ import type { CapabilityAuthority } from './identity';
  */
 export const RENEWAL_WINDOW_MS = 5 * 60 * 1000;
 
+/**
+ * How far INSIDE the renewal window the timer aims.
+ *
+ * Firing at the exact boundary means any forward skew of the local clock puts the request before
+ * the window the SERVER is measuring, which answers `PlaybackCapabilityRenewalTooEarly` (400) —
+ * and a refused renewal fails closed, so a clock a minute fast would end playback rather than
+ * extend it. Aiming inside the window costs nothing: the window is five minutes and a renewal is
+ * one round trip.
+ */
+export const RENEWAL_SKEW_MARGIN_MS = 30 * 1000;
+
 /** What a caller asks for. The broker supplies every other authority dimension itself. */
 export interface CapabilityDemand {
     scopes: readonly PlaybackCapabilityScope[];
@@ -70,6 +81,30 @@ export class PlaybackCredentialError extends Error {
         super(message);
         this.name = 'PlaybackCredentialError';
     }
+}
+
+/**
+ * The capability's expiry expressed on the LOCAL clock.
+ *
+ * The absolute `ExpiresAt` the server sends is on the server's clock; comparing it against
+ * `Date.now()` imports the whole clock difference between the two machines into every expiry and
+ * renewal decision. The lifetime `ExpiresAt - IssuedAt` is measured entirely on the server's clock,
+ * so it carries no skew at all; anchoring it to the moment the response was RECEIVED yields a local
+ * expiry that can only ever be pessimistic by the response latency — which is the safe direction,
+ * because it makes the renewal fire marginally earlier inside the window rather than after it.
+ *
+ * Falls back to the absolute value when a server omits `IssuedAt`.
+ */
+function localExpiry(
+    issuedAt: string | undefined | null,
+    expiresAt: string,
+    receivedAt: number
+): number {
+    const absolute = Date.parse(expiresAt);
+    if (!issuedAt) return absolute;
+    const issued = Date.parse(issuedAt);
+    if (Number.isNaN(issued) || Number.isNaN(absolute)) return absolute;
+    return receivedAt + (absolute - issued);
 }
 
 interface CacheEntry {
@@ -190,13 +225,27 @@ export class PlaybackCredentialBroker {
             request.MediaSourceId = demand.mediaSourceId;
         }
 
+        const mintedUnderEpoch = authority.sessionEpoch;
         const dto = await this.deps.mintCapability(request);
+        const receivedAt = this.now();
         if (this.disposed) {
             throw new PlaybackCredentialError(
                 'the credential broker was disposed while minting'
             );
         }
-        const expiresAt = Date.parse(dto.ExpiresAt as unknown as string);
+        if (this.sessionEpoch !== mintedUnderEpoch) {
+            // The session changed while this mint was in flight. Storing it now would write an
+            // entry under a key nothing can ever look up again — unreachable, but still holding a
+            // renewal timer that keeps a dead session's capability alive. Drop it instead.
+            throw new PlaybackCredentialError(
+                'the session changed while the playback capability was being minted'
+            );
+        }
+        const expiresAt = localExpiry(
+            dto.IssuedAt as unknown as string,
+            dto.ExpiresAt as unknown as string,
+            receivedAt
+        );
         const entry: CacheEntry = {
             capabilityId: String(dto.CapabilityId),
             value: String(dto.Value),
@@ -223,9 +272,11 @@ export class PlaybackCredentialBroker {
      */
     private scheduleRenewal(key: string, entry: CacheEntry): void {
         if (entry.timer !== null) clearTimeout(entry.timer);
-        const delay = Math.max(
-            0,
-            entry.expiresAt - RENEWAL_WINDOW_MS - this.now()
+        const remaining = entry.expiresAt - this.now();
+        // Inside the window, never at its edge, and never after expiry.
+        const delay = Math.min(
+            Math.max(0, remaining - RENEWAL_WINDOW_MS + RENEWAL_SKEW_MARGIN_MS),
+            Math.max(0, remaining)
         );
         entry.timer = setTimeout(() => {
             void this.renew(key);
@@ -238,11 +289,14 @@ export class PlaybackCredentialBroker {
         entry.timer = null;
         try {
             const renewal = await this.deps.renewCapability(entry.capabilityId);
+            const receivedAt = this.now();
             const current = this.entries.get(key);
             if (!current || current !== entry || this.disposed) return;
             // The SAME secret, a later expiry. Nothing is rebuilt and no url changes.
-            entry.expiresAt = Date.parse(
-                renewal.ExpiresAt as unknown as string
+            entry.expiresAt = localExpiry(
+                renewal.IssuedAt as unknown as string,
+                renewal.ExpiresAt as unknown as string,
+                receivedAt
             );
             entry.failed = false;
             this.scheduleRenewal(key, entry);

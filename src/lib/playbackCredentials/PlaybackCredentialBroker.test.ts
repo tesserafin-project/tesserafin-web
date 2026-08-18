@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     PlaybackCredentialBroker,
     PlaybackCredentialError,
+    RENEWAL_SKEW_MARGIN_MS,
     RENEWAL_WINDOW_MS,
     type BrokerDependencies,
     type CapabilityDemand
@@ -16,6 +17,8 @@ import {
 import { authorityKey, canonicalScopes } from './identity';
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
+/** When the renewal timer is expected to fire: inside the window, not at its edge. */
+const TO_RENEWAL = FIFTEEN_MINUTES - RENEWAL_WINDOW_MS + RENEWAL_SKEW_MARGIN_MS;
 
 interface Harness {
     broker: PlaybackCredentialBroker;
@@ -291,16 +294,21 @@ describe('renewal', () => {
     it('does not renew before the final window', async () => {
         const h = harness();
         await h.broker.capability(mediaDemand());
+        // One second before the window opens: nothing may have been attempted.
         await vi.advanceTimersByTimeAsync(
             FIFTEEN_MINUTES - RENEWAL_WINDOW_MS - 1000
         );
+        expect(h.renew).not.toHaveBeenCalled();
+
+        // And still nothing at the window's exact edge — the timer aims inside it.
+        await vi.advanceTimersByTimeAsync(1000);
         expect(h.renew).not.toHaveBeenCalled();
     });
 
     it('renews once the final window is entered, without rotating the secret', async () => {
         const h = harness();
         const held = await h.broker.capability(mediaDemand());
-        await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES - RENEWAL_WINDOW_MS);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
         expect(h.renew).toHaveBeenCalledTimes(1);
         expect(h.renew).toHaveBeenCalledWith(held.capabilityId);
 
@@ -314,8 +322,8 @@ describe('renewal', () => {
     it('renews again when the next window is entered', async () => {
         const h = harness();
         await h.broker.capability(mediaDemand());
-        await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES - RENEWAL_WINDOW_MS);
-        await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES - RENEWAL_WINDOW_MS);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
         expect(h.renew).toHaveBeenCalledTimes(2);
     });
 
@@ -323,7 +331,7 @@ describe('renewal', () => {
         const h = harness();
         h.renew.mockRejectedValueOnce(new Error('PlaybackCapabilityRevoked'));
         await h.broker.capability(mediaDemand());
-        await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES - RENEWAL_WINDOW_MS);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
 
         await expect(h.broker.capability(mediaDemand())).rejects.toBeInstanceOf(
             PlaybackCredentialError
@@ -343,6 +351,47 @@ describe('renewal', () => {
     });
 });
 
+describe('clock skew', () => {
+    it('anchors expiry on the server-measured lifetime, not on the absolute timestamp', async () => {
+        const h = harness();
+        // A server clock one hour AHEAD of ours. The absolute ExpiresAt is an hour in our future;
+        // only the IssuedAt/ExpiresAt difference is skew-free.
+        const skew = 60 * 60 * 1000;
+        h.mint.mockImplementationOnce(async () => ({
+            CapabilityId: 'cap-skewed',
+            Value: 'value-skewed',
+            IssuedAt: new Date(Date.now() + skew).toISOString(),
+            ExpiresAt: new Date(
+                Date.now() + skew + FIFTEEN_MINUTES
+            ).toISOString(),
+            Scopes: [],
+            PlaySessionId: 'ps-1'
+        }));
+        const held = await h.broker.capability(mediaDemand());
+        expect(held.expiresAt).toBe(Date.now() + FIFTEEN_MINUTES);
+
+        // The renewal still lands inside the window rather than an hour late.
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
+        expect(h.renew).toHaveBeenCalledTimes(1);
+    });
+
+    it('never schedules a renewal after expiry', async () => {
+        const h = harness();
+        h.mint.mockImplementationOnce(async () => ({
+            CapabilityId: 'cap-short',
+            Value: 'value-short',
+            IssuedAt: new Date(Date.now()).toISOString(),
+            // Shorter than the renewal window: the timer must fire before expiry, not after.
+            ExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+            Scopes: [],
+            PlaySessionId: 'ps-1'
+        }));
+        await h.broker.capability(mediaDemand());
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(h.renew).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('teardown', () => {
     it('releasing a play session cancels its renewals and keeps the others', async () => {
         const h = harness();
@@ -351,8 +400,39 @@ describe('teardown', () => {
         h.broker.releasePlaySession('ps-1');
         expect(h.broker.heldCount).toBe(1);
 
-        await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES - RENEWAL_WINDOW_MS);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
         // Only the surviving play session renewed.
+        expect(h.renew).toHaveBeenCalledTimes(1);
+    });
+
+    it('discards a mint that lands after the session changed', async () => {
+        const h = harness();
+        let release: ((value: unknown) => void) | undefined;
+        h.mint.mockImplementationOnce(
+            () =>
+                new Promise((resolve) => {
+                    release = resolve;
+                })
+        );
+        const pending = h.broker.capability(mediaDemand());
+
+        // The session changes while the mint is still in flight.
+        h.setToken('token-2');
+        await h.broker.capability(mediaDemand({ playSessionId: 'ps-other' }));
+
+        release?.({
+            CapabilityId: 'cap-stale',
+            Value: 'value-stale',
+            IssuedAt: new Date(Date.now()).toISOString(),
+            ExpiresAt: new Date(Date.now() + FIFTEEN_MINUTES).toISOString(),
+            Scopes: [],
+            PlaySessionId: 'ps-1'
+        });
+
+        await expect(pending).rejects.toBeInstanceOf(PlaybackCredentialError);
+        // Only the post-change capability is held, and only it renews.
+        expect(h.broker.heldCount).toBe(1);
+        await vi.advanceTimersByTimeAsync(TO_RENEWAL);
         expect(h.renew).toHaveBeenCalledTimes(1);
     });
 
