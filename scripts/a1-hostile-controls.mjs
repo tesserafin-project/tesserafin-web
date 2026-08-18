@@ -85,16 +85,28 @@ const CONTROLS = [
     },
     {
         id: 'c02',
-        name: 'restore api_key on the WebSocket (patcher writes it back)',
+        name: 'restore api_key on the WebSocket url',
+        // Aimed at the code that actually BUILDS the socket url. Two earlier attempts aimed at
+        // the patcher instead: renaming a fragment's `category` broke the harness's own index
+        // lookup, and rewriting a fragment's replacement broke the test's pristine
+        // RECONSTRUCTION (it inverts the fragment table, so a changed replacement no longer
+        // yields the pinned pristine hash and the harness refuses at setup). Both were ERROR,
+        // not results. c02b covers the patcher pin separately.
+        file: SOCKET,
+        find: "export const TICKET_QUERY_KEY = 'webSocketTicket';",
+        replace: "export const TICKET_QUERY_KEY = 'api_key';",
+        assertion: UNIT,
+        marker: 'carries only the ticket parameter'
+    },
+    {
+        id: 'c02b',
+        name: 'weaken the dependency patch pin',
         file: PATCHER,
-        // Reintroduce the durable token in the REPLACEMENT the transform writes. The first
-        // attempt renamed the fragment's `category`, which broke the test harness's own
-        // TRANSPORT_INDEX lookup rather than the guarantee — an ERROR, not a result. What
-        // must notice this is the pinned patched hash, and it does.
-        find: '\'(function(){throw new Error("openWebSocket disabled: #153-A1")})(),\'',
-        replace: '\'t+="?api_key=".concat(e),\'',
-        assertion: PATCHER_TESTS,
-        marker: 'the patched digest is not the pinned one'
+        find: "    '68068867e336be4e97f345ec437afc30303e3ea306f059581837b5c94f885f60';",
+        replace:
+            "    '0000000000000000000000000000000000000000000000000000000000000000';",
+        assertion: PATCHER_VERIFY,
+        marker: 'matches neither the pinned pristine nor the pinned patched hash'
     },
     {
         id: 'c03',
