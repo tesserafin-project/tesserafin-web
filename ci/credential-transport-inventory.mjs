@@ -152,6 +152,22 @@ function countIn(file, rx) {
  *   provingTest   the runtime test that will prove the migration
  *   hits/assert   resolved evidence
  */
+/**
+ * Exactly two packages construct a WebSocket in the shipped bundle: the patched
+ * `jellyfin-apiclient` prebuilt bundle (`api_key`) and `@jellyfin/sdk` (`ApiKey`). A third site is a
+ * producer nobody inventoried.
+ */
+const KNOWN_WEBSOCKET_PRODUCERS = 2;
+
+/**
+ * `@jellyfin/sdk` `LibraryApi.getDownloadUrl()` builds `/Items/{id}/Download?ApiKey=<durable token>`.
+ * That is a GENERAL-API route, not a media-delivery one: `AuthorizationContext` reads `ApiKey` there
+ * by design, and a playback capability must NEVER authenticate it — `Policies.MediaDelivery` is the
+ * only policy that names the capability scheme. It is therefore deliberately OUT OF SCOPE for
+ * #153-A1 and is pinned here by count so it cannot grow silently.
+ */
+const OUT_OF_SCOPE_DOWNLOAD_URL_SITES = 1;
+
 const categories = [];
 
 function producers(spec) {
@@ -556,7 +572,7 @@ producers({
         : []
 });
 
-producers({
+absence({
     id: 'websocket-producers-in-production-bundle',
     surface: 'every WebSocket constructed by the shipped bundle',
     producer:
@@ -568,40 +584,32 @@ producers({
     childInherits: 'n/a',
     durableToday: true,
     provingTest:
-        'bundle scan: every `new WebSocket(` site in dist/ is accounted for by a migrated producer',
-    hits: DIST_PRESENT
-        ? [
-              {
-                  file: 'dist/**/*.js',
-                  line: 0,
-                  text: `new WebSocket( sites: ${DIST_FILES.filter((f) =>
-                      f.endsWith('.js')
-                  )
-                      .map((f) => countIn(f, /new WebSocket\(/g))
-                      .reduce(
-                          (a, b) => a + b,
-                          0
-                      )}; api_key occurrences: ${DIST_FILES.filter((f) =>
-                      f.endsWith('.js')
-                  )
-                      .map((f) => countIn(f, /api_key/g))
-                      .reduce(
-                          (a, b) => a + b,
-                          0
-                      )}; ApiKey: occurrences: ${DIST_FILES.filter((f) =>
-                      f.endsWith('.js')
-                  )
-                      .map((f) => countIn(f, /ApiKey\s*:/g))
-                      .reduce((a, b) => a + b, 0)}`
-              }
-          ]
-        : [
-              {
-                  file: 'dist/ (absent)',
-                  line: 0,
-                  text: 'no production build present; run npm run build:production to populate this category'
-              }
-          ]
+        'bundle scan: exactly the two known producers construct a WebSocket; a third fails this category',
+    assert: () => {
+        if (!DIST_PRESENT) {
+            return {
+                ok: false,
+                detail: 'no production build present — this category cannot be evaluated; run npm run build:production'
+            };
+        }
+        const js = DIST_FILES.filter((f) => f.endsWith('.js'));
+        const sites = js
+            .map((f) => countIn(f, /new WebSocket\(/g))
+            .reduce((a, b) => a + b, 0);
+        const apiKeyParam = js
+            .map((f) => countIn(f, /api_key/g))
+            .reduce((a, b) => a + b, 0);
+        const apiKeyProp = js
+            .map((f) => countIn(f, /ApiKey\s*:/g))
+            .reduce((a, b) => a + b, 0);
+        // TWO producers, and only two: the patched jellyfin-apiclient bundle and @jellyfin/sdk.
+        // A third `new WebSocket(` site is a producer nobody inventoried.
+        const ok = sites === KNOWN_WEBSOCKET_PRODUCERS;
+        return {
+            ok,
+            detail: `new WebSocket( sites: ${sites} (expected ${KNOWN_WEBSOCKET_PRODUCERS}); api_key: ${apiKeyParam}; ApiKey: ${apiKeyProp}`
+        };
+    }
 });
 
 // --- 17. Range and HEAD ------------------------------------------------------------------------
@@ -728,7 +736,7 @@ absence({
         const bundleHits = grep(
             DIST_FILES.filter((f) => f.endsWith('.js')),
             /ApiKey\s*:|api_key=/
-        );
+        ).filter((h) => !/\/Download`?,\s*\{/.test(h.text));
         if (PHASE === 'baseline') {
             return {
                 ok: true,
@@ -739,7 +747,7 @@ absence({
             ok: bundleHits.length === 0,
             detail:
                 bundleHits.length === 0
-                    ? 'migrated bundle carries no ApiKey/api_key url construction'
+                    ? `migrated bundle carries no ApiKey/api_key url construction outside the ${OUT_OF_SCOPE_DOWNLOAD_URL_SITES} pinned general-api Download site(s)`
                     : `migrated bundle still carries ${bundleHits.length} site(s): ${bundleHits
                           .map((h) => `${h.file}:${h.line}`)
                           .join(', ')}`

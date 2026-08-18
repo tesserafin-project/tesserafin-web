@@ -208,8 +208,20 @@ test.describe('#153-A1 baseline credential trace', () => {
             }))
             .sort((a, b) => a.routeClass.localeCompare(b.routeClass));
 
+        // Every socket upgrade attempt, in order, redacted. The COUNT is the evidence the
+        // reconnect work needs: one entry per physical upgrade attempt.
+        const socketAttempts = observed
+            .filter((e) => e.routeClass === 'websocket')
+            .map((e) => ({
+                redactedUrl: e.redactedUrl,
+                queryKeys: e.queryKeys,
+                carriesApiKeyParam: e.carriesApiKeyParam,
+                carriesWebSocketTicket: e.carriesWebSocketTicket
+            }));
+
         const report = {
             generatedFor: '#153-A1 phase 0 baseline',
+            socketAttempts,
             note: 'route classes, query KEY names and booleans only; no credential value is recorded',
             totalRequests: observed.length,
             byClass: summary
