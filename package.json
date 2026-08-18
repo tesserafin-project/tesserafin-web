@@ -175,6 +175,8 @@
         "secret-scan:tree": "./ci/secret-scan.sh --mode tree --repo-name tesserafin-web",
         "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10",
         "test:item-details-browser": "playwright test --config playwright.itemDetails.config.ts",
+        "test:a1-matrix": "playwright test --config playwright.credential.config.ts matrix",
+        "test:a1-long-playback": "playwright test --config playwright.longPlayback.config.ts",
         "test:delivery-ledger": "playwright test --config playwright.delivery.config.ts",
         "test:content-packs-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.contentPacks.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs contentPacks.smoke.spec.ts,contentPacks.manager.spec.ts,contentPacks.nonManager.spec.ts,contentPacks.assignment.spec.ts,contentPacks.isolation.spec.ts,contentPacks.states.spec.ts,contentPacks.keyboard.spec.ts,contentPacks.axe.spec.ts,contentPacks.mobile.spec.ts,contentPacks.tv.spec.ts,support/captureSpecBody.ts",
         "test:m3-browser": "node -e \"require('node:fs').rmSync('test-results/runtime-origins.jsonl',{force:true})\" && playwright test --config playwright.m3.config.ts && node scripts/verify-runtime-origins.mjs --expect-specs m3.onboarding.spec.ts,m3.failures.spec.ts,m3.navigation.spec.ts,m3.keyboard.spec.ts,m3.axe.spec.ts,m3.captures.spec.ts,m3.mobile.spec.ts,m3.geometry.mobile.spec.ts,m3.matrix.spec.ts,m3.matrix.mobile.spec.ts,m3.matrix.tv.spec.ts,m3.tv.spec.ts,m3Captures.mobile.spec.ts,m3Captures.tv.spec.ts",
