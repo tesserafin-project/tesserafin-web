@@ -364,6 +364,84 @@ export class PlaybackCredentialBroker {
         this.disposed = true;
     }
 
+    /**
+     * The `playbackCapability` value for one media family, as a bare string.
+     *
+     * These family helpers exist for a measured reason, not a stylistic one. Their call sites are
+     * in `playbackmanager.js`, which is in the INITIAL delivery graph, and
+     * `verify:verify-delivery-budget` leaves a few hundred bytes of headroom there. Keeping the
+     * scope literal, the demand object shape and the url rewriting on THIS side of the `import()`
+     * boundary keeps each eager call site down to one short call.
+     */
+    async mediaValue(
+        itemId: string | null,
+        mediaSourceId: string | null,
+        playSessionId: string
+    ): Promise<string> {
+        const held = await this.capability({
+            scopes: ['Media'],
+            itemId,
+            mediaSourceId,
+            playSessionId
+        });
+        return held.value;
+    }
+
+    /**
+     * A SERVER-EMITTED url with its durable credential replaced by a capability.
+     *
+     * `MediaSource.TranscodingUrl` and every subtitle `DeliveryUrl` are built by the server with
+     * the durable token already in them (`StreamInfo.ToUrl`, `StreamInfo.GetSubtitleStreamInfo`),
+     * and the web client consumes them verbatim — so migrating only the urls the client builds
+     * itself would leave both families carrying the token.
+     *
+     * Both durable keys are deleted, not overwritten: the server writes `api_key` in one place and
+     * `ApiKey` in the other, and deleting only the one a given call expected is how a token
+     * survives a migration that looks complete.
+     */
+    async rewrite(url: string, demand: CapabilityDemand): Promise<string> {
+        const held = await this.capability(demand);
+        const separator = url.indexOf('?');
+        const path = separator === -1 ? url : url.slice(0, separator);
+        const params = new URLSearchParams(
+            separator === -1 ? '' : url.slice(separator + 1)
+        );
+        params.delete('api_key');
+        params.delete('ApiKey');
+        params.set('playbackCapability', held.value);
+        return `${path}?${params.toString()}`;
+    }
+
+    /** A server-emitted MEDIA url, rewritten. The common case, kept short for its call sites. */
+    rewriteMedia(
+        url: string,
+        itemId: string | null,
+        mediaSourceId: string | null,
+        playSessionId: string
+    ): Promise<string> {
+        return this.rewrite(url, {
+            scopes: ['Media'],
+            itemId,
+            mediaSourceId,
+            playSessionId
+        });
+    }
+
+    /** A server-emitted SUBTITLE url, rewritten. */
+    rewriteSubtitle(
+        url: string,
+        itemId: string | null,
+        mediaSourceId: string | null,
+        playSessionId: string
+    ): Promise<string> {
+        return this.rewrite(url, {
+            scopes: ['Subtitles'],
+            itemId,
+            mediaSourceId,
+            playSessionId
+        });
+    }
+
     /** Test seam: how many capabilities are currently held. Never exposes a value. */
     get heldCount(): number {
         return this.entries.size;

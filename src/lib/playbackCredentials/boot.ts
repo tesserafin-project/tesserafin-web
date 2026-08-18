@@ -21,6 +21,9 @@
  * touches a credential, and never opens a socket.
  */
 
+// Type-only: erased at compile time, so naming the real broker here costs the eager graph nothing.
+import type { PlaybackCredentialBroker } from './PlaybackCredentialBroker';
+
 type Handler = (message: unknown) => void;
 
 interface SocketLike {
@@ -34,14 +37,10 @@ interface SocketLike {
     dispose?: () => void;
 }
 
-interface BrokerLike {
-    dispose: () => void;
-}
-
 interface CredentialCapableApiClient {
     serverId: () => string;
     _sdk?: { webSocket?: unknown };
-    _playbackCredentials?: Promise<BrokerLike>;
+    _playbackCredentials?: Promise<PlaybackCredentialBroker>;
     _credentialSocket?: SocketLike;
 }
 
@@ -161,7 +160,7 @@ export function disposePlaybackCredentials(
  */
 export async function brokerFor(
     apiClient: CredentialCapableApiClient | undefined | null
-): Promise<BrokerLike | undefined> {
+): Promise<PlaybackCredentialBroker | undefined> {
     if (!apiClient) return undefined;
     if (!apiClient._playbackCredentials) {
         const module = await import('./install');
