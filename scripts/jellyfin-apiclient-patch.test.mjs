@@ -336,9 +336,8 @@ for (const [label, make, expected] of refusals) {
             `expected exactly one transport fragment, found ${transportFragments.length}`,
         after.includes('"?api_key="') &&
             'openWebSocket still concatenates ?api_key= into the socket url',
-        !after.includes(
-            'openWebSocket disabled: #153-A1'
-        ) && 'the refusal that replaced the credential construction is absent',
+        !after.includes('openWebSocket disabled: #153-A1') &&
+            'the refusal that replaced the credential construction is absent',
         // The ONE surviving `api_key` is the general-API download url builder, a route where
         // AuthorizationContext reads the key by design and a playback capability must never work.
         (after.match(/api_key/g) || []).length !== 1 &&
