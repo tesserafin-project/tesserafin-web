@@ -94,6 +94,13 @@ const DEP_FILE = join(
 );
 const DEP_PRESENT = existsSync(join(ROOT, DEP_FILE));
 
+const SDK_DEP_DIR = join('node_modules', '@jellyfin', 'sdk', 'lib');
+const SDK_DEP_FILES = walk(join(ROOT, SDK_DEP_DIR))
+    .filter((f) => /\.js$/.test(f))
+    .map((f) => relative(ROOT, f))
+    .sort();
+const SDK_DEP_PRESENT = SDK_DEP_FILES.length > 0;
+
 const DIST_DIR = join(ROOT, 'dist');
 const DIST_FILES = walk(DIST_DIR)
     .filter((f) => /\.(js|css|html|json|m3u8|map)$/.test(f))
@@ -504,6 +511,99 @@ producers({
     hits: grep(SDK_FILES, /PlaybackCredentialsApi|WebSocketTicketsApi/)
 });
 
+// --- 16b. the SECOND websocket producer: @jellyfin/sdk -----------------------------------------
+producers({
+    id: 'sdk-websocket-producer',
+    surface:
+        'ws(s)://…/socket?ApiKey=… built by @jellyfin/sdk, NOT by jellyfin-apiclient',
+    producer:
+        '@jellyfin/sdk Api.subscribe() and Api.update() call getUri(WEBSOCKET_URL_PATH, { ApiKey: accessToken }); WebSocketService then owns the socket',
+    consumer:
+        'every first-party api.subscribe(...) caller — useApi hooks, serverNotifications, taskbutton, playbackmanager remote control, guide, recordingfields, itemDetailsApi',
+    construction: 'sync',
+    identities: 'device and user known; no item/media source/play session',
+    scope: 'n/a — a WebSocket ticket',
+    childInherits: 'n/a',
+    durableToday: true,
+    provingTest:
+        'browser matrix: the sdk socket upgrade carries webSocketTicket only, and a reconnect mints a NEW ticket',
+    hits: SDK_DEP_PRESENT
+        ? grep(
+              SDK_DEP_FILES,
+              /AUTHORIZATION_PARAMETER|WEBSOCKET_URL_PATH|new WebSocket\(/
+          )
+        : []
+});
+
+producers({
+    id: 'sdk-websocket-reconnect-reuses-url',
+    surface: 'the sdk reconnect path',
+    producer:
+        "@jellyfin/sdk WebSocketService: the 'close' handler re-enters initSocket() after an exponential backoff and rebuilds the socket from the STORED this.url",
+    consumer: 'the browser WebSocket upgrade',
+    construction: 'sync, on a timer',
+    identities: 'none — the url is replayed verbatim',
+    scope: 'n/a',
+    childInherits: 'n/a',
+    durableToday: true,
+    provingTest:
+        'unit + browser: a forced close must not replay the previous ticket; a consumed ticket must never be re-presented',
+    hits: SDK_DEP_PRESENT
+        ? grep(
+              SDK_DEP_FILES,
+              /reconnectionTimeout|calculateBackoffDelay|autoReconnectDisabled/
+          )
+        : []
+});
+
+producers({
+    id: 'websocket-producers-in-production-bundle',
+    surface: 'every WebSocket constructed by the shipped bundle',
+    producer:
+        'whatever ends up in dist/ — the only ground truth for what ships',
+    consumer: 'the browser',
+    construction: 'build',
+    identities: 'n/a',
+    scope: 'n/a',
+    childInherits: 'n/a',
+    durableToday: true,
+    provingTest:
+        'bundle scan: every `new WebSocket(` site in dist/ is accounted for by a migrated producer',
+    hits: DIST_PRESENT
+        ? [
+              {
+                  file: 'dist/**/*.js',
+                  line: 0,
+                  text: `new WebSocket( sites: ${DIST_FILES.filter((f) =>
+                      f.endsWith('.js')
+                  )
+                      .map((f) => countIn(f, /new WebSocket\(/g))
+                      .reduce(
+                          (a, b) => a + b,
+                          0
+                      )}; api_key occurrences: ${DIST_FILES.filter((f) =>
+                      f.endsWith('.js')
+                  )
+                      .map((f) => countIn(f, /api_key/g))
+                      .reduce(
+                          (a, b) => a + b,
+                          0
+                      )}; ApiKey: occurrences: ${DIST_FILES.filter((f) =>
+                      f.endsWith('.js')
+                  )
+                      .map((f) => countIn(f, /ApiKey\s*:/g))
+                      .reduce((a, b) => a + b, 0)}`
+              }
+          ]
+        : [
+              {
+                  file: 'dist/ (absent)',
+                  line: 0,
+                  text: 'no production build present; run npm run build:production to populate this category'
+              }
+          ]
+});
+
 // --- 17. Range and HEAD ------------------------------------------------------------------------
 producers({
     id: 'range-and-head',
@@ -662,6 +762,25 @@ if (PHASE === 'migrated') {
                 detail:
                     hits.length === 0
                         ? 'no src/ site puts the durable token into a url'
+                        : hits.map((h) => `${h.file}:${h.line}`).join(', ')
+            };
+        }
+    });
+    migratedAssertions.push({
+        id: 'no-apikey-parameter-in-sdk-websocket',
+        assert: () => {
+            if (!SDK_DEP_PRESENT) {
+                return { ok: false, detail: '@jellyfin/sdk missing' };
+            }
+            const hits = grep(
+                SDK_DEP_FILES,
+                /AUTHORIZATION_PARAMETER\]\s*:\s*this\.accessToken/
+            );
+            return {
+                ok: hits.length === 0,
+                detail:
+                    hits.length === 0
+                        ? 'the sdk no longer names the durable token in the socket uri'
                         : hits.map((h) => `${h.file}:${h.line}`).join(', ')
             };
         }
