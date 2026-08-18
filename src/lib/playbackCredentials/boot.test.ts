@@ -37,10 +37,15 @@ interface RuntimeHost {
  * for a client it has already served. A mock that returns a fresh object every call cannot see the
  * defect this file exists to pin: a teardown that leaves that field set hands the NEXT session the
  * PREVIOUS session's disposed broker.
+ *
+ * The real function ALSO refuses to hand back a runtime whose broker is disposed. That guard is
+ * deliberately absent here. Modelling it would let this file pass while `boot.ts` leaks the field,
+ * because the second defence would be doing the first one's work; `install.test.ts` proves the
+ * guard on its own.
  */
 const createCredentialRuntime = vi.fn((apiClient: RuntimeHost) => {
     const existing = apiClient._credentialRuntime;
-    if (existing && !existing.broker.isDisposed) return existing;
+    if (existing) return existing;
     const runtime: FakeRuntime = {
         broker: {
             isDisposed: false,
