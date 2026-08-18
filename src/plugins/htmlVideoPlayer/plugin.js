@@ -165,12 +165,28 @@ function normalizeTrackEventText(text, useHtml) {
     return useHtml ? result.replace(/\n/gi, '<br>') : result;
 }
 
-function getTextTrackUrl(track, item, format) {
+/**
+ * #153-A1: ASYNC. The subtitle url is minted against a `Subtitles` capability bound to the item and
+ * media source, so the caller has to supply them.
+ */
+async function getTextTrackUrl(
+    track,
+    item,
+    format,
+    mediaSource,
+    playSessionId
+) {
     if (itemHelper.isLocalItem(item) && track.Path) {
         return track.Path;
     }
 
-    let url = playbackManager.getSubtitleUrl(track, item.ServerId);
+    let url = await playbackManager.getSubtitleUrl(
+        track,
+        item.ServerId,
+        item.Id,
+        mediaSource?.Id ?? null,
+        playSessionId
+    );
     if (format) {
         url = url.replace('.vtt', format);
     }
@@ -1345,7 +1361,15 @@ export class HtmlVideoPlayer {
     async fetchSubtitles(track, item) {
         this.incrementFetchQueue();
         try {
-            const response = await fetch(getTextTrackUrl(track, item, '.js'));
+            const response = await fetch(
+                await getTextTrackUrl(
+                    track,
+                    item,
+                    '.js',
+                    this._currentPlayOptions?.mediaSource,
+                    this._currentPlayOptions?.playSessionId
+                )
+            );
 
             if (!response.ok) {
                 throw new Error(response);
@@ -1432,13 +1456,19 @@ export class HtmlVideoPlayer {
         });
         const htmlVideoPlayer = this;
         import('@jellyfin/libass-wasm').then(
-            ({ default: SubtitlesOctopus }) => {
+            async ({ default: SubtitlesOctopus }) => {
                 const mediaSource = this._currentPlayOptions.mediaSource;
                 const videoStream = getMediaStreamVideoTracks(mediaSource)[0];
 
                 const options = {
                     video: videoElement,
-                    subUrl: getTextTrackUrl(track, item),
+                    subUrl: await getTextTrackUrl(
+                        track,
+                        item,
+                        undefined,
+                        mediaSource,
+                        this._currentPlayOptions?.playSessionId
+                    ),
                     fonts: availableFonts,
                     workerUrl: `${appRouter.baseUrl()}/libraries/subtitles-octopus-worker.js`,
                     legacyWorkerUrl: `${appRouter.baseUrl()}/libraries/subtitles-octopus-worker-legacy.js`,
@@ -1508,14 +1538,20 @@ export class HtmlVideoPlayer {
      * @private
      */
     renderPgs(videoElement, track, item) {
-        import('libpgs').then((libpgs) => {
+        import('libpgs').then(async (libpgs) => {
             const aspectRatio =
                 this.getAspectRatio() === 'auto'
                     ? 'contain'
                     : this.getAspectRatio();
             const options = {
                 video: videoElement,
-                subUrl: getTextTrackUrl(track, item),
+                subUrl: await getTextTrackUrl(
+                    track,
+                    item,
+                    undefined,
+                    this._currentPlayOptions?.mediaSource,
+                    this._currentPlayOptions?.playSessionId
+                ),
                 workerUrl: `${appRouter.baseUrl()}/libraries/libpgs.worker.js`,
                 timeOffset:
                     (this._currentPlayOptions.transcodingOffsetTicks || 0) /

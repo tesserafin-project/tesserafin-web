@@ -128,6 +128,24 @@ export class PlaybackCredentialBroker {
     private readonly entries = new Map<string, CacheEntry>();
     private readonly inFlight = new Map<string, Promise<HeldCapability>>();
     private lastAccessToken: string;
+    /**
+     * The play session id used when a caller genuinely has none.
+     *
+     * `PlaybackCapabilityRequestDto.PlaySessionId` is `[Required]`, and `RequiredAttribute` rejects
+     * an empty string, so `''` is answered `400 The PlaySessionId field is required` before the
+     * mint handler runs — measured against the real server, not assumed. Several families
+     * legitimately have no play session: a direct-play url names none, and neither does a subtitle
+     * url, so the server never compares one for them and any value satisfies the demand.
+     *
+     * ONE id per broker, not one per call: a fresh id per call would change the cache key on every
+     * request and turn the cache off. It is deliberately NOT used for a family whose url NAMES a
+     * play session — the transcoding url does, and its caller reads the server's own value out of
+     * the url instead, because minting with anything else is a
+     * `PlaybackCapabilityPlaySessionMismatch`.
+     */
+    private readonly syntheticPlaySessionId = `web-${Math.random()
+        .toString(36)
+        .slice(2)}-${Date.now().toString(36)}`;
     private sessionEpoch = 0;
     private disposed = false;
 
@@ -156,7 +174,7 @@ export class PlaybackCredentialBroker {
             userId: this.deps.userId(),
             sessionEpoch: this.sessionEpoch,
             deviceId: this.deps.deviceId(),
-            playSessionId: demand.playSessionId,
+            playSessionId: demand.playSessionId || this.syntheticPlaySessionId,
             itemId: demand.itemId,
             mediaSourceId: demand.mediaSourceId,
             scopes: demand.scopes
@@ -216,7 +234,7 @@ export class PlaybackCredentialBroker {
         demand: CapabilityDemand
     ): Promise<HeldCapability> {
         const request: PlaybackCapabilityRequestDto = {
-            PlaySessionId: demand.playSessionId,
+            PlaySessionId: authority.playSessionId,
             Scopes: canonicalScopes(demand.scopes)
         };
         // Omitted, not null: an item-less family must not name an item at all.

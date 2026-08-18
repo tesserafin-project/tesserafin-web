@@ -400,6 +400,19 @@ function getAudioMaxValues(deviceProfile) {
 }
 
 let startingPlaySession = new Date().getTime();
+
+/**
+ * A play session id that is never empty.
+ *
+ * `PlaybackCapabilityRequestDto.PlaySessionId` is `[Required]`, and `RequiredAttribute` rejects an
+ * empty string by default - so `''` is a 400 from model validation before the mint handler runs,
+ * and the broker fails closed on it. Routes that do not NAME a play session never compare it, so a
+ * synthetic value is safe there; a route that does name one (the transcoding url) reads the
+ * server's own value instead of calling this.
+ */
+function playSessionIdFor(requestOptions) {
+    return requestOptions?.playSessionId || String(++startingPlaySession);
+}
 /**
  * #153-A1: ASYNC, because the universal-audio url is the one family built BEFORE any
  * `PlaybackInfo` round trip - it invents its own `PlaySessionId` - so the mint has to happen here.
@@ -3882,15 +3895,10 @@ export class PlaybackManager {
             ).toLowerCase();
             let directOptions;
 
-            if (mediaSource.MediaStreams && player.useFullSubtitleUrls) {
-                mediaSource.MediaStreams.forEach((stream) => {
-                    if (stream.DeliveryUrl?.startsWith('/')) {
-                        stream.DeliveryUrl = apiClient.getUrl(
-                            stream.DeliveryUrl
-                        );
-                    }
-                });
-            }
+            // #153-A1: the `player.useFullSubtitleUrls` block that used to absolutise every
+            // `DeliveryUrl` here is gone. No player in this repository sets that flag - the only
+            // read of it in the whole tree was this one - so it was a branch that could not run,
+            // and `getTextTracks` now rewrites each url anyway.
 
             if (type === 'Video' || type === 'Audio') {
                 contentType = getMimeType(
@@ -3918,7 +3926,7 @@ export class PlaybackManager {
                     ).mediaValue(
                         item.Id,
                         mediaSource.Id,
-                        requestOptions.playSessionId ?? ''
+                        playSessionIdFor(requestOptions)
                     );
 
                     directOptions = {
@@ -3999,9 +4007,12 @@ export class PlaybackManager {
                 playerStartPositionTicks: playerStartPositionTicks,
                 item: item,
                 mediaSource: mediaSource,
-                textTracks: getTextTracks(apiClient, item, mediaSource),
-                // TODO: Deprecate
-                tracks: getTextTracks(apiClient, item, mediaSource),
+                textTracks: await getTextTracks(
+                    apiClient,
+                    item,
+                    mediaSource,
+                    playSessionIdFor(requestOptions)
+                ),
                 mediaType: type,
                 liveStreamId: liveStreamId,
                 playSessionId: getParam('playSessionId', mediaUrl),
@@ -4029,7 +4040,17 @@ export class PlaybackManager {
             return resultInfo;
         }
 
-        function getTextTracks(apiClient, item, mediaSource) {
+        /**
+         * #153-A1: ASYNC. Every external subtitle's `DeliveryUrl` is built by the SERVER with
+         * `?ApiKey=` already appended (`StreamInfo.GetSubtitleStreamInfo`), so this is a
+         * server-emitted family: the client consumes it verbatim and has to rewrite it.
+         */
+        async function getTextTracks(
+            apiClient,
+            item,
+            mediaSource,
+            playSessionId
+        ) {
             const subtitleStreams = mediaSource.MediaStreams.filter(
                 function (s) {
                     return s.Type === 'Subtitle';
@@ -4048,10 +4069,19 @@ export class PlaybackManager {
 
                 if (itemHelper.isLocalItem(item)) {
                     textStreamUrl = textStream.Path;
+                } else if (textStream.IsExternalUrl) {
+                    // Someone else's server entirely; this client has no credential for it and
+                    // must not attach one.
+                    textStreamUrl = textStream.DeliveryUrl;
                 } else {
-                    textStreamUrl = !textStream.IsExternalUrl
-                        ? apiClient.getUrl(textStream.DeliveryUrl)
-                        : textStream.DeliveryUrl;
+                    textStreamUrl = apiClient.getUrl(
+                        await (await brokerFor(apiClient)).rewriteSubtitle(
+                            textStream.DeliveryUrl,
+                            item.Id,
+                            mediaSource.Id,
+                            playSessionId
+                        )
+                    );
                 }
 
                 tracks.push({
@@ -5383,12 +5413,32 @@ export class PlaybackManager {
         return Promise.reject();
     }
 
-    getSubtitleUrl(textStream, serverId) {
-        const apiClient = ServerConnections.getApiClient(serverId);
+    /**
+     * #153-A1: ASYNC, and it needs the bindings.
+     *
+     * The `DeliveryUrl` the server hands back already carries `?ApiKey=`, so this method cannot
+     * just pass it through any more - it has to mint a `Subtitles` capability bound to the item and
+     * media source and rewrite the url. `IsExternalUrl` means someone else's server entirely: this
+     * client has no credential for it and must not attach one.
+     */
+    async getSubtitleUrl(
+        textStream,
+        serverId,
+        itemId,
+        mediaSourceId,
+        playSessionId
+    ) {
+        if (textStream.IsExternalUrl) return textStream.DeliveryUrl;
 
-        return !textStream.IsExternalUrl
-            ? apiClient.getUrl(textStream.DeliveryUrl)
-            : textStream.DeliveryUrl;
+        const apiClient = ServerConnections.getApiClient(serverId);
+        return apiClient.getUrl(
+            await (await brokerFor(apiClient)).rewriteSubtitle(
+                textStream.DeliveryUrl,
+                itemId,
+                mediaSourceId,
+                playSessionId
+            )
+        );
     }
 
     stop(player) {

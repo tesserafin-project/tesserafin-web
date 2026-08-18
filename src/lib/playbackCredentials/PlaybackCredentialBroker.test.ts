@@ -290,6 +290,41 @@ describe('minting', () => {
     });
 });
 
+describe('play session', () => {
+    it('never sends an empty PlaySessionId — the server answers 400', async () => {
+        const h = harness();
+        await h.broker.capability(mediaDemand({ playSessionId: '' }));
+        const request = h.mint.mock.calls[0][0];
+        expect(request.PlaySessionId).not.toBe('');
+        expect(String(request.PlaySessionId).length).toBeGreaterThan(0);
+    });
+
+    it('uses ONE synthetic id per broker, so the cache still works', async () => {
+        const h = harness();
+        await h.broker.capability(mediaDemand({ playSessionId: '' }));
+        await h.broker.capability(mediaDemand({ playSessionId: '' }));
+        expect(h.mint).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps a real play session distinct from the synthetic one', async () => {
+        const h = harness();
+        await h.broker.capability(mediaDemand({ playSessionId: '' }));
+        await h.broker.capability(mediaDemand({ playSessionId: 'ps-real' }));
+        expect(h.mint).toHaveBeenCalledTimes(2);
+        expect(h.mint.mock.calls[1][0].PlaySessionId).toBe('ps-real');
+    });
+
+    it('two brokers do not share a synthetic play session', async () => {
+        const a = harness();
+        const b = harness();
+        await a.broker.capability(mediaDemand({ playSessionId: '' }));
+        await b.broker.capability(mediaDemand({ playSessionId: '' }));
+        expect(a.mint.mock.calls[0][0].PlaySessionId).not.toBe(
+            b.mint.mock.calls[0][0].PlaySessionId
+        );
+    });
+});
+
 describe('renewal', () => {
     it('does not renew before the final window', async () => {
         const h = harness();
