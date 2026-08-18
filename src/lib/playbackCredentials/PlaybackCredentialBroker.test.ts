@@ -325,6 +325,54 @@ describe('play session', () => {
     });
 });
 
+describe('family helpers', () => {
+    it('each family mints its own minimum scope set, and no wider', async () => {
+        const h = harness();
+        await h.broker.mediaValue('item-1', 'ms-1', 'ps-1');
+        await h.broker.rewriteSubtitle('/s?ApiKey=x', 'item-1', 'ms-1', 'ps-1');
+        await h.broker.rewriteAttachment('/a', 'item-1', 'ms-1', 'ps-1');
+        await h.broker.trickplayValue('item-1', 'ms-1', 'ps-1');
+        await h.broker.fontsValue('ps-1');
+
+        const scopesByCall = h.mint.mock.calls.map((c) => c[0].Scopes);
+        expect(scopesByCall).toEqual([
+            ['Media'],
+            ['Subtitles'],
+            ['Attachments'],
+            ['Trickplay'],
+            ['Fonts']
+        ]);
+        // Not one of them may name a second scope: a broadened set is a wider credential.
+        for (const scopes of scopesByCall) expect(scopes).toHaveLength(1);
+    });
+
+    it('the font capability names no item and no media source', async () => {
+        const h = harness();
+        await h.broker.fontsValue('ps-1');
+        const request = h.mint.mock.calls[0][0];
+        expect('ItemId' in request).toBe(false);
+        expect('MediaSourceId' in request).toBe(false);
+    });
+
+    it('a rewritten url carries the capability and neither durable key', async () => {
+        const h = harness();
+        const url = await h.broker.rewriteMedia(
+            '/Videos/1/main.m3u8?api_key=DURABLE&ApiKey=DURABLE&MediaSourceId=ms-1',
+            'item-1',
+            'ms-1',
+            'ps-1'
+        );
+        const parsed = new URL(url, 'http://example');
+        expect(parsed.searchParams.get('playbackCapability')).toBe('value-1');
+        expect(parsed.searchParams.has('api_key')).toBe(false);
+        expect(parsed.searchParams.has('ApiKey')).toBe(false);
+        // Everything the server put there that is NOT a credential survives — an HLS child url
+        // inherits this query, so dropping a parameter here would drop it from every segment.
+        expect(parsed.searchParams.get('MediaSourceId')).toBe('ms-1');
+        expect(url).not.toContain('DURABLE');
+    });
+});
+
 describe('renewal', () => {
     it('does not renew before the final window', async () => {
         const h = harness();
