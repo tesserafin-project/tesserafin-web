@@ -197,7 +197,8 @@ export function installPlaybackCredentials(
 export function disposePlaybackCredentials(
     apiClient: CredentialCapableApiClient
 ): void {
-    apiClient._credentialGeneration = (apiClient._credentialGeneration ?? 0) + 1;
+    apiClient._credentialGeneration =
+        (apiClient._credentialGeneration ?? 0) + 1;
     apiClient._credentialSocket?.dispose?.();
     apiClient._credentialSocket = undefined;
     const broker = apiClient._playbackCredentials;

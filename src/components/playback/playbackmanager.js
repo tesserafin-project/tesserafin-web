@@ -413,6 +413,32 @@ let startingPlaySession = new Date().getTime();
 function playSessionIdFor(requestOptions) {
     return requestOptions?.playSessionId || String(++startingPlaySession);
 }
+
+/**
+ * Hand one play session's capabilities back when its playback ends (#153-A1).
+ *
+ * `PlaybackCredentialBroker` re-arms a renewal timer for every capability it holds, for as long as
+ * it holds it. Signing out was the only thing that ever cancelled one, so a client that played ten
+ * things in a session kept renewing ten credentials until it signed out. This is what makes the
+ * broker's own `releasePlaySession` reachable from production rather than from its unit test only.
+ *
+ * Fire and forget by construction: it is called from the stop path, where nothing downstream may
+ * depend on a credential having been dropped, and a broker that cannot be reached is a broker with
+ * no timers to cancel.
+ *
+ * WHAT THIS DOES NOT REACH. A capability the broker filed under its own synthetic play session -
+ * today the universal-audio one, see `getAudioStreamUrl` - is not matched by this call, because the
+ * id it was filed under is not the id playback reports. That gap is #153-A1's open question, not
+ * something this helper can close.
+ */
+function releaseCapabilitiesForPlaySession(serverId, playSessionId) {
+    if (!playSessionId) return;
+    const apiClient = ServerConnections.getApiClient(serverId);
+    if (!apiClient) return;
+    brokerFor(apiClient)
+        .then((broker) => broker?.releasePlaySession(playSessionId))
+        .catch(() => undefined);
+}
 /**
  * #153-A1: ASYNC, because the universal-audio url is the one family built BEFORE any
  * `PlaybackInfo` round trip - it invents its own `PlaySessionId` - so the mint has to happen here.
@@ -4841,6 +4867,22 @@ export class PlaybackManager {
                     true,
                     streamInfo.item.ServerId,
                     'reportPlaybackStopped'
+                );
+
+                // #153-A1: drop this play session's capabilities the moment its playback ends.
+                //
+                // The server revokes them too, in `SessionManager.OnPlaybackStopped`, and that
+                // remains the authority - a client that closes its tab reports nothing. This is
+                // the local half of the same act: it cancels the renewal timers, so the client
+                // stops asking the server to extend a credential whose media is no longer
+                // playing. Without it the only thing that ever cancelled a renewal was signing
+                // out. Placed AFTER the stop report so the server has already been told.
+                //
+                // Never awaited and never able to throw: playback has ended, and nothing below
+                // may depend on a credential being handed back.
+                releaseCapabilitiesForPlaySession(
+                    streamInfo.item.ServerId,
+                    streamInfo.playSessionId
                 );
             }
 
