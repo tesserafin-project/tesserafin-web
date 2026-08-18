@@ -202,17 +202,28 @@ export function run({
 
     // Write through a temporary in the same directory, then rename: a reader never sees a half
     // written file, and a crash leaves either the pristine file or the complete patched one.
+    // `wx` is an ATOMIC exclusive create: it fails if the path exists, symlink or not. An
+    // `existsSync` guard in front of it adds nothing and is itself the check-then-use race CodeQL
+    // flagged as `js/file-system-race` (high) — between the check and the write, anything can
+    // appear at that path. The flag alone is the guarantee.
+    //
+    // `created` tracks whether THIS process made the file, so the cleanup can never remove one it
+    // did not create.
     const temporary = `${target}.a1-tmp`;
-    if (existsSync(temporary)) {
-        fail(
-            `${PACKAGE_NAME}: ${TARGET_RELATIVE}.a1-tmp already exists; refusing to write`
-        );
-    }
+    let created = false;
     try {
-        writeFileSync(temporary, patched, { encoding: 'utf8', flag: 'wx' });
+        try {
+            writeFileSync(temporary, patched, { encoding: 'utf8', flag: 'wx' });
+        } catch (error) {
+            fail(
+                `${PACKAGE_NAME}: could not exclusively create ${TARGET_RELATIVE}.a1-tmp (${error.code ?? 'unknown'}); refusing to write`
+            );
+        }
+        created = true;
         renameSync(temporary, target);
+        created = false;
     } finally {
-        if (existsSync(temporary)) rmSync(temporary, { force: true });
+        if (created) rmSync(temporary, { force: true });
     }
 
     const written = readFileSync(target, 'utf8');

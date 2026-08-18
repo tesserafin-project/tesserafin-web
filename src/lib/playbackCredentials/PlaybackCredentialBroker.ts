@@ -84,6 +84,21 @@ export class PlaybackCredentialError extends Error {
 }
 
 /**
+ * A random label for the synthetic play session.
+ *
+ * `Math.random()` was here first and CodeQL flagged it `js/insecure-randomness` (high). The value is
+ * not a secret — it is a revocation grouping key, the server never compares it on the routes that
+ * use it, and guessing it grants nothing, because the capability VALUE is generated server-side by
+ * `CryptoRandomSecretSource`. But arguing with a randomness alert inside a credential-transport
+ * change is the wrong hill: the CSPRNG costs nothing and removes the question.
+ */
+function randomLabel(): string {
+    const bytes = new Uint8Array(9);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
  * The capability's expiry expressed on the LOCAL clock.
  *
  * The absolute `ExpiresAt` the server sends is on the server's clock; comparing it against
@@ -143,9 +158,7 @@ export class PlaybackCredentialBroker {
      * the url instead, because minting with anything else is a
      * `PlaybackCapabilityPlaySessionMismatch`.
      */
-    private readonly syntheticPlaySessionId = `web-${Math.random()
-        .toString(36)
-        .slice(2)}-${Date.now().toString(36)}`;
+    private readonly syntheticPlaySessionId = `web-${randomLabel()}`;
     private sessionEpoch = 0;
     private disposed = false;
 
