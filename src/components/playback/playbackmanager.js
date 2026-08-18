@@ -3491,9 +3491,10 @@ export class PlaybackManager {
                 return promise.then(() => {
                     cancelPlayback();
                     loading.hide();
-                    // The item id, not `item.Url`: a media url is exactly what this module
-                    // builds with `ApiKey: apiClient.accessToken()` (#75 / S4), and the id
-                    // identifies the same item for a developer reading this.
+                    // The item id, not `item.Url`. #75 / S4 wrote this because the url carried
+                    // `ApiKey=<the session's access token>`; since #153-A1 it carries a
+                    // short-lived `playbackCapability` instead. Shorter-lived is not
+                    // non-sensitive, so the id is still what belongs in a log line.
                     console.error(
                         `No player found for the requested media: item ${item.Id}`
                     );

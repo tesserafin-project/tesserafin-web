@@ -856,7 +856,13 @@ if (PHASE === 'migrated') {
     migratedAssertions.push({
         id: 'no-durable-token-in-any-playback-url',
         assert: () => {
-            const hits = grep(SRC_FILES, /\bApiKey\s*:\s*.*accessToken\(\)/);
+            // Line comments are stripped first. A stale comment describing what the code
+            // USED to do is not a credential in a url, and treating it as one makes the
+            // gate fail for a reason no reader can act on.
+            const hits = grep(
+                SRC_FILES,
+                /\bApiKey\s*:\s*.*accessToken\(\)/
+            ).filter((h) => !/^\s*(\/\/|\*|\/\*)/.test(h.text));
             return {
                 ok: hits.length === 0,
                 detail:
@@ -886,15 +892,20 @@ if (PHASE === 'migrated') {
         }
     });
     migratedAssertions.push({
-        id: 'no-api_key-in-installed-dependency',
+        id: 'no-socket-api_key-in-installed-dependency',
         assert: () => {
             if (!DEP_PRESENT) {
                 return { ok: false, detail: 'installed dependency missing' };
             }
-            const n = countIn(DEP_FILE, /api_key/g);
+            // NOT "zero occurrences". One survives by design: the general-api download-url
+            // builder, `getUrl(t, {api_key: this.accessToken()})`, on a route where
+            // AuthorizationContext reads the key and a capability must never work. What must be
+            // gone is the SOCKET construction.
+            const socket = countIn(DEP_FILE, /\?api_key=/g);
+            const total = countIn(DEP_FILE, /api_key/g);
             return {
-                ok: n === 0,
-                detail: `installed jellyfin-apiclient api_key occurrences: ${n}`
+                ok: socket === 0 && total === 1,
+                detail: `installed jellyfin-apiclient: socket api_key=${socket} (must be 0), total api_key=${total} (must be 1, the general-api download builder)`
             };
         }
     });
