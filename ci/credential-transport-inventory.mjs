@@ -168,43 +168,60 @@ function countIn(file, rx) {
 const KNOWN_WEBSOCKET_PRODUCERS = 3;
 
 /**
- * Every durable-token url construction the shipped bundle is allowed to contain, ENUMERATED.
+ * Every durable-token url construction the shipped bundle may contain, ENUMERATED and two-way.
  *
- * A count is what this gate used to assert, and a count is exactly the wrong shape: it drifted from
- * 5 to 4 while two first-party sites were migrated, and nothing could say which site the arithmetic
- * had lost. Each entry names the bundle it must appear in, a fragment that identifies it, and why it
- * is permitted. An unlisted site fails the gate.
+ * A count is what this gate first asserted, and a count is the wrong shape: it drifted 5 -> 4 while
+ * first-party sites were migrated and could not say which site the arithmetic had lost. Worse, the
+ * pattern it counted with (`ApiKey:` or `api_key=`) silently missed the OBJECT-PROPERTY form
+ * `{api_key: ...}`, so `jellyfin-apiclient`'s own download-url builder was invisible to it.
+ *
+ * Each entry is now checked in BOTH directions:
+ *
+ *   `mustBeAbsent`  a site a repository-owned patcher removes. Finding it means the patcher did not
+ *                   run, or ran against something it no longer matches.
+ *   otherwise       a site that is deliberately permitted and must still be THERE. Its
+ *                   disappearance means the package changed under us and the exemption is stale.
  */
 const ALLOWED_DURABLE_TOKEN_SITES = [
     {
         id: 'apiclient-openwebsocket',
         bundle: 'node_modules.jellyfin-apiclient',
         fragment: '?api_key=',
-        why: "jellyfin-apiclient's openWebSocket. DEAD CODE in this app — zero first-party callers, and boot.ts occupies Api.webSocket before any subscriber runs.",
-        removedBy: 'scripts/patch-jellyfin-apiclient.mjs'
+        mustBeAbsent: 'scripts/patch-jellyfin-apiclient.mjs',
+        why: "jellyfin-apiclient's openWebSocket built the socket url with the durable token. Dead code in this app — zero first-party callers — and the patcher replaces it with a refusal."
     },
     {
         id: 'sdk-socket-update',
         bundle: 'node_modules.@jellyfin.sdk',
         fragment: 'updateUrl(this.getUri("socket"',
-        why: '@jellyfin/sdk Api.update(). Unreachable: the ticketed service is installed first, and its updateUrl ignores the url it is handed.',
-        removedBy: 'scripts/patch-jellyfin-sdk.mjs'
+        mustBeAbsent: 'scripts/patch-jellyfin-sdk.mjs',
+        why: '@jellyfin/sdk Api.update() reconnected with the durable token in the url.'
     },
     {
         id: 'sdk-socket-subscribe',
         bundle: 'node_modules.@jellyfin.sdk',
-        fragment: 'this.getUri("socket"',
-        why: '@jellyfin/sdk Api.subscribe(). Unreachable for the same reason.',
-        removedBy: 'scripts/patch-jellyfin-sdk.mjs'
+        fragment: 'w.V(this.accessToken?this.getUri("socket"',
+        mustBeAbsent: 'scripts/patch-jellyfin-sdk.mjs',
+        why: '@jellyfin/sdk Api.subscribe() built the first socket with the durable token in the url.'
     },
     {
         id: 'sdk-item-download',
         bundle: 'node_modules.@jellyfin.sdk',
         fragment: '/Download`',
-        why: '@jellyfin/sdk LibraryApi.getDownloadUrl() -> /Items/{id}/Download?ApiKey=. A GENERAL-API route: AuthorizationContext reads ApiKey there by design and a playback capability must NEVER authenticate it, since Policies.MediaDelivery is the only policy naming the capability scheme. Deliberately out of scope for #153-A1.',
-        removedBy: null
+        mustBeAbsent: null,
+        why: '@jellyfin/sdk LibraryApi.getDownloadUrl() -> /Items/{id}/Download?ApiKey=. A GENERAL-API route: AuthorizationContext reads ApiKey there by design and a playback capability must NEVER authenticate it, since Policies.MediaDelivery is the only policy naming the capability scheme. Deliberately out of scope for #153-A1.'
+    },
+    {
+        id: 'apiclient-item-download',
+        bundle: 'node_modules.jellyfin-apiclient',
+        fragment: '"/Download")',
+        mustBeAbsent: null,
+        why: "jellyfin-apiclient's own getDownloadUrl -> Items/{id}/Download?api_key=. Same general-API route and the same exemption. Invisible to the gate until the pattern was widened to the object-property form."
     }
 ];
+
+/** `ApiKey=`, `api_key=`, `ApiKey:` and `api_key:` — the last of which the first pattern missed. */
+const DURABLE_TOKEN_PATTERN = /ApiKey\s*[:=]|api_key\s*[:=]/g;
 
 const categories = [];
 
@@ -772,7 +789,10 @@ absence({
         for (const file of DIST_FILES.filter((f) => f.endsWith('.js'))) {
             const lines = read(join(ROOT, file)).split('\n');
             for (let i = 0; i < lines.length; i++) {
-                const rx = /ApiKey\s*:|api_key=/g;
+                const rx = new RegExp(
+                    DURABLE_TOKEN_PATTERN.source,
+                    DURABLE_TOKEN_PATTERN.flags
+                );
                 let match = rx.exec(lines[i]);
                 while (match) {
                     found.push({
@@ -802,26 +822,27 @@ absence({
             else unexplained.push(`${site.file} @ ${site.offset}`);
         }
 
-        if (PHASE === 'baseline') {
-            return {
-                ok: unexplained.length === 0,
-                detail:
-                    unexplained.length === 0
-                        ? `${found.length} durable-token site(s), all enumerated: ${[...matchedIds].sort().join(', ')}`
-                        : `UNEXPLAINED durable-token url construction: ${unexplained.join(', ')}`
-            };
-        }
+        const wronglyPresent = ALLOWED_DURABLE_TOKEN_SITES.filter(
+            (site) => site.mustBeAbsent && matchedIds.has(site.id)
+        ).map(
+            (site) =>
+                `${site.id} survives; ${site.mustBeAbsent} should have removed it`
+        );
 
-        // Migrated phase: only the out-of-scope general-api site may survive.
-        const stillRemovable = ALLOWED_DURABLE_TOKEN_SITES.filter(
-            (site) => site.removedBy !== null && matchedIds.has(site.id)
-        ).map((site) => `${site.id} (expected removed by ${site.removedBy})`);
-        const ok = unexplained.length === 0 && stillRemovable.length === 0;
+        const wronglyAbsent = ALLOWED_DURABLE_TOKEN_SITES.filter(
+            (site) => !site.mustBeAbsent && !matchedIds.has(site.id)
+        ).map(
+            (site) =>
+                `${site.id} is gone; the exemption naming it is stale and must be re-derived`
+        );
+
+        const problems = [...unexplained, ...wronglyPresent, ...wronglyAbsent];
         return {
-            ok,
-            detail: ok
-                ? `only the enumerated out-of-scope site(s) survive: ${[...matchedIds].sort().join(', ')}`
-                : [...unexplained, ...stillRemovable].join(', ')
+            ok: problems.length === 0,
+            detail:
+                problems.length === 0
+                    ? `${found.length} durable-token site(s); every one is an enumerated, deliberately permitted general-api site: ${[...matchedIds].sort().join(', ')}`
+                    : problems.join(', ')
         };
     }
 });
