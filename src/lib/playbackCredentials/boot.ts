@@ -26,6 +26,19 @@ import type { PlaybackCredentialBroker } from './PlaybackCredentialBroker';
 
 type Handler = (message: unknown) => void;
 
+type InstallModule = typeof import('./install');
+
+/**
+ * The one in-flight-or-settled load of the implementation chunk.
+ *
+ * Module-scoped rather than per-`ApiClient`, and deliberately the PROMISE rather than the resolved
+ * module: a sign-out re-arms a shim while the first load may still be in flight, and issuing a
+ * second `import()` for a module already being loaded is how one of the two handovers is left
+ * waiting on a request that nothing completes. Every shim, for every client and every generation,
+ * settles on this single load.
+ */
+let installLoad: Promise<InstallModule> | null = null;
+
 interface SocketLike {
     subscribe: (
         messageTypes: string[],
@@ -42,6 +55,17 @@ interface CredentialCapableApiClient {
     _sdk?: { webSocket?: unknown };
     _playbackCredentials?: Promise<PlaybackCredentialBroker>;
     _credentialSocket?: SocketLike;
+    /**
+     * The runtime `install.ts` caches per `ApiClient`. Named here — with no import — so teardown
+     * can clear it. Leaving it set is what made a re-login hand back a DISPOSED broker.
+     */
+    _credentialRuntime?: unknown;
+    /**
+     * Bumped by every install and every teardown. An `import()` issued by generation N that
+     * resolves after generation N+1 started must not install anything: the session it was armed
+     * for is gone.
+     */
+    _credentialGeneration?: number;
 }
 
 interface QueuedSubscription {
@@ -58,7 +82,10 @@ interface QueuedSubscription {
  * already unsubscribed by then is not replayed at all, so a component that mounted and unmounted
  * during the import does not leave a socket open behind it.
  */
-function shim(apiClient: CredentialCapableApiClient): SocketLike {
+function shim(
+    apiClient: CredentialCapableApiClient,
+    generation: number
+): SocketLike {
     const queued: QueuedSubscription[] = [];
     let real: SocketLike | null = null;
     let disconnected = false;
@@ -84,13 +111,21 @@ function shim(apiClient: CredentialCapableApiClient): SocketLike {
         queued.length = 0;
     };
 
-    void import('./install').then((module) => {
+    const attach = (module: InstallModule) => {
+        // The generation this shim was armed for is over: a sign-out (or a re-install) happened
+        // while the chunk was in flight. Checked BEFORE `createCredentialRuntime`, so nothing is
+        // built and there is nothing to clean up. Without it the import resurrects
+        // `_playbackCredentials` after teardown and the seam holds a broker nobody can revoke.
+        if (apiClient._credentialGeneration !== generation) return;
         const { broker, socket } = module.createCredentialRuntime(
             apiClient as never
         );
         apiClient._playbackCredentials = Promise.resolve(broker);
         handover(socket as unknown as SocketLike);
-    });
+    };
+
+    installLoad ??= import('./install');
+    void installLoad.then(attach);
 
     return {
         subscribe(messageTypes, onMessage, intervals) {
@@ -131,25 +166,48 @@ export function installPlaybackCredentials(
     apiClient: CredentialCapableApiClient
 ): void {
     if (apiClient._credentialSocket) return;
-    const socket = shim(apiClient);
+    const generation = (apiClient._credentialGeneration ?? 0) + 1;
+    apiClient._credentialGeneration = generation;
+    const socket = shim(apiClient, generation);
     apiClient._credentialSocket = socket;
     if (apiClient._sdk) {
         apiClient._sdk.webSocket = socket;
     }
 }
 
-/** Tear down: close the socket, cancel every renewal, and forget the broker. */
+/**
+ * Tear down one session's credential runtime, and reseat an empty one.
+ *
+ * WHY EVERY FIELD IS CLEARED. `ConnectionManager._getOrAddApiClient` returns the SAME `ApiClient`
+ * for a server it has seen before, and `apiclientcreated` fires only when one is built — so a
+ * sign-out followed by a sign-in to the same server never re-enters the install path. Leaving
+ * `_credentialRuntime` set made `createCredentialRuntime` hand that second session the FIRST
+ * session's disposed broker: `mediaValue` then throws for every playback, and the socket is a
+ * disposed one that mints no ticket.
+ *
+ * WHY IT RE-INSTALLS. `Api.subscribe()` builds its own `WebSocketService` whenever
+ * `_sdk.webSocket` is unset. Leaving the seam empty hands the field to the stock service on the
+ * next subscriber, which carries no ticket and is refused. A fresh shim mints nothing on its own:
+ * with no access token `webSocketTicket()` refuses, so re-arming here does not extend a session
+ * that just ended.
+ *
+ * The generation bump comes FIRST, so an `import()` still in flight for the session being torn
+ * down installs nothing when it lands.
+ */
 export function disposePlaybackCredentials(
     apiClient: CredentialCapableApiClient
 ): void {
+    apiClient._credentialGeneration = (apiClient._credentialGeneration ?? 0) + 1;
     apiClient._credentialSocket?.dispose?.();
     apiClient._credentialSocket = undefined;
     const broker = apiClient._playbackCredentials;
     apiClient._playbackCredentials = undefined;
+    apiClient._credentialRuntime = undefined;
     if (apiClient._sdk) {
         apiClient._sdk.webSocket = undefined;
     }
     void broker?.then((instance) => instance.dispose());
+    installPlaybackCredentials(apiClient);
 }
 
 /**

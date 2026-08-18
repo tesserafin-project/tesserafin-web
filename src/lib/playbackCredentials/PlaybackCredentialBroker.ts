@@ -388,6 +388,18 @@ export class PlaybackCredentialBroker {
         this.entries.clear();
     }
 
+    /**
+     * Whether this broker has been torn down.
+     *
+     * Read by `createCredentialRuntime` so a cached runtime whose broker is dead is rebuilt rather
+     * than handed to a second session. Belt and braces next to the teardown that clears the cache:
+     * a disposed broker refuses every mint, and a runtime nobody can detect as dead refuses every
+     * playback with no way to recover short of a reload.
+     */
+    get isDisposed(): boolean {
+        return this.disposed;
+    }
+
     /** Permanent teardown. A disposed broker mints nothing and hands out nothing. */
     dispose(): void {
         this.discardAll();

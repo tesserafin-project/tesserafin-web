@@ -15,19 +15,54 @@ const socketDisconnect = vi.fn();
 const socketDispose = vi.fn();
 const socketUpdateUrl = vi.fn();
 const brokerDispose = vi.fn();
-const createCredentialRuntime = vi.fn(() => ({
-    broker: { dispose: brokerDispose },
+
+interface FakeRuntime {
+    broker: { dispose: () => void; isDisposed: boolean };
     socket: {
-        subscribe: socketSubscribe,
-        disconnect: socketDisconnect,
-        dispose: socketDispose,
-        updateUrl: socketUpdateUrl
-    }
-}));
+        subscribe: typeof socketSubscribe;
+        disconnect: () => void;
+        dispose: () => void;
+        updateUrl: (uri?: string) => void;
+    };
+}
+
+interface RuntimeHost {
+    _credentialRuntime?: FakeRuntime;
+}
+
+/**
+ * The mock models the REAL caching contract of `install.ts`, not just its signature.
+ *
+ * `createCredentialRuntime` caches on `apiClient._credentialRuntime` and returns the cached pair
+ * for a client it has already served. A mock that returns a fresh object every call cannot see the
+ * defect this file exists to pin: a teardown that leaves that field set hands the NEXT session the
+ * PREVIOUS session's disposed broker.
+ */
+const createCredentialRuntime = vi.fn((apiClient: RuntimeHost) => {
+    const existing = apiClient._credentialRuntime;
+    if (existing && !existing.broker.isDisposed) return existing;
+    const runtime: FakeRuntime = {
+        broker: {
+            isDisposed: false,
+            dispose() {
+                runtime.broker.isDisposed = true;
+                brokerDispose();
+            }
+        },
+        socket: {
+            subscribe: socketSubscribe,
+            disconnect: socketDisconnect,
+            dispose: socketDispose,
+            updateUrl: socketUpdateUrl
+        }
+    };
+    apiClient._credentialRuntime = runtime;
+    return runtime;
+});
 
 vi.mock('./install', () => ({
     createCredentialRuntime: (...args: unknown[]) =>
-        createCredentialRuntime(...(args as [])),
+        createCredentialRuntime(...(args as [RuntimeHost])),
     createBroker: vi.fn()
 }));
 
@@ -41,7 +76,8 @@ function apiClient() {
     return {
         serverId: () => 'server-1',
         serverAddress: () => 'http://server.example:8096',
-        _sdk: {} as { webSocket?: unknown }
+        _sdk: {} as { webSocket?: unknown },
+        _credentialRuntime: undefined as FakeRuntime | undefined
     };
 }
 
@@ -139,17 +175,35 @@ describe('queued subscriptions', () => {
 });
 
 describe('teardown', () => {
-    it('disposes the socket and the broker and clears the seam', async () => {
+    it('disposes the socket and the broker', async () => {
         const client = apiClient();
         installPlaybackCredentials(client as never);
         await settle();
+        const broker = await brokerFor(client as never);
 
         disposePlaybackCredentials(client as never);
         await settle();
 
         expect(socketDispose).toHaveBeenCalledTimes(1);
         expect(brokerDispose).toHaveBeenCalledTimes(1);
-        expect(client._sdk.webSocket).toBeUndefined();
+        expect((broker as unknown as FakeRuntime['broker']).isDisposed).toBe(
+            true
+        );
+    });
+
+    it('never leaves Api.webSocket empty for the stock service to claim', async () => {
+        const client = apiClient();
+        installPlaybackCredentials(client as never);
+        await settle();
+        const first = client._sdk.webSocket;
+
+        disposePlaybackCredentials(client as never);
+
+        // Synchronously, in the same tick as the sign-out. `Api.subscribe()` builds its own
+        // unticketed `WebSocketService` the moment it finds this field unset, and a subscriber can
+        // run before any await here resolves.
+        expect(client._sdk.webSocket).toBeDefined();
+        expect(client._sdk.webSocket).not.toBe(first);
     });
 
     it('tolerates teardown before the implementation resolved', async () => {
@@ -157,6 +211,65 @@ describe('teardown', () => {
         installPlaybackCredentials(client as never);
         disposePlaybackCredentials(client as never);
         await settle();
-        expect(client._sdk.webSocket).toBeUndefined();
+        // The seam holds the re-armed shim, and the import issued by the session that ended
+        // installed nothing behind it.
+        expect(client._sdk.webSocket).toBeDefined();
+        expect(socketSubscribe).not.toHaveBeenCalled();
+    });
+
+    it('does not let an import in flight at teardown resurrect the credentials', async () => {
+        const client = apiClient();
+        installPlaybackCredentials(client as never);
+        // Torn down while the FIRST shim's `import('./install')` is still in flight.
+        disposePlaybackCredentials(client as never);
+        const runtimeCalls = createCredentialRuntime.mock.calls.length;
+        await settle();
+
+        // The stale import must build nothing at all: one runtime for the re-armed generation,
+        // never a second for the generation that ended.
+        expect(
+            createCredentialRuntime.mock.calls.length - runtimeCalls
+        ).toBeLessThanOrEqual(1);
+        expect(client._credentialRuntime?.broker.isDisposed).toBe(false);
+    });
+});
+
+/**
+ * `ConnectionManager._getOrAddApiClient` returns the SAME `ApiClient` for a server it has already
+ * seen, and `apiclientcreated` fires only when one is BUILT. So this sequence — the ordinary one
+ * for a person who signs out and signs back in — never re-enters the install path, and every field
+ * teardown forgets to clear is inherited by the second session.
+ */
+describe('sign out, then sign in again on the same ApiClient', () => {
+    it('hands the second session a LIVE broker', async () => {
+        const client = apiClient();
+        installPlaybackCredentials(client as never);
+        await settle();
+        const first = await brokerFor(client as never);
+
+        disposePlaybackCredentials(client as never);
+        await settle();
+
+        const second = await brokerFor(client as never);
+        expect(second).not.toBe(first);
+        expect((second as unknown as FakeRuntime['broker']).isDisposed).toBe(
+            false
+        );
+    });
+
+    it('gives the second session a live socket on the seam', async () => {
+        const client = apiClient();
+        installPlaybackCredentials(client as never);
+        await settle();
+
+        disposePlaybackCredentials(client as never);
+        await settle();
+
+        const socket = client._sdk.webSocket as {
+            subscribe: (t: string[], h: () => void) => () => void;
+        };
+        socket.subscribe(['Sessions'], vi.fn());
+        // Reaches the runtime's socket rather than sitting in a queue nothing will ever drain.
+        expect(socketSubscribe).toHaveBeenCalledTimes(1);
     });
 });

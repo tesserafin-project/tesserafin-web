@@ -126,7 +126,11 @@ export function createCredentialRuntime(
     apiClient: CredentialCapableApiClient
 ): { broker: PlaybackCredentialBroker; socket: TicketedWebSocketService } {
     const existing = apiClient._credentialRuntime;
-    if (existing) return existing;
+    // A cached runtime is reused ONLY while it is still alive. `disposePlaybackCredentials` clears
+    // this field, so a dead one should never be seen here; the check is what stops a future
+    // teardown path that forgets to clear it from silently handing the next session a broker that
+    // refuses every mint.
+    if (existing && !existing.broker.isDisposed) return existing;
 
     const broker = createBroker(apiClient);
     const socket = new TicketedWebSocketService({
