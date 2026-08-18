@@ -168,13 +168,43 @@ function countIn(file, rx) {
 const KNOWN_WEBSOCKET_PRODUCERS = 3;
 
 /**
- * `@jellyfin/sdk` `LibraryApi.getDownloadUrl()` builds `/Items/{id}/Download?ApiKey=<durable token>`.
- * That is a GENERAL-API route, not a media-delivery one: `AuthorizationContext` reads `ApiKey` there
- * by design, and a playback capability must NEVER authenticate it — `Policies.MediaDelivery` is the
- * only policy that names the capability scheme. It is therefore deliberately OUT OF SCOPE for
- * #153-A1 and is pinned here by count so it cannot grow silently.
+ * Every durable-token url construction the shipped bundle is allowed to contain, ENUMERATED.
+ *
+ * A count is what this gate used to assert, and a count is exactly the wrong shape: it drifted from
+ * 5 to 4 while two first-party sites were migrated, and nothing could say which site the arithmetic
+ * had lost. Each entry names the bundle it must appear in, a fragment that identifies it, and why it
+ * is permitted. An unlisted site fails the gate.
  */
-const OUT_OF_SCOPE_DOWNLOAD_URL_SITES = 1;
+const ALLOWED_DURABLE_TOKEN_SITES = [
+    {
+        id: 'apiclient-openwebsocket',
+        bundle: 'node_modules.jellyfin-apiclient',
+        fragment: '?api_key=',
+        why: "jellyfin-apiclient's openWebSocket. DEAD CODE in this app — zero first-party callers, and boot.ts occupies Api.webSocket before any subscriber runs.",
+        removedBy: 'scripts/patch-jellyfin-apiclient.mjs'
+    },
+    {
+        id: 'sdk-socket-update',
+        bundle: 'node_modules.@jellyfin.sdk',
+        fragment: 'updateUrl(this.getUri("socket"',
+        why: '@jellyfin/sdk Api.update(). Unreachable: the ticketed service is installed first, and its updateUrl ignores the url it is handed.',
+        removedBy: 'scripts/patch-jellyfin-sdk.mjs'
+    },
+    {
+        id: 'sdk-socket-subscribe',
+        bundle: 'node_modules.@jellyfin.sdk',
+        fragment: 'this.getUri("socket"',
+        why: '@jellyfin/sdk Api.subscribe(). Unreachable for the same reason.',
+        removedBy: 'scripts/patch-jellyfin-sdk.mjs'
+    },
+    {
+        id: 'sdk-item-download',
+        bundle: 'node_modules.@jellyfin.sdk',
+        fragment: '/Download`',
+        why: '@jellyfin/sdk LibraryApi.getDownloadUrl() -> /Items/{id}/Download?ApiKey=. A GENERAL-API route: AuthorizationContext reads ApiKey there by design and a playback capability must NEVER authenticate it, since Policies.MediaDelivery is the only policy naming the capability scheme. Deliberately out of scope for #153-A1.',
+        removedBy: null
+    }
+];
 
 const categories = [];
 
@@ -730,35 +760,68 @@ absence({
     childInherits: 'n/a',
     durableToday: true,
     provingTest:
-        'bundle scan: the migrated bundle contains no ApiKey/api_key url construction',
+        'bundle scan: every durable-token url construction that survives is one of the enumerated, justified sites',
     assert: () => {
         if (!DIST_PRESENT) {
             return {
-                ok: PHASE === 'baseline',
-                detail:
-                    PHASE === 'baseline'
-                        ? 'no dist/ present; the bundle assertion is deferred to the migrated phase, which requires a production build'
-                        : 'MIGRATED PHASE REQUIRES A PRODUCTION BUILD: dist/ is absent'
+                ok: false,
+                detail: 'no production build present — this category cannot be evaluated; run npm run build:production'
             };
         }
-        const bundleHits = grep(
-            DIST_FILES.filter((f) => f.endsWith('.js')),
-            /ApiKey\s*:|api_key=/
-        ).filter((h) => !/\/Download`?,\s*\{/.test(h.text));
+        const found = [];
+        for (const file of DIST_FILES.filter((f) => f.endsWith('.js'))) {
+            const lines = read(join(ROOT, file)).split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                const rx = /ApiKey\s*:|api_key=/g;
+                let match = rx.exec(lines[i]);
+                while (match) {
+                    found.push({
+                        file,
+                        offset: `${i + 1}:${match.index}`,
+                        // Minified LIBRARY source, never a runtime value: 75 characters of context
+                        // identify the producer and can carry no credential.
+                        context: lines[i].slice(
+                            Math.max(0, match.index - 45),
+                            match.index + 30
+                        )
+                    });
+                    match = rx.exec(lines[i]);
+                }
+            }
+        }
+
+        const unexplained = [];
+        const matchedIds = new Set();
+        for (const site of found) {
+            const allowed = ALLOWED_DURABLE_TOKEN_SITES.find(
+                (candidate) =>
+                    site.file.includes(candidate.bundle) &&
+                    site.context.includes(candidate.fragment)
+            );
+            if (allowed) matchedIds.add(allowed.id);
+            else unexplained.push(`${site.file} @ ${site.offset}`);
+        }
+
         if (PHASE === 'baseline') {
             return {
-                ok: true,
-                detail: `baseline bundle carries ${bundleHits.length} durable-token url construction site(s)`
+                ok: unexplained.length === 0,
+                detail:
+                    unexplained.length === 0
+                        ? `${found.length} durable-token site(s), all enumerated: ${[...matchedIds].sort().join(', ')}`
+                        : `UNEXPLAINED durable-token url construction: ${unexplained.join(', ')}`
             };
         }
+
+        // Migrated phase: only the out-of-scope general-api site may survive.
+        const stillRemovable = ALLOWED_DURABLE_TOKEN_SITES.filter(
+            (site) => site.removedBy !== null && matchedIds.has(site.id)
+        ).map((site) => `${site.id} (expected removed by ${site.removedBy})`);
+        const ok = unexplained.length === 0 && stillRemovable.length === 0;
         return {
-            ok: bundleHits.length === 0,
-            detail:
-                bundleHits.length === 0
-                    ? `migrated bundle carries no ApiKey/api_key url construction outside the ${OUT_OF_SCOPE_DOWNLOAD_URL_SITES} pinned general-api Download site(s)`
-                    : `migrated bundle still carries ${bundleHits.length} site(s): ${bundleHits
-                          .map((h) => `${h.file}:${h.line}`)
-                          .join(', ')}`
+            ok,
+            detail: ok
+                ? `only the enumerated out-of-scope site(s) survive: ${[...matchedIds].sort().join(', ')}`
+                : [...unexplained, ...stillRemovable].join(', ')
         };
     }
 });

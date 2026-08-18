@@ -7,6 +7,7 @@ import subtitleAppearanceHelper from 'components/subtitlesettings/subtitleappear
 import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
+import { brokerFor } from 'lib/playbackCredentials/boot';
 import { currentSettings as userSettings } from 'scripts/settings/userSettings';
 import { MediaError } from 'types/mediaError';
 
@@ -1431,7 +1432,7 @@ export class HtmlVideoPlayer {
     /**
      * @private
      */
-    renderSsaAss(videoElement, track, item) {
+    async renderSsaAss(videoElement, track, item) {
         const supportedFonts = [
             'application/vnd.ms-opentype',
             'application/x-truetype-font',
@@ -1444,15 +1445,33 @@ export class HtmlVideoPlayer {
         const attachments =
             this._currentPlayOptions.mediaSource.MediaAttachments || [];
         const apiClient = ServerConnections.getApiClient(item);
-        attachments.forEach((i) => {
+        const playSessionId = this._currentPlayOptions?.playSessionId;
+        const broker = await brokerFor(apiClient);
+
+        for (const i of attachments) {
             // we only require font files and ignore embedded media attachments like covers as there are cases where ffmpeg fails to extract those
             if (supportedFonts.includes(i.MimeType)) {
-                // embedded font url
-                availableFonts.push(apiClient.getUrl(i.DeliveryUrl));
+                // #153-A1: the attachment DeliveryUrl the server hands back carries NO credential
+                // at all, while A0 put `Policies.MediaDelivery` on the route - so this fetch is
+                // broken on main and an `Attachments` capability is what repairs it.
+                availableFonts.push(
+                    apiClient.getUrl(
+                        await broker.rewriteAttachment(
+                            i.DeliveryUrl,
+                            item.Id,
+                            this._currentPlayOptions?.mediaSource?.Id ?? null,
+                            playSessionId
+                        )
+                    )
+                );
             }
-        });
+        }
+
+        // #153-A1: `Fonts` is the one ITEM-LESS scope. A fallback font belongs to no item, and the
+        // server refuses a Fonts capability that names one.
+        const fontsCapability = await broker.fontsValue(playSessionId);
         const fallbackFontList = apiClient.getUrl('/FallbackFont/Fonts', {
-            ApiKey: apiClient.accessToken()
+            playbackCapability: fontsCapability
         });
         const htmlVideoPlayer = this;
         import('@jellyfin/libass-wasm').then(
@@ -1515,7 +1534,9 @@ export class HtmlVideoPlayer {
                                     const fontUrl = apiClient.getUrl(
                                         `/FallbackFont/Fonts/${encodeURIComponent(font.Name)}`,
                                         {
-                                            ApiKey: apiClient.accessToken()
+                                            // The SAME item-less Fonts capability as the list
+                                            // request: one mint, not one per font file.
+                                            playbackCapability: fontsCapability
                                         }
                                     );
                                     availableFonts.push(fontUrl);
@@ -1687,7 +1708,12 @@ export class HtmlVideoPlayer {
         if (!itemHelper.isLocalItem(item) || track.IsExternal) {
             const format = (track.Codec || '').toLowerCase();
             if (format === 'ssa' || format === 'ass') {
-                this.renderSsaAss(videoElement, track, item);
+                // #153-A1: renderSsaAss mints capabilities, so it is async now. A refused mint
+                // fails closed through the SAME error path an ASS render failure already used -
+                // there is no durable-token retry.
+                this.renderSsaAss(videoElement, track, item).catch(() => {
+                    onErrorInternal(this, MediaError.ASS_RENDER_ERROR);
+                });
                 return;
             }
             if (format === 'pgssub') {

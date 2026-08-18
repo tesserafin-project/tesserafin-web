@@ -445,6 +445,54 @@ export class PlaybackCredentialBroker {
         });
     }
 
+    /**
+     * The `playbackCapability` value for the FONT family.
+     *
+     * Fonts is the one item-less scope, and the server refuses a `Fonts` capability that names an
+     * item or a media source at all (`PlaybackCredentialsController` answers 400). A fallback font
+     * belongs to no item, so binding one to whatever happened to be playing would be a narrow
+     * credential quietly made wide.
+     */
+    async fontsValue(playSessionId: string): Promise<string> {
+        const held = await this.capability({
+            scopes: ['Fonts'],
+            itemId: null,
+            mediaSourceId: null,
+            playSessionId
+        });
+        return held.value;
+    }
+
+    /** A server-emitted ATTACHMENT url, rewritten. Carries no credential at all before this. */
+    rewriteAttachment(
+        url: string,
+        itemId: string | null,
+        mediaSourceId: string | null,
+        playSessionId: string
+    ): Promise<string> {
+        return this.rewrite(url, {
+            scopes: ['Attachments'],
+            itemId,
+            mediaSourceId,
+            playSessionId
+        });
+    }
+
+    /** The `playbackCapability` value for the TRICKPLAY family. */
+    async trickplayValue(
+        itemId: string | null,
+        mediaSourceId: string | null,
+        playSessionId: string
+    ): Promise<string> {
+        const held = await this.capability({
+            scopes: ['Trickplay'],
+            itemId,
+            mediaSourceId,
+            playSessionId
+        });
+        return held.value;
+    }
+
     /** A server-emitted SUBTITLE url, rewritten. */
     rewriteSubtitle(
         url: string,

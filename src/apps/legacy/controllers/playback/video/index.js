@@ -7,6 +7,7 @@ import { TICKS_PER_MINUTE, TICKS_PER_SECOND } from 'constants/time';
 import { EventType } from 'constants/eventType';
 
 import { playbackManager } from 'components/playback/playbackmanager';
+import { brokerFor } from 'lib/playbackCredentials/boot';
 import browser from 'scripts/browser';
 import dom from 'utils/dom';
 import inputManager from 'scripts/inputManager';
@@ -1697,7 +1698,14 @@ export default function (view) {
         resetIdle();
     }
 
-    function updateTrickplayBubbleHtml(
+    /**
+     * #153-A1: ASYNC, because the tile url now carries a minted `Trickplay` capability.
+     *
+     * The slider only asks whether the bubble was handled, and a promise is truthy exactly where
+     * this used to return `true`, so the contract it is called under is unchanged. The broker
+     * caches by authority, so scrubbing mints once and not once per tile.
+     */
+    async function updateTrickplayBubbleHtml(
         apiClient,
         trickplayInfo,
         item,
@@ -1778,6 +1786,19 @@ export default function (view) {
         const offsetX = -(tileOffsetX * trickplayInfo.Width);
         const offsetY = -(tileOffsetY * trickplayInfo.Height);
 
+        // #153-A1: a Trickplay capability, bound to this item and media source. The url lands in a
+        // CSS `background-image`, so a durable token here leaks through the DOM and not only
+        // through the network.
+        const trickplayCapability = await (
+            await brokerFor(apiClient)
+        ).trickplayValue(
+            item.Id,
+            mediaSourceId,
+            // The route names no play session, so the broker's per-instance synthetic id is
+            // correct here: the server never compares one for a trickplay request.
+            ''
+        );
+
         const imgSrc = apiClient.getUrl(
             'Videos/' +
                 item.Id +
@@ -1787,7 +1808,7 @@ export default function (view) {
                 index +
                 '.jpg',
             {
-                ApiKey: apiClient.accessToken(),
+                playbackCapability: trickplayCapability,
                 MediaSourceId: mediaSourceId
             }
         );
