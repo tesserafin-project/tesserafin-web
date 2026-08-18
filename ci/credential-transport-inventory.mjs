@@ -153,11 +153,19 @@ function countIn(file, rx) {
  *   hits/assert   resolved evidence
  */
 /**
- * Exactly two packages construct a WebSocket in the shipped bundle: the patched
- * `jellyfin-apiclient` prebuilt bundle (`api_key`) and `@jellyfin/sdk` (`ApiKey`). A third site is a
- * producer nobody inventoried.
+ * Every `new WebSocket(` site the shipped bundle is allowed to contain, enumerated:
+ *
+ *   1. `jellyfin-apiclient`'s `openWebSocket` — DEAD CODE in this app (zero first-party callers);
+ *      the patcher replaces its `?api_key=` fragment with a refusal.
+ *   2. `@jellyfin/sdk`'s `WebSocketService` — unreachable once `boot.ts` occupies
+ *      `Api.webSocket` before the first subscriber; the patcher removes the durable token from the
+ *      two socket URI constructions in `lib/api.js`.
+ *   3. the first-party `TicketedWebSocketService` — the ONLY one that actually opens a socket, and
+ *      it mints a fresh single-use ticket for every physical upgrade attempt.
+ *
+ * A fourth site is a producer nobody inventoried.
  */
-const KNOWN_WEBSOCKET_PRODUCERS = 2;
+const KNOWN_WEBSOCKET_PRODUCERS = 3;
 
 /**
  * `@jellyfin/sdk` `LibraryApi.getDownloadUrl()` builds `/Items/{id}/Download?ApiKey=<durable token>`.
