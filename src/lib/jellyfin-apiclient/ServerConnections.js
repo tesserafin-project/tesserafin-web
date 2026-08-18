@@ -8,6 +8,11 @@ import Dashboard from 'utils/dashboard';
 import Events from 'utils/events';
 import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
 
+import {
+    disposePlaybackCredentials,
+    installPlaybackCredentials
+} from 'lib/playbackCredentials/boot';
+
 import ConnectionManager from './connectionManager';
 
 const normalizeImageOptions = (options) => {
@@ -47,6 +52,12 @@ class ServerConnections extends ConnectionManager {
         this.firstConnection = null;
 
         Events.on(this, 'localusersignedout', (_e, logoutInfo) => {
+            // #153-A1: the capabilities and the socket ticket belong to the session that just
+            // ended. Dropping them here cancels every renewal timer and closes the socket, so
+            // nothing keeps extending a credential for a user who signed out.
+            for (const apiClient of this.getApiClients()) {
+                disposePlaybackCredentials(apiClient);
+            }
             setUserInfo(null, null);
             // Ensure the updated credentials are persisted to storage
             credentialProvider.credentials(credentialProvider.credentials());
@@ -65,6 +76,17 @@ class ServerConnections extends ConnectionManager {
 
             // Calling getApi will ensure apiClient._sdk is initialized.
             this.getApi(apiClient.serverId());
+            // ...and getTesserafinApi the same for _tesserafinSdk, which is what the credential
+            // broker mints through.
+            this.getTesserafinApi(apiClient.serverId());
+
+            // #153-A1: install BEFORE the subscribe binding below. `Api.subscribe()` only builds
+            // its own WebSocketService when `this.webSocket` is unset, so assigning the ticketed
+            // service here is what diverts every subscriber - both this binding and the direct
+            // `api.subscribe(...)` call sites - onto a socket that mints a fresh ticket for every
+            // physical upgrade attempt.
+            installPlaybackCredentials(apiClient);
+
             apiClient.subscribe = apiClient._sdk.subscribe.bind(apiClient._sdk);
         });
     }

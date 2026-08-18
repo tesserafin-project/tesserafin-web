@@ -29,6 +29,7 @@ import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
 import { TICKS_PER_SECOND } from 'constants/time';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
+import { brokerFor } from 'lib/playbackCredentials/boot';
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
 import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
@@ -399,7 +400,27 @@ function getAudioMaxValues(deviceProfile) {
 }
 
 let startingPlaySession = new Date().getTime();
-function getAudioStreamUrl(
+
+/**
+ * A play session id that is never empty.
+ *
+ * `PlaybackCapabilityRequestDto.PlaySessionId` is `[Required]`, and `RequiredAttribute` rejects an
+ * empty string by default - so `''` is a 400 from model validation before the mint handler runs,
+ * and the broker fails closed on it. Routes that do not NAME a play session never compare it, so a
+ * synthetic value is safe there; a route that does name one (the transcoding url) reads the
+ * server's own value instead of calling this.
+ */
+function playSessionIdFor(requestOptions) {
+    return requestOptions?.playSessionId || String(++startingPlaySession);
+}
+/**
+ * #153-A1: ASYNC, because the universal-audio url is the one family built BEFORE any
+ * `PlaybackInfo` round trip - it invents its own `PlaySessionId` - so the mint has to happen here.
+ * The route names no media source, so the capability is minted with `mediaSourceId: null`: the
+ * server's demand comparison treats a null on the route side as a refusal for a bound capability,
+ * never as a wildcard, so a media-source-bound one would not satisfy it.
+ */
+async function getAudioStreamUrl(
     item,
     transcodingProfile,
     directPlayContainers,
@@ -410,6 +431,27 @@ function getAudioStreamUrl(
     const url = 'Audio/' + item.Id + '/universal';
 
     startingPlaySession++;
+    const playSessionId = String(startingPlaySession);
+    // #153-A1, MEASURED: the capability is deliberately NOT bound to `playSessionId`.
+    //
+    // That value is invented here AND is what this client reports playback lifecycle with.
+    // `SessionManager.OnPlaybackStopped` revokes every capability bound to the reported play
+    // session, and the audio path reports a stop at 0 ms as part of starting — so binding to it
+    // made the client revoke its own credential and the next request answered 401. The server log
+    // named it: two `PlaybackCapability was challenged` lines immediately followed by
+    // `Playback stopped reported for play session "<counter>" (correlated False, session null)`.
+    //
+    // An empty play session makes the broker use its own per-instance id, which nothing reports
+    // lifecycle for. This weakens NO comparison: `/Audio/{id}/universal` carries
+    // `[RequiresPlaybackCapability(Media, "itemId", "mediaSourceId")]` with no play-session key, so
+    // the server never compares one here. Item and media source are unchanged; only the revocation
+    // anchor moves off an id the client destroys itself.
+    const capability = await (await brokerFor(apiClient)).mediaValue(
+        item.Id,
+        null,
+        ''
+    );
+
     return apiClient.getUrl(url, {
         UserId: apiClient.getCurrentUserId(),
         DeviceId: apiClient.deviceId(),
@@ -420,8 +462,8 @@ function getAudioStreamUrl(
         AudioCodec: transcodingProfile.AudioCodec,
         MaxAudioSampleRate: maxValues.maxAudioSampleRate,
         MaxAudioBitDepth: maxValues.maxAudioBitDepth,
-        ApiKey: apiClient.accessToken(),
-        PlaySessionId: startingPlaySession,
+        playbackCapability: capability,
+        PlaySessionId: playSessionId,
         StartTimeTicks: startPosition || 0,
         EnableRedirection: true,
         EnableRemoteMedia: appHost.supports(AppFeature.RemoteAudio),
@@ -429,7 +471,7 @@ function getAudioStreamUrl(
     });
 }
 
-function getAudioStreamUrlFromDeviceProfile(
+async function getAudioStreamUrlFromDeviceProfile(
     item,
     deviceProfile,
     maxBitrate,
@@ -470,7 +512,7 @@ function getAudioStreamUrlFromDeviceProfile(
     );
 }
 
-function getStreamUrls(
+async function getStreamUrls(
     items,
     deviceProfile,
     maxBitrate,
@@ -508,7 +550,7 @@ function getStreamUrls(
         let streamUrl;
 
         if (item.MediaType === 'Audio' && !itemHelper.isLocalItem(item)) {
-            streamUrl = getAudioStreamUrl(
+            streamUrl = await getAudioStreamUrl(
                 item,
                 audioTranscodingProfile,
                 audioDirectPlayContainers,
@@ -525,7 +567,7 @@ function getStreamUrls(
         }
     }
 
-    return Promise.resolve(streamUrls);
+    return streamUrls;
 }
 
 function setStreamUrls(
@@ -575,7 +617,7 @@ async function getPlaybackInfo(
         return {
             MediaSources: [
                 {
-                    StreamUrl: getAudioStreamUrlFromDeviceProfile(
+                    StreamUrl: await getAudioStreamUrlFromDeviceProfile(
                         item,
                         deviceProfile,
                         options.maxBitrate,
@@ -2140,7 +2182,10 @@ export class PlaybackManager {
                         if (validatePlaybackInfoResult(self, result)) {
                             currentMediaSource = result.MediaSources[0];
 
-                            const streamInfo = createStreamInfo(
+                            // #153-A1: the play session the capability binds to.
+                            options.playSessionId = result.PlaySessionId;
+
+                            const streamInfo = await createStreamInfo(
                                 apiClient,
                                 currentItem.MediaType,
                                 currentItem,
@@ -3459,9 +3504,10 @@ export class PlaybackManager {
                 return promise.then(() => {
                     cancelPlayback();
                     loading.hide();
-                    // The item id, not `item.Url`: a media url is exactly what this module
-                    // builds with `ApiKey: apiClient.accessToken()` (#75 / S4), and the id
-                    // identifies the same item for a developer reading this.
+                    // The item id, not `item.Url`. #75 / S4 wrote this because the url carried
+                    // `ApiKey=<the session's access token>`; since #153-A1 it carries a
+                    // short-lived `playbackCapability` instead. Shorter-lived is not
+                    // non-sensitive, so the id is still what belongs in a log line.
                     console.error(
                         `No player found for the requested media: item ${item.Id}`
                     );
@@ -3628,7 +3674,7 @@ export class PlaybackManager {
                         mediaSource.DefaultSecondarySubtitleStreamIndex = -1;
                     }
 
-                    const streamInfo = createStreamInfo(
+                    const streamInfo = await createStreamInfo(
                         apiClient,
                         item.MediaType,
                         item,
@@ -3835,7 +3881,13 @@ export class PlaybackManager {
          * `allowAudioStreamCopy` are client-originated and used to be recovered by string-matching
          * the resulting URL (see `playbackExecutionDecision.ts`).
          */
-        function createStreamInfo(
+        /**
+         * #153-A1: ASYNC because a playback capability is minted before the url is built, never
+         * inside `getUrl`. All three call sites already sit inside a `.then(...)` of the
+         * `PlaybackInfo` round trip, so this adds no new asynchrony to the playback flow - it
+         * only makes the existing boundary the place the credential is obtained.
+         */
+        async function createStreamInfo(
             apiClient,
             type,
             item,
@@ -3857,15 +3909,10 @@ export class PlaybackManager {
             ).toLowerCase();
             let directOptions;
 
-            if (mediaSource.MediaStreams && player.useFullSubtitleUrls) {
-                mediaSource.MediaStreams.forEach((stream) => {
-                    if (stream.DeliveryUrl?.startsWith('/')) {
-                        stream.DeliveryUrl = apiClient.getUrl(
-                            stream.DeliveryUrl
-                        );
-                    }
-                });
-            }
+            // #153-A1: the `player.useFullSubtitleUrls` block that used to absolutise every
+            // `DeliveryUrl` here is gone. No player in this repository sets that flag - the only
+            // read of it in the whole tree was this one - so it was a branch that could not run,
+            // and `getTextTracks` now rewrites each url anyway.
 
             if (type === 'Video' || type === 'Audio') {
                 contentType = getMimeType(
@@ -3885,11 +3932,22 @@ export class PlaybackManager {
                     mediaSource.SupportsDirectPlay ||
                     mediaSource.SupportsDirectStream
                 ) {
+                    // #153-A1: a Media capability bound to THIS item and media source, minted
+                    // here at the asynchronous boundary. There is no ApiKey fallback: a refused
+                    // mint rejects, and the caller's existing playback-failure path reports it.
+                    const mediaCapability = await (
+                        await brokerFor(apiClient)
+                    ).mediaValue(
+                        item.Id,
+                        mediaSource.Id,
+                        playSessionIdFor(requestOptions)
+                    );
+
                     directOptions = {
                         Static: true,
                         mediaSourceId: mediaSource.Id,
                         deviceId: apiClient.deviceId(),
-                        ApiKey: apiClient.accessToken()
+                        playbackCapability: mediaCapability
                     };
 
                     if (mediaSource.ETag) {
@@ -3914,7 +3972,17 @@ export class PlaybackManager {
                         ? 'DirectPlay'
                         : 'DirectStream';
                 } else if (mediaSource.SupportsTranscoding) {
-                    mediaUrl = apiClient.getUrl(mediaSource.TranscodingUrl);
+                    // #153-A1: the server built this url with `api_key=`. Same Media capability as
+                    // the direct branch - the HLS children inherit it, because
+                    // `DynamicHlsController` echoes this request's query into every segment uri.
+                    mediaUrl = apiClient.getUrl(
+                        await (await brokerFor(apiClient)).rewriteMedia(
+                            mediaSource.TranscodingUrl,
+                            item.Id,
+                            mediaSource.Id,
+                            requestOptions.playSessionId ?? ''
+                        )
+                    );
 
                     if (mediaSource.TranscodingSubProtocol === 'hls') {
                         contentType = 'application/x-mpegURL';
@@ -3953,9 +4021,12 @@ export class PlaybackManager {
                 playerStartPositionTicks: playerStartPositionTicks,
                 item: item,
                 mediaSource: mediaSource,
-                textTracks: getTextTracks(apiClient, item, mediaSource),
-                // TODO: Deprecate
-                tracks: getTextTracks(apiClient, item, mediaSource),
+                textTracks: await getTextTracks(
+                    apiClient,
+                    item,
+                    mediaSource,
+                    playSessionIdFor(requestOptions)
+                ),
                 mediaType: type,
                 liveStreamId: liveStreamId,
                 playSessionId: getParam('playSessionId', mediaUrl),
@@ -3983,7 +4054,17 @@ export class PlaybackManager {
             return resultInfo;
         }
 
-        function getTextTracks(apiClient, item, mediaSource) {
+        /**
+         * #153-A1: ASYNC. Every external subtitle's `DeliveryUrl` is built by the SERVER with
+         * `?ApiKey=` already appended (`StreamInfo.GetSubtitleStreamInfo`), so this is a
+         * server-emitted family: the client consumes it verbatim and has to rewrite it.
+         */
+        async function getTextTracks(
+            apiClient,
+            item,
+            mediaSource,
+            playSessionId
+        ) {
             const subtitleStreams = mediaSource.MediaStreams.filter(
                 function (s) {
                     return s.Type === 'Subtitle';
@@ -4002,10 +4083,19 @@ export class PlaybackManager {
 
                 if (itemHelper.isLocalItem(item)) {
                     textStreamUrl = textStream.Path;
+                } else if (textStream.IsExternalUrl) {
+                    // Someone else's server entirely; this client has no credential for it and
+                    // must not attach one.
+                    textStreamUrl = textStream.DeliveryUrl;
                 } else {
-                    textStreamUrl = !textStream.IsExternalUrl
-                        ? apiClient.getUrl(textStream.DeliveryUrl)
-                        : textStream.DeliveryUrl;
+                    textStreamUrl = apiClient.getUrl(
+                        await (await brokerFor(apiClient)).rewriteSubtitle(
+                            textStream.DeliveryUrl,
+                            item.Id,
+                            mediaSource.Id,
+                            playSessionId
+                        )
+                    );
                 }
 
                 tracks.push({
@@ -4042,6 +4132,10 @@ export class PlaybackManager {
                 options
             ).then(function (playbackInfoResult) {
                 if (validatePlaybackInfoResult(self, playbackInfoResult)) {
+                    // #153-A1: carry the play session forward on the same options object
+                    // `createStreamInfo` is called with, so the capability can bind to it.
+                    options.playSessionId = playbackInfoResult.PlaySessionId;
+
                     return getOptimalMediaSource(
                         apiClient,
                         item,
@@ -5333,12 +5427,32 @@ export class PlaybackManager {
         return Promise.reject();
     }
 
-    getSubtitleUrl(textStream, serverId) {
-        const apiClient = ServerConnections.getApiClient(serverId);
+    /**
+     * #153-A1: ASYNC, and it needs the bindings.
+     *
+     * The `DeliveryUrl` the server hands back already carries `?ApiKey=`, so this method cannot
+     * just pass it through any more - it has to mint a `Subtitles` capability bound to the item and
+     * media source and rewrite the url. `IsExternalUrl` means someone else's server entirely: this
+     * client has no credential for it and must not attach one.
+     */
+    async getSubtitleUrl(
+        textStream,
+        serverId,
+        itemId,
+        mediaSourceId,
+        playSessionId
+    ) {
+        if (textStream.IsExternalUrl) return textStream.DeliveryUrl;
 
-        return !textStream.IsExternalUrl
-            ? apiClient.getUrl(textStream.DeliveryUrl)
-            : textStream.DeliveryUrl;
+        const apiClient = ServerConnections.getApiClient(serverId);
+        return apiClient.getUrl(
+            await (await brokerFor(apiClient)).rewriteSubtitle(
+                textStream.DeliveryUrl,
+                itemId,
+                mediaSourceId,
+                playSessionId
+            )
+        );
     }
 
     stop(player) {

@@ -194,6 +194,48 @@ const patchedPath = (root) =>
 }
 
 // ── 3-8. every refusal ───────────────────────────────────────────────────────────────────────
+//
+// The fragment-shaped refusals run over TWO anchors, not one: the #153-A1 transport fragment and a
+// #152 console fragment. Exercising only index 0 would have proven the refusal for whichever
+// fragment happened to be first in the table, which is not the same statement.
+const TRANSPORT_INDEX = UNSAFE_FRAGMENTS.findIndex(
+    (f) => f.category === 'transport'
+);
+const CONSOLE_INDEX = UNSAFE_FRAGMENTS.findIndex(
+    (f) => f.category !== 'transport'
+);
+
+const fragmentRefusals = [TRANSPORT_INDEX, CONSOLE_INDEX].flatMap((index) => {
+    const fragment = UNSAFE_FRAGMENTS[index];
+    const label = `${fragment.category} anchor #${index}`;
+    return [
+        [
+            `a missing unsafe fragment is refused (${label})`,
+            () => stage({ content: PRISTINE.split(fragment.unsafe).join('') }),
+            /neither the pinned pristine nor the pinned patched hash/
+        ],
+        [
+            `a duplicated unsafe fragment is refused (${label})`,
+            () =>
+                stage({
+                    content: PRISTINE.replace(
+                        fragment.unsafe,
+                        `${fragment.unsafe}${fragment.unsafe}`
+                    )
+                }),
+            /neither the pinned pristine nor the pinned patched hash/
+        ],
+        [
+            `partially patched content is refused (${label})`,
+            () =>
+                stage({
+                    content: PRISTINE.split(fragment.unsafe).join(fragment.safe)
+                }),
+            /neither the pinned pristine nor the pinned patched hash/
+        ]
+    ];
+});
+
 const refusals = [
     [
         'an unknown package version is refused',
@@ -205,35 +247,7 @@ const refusals = [
         () => stage({ content: `${PRISTINE}\n/* local edit */\n` }),
         /neither the pinned pristine nor the pinned patched hash/
     ],
-    [
-        'a missing unsafe fragment is refused',
-        () =>
-            stage({
-                content: PRISTINE.split(UNSAFE_FRAGMENTS[0].unsafe).join('')
-            }),
-        /neither the pinned pristine nor the pinned patched hash/
-    ],
-    [
-        'a duplicated unsafe fragment is refused',
-        () =>
-            stage({
-                content: PRISTINE.replace(
-                    UNSAFE_FRAGMENTS[0].unsafe,
-                    `${UNSAFE_FRAGMENTS[0].unsafe},${UNSAFE_FRAGMENTS[0].unsafe}`
-                )
-            }),
-        /neither the pinned pristine nor the pinned patched hash/
-    ],
-    [
-        'partially patched content is refused',
-        () =>
-            stage({
-                content: PRISTINE.split(UNSAFE_FRAGMENTS[0].unsafe).join(
-                    UNSAFE_FRAGMENTS[0].safe
-                )
-            }),
-        /neither the pinned pristine nor the pinned patched hash/
-    ]
+    ...fragmentRefusals
 ];
 for (const [label, make, expected] of refusals) {
     const root = make();
@@ -308,9 +322,28 @@ for (const [label, make, expected] of refusals) {
             'the ConnectionManager export is gone',
         !after.includes('Credentials:') && 'the Credentials export is gone',
         !after.includes('Events:') && 'the Events export is gone',
-        !after.includes('api_key=') &&
-            'the socket url is no longer built with api_key — behaviour changed, not just logging',
         !after.includes('WebSocket') && 'the WebSocket code path is gone'
+    ]);
+
+    // #153-A1 changed BEHAVIOUR, not only logging, and this is where that is pinned. Before A1
+    // this same block asserted the opposite - that `api_key=` survived - because #152 was a
+    // logging-only patch. The inversion is the point.
+    const transportFragments = UNSAFE_FRAGMENTS.filter(
+        (f) => f.category === 'transport'
+    );
+    check('#153-A1: the socket url is no longer built with the durable token', [
+        transportFragments.length !== 1 &&
+            `expected exactly one transport fragment, found ${transportFragments.length}`,
+        after.includes('"?api_key="') &&
+            'openWebSocket still concatenates ?api_key= into the socket url',
+        !after.includes('openWebSocket disabled: #153-A1') &&
+            'the refusal that replaced the credential construction is absent',
+        // The ONE surviving `api_key` is the general-API download url builder, a route where
+        // AuthorizationContext reads the key by design and a playback capability must never work.
+        (after.match(/api_key/g) || []).length !== 1 &&
+            `expected exactly one surviving api_key (the general-api download builder), found ${(after.match(/api_key/g) || []).length}`,
+        !after.includes('"Items/".concat(e,"/Download")') &&
+            'the surviving api_key is not the general-api download builder this exemption names'
     ]);
     // The sanitized replacements must be real constants, not the same url under a new prefix.
     check('the replacements interpolate no url', [
