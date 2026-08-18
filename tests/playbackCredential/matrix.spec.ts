@@ -19,10 +19,11 @@ import { expect, test, type Page } from '@playwright/test';
 import { signIn } from '../e2e/support/b2';
 import {
     enableFallbackFont,
+    mediaItemIdByName,
     seedAssLibrary,
     seedAudioLibrary
 } from './support/fixtures';
-import { admin, itemIdByName, playControl, sessionToken } from './support/rig';
+import { admin, playControl, sessionToken } from './support/rig';
 
 interface Observed {
     family: string;
@@ -75,6 +76,12 @@ async function openDetailById(page: Page, itemId: string): Promise<void> {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({
         timeout: 30_000
     });
+    // Bounded and NAMED. Without it a missing control became a ten-minute test timeout whose
+    // message said nothing about which item or why.
+    await expect(
+        playControl(page),
+        `item ${itemId} must offer a play control`
+    ).toBeVisible({ timeout: 60_000 });
 }
 
 /** Close whatever modal the previous playback left behind. */
@@ -219,8 +226,16 @@ test.describe('#153-A1 browser matrix', () => {
             expect(token.length).toBeGreaterThan(0);
 
             // Ids, not search: see openDetailById.
-            const audioId = await itemIdByName(a, 'A1 Audio Probe');
-            const assId = await itemIdByName(a, 'A1 Subtitle Probe');
+            const audioId = await mediaItemIdByName(
+                a,
+                'A1 Audio Probe',
+                'Audio'
+            );
+            const assId = await mediaItemIdByName(
+                a,
+                'A1 Subtitle Probe',
+                'Video'
+            );
 
             // ── audio: universal and/or direct ────────────────────────────────────────────────
             await openDetailById(page, audioId);

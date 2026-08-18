@@ -432,12 +432,25 @@ async function getAudioStreamUrl(
 
     startingPlaySession++;
     const playSessionId = String(startingPlaySession);
-    const capability = await (await brokerFor(apiClient)).capability({
-        scopes: ['Media'],
-        itemId: item.Id,
-        mediaSourceId: null,
-        playSessionId
-    });
+    // #153-A1, MEASURED: the capability is deliberately NOT bound to `playSessionId`.
+    //
+    // That value is invented here AND is what this client reports playback lifecycle with.
+    // `SessionManager.OnPlaybackStopped` revokes every capability bound to the reported play
+    // session, and the audio path reports a stop at 0 ms as part of starting — so binding to it
+    // made the client revoke its own credential and the next request answered 401. The server log
+    // named it: two `PlaybackCapability was challenged` lines immediately followed by
+    // `Playback stopped reported for play session "<counter>" (correlated False, session null)`.
+    //
+    // An empty play session makes the broker use its own per-instance id, which nothing reports
+    // lifecycle for. This weakens NO comparison: `/Audio/{id}/universal` carries
+    // `[RequiresPlaybackCapability(Media, "itemId", "mediaSourceId")]` with no play-session key, so
+    // the server never compares one here. Item and media source are unchanged; only the revocation
+    // anchor moves off an id the client destroys itself.
+    const capability = await (await brokerFor(apiClient)).mediaValue(
+        item.Id,
+        null,
+        ''
+    );
 
     return apiClient.getUrl(url, {
         UserId: apiClient.getCurrentUserId(),

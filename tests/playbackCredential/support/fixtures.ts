@@ -79,6 +79,43 @@ async function addLibrary(
     expect(res.ok(), `library "${name}" must be created`).toBe(true);
 }
 
+/**
+ * The id of the seeded MEDIA item, never the folder.
+ *
+ * Each fixture lives in a directory named after it, so the scan produces BOTH a folder and the item
+ * inside it. `itemIdByName` takes the first match, which was the folder — whose detail page has no
+ * play control, and the matrix then waited ten minutes for a button that was never coming.
+ */
+export async function mediaItemIdByName(
+    a: Admin,
+    name: string,
+    includeItemTypes: 'Video' | 'Audio'
+): Promise<string> {
+    const res = await a.api.get(`/Users/${a.userId}/Items`, {
+        headers: authed(a),
+        params: {
+            searchTerm: name,
+            recursive: 'true',
+            includeItemTypes,
+            limit: '10'
+        }
+    });
+    expect(res.ok(), `media lookup for ${name}`).toBe(true);
+    const items = (await res.json()).Items as Array<{
+        Id: string;
+        Name: string;
+        Type: string;
+    }>;
+    const match = items.find((i) => i.Name.includes(name));
+    expect(
+        match,
+        `a ${includeItemTypes} item named "${name}" must exist; found ${items
+            .map((i) => `${i.Name}:${i.Type}`)
+            .join(', ')}`
+    ).toBeTruthy();
+    return match!.Id;
+}
+
 /** Poll `/Items` until every expected name has indexed. The scan is asynchronous. */
 async function waitForItems(
     a: Admin,
