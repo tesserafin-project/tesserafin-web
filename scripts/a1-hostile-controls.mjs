@@ -85,12 +85,16 @@ const CONTROLS = [
     },
     {
         id: 'c02',
-        name: 'restore api_key on the WebSocket (drop the patcher transport fragment)',
+        name: 'restore api_key on the WebSocket (patcher writes it back)',
         file: PATCHER,
-        find: "        category: 'transport',",
-        replace: "        category: 'DISABLED-transport',",
+        // Reintroduce the durable token in the REPLACEMENT the transform writes. The first
+        // attempt renamed the fragment's `category`, which broke the test harness's own
+        // TRANSPORT_INDEX lookup rather than the guarantee — an ERROR, not a result. What
+        // must notice this is the pinned patched hash, and it does.
+        find: '\'(function(){throw new Error("openWebSocket disabled: #153-A1")})(),\'',
+        replace: '\'t+="?api_key=".concat(e),\'',
         assertion: PATCHER_TESTS,
-        marker: '#153-A1: the socket url is no longer built with the durable token'
+        marker: 'the patched digest is not the pinned one'
     },
     {
         id: 'c03',
@@ -212,11 +216,13 @@ const CONTROLS = [
         id: 'c13',
         name: 'weaken the production-bundle durable-token gate',
         file: GATE,
-        find: "        id: 'apiclient-openwebsocket',",
-        replace:
-            "        id: 'apiclient-openwebsocket-RENAMED', mustBeAbsent: null,",
+        // Turn a must-be-ABSENT site into a merely permitted one. The first attempt inserted
+        // a second `mustBeAbsent` key BEFORE the existing one and the later property won: the
+        // mutation applied and changed nothing, which is exactly why it read INERT.
+        find: "        mustBeAbsent: 'scripts/patch-jellyfin-apiclient.mjs',",
+        replace: '        mustBeAbsent: null,',
         assertion: GATE_MIGRATED,
-        marker: 'production-bundle'
+        marker: 'the exemption naming it is stale'
     }
 ];
 

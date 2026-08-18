@@ -522,7 +522,12 @@ describe('teardown', () => {
     it('dispose cancels every renewal and refuses further work', async () => {
         const h = harness();
         await h.broker.capability(mediaDemand());
+        expect(h.broker.heldCount).toBe(1);
         h.broker.dispose();
+        // Held capabilities must be GONE, not merely unreachable. Asserting only that renewal did
+        // not fire cannot tell a cancelled timer from the `disposed` flag short-circuiting inside
+        // it — and a retained capability with a live timer is exactly the teardown defect.
+        expect(h.broker.heldCount).toBe(0);
         await vi.advanceTimersByTimeAsync(FIFTEEN_MINUTES);
         expect(h.renew).not.toHaveBeenCalled();
         await expect(h.broker.capability(mediaDemand())).rejects.toBeInstanceOf(
