@@ -7,7 +7,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const socketSubscribe = vi.fn(() => vi.fn());
+const socketSubscribe = vi.fn(
+    (_messageTypes: string[], _onMessage: unknown, _intervals?: unknown) =>
+        vi.fn()
+);
 const socketDisconnect = vi.fn();
 const socketDispose = vi.fn();
 const socketUpdateUrl = vi.fn();
