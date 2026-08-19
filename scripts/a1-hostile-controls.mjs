@@ -34,8 +34,15 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const BROKER = 'src/lib/playbackCredentials/PlaybackCredentialBroker.ts';
 const IDENTITY = 'src/lib/playbackCredentials/identity.ts';
-const SOCKET = 'src/lib/playbackCredentials/TicketedWebSocketService.ts';
-const BOOT = 'src/lib/playbackCredentials/boot.ts';
+/*
+ * #153-A1-R2: the socket implementation moved. `TicketedWebSocketService.ts` and `boot.ts` are
+ * deleted — the shipped `@jellyfin/sdk` service is patched instead — so the socket controls now
+ * mutate the PATCHER's fragment table, which is the only place that code exists. Their assertion
+ * is `scripts/jellyfin-sdk-socket.test.mjs`, which rebuilds the module from those fragments for
+ * exactly this reason: a control that mutated the fragments while the test read `node_modules`
+ * would be inert.
+ */
+const SDK_PATCHER = 'scripts/patch-jellyfin-sdk.mjs';
 const PLAYBACK = 'src/components/playback/playbackmanager.js';
 const PATCHER = 'scripts/patch-jellyfin-apiclient.mjs';
 const GATE = 'ci/credential-transport-inventory.mjs';
@@ -56,6 +63,7 @@ const GATE_MIGRATED = [
     'migrated'
 ];
 const PATCHER_TESTS = ['node', 'scripts/jellyfin-apiclient-patch.test.mjs'];
+const SOCKET_TEST = ['node', 'scripts/jellyfin-sdk-socket.test.mjs'];
 const PATCHER_VERIFY = [
     'node',
     'scripts/patch-jellyfin-apiclient.mjs',
@@ -86,17 +94,14 @@ const CONTROLS = [
     {
         id: 'c02',
         name: 'restore api_key on the WebSocket url',
-        // Aimed at the code that actually BUILDS the socket url. Two earlier attempts aimed at
-        // the patcher instead: renaming a fragment's `category` broke the harness's own index
-        // lookup, and rewriting a fragment's replacement broke the test's pristine
-        // RECONSTRUCTION (it inverts the fragment table, so a changed replacement no longer
-        // yields the pinned pristine hash and the harness refuses at setup). Both were ERROR,
-        // not results. c02b covers the patcher pin separately.
-        file: SOCKET,
-        find: "export const TICKET_QUERY_KEY = 'webSocketTicket';",
-        replace: "export const TICKET_QUERY_KEY = 'api_key';",
-        assertion: UNIT,
-        marker: 'carries only the ticket parameter'
+        // Aimed at the code that actually BUILDS the socket url, which since #153-A1-R2 is the
+        // patcher's fragment table. The socket test rebuilds the module from those fragments, so
+        // this reaches a real assertion rather than an unchanged `node_modules` copy.
+        file: SDK_PATCHER,
+        find: "        target.searchParams.set('webSocketTicket', ticket);",
+        replace: "        target.searchParams.set('api_key', ticket);",
+        assertion: SOCKET_TEST,
+        marker: 'the ticket reaches the socket url, and only the ticket'
     },
     {
         id: 'c02b',
@@ -149,15 +154,12 @@ const CONTROLS = [
     {
         id: 'c07',
         name: 'reuse a consumed ticket during reconnect',
-        file: SOCKET,
-        find: '            ticket = await this.deps.mintTicket();',
+        file: SDK_PATCHER,
+        find: '            ticket = this.ticketProvider ? await this.ticketProvider() : undefined;',
         replace:
-            '            this.reusedTicket ??= await this.deps.mintTicket();\n            ticket = this.reusedTicket;',
-        extraFind: '    private attempts = 0;',
-        extraReplace:
-            '    private attempts = 0;\n    private reusedTicket: string | undefined;',
-        assertion: UNIT,
-        marker: 'mints AGAIN on reconnect and never replays the first ticket'
+            '            this.reused ??= this.ticketProvider ? await this.ticketProvider() : undefined;\n            ticket = this.reused;',
+        assertion: SOCKET_TEST,
+        marker: 'a reconnect mints a fresh ticket and never replays the first'
     },
     ...[
         'serverId',
@@ -217,12 +219,15 @@ const CONTROLS = [
     },
     {
         id: 'c12',
-        name: 'bypass the patched dependency transform',
-        file: BOOT,
-        find: '        apiClient._sdk.webSocket = socket;',
-        replace: '        // MUTATION: leave Api.webSocket to the sdk.',
-        assertion: UNIT,
-        marker: 'occupies Api.webSocket synchronously'
+        name: 'connect without a ticket instead of failing closed',
+        // The old shape of this control removed the boot shim's seam. There is no seam any more,
+        // so the equivalent hostile edit is to remove the refusal: let a mintless attempt build a
+        // socket anyway. That is precisely the fallback the whole transport exists to forbid.
+        file: SDK_PATCHER,
+        find: '            this.retry();\n            return;',
+        replace: "            ticket = 'bypass';",
+        assertion: SOCKET_TEST,
+        marker: 'without a ticket provider it mints nothing and opens no socket'
     },
     {
         id: 'c13',

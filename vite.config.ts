@@ -68,6 +68,10 @@ export default defineConfig({
             // built `dist/`. Only the SPEC is excluded - the suite's vitest containment tests live
             // in the same directory and must keep running here.
             'tests/playbackCredential/**/*.spec.ts',
+            // #153-A1-R2 moved the pre-migration characterization probe into its own directory so
+            // the acceptance suite cannot resolve it (ci/verify-a1-acceptance-roster.mjs). It is a
+            // Playwright spec like the rest, and vitest must not collect it either.
+            'tests/playbackCredentialBaseline/**/*.spec.ts',
             '**/.claude/**',
             'scripts/**'
         ],

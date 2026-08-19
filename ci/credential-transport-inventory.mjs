@@ -157,15 +157,24 @@ function countIn(file, rx) {
  *
  *   1. `jellyfin-apiclient`'s `openWebSocket` — DEAD CODE in this app (zero first-party callers);
  *      the patcher replaces its `?api_key=` fragment with a refusal.
- *   2. `@jellyfin/sdk`'s `WebSocketService` — unreachable once `boot.ts` occupies
- *      `Api.webSocket` before the first subscriber; the patcher removes the durable token from the
- *      two socket URI constructions in `lib/api.js`.
- *   3. the first-party `TicketedWebSocketService` — the ONLY one that actually opens a socket, and
- *      it mints a fresh single-use ticket for every physical upgrade attempt.
+ *   2. `@jellyfin/sdk`'s `WebSocketService` — the EFFECTIVE producer. It is the only site that
+ *      actually opens a socket in this app, and `scripts/patch-jellyfin-sdk.mjs` rewrites it so
+ *      that it mints a fresh single-use ticket for every physical upgrade attempt, including every
+ *      reconnect, and refuses to connect at all when no ticket can be minted. The same patcher
+ *      removes the durable token from the two socket URI constructions in `lib/api.js`.
  *
- * A fourth site is a producer nobody inventoried.
+ * CORRECTED IN #153-A1-R2. This list used to name a third producer, the first-party
+ * `TicketedWebSocketService`, and to call the sdk's service "unreachable once `boot.ts` occupies
+ * `Api.webSocket` before the first subscriber". Both statements are now false and their combination
+ * was the defect: diverting the shipped service meant shipping a duplicate WebSocket runtime, which
+ * cost its own start-up chunk that no delivery ceiling had room for. The duplicate is deleted, the
+ * seam is gone, and the shipped service is fixed rather than bypassed — so the count falls from 3
+ * to 2. An "unreachable" producer is also a claim no gate here can check, which is exactly the kind
+ * of statement that goes stale silently.
+ *
+ * A third site is a producer nobody inventoried.
  */
-const KNOWN_WEBSOCKET_PRODUCERS = 3;
+const KNOWN_WEBSOCKET_PRODUCERS = 2;
 
 /**
  * Every durable-token url construction the shipped bundle may contain, ENUMERATED and two-way.

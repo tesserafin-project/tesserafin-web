@@ -7,7 +7,7 @@ import { TICKS_PER_MINUTE, TICKS_PER_SECOND } from 'constants/time';
 import { EventType } from 'constants/eventType';
 
 import { playbackManager } from 'components/playback/playbackmanager';
-import { brokerFor } from 'lib/playbackCredentials/boot';
+import { brokerFor } from 'lib/playbackCredentials/broker';
 import browser from 'scripts/browser';
 import dom from 'utils/dom';
 import inputManager from 'scripts/inputManager';

@@ -7,7 +7,7 @@ import subtitleAppearanceHelper from 'components/subtitlesettings/subtitleappear
 import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
-import { brokerFor } from 'lib/playbackCredentials/boot';
+import { brokerFor } from 'lib/playbackCredentials/broker';
 import { currentSettings as userSettings } from 'scripts/settings/userSettings';
 import { MediaError } from 'types/mediaError';
 

@@ -19,7 +19,6 @@ import type { PlaybackCapabilityDto } from 'lib/tesserafin-sdk/generated/models/
 import type { PlaybackCapabilityRenewalDto } from 'lib/tesserafin-sdk/generated/models/playback-capability-renewal-dto';
 import type { PlaybackCapabilityRequestDto } from 'lib/tesserafin-sdk/generated/models/playback-capability-request-dto';
 import type { PlaybackCapabilityScope } from 'lib/tesserafin-sdk/generated/models/playback-capability-scope';
-import type { WebSocketTicketDto } from 'lib/tesserafin-sdk/generated/models/web-socket-ticket-dto';
 
 import { authorityKey, canonicalScopes } from './identity';
 import type { CapabilityAuthority } from './identity';
@@ -71,7 +70,6 @@ export interface BrokerDependencies {
     renewCapability: (
         capabilityId: string
     ) => Promise<PlaybackCapabilityRenewalDto>;
-    mintWebSocketTicket: () => Promise<WebSocketTicketDto>;
     now?: () => number;
 }
 
@@ -346,29 +344,6 @@ export class PlaybackCredentialBroker {
         if (!entry) return;
         if (entry.timer !== null) clearTimeout(entry.timer);
         this.entries.delete(key);
-    }
-
-    /**
-     * A fresh WebSocket ticket, minted for ONE physical upgrade attempt.
-     *
-     * Never cached and never coalesced. A ticket is single-use: two concurrent attempts sharing one
-     * would make the second present a consumed ticket, and a reconnect replaying a stored one would
-     * do the same on every retry.
-     */
-    async webSocketTicket(): Promise<string> {
-        if (this.disposed) {
-            throw new PlaybackCredentialError(
-                'the credential broker has been disposed'
-            );
-        }
-        if (!this.deps.accessToken()) {
-            // A credential-less upgrade attempt must not consume a ticket.
-            throw new PlaybackCredentialError(
-                'no session; a websocket ticket cannot be minted'
-            );
-        }
-        const dto = await this.deps.mintWebSocketTicket();
-        return String(dto.Value);
     }
 
     /** Drop every capability belonging to one play session, and cancel its renewals. */

@@ -72,7 +72,6 @@ function harness(overrides: Partial<BrokerDependencies> = {}): Harness {
         accessToken: () => token,
         mintCapability: mint as never,
         renewCapability: renew as never,
-        mintWebSocketTicket: ticket as never,
         now: () => Date.now(),
         ...overrides
     });
@@ -533,9 +532,6 @@ describe('teardown', () => {
         await expect(h.broker.capability(mediaDemand())).rejects.toBeInstanceOf(
             PlaybackCredentialError
         );
-        await expect(h.broker.webSocketTicket()).rejects.toBeInstanceOf(
-            PlaybackCredentialError
-        );
     });
 
     it('discardAll drops everything without disposing the broker', async () => {
@@ -544,34 +540,5 @@ describe('teardown', () => {
         h.broker.discardAll();
         expect(h.broker.heldCount).toBe(0);
         await expect(h.broker.capability(mediaDemand())).resolves.toBeTruthy();
-    });
-});
-
-describe('websocket tickets', () => {
-    it('mints a distinct ticket for every attempt', async () => {
-        const h = harness();
-        const first = await h.broker.webSocketTicket();
-        const second = await h.broker.webSocketTicket();
-        expect(second).not.toBe(first);
-        expect(h.ticket).toHaveBeenCalledTimes(2);
-    });
-
-    it('does not share a ticket between concurrent attempts', async () => {
-        const h = harness();
-        const [a, b] = await Promise.all([
-            h.broker.webSocketTicket(),
-            h.broker.webSocketTicket()
-        ]);
-        expect(a).not.toBe(b);
-        expect(h.ticket).toHaveBeenCalledTimes(2);
-    });
-
-    it('mints nothing for a credential-less attempt', async () => {
-        const h = harness();
-        h.setToken('');
-        await expect(h.broker.webSocketTicket()).rejects.toBeInstanceOf(
-            PlaybackCredentialError
-        );
-        expect(h.ticket).not.toHaveBeenCalled();
     });
 });

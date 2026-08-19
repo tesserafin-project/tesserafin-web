@@ -19,7 +19,6 @@
 import type { PlaybackCapabilityRequestDto } from 'lib/tesserafin-sdk/generated/models/playback-capability-request-dto';
 
 import { PlaybackCredentialBroker } from './PlaybackCredentialBroker';
-import { TicketedWebSocketService } from './TicketedWebSocketService';
 
 /** The `ApiClient` shape this module reads. Deliberately narrow. */
 interface CredentialCapableApiClient {
@@ -28,16 +27,12 @@ interface CredentialCapableApiClient {
     deviceId: () => string;
     accessToken: () => string;
     serverAddress: () => string;
-    _sdk?: {
-        webSocket?: unknown;
-    };
     _tesserafinSdk?: {
         basePath: string;
         configuration: unknown;
     };
     _credentialRuntime?: {
         broker: PlaybackCredentialBroker;
-        socket: TicketedWebSocketService;
     };
 }
 
@@ -94,29 +89,17 @@ export function createBroker(
                 capabilityId
             });
             return response.data;
-        },
-        mintWebSocketTicket: async () => {
-            const api = requireTesserafinApi(apiClient);
-            const { WebSocketTicketsApi } = await import(
-                'lib/tesserafin-sdk/generated/api/web-socket-tickets-api'
-            );
-            const client = new WebSocketTicketsApi(
-                api.configuration as never,
-                api.basePath
-            );
-            const response = await client.mintWebSocketTicket();
-            return response.data;
         }
     });
 }
 
 /**
- * The broker and the ticketed socket for one `ApiClient`, built once.
+ * The media broker for one `ApiClient`, built once.
  *
- * `Api.subscribe()` reads `if (!this.webSocket) { this.webSocket = new WebSocketService(...) }`, so
- * assigning `_sdk.webSocket` HERE — before any caller subscribes — is what diverts every subscriber
- * onto the ticketed service. No call site changes, and `Api.update()`'s `webSocket?.updateUrl(...)`
- * lands on the ticketed service too, which ignores the url it is handed.
+ * #153-A1-R2 removed the socket half. The WebSocket credential is minted inside the patched
+ * `@jellyfin/sdk` service now (`scripts/patch-jellyfin-sdk.mjs`), once per physical connection
+ * attempt, so nothing here participates in the socket lifecycle and nothing here is needed at
+ * start-up. What remains is media capability minting, which is wanted only once playback begins.
  *
  * Idempotent: called again for the same `ApiClient`, it returns the existing broker rather than
  * building a second one, because two brokers on one connection would each keep their own renewal
@@ -124,7 +107,7 @@ export function createBroker(
  */
 export function createCredentialRuntime(
     apiClient: CredentialCapableApiClient
-): { broker: PlaybackCredentialBroker; socket: TicketedWebSocketService } {
+): { broker: PlaybackCredentialBroker } {
     const existing = apiClient._credentialRuntime;
     // A cached runtime is reused ONLY while it is still alive. `disposePlaybackCredentials` clears
     // this field, so a dead one should never be seen here; the check is what stops a future
@@ -133,12 +116,7 @@ export function createCredentialRuntime(
     if (existing && !existing.broker.isDisposed) return existing;
 
     const broker = createBroker(apiClient);
-    const socket = new TicketedWebSocketService({
-        basePath: () => apiClient.serverAddress(),
-        mintTicket: () => broker.webSocketTicket()
-    });
-
-    const runtime = { broker, socket };
+    const runtime = { broker };
     apiClient._credentialRuntime = runtime;
     return runtime;
 }

@@ -8,10 +8,7 @@ import Dashboard from 'utils/dashboard';
 import Events from 'utils/events';
 import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
 
-import {
-    disposePlaybackCredentials,
-    installPlaybackCredentials
-} from 'lib/playbackCredentials/boot';
+import { disposePlaybackCredentials } from 'lib/playbackCredentials/broker';
 
 import ConnectionManager from './connectionManager';
 
@@ -52,9 +49,11 @@ class ServerConnections extends ConnectionManager {
         this.firstConnection = null;
 
         Events.on(this, 'localusersignedout', (_e, logoutInfo) => {
-            // #153-A1: the capabilities and the socket ticket belong to the session that just
-            // ended. Dropping them here cancels every renewal timer and closes the socket, so
-            // nothing keeps extending a credential for a user who signed out.
+            // #153-A1: the media capabilities belong to the session that just ended. Dropping
+            // them here cancels every renewal timer, so nothing keeps extending a credential for
+            // a user who signed out. The socket is not this handler's business: ConnectionManager
+            // calls `Api.update()` with an empty access token, and the patched WebSocketService
+            // disconnects and cancels any ticket mint in flight.
             for (const apiClient of this.getApiClients()) {
                 disposePlaybackCredentials(apiClient);
             }
@@ -80,13 +79,11 @@ class ServerConnections extends ConnectionManager {
             // broker mints through.
             this.getTesserafinApi(apiClient.serverId());
 
-            // #153-A1: install BEFORE the subscribe binding below. `Api.subscribe()` only builds
-            // its own WebSocketService when `this.webSocket` is unset, so assigning the ticketed
-            // service here is what diverts every subscriber - both this binding and the direct
-            // `api.subscribe(...)` call sites - onto a socket that mints a fresh ticket for every
-            // physical upgrade attempt.
-            installPlaybackCredentials(apiClient);
-
+            // #153-A1-R2: nothing is installed onto `_sdk.webSocket` any more. `Api.subscribe()`
+            // builds the SHIPPED WebSocketService, which the sdk patcher taught to mint a fresh
+            // single-use ticket for every physical upgrade attempt - including every reconnect -
+            // and to refuse to connect at all when no ticket can be minted. Both this binding and
+            // the direct `api.subscribe(...)` call sites get that socket with no seam in between.
             apiClient.subscribe = apiClient._sdk.subscribe.bind(apiClient._sdk);
         });
     }
