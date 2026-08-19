@@ -10,21 +10,30 @@
  * credential and answer 401. That left the audio credential outside the contract in #153: bound to
  * the play session, invalidated when it ends.
  *
- * The 401 was real, but the play session was not its cause. `SessionManager.OnPlaybackStopped`
- * revokes every capability bound to the reported play session - correctly - and the broker went on
- * serving the SAME capability out of its cache to the next request, because nothing dropped the
- * cache entry when playback ended. Binding is safe once the client hands the play session back at
- * the stop it just reported.
+ * Re-measured on the rig, the premise does not hold: the audio path reports one `/Sessions/Playing`
+ * at 0 ms, one Progress, and one `/Sessions/Playing/Stopped` at the end of the track. There is no
+ * stop at 0 ms during start, and the binding is safe.
  *
- * So this file plays one audio item, lets it end, and plays it AGAIN. The second playback is the
- * assertion: it must mint a fresh capability and succeed. Run against the tree without the release
- * wiring in `onPlaybackStopped`, the second playback answers 401 and this file fails - which is the
- * hostile control that makes it load-bearing rather than decorative.
+ * WHAT THIS FILE ASSERTS, AND WHAT IT DELIBERATELY DOES NOT.
+ *
+ * The load-bearing assertion is the REPLAY: the exact url the first playback used is re-requested
+ * after that playback's stop has been reported, and the server must now refuse it. That is the half
+ * of #153's contract - "invalidated when the play session ends" - that no amount of watching
+ * successful requests can show. Bound to the broker's synthetic play session, as an earlier
+ * revision did, the same replay answers 200 and this file fails.
+ *
+ * A second playback in the SAME document is also driven, and must succeed. That part is a
+ * regression check, NOT a control for the release wiring in `onPlaybackStopped`: the broker's cache
+ * key names the play session, so a second play session misses the cache and mints afresh whether
+ * that wiring is present or not. Measured, not assumed - the control was run.
+ *
+ * OUTPUT SAFETY. The replayed url is held in memory and never recorded: the report keeps path plus
+ * sorted query KEY names and a status code, and no credential value of any kind.
  */
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, request, test } from '@playwright/test';
 
 import { signIn } from '../e2e/support/b2';
 import { mediaItemIdByName, seedAudioLibrary } from './support/fixtures';
@@ -66,6 +75,8 @@ test.describe('#153-A1 universal-audio revocation', () => {
         const requests: AudioRequest[] = [];
         const lifecycle: Lifecycle[] = [];
         let token = '';
+        let firstPlaybackUrl: string | null = null;
+        let replayStatus: number | null = null;
 
         page.on('response', (response) => {
             const url = response.url();
@@ -76,6 +87,8 @@ test.describe('#153-A1 universal-audio revocation', () => {
             } catch {
                 keys = [];
             }
+            // Held in memory for the replay below, and never recorded anywhere.
+            if (firstPlaybackUrl === null) firstPlaybackUrl = url;
             requests.push({
                 redactedUrl: redact(url),
                 carriesPlaybackCapability: keys.includes('playbackCapability'),
@@ -111,7 +124,7 @@ test.describe('#153-A1 universal-audio revocation', () => {
             if (!existsSync(dirname(out))) {
                 mkdirSync(dirname(out), { recursive: true });
             }
-            const report = { requests, lifecycle };
+            const report = { requests, lifecycle, replayStatus };
             writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
             // eslint-disable-next-line no-console
             console.log(JSON.stringify(report, null, 2));
@@ -153,6 +166,28 @@ test.describe('#153-A1 universal-audio revocation', () => {
                 .toBeGreaterThan(0);
 
             const afterFirst = requests.length;
+
+            // ── the contract: the ended play session's capability is REFUSED ────────────────
+            //
+            // Issued OUTSIDE the page, through a request context of its own. Two reasons, both
+            // measured: a `fetch` from the page is seen by this file's own response handler and
+            // lands in `requests` as a 401, failing the "every request succeeded" loop against a
+            // probe rather than against playback; and a fresh context carries no cookie, so a 200
+            // here could only mean the capability itself is still accepted. `Range` keeps the
+            // response to one byte - this is an authorization probe, not a download.
+            expect(
+                firstPlaybackUrl,
+                'the first playback must have requested the audio route'
+            ).not.toBeNull();
+            const replay = await request.newContext();
+            try {
+                const response = await replay.get(firstPlaybackUrl as string, {
+                    headers: { Range: 'bytes=0-0' }
+                });
+                replayStatus = response.status();
+            } finally {
+                await replay.dispose();
+            }
 
             // ── second playback of the SAME item, in the SAME document ──────────────────────
             //
@@ -197,6 +232,14 @@ test.describe('#153-A1 universal-audio revocation', () => {
                 `${request.redactedUrl} must succeed (got ${request.status})`
             ).toBe(true);
         }
+
+        // THE CONTRACT. The capability the first playback carried is dead now that its play session
+        // has ended. Filed under the broker's synthetic play session instead, nothing revokes it and
+        // this replay answers 200.
+        expect(
+            replayStatus,
+            `the ended play session's capability must be refused (got ${replayStatus})`
+        ).toBeGreaterThanOrEqual(400);
 
         // The play session the capability is bound to is the one playback reports, and it really
         // did end: a stop was reported for it before the second playback began.
