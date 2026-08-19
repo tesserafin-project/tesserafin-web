@@ -136,8 +136,21 @@ export const TARGETS = [
         pristineSha256:
             '13d7db30d8ec04880da9e140dc0769de871500ffab9b438973a78a013fafa330',
         patchedSha256:
-            'f22b6105ce032a417d35f86731fd6016a9782bb754b77e7fa391cfed374589e7',
+            '4f571600ca8938920e1249cc9967b74d14cf253c7d163b1d0edb6aeadf3aa07f',
         fragments: [
+            {
+                note: 'Api.update() — armed the socket url on a basePath-only update, so a runtime with no authorization built a socket url and the next subscribe MINTED against it. Stock behaviour; measured on the rig as a POST /WebSocket/Tickets answering 401 before the first sign-in.',
+                unsafe: `        if (data.basePath ||
+            (data.accessToken && data.accessToken !== '')) {`,
+                safe: `        // #153-A1: no authorization, no socket url. \`update({ basePath })\` armed the url
+        // before any sign-in, so the first subscribe minted a ticket against an Api whose
+        // \`accessToken\` was null and the server answered 401. The mint is fail-closed either
+        // way, but a mint with no authorization must never be ATTEMPTED - and the same guard
+        // covers the signed-OUT runtime, whose token has been cleared.
+        if (this.accessToken
+            && (data.basePath
+                || (data.accessToken && data.accessToken !== ''))) {`
+            },
             {
                 note: 'Api.update() — reconnected an existing socket with the durable token in the url.',
                 unsafe: `_a.updateUrl(this.getUri(WEBSOCKET_URL_PATH, {

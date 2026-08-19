@@ -388,6 +388,107 @@ check('the installed service is exactly the transform that was measured', [
             'behaviour proved above is not the behaviour that ships'
 ]);
 
+// ── 12. an Api with NO authorization never arms a socket url, and therefore never mints ──────
+//
+// Measured on the rig before this guard existed: the shell boots, `connectionManager` calls
+// `_sdk.update({ basePath })` on an ApiClient that has not signed in, and stock `Api.update()`
+// armed the socket url on `data.basePath` ALONE. The next `subscribe()` then minted a ticket
+// against an Api whose `accessToken` was `null`, and the server answered 401 — a request that
+// could never have succeeded, issued before any credential existed.
+//
+// Both directions are asserted. Only the "no token, no mint" half would pass on an Api that
+// never arms a socket at all, which would break every signed-in session instead.
+{
+    const apiTarget = TARGETS.find((target) => target.id === 'api');
+    const apiInstalledPath = join(PACKAGE, apiTarget.relative);
+    const apiInstalled = readFileSync(apiInstalledPath, 'utf8');
+    let apiPristine =
+        sha256(apiInstalled) === apiTarget.pristineSha256
+            ? apiInstalled
+            : invert(await committedFragments(apiTarget), apiInstalled);
+    if (sha256(apiPristine) !== apiTarget.pristineSha256) {
+        apiPristine = invert(apiTarget.fragments, apiInstalled);
+    }
+    if (sha256(apiPristine) !== apiTarget.pristineSha256) {
+        process.stderr.write(
+            'could not reconstruct the pristine api module; refusing to report a behaviour ' +
+                'result measured against an unknown input.\n'
+        );
+        process.exit(1);
+    }
+
+    const apiProbePath = join(dirname(apiInstalledPath), '.a1-api-control.mjs');
+    writeFileSync(apiProbePath, applyFragments(apiTarget, apiPristine), 'utf8');
+    let Api;
+    try {
+        ({ Api } = await import(pathToFileURL(apiProbePath).href));
+    } finally {
+        rmSync(apiProbePath, { force: true });
+    }
+
+    const posts = [];
+    const axiosStub = {
+        getUri: ({ url, baseURL, params }) => {
+            const target = new URL(
+                String(url).replace(/^\//, ''),
+                `${baseURL}/`
+            );
+            for (const [key, value] of Object.entries(params ?? {})) {
+                target.searchParams.set(key, String(value));
+            }
+            return target.toString();
+        },
+        post: async (url) => {
+            posts.push(String(url));
+            return { data: { Value: 'ticket-from-a-token' } };
+        }
+    };
+
+    reset();
+    const api = new Api(
+        'http://host:8096',
+        { name: 'control', version: '1' },
+        { name: 'device', id: 'device-1' },
+        // EXACTLY what utils/jellyfin-apiclient/compat.ts hands createApi() before sign-in:
+        // ApiClient.accessToken() is null, and the SDK stores it verbatim.
+        null,
+        axiosStub
+    );
+    api.subscribe(['Sessions'], () => {});
+    await settle();
+    const openedBeforeToken = opened.length;
+    const postsBeforeToken = posts.length;
+
+    api.update({ basePath: 'http://host:8096' });
+    await settle();
+
+    check('an unauthenticated Api mints nothing and opens no socket', [
+        postsBeforeToken !== 0 &&
+            `subscribe() minted before any token existed (${postsBeforeToken})`,
+        openedBeforeToken !== 0 &&
+            `subscribe() opened a socket before any token existed (${openedBeforeToken})`,
+        posts.length !== 0 &&
+            `update({ basePath }) minted with no authorization (${posts.length} mint(s))`,
+        opened.length !== 0 &&
+            `update({ basePath }) opened a socket with no authorization (${opened.length})`
+    ]);
+
+    api.update({ accessToken: 'a-real-token' });
+    await settle();
+    check('the same Api mints and connects once a token arrives', [
+        posts.length !== 1 &&
+            `expected exactly one mint after the token arrived, got ${posts.length}`,
+        !/\/WebSocket\/Tickets$/.test(posts[0] ?? '') &&
+            `the mint did not go to /WebSocket/Tickets (${posts[0] ?? '<none>'})`,
+        opened.length !== 1 &&
+            `expected exactly one socket after the token arrived, got ${opened.length}`,
+        !/webSocketTicket=ticket-from-a-token(&|$)/.test(opened[0] ?? '') &&
+            'the socket did not carry the minted ticket',
+        /ApiKey|api_key/i.test(opened[0] ?? '') &&
+            'the socket url carried a durable token parameter'
+    ]);
+}
+
 if (failures > 0) {
     process.stdout.write(`\n${failures} control(s) failed.\n`);
     process.exit(1);
