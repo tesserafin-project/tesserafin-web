@@ -197,14 +197,20 @@ export async function seedAudioLibrary(
  * libass. A font file on disk alone exercises nothing — one ASS fixture with an attachment unlocks
  * both.
  */
-export async function seedAssLibrary(a: Admin): Promise<SeededLibrary> {
+export async function seedAssLibrary(
+    a: Admin,
+    label = 'A1 Subtitles'
+): Promise<SeededLibrary> {
     if (!existsSync(SYSTEM_FONT)) {
         throw new Error(
             `the ASS fixture needs a system TTF at ${SYSTEM_FONT}; install fonts-dejavu-core`
         );
     }
     const root = mkdtempSync(join(tmpdir(), 'a1-ass-'));
-    const name = 'A1 Subtitle Probe';
+    // The NAME is derived from the label, not fixed: two specs sharing one name made whichever
+    // ran second resolve the first one's disposed item and time out on a video that can never
+    // load. Same defect `seedAudioLibrary` already carries a note about.
+    const name = `${label} Probe`;
     const dir = join(root, name);
     mkdirSync(dir, { recursive: true });
 
@@ -259,7 +265,7 @@ export async function seedAssLibrary(a: Admin): Promise<SeededLibrary> {
         join(dir, `${name}.mkv`)
     ]);
 
-    await addLibrary(a, 'A1 Subtitles', 'homevideos', root);
+    await addLibrary(a, label, 'homevideos', root);
     await waitForItems(a, [name]);
     return {
         root,

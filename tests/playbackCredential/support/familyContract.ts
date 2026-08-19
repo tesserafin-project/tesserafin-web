@@ -72,12 +72,14 @@ export const FAMILY_CONTRACT: Record<string, FamilyEntry> = {
         note: 'the rig seeds an external subtitle track on the movie'
     },
     font: {
-        status: 'unreached',
-        note: 'needs libass to actually RENDER an ASS track. seedAssLibrary and enableFallbackFont both run in matrix.spec.ts, but pressing `c` does not select the track, so renderSsaAss is never entered and the fallback-font list is never fetched.'
+        status: 'required',
+        owner: 'libassFamilies.spec.ts',
+        note: "the OSD subtitle control opens an action sheet; choosing the ASS track calls setSubtitleStreamIndex, which enters renderSsaAss and fetches /FallbackFont/Fonts. Pressing `c` never did - that was a driving bug wearing a product gap's clothes."
     },
     attachment: {
-        status: 'unreached',
-        note: 'same path as font: attachments are fetched by renderSsaAss, which the suite never reaches'
+        status: 'required',
+        owner: 'libassFamilies.spec.ts',
+        note: 'same path as font: renderSsaAss consumes the server-emitted attachment DeliveryUrl once the ASS track is really selected'
     },
     trickplay: {
         status: 'unreached',

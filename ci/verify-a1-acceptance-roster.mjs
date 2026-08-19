@@ -63,6 +63,7 @@ const ACCEPTANCE_ROSTER = [
     'dependencyDisclosure.spec.ts',
     'directPlayRevocation.spec.ts',
     'disclosure.spec.ts',
+    'libassFamilies.spec.ts',
     'longPlayback.spec.ts',
     'matrix.spec.ts',
     'migratedTrace.spec.ts',
