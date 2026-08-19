@@ -106,6 +106,23 @@ test.describe('#153-A1 long playback', () => {
         await playControl(page).click();
         await expectPlaybackAdvances(page, 0.2);
 
+        // LOOP THE FIXTURE, and this is load-bearing rather than convenience.
+        //
+        // The rig's movie is seconds long. Without this it ENDS inside the first minute, the client
+        // reports the stop, and the server revokes the capability bound to that play session - so
+        // what the next sixteen minutes would measure is a credential outliving a playback that
+        // already finished, which is the leak #153-A1 exists to close, not the renewal this file
+        // claims to prove. Measured before the loop was added: probe at 3 s answered 206, every
+        // probe from 63 s on answered 401, and zero renewals were issued because the broker had
+        // handed the play session back.
+        //
+        // `disclosure.spec.ts` loops for the same reason. Looping fires no `ended` event, so no
+        // stop is reported and the playback this file is named after is a real one.
+        await page.evaluate(() => {
+            const video = document.querySelector('video');
+            if (video) video.loop = true;
+        });
+
         // The url the media element was actually given. Every later read uses THIS url, so a
         // rotated secret would show up as a changed digest rather than as a silent re-mint.
         const mediaUrl = await page.evaluate(

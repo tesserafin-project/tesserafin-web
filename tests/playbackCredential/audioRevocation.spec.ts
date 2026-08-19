@@ -70,7 +70,9 @@ test.describe('#153-A1 universal-audio revocation', () => {
         test.setTimeout(300_000);
 
         const a = await admin();
-        const audio = await seedAudioLibrary(a);
+        // Its OWN library. Sharing `A1 Audio` with matrix.spec.ts made whichever spec ran second
+        // resolve the first one's disposed item and answer 404.
+        const audio = await seedAudioLibrary(a, 'A1 Revocation Audio');
 
         const requests: AudioRequest[] = [];
         const lifecycle: Lifecycle[] = [];
@@ -141,7 +143,7 @@ test.describe('#153-A1 universal-audio revocation', () => {
 
             const audioId = await mediaItemIdByName(
                 a,
-                'A1 Audio Probe',
+                'A1 Revocation Audio Probe',
                 'Audio'
             );
             await page.goto(`/#/details?id=${audioId}`);

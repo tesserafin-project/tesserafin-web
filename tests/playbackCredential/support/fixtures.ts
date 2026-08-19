@@ -152,10 +152,19 @@ async function waitForItems(
  * Exercises BOTH audio families: the web plays music through `/Audio/{id}/universal` (built before
  * any PlaybackInfo call, with a client-invented play session and no media source named), and falls
  * back to `/Audio/{id}/stream` when it direct-plays.
+ *
+ * `label` NAMES THE LIBRARY, and two callers in one server run must not share one. `dispose()`
+ * deletes the temp directory but leaves the library registered, so a second caller reusing the same
+ * name re-seeds a library whose old item still resolves - and that dead item answers 404 for its
+ * media. Measured: adding a second audio-seeding spec made `matrix.spec.ts` fail with a 404 on
+ * `/Audio/{id}/universal` while the spec that ran first passed.
  */
-export async function seedAudioLibrary(a: Admin): Promise<SeededLibrary> {
+export async function seedAudioLibrary(
+    a: Admin,
+    label = 'A1 Audio'
+): Promise<SeededLibrary> {
     const root = mkdtempSync(join(tmpdir(), 'a1-audio-'));
-    const name = 'A1 Audio Probe';
+    const name = `${label} Probe`;
     const dir = join(root, name);
     mkdirSync(dir, { recursive: true });
     ffmpeg([
@@ -171,7 +180,7 @@ export async function seedAudioLibrary(a: Admin): Promise<SeededLibrary> {
         `title=${name}`,
         join(dir, `${name}.mp3`)
     ]);
-    await addLibrary(a, 'A1 Audio', 'music', root);
+    await addLibrary(a, label, 'music', root);
     await waitForItems(a, [name]);
     return {
         root,
