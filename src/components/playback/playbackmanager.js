@@ -631,6 +631,46 @@ function setStreamUrls(
     });
 }
 
+/** The item kinds that are a Live TV channel rather than a library item. */
+const LIVE_TV_CHANNEL_ITEM_KINDS = [
+    BaseItemKind.TvChannel,
+    BaseItemKind.LiveTvChannel
+];
+
+/**
+ * @param {{ Type?: string }} item
+ * @returns {boolean} whether `item` is a Live TV channel.
+ */
+function isLiveTvChannelItem(item) {
+    return LIVE_TV_CHANNEL_ITEM_KINDS.includes(item?.Type);
+}
+
+/**
+ * #153-LTV-P0. A Live TV channel's `BaseItemDto` carries a *placeholder* media source whose `Id`
+ * is the channel's own item id (server `BaseItem.cs`, `GetVersionInfo`). The real source id belongs
+ * to the tuner and is only known once the server has selected it. Sending the placeholder makes the
+ * server narrow the source list to nothing (`MediaInfoHelper.cs`, `GetPlaybackInfo`) and playback
+ * dies with `NoCompatibleStream`; omitting it lets the server pick the tuner source.
+ *
+ * The item-kind guard is load-bearing: an ordinary library item legitimately has a media source id
+ * equal to its item id, and that request must keep its `MediaSourceId`.
+ *
+ * The comparison is exact on purpose. The only producer of the placeholder is
+ * `mediaSourceId ||= item.Id` on the play path, so the two are the same string by construction -
+ * normalising the compare would start dropping genuinely distinct ids.
+ *
+ * @param {{ Id?: string, Type?: string }} item
+ * @param {string | null | undefined} mediaSourceId candidate `MediaSourceId` for the request.
+ * @returns {boolean} whether the request should carry `MediaSourceId`.
+ */
+function shouldSendMediaSourceId(item, mediaSourceId) {
+    if (!mediaSourceId) {
+        return false;
+    }
+
+    return !isLiveTvChannelItem(item) || mediaSourceId !== item.Id;
+}
+
 async function getPlaybackInfo(
     player,
     apiClient,
@@ -708,7 +748,7 @@ async function getPlaybackInfo(
     if (options.allowAudioStreamCopy != null) {
         query.AllowAudioStreamCopy = options.allowAudioStreamCopy;
     }
-    if (mediaSourceId) {
+    if (shouldSendMediaSourceId(item, mediaSourceId)) {
         query.MediaSourceId = mediaSourceId;
     }
     if (liveStreamId) {
@@ -3572,10 +3612,7 @@ export class PlaybackManager {
             let mediaSourceId = playOptions.mediaSourceId;
 
             const apiClient = ServerConnections.getApiClient(item.ServerId);
-            const isLiveTv = [
-                BaseItemKind.TvChannel,
-                BaseItemKind.LiveTvChannel
-            ].includes(item.Type);
+            const isLiveTv = isLiveTvChannelItem(item);
             const getMediaStreams = isLiveTv
                 ? Promise.resolve([])
                 : apiClient

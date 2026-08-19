@@ -52,13 +52,31 @@ So a previous source whose subtitle index is `-1` (subtitles off) sets
 `isIdFallbackNeeded` becomes `true`, and the channel item id is sent as `MediaSourceId`.
 
 `prevSource` is supplied only by `getPreviousSource(player)` (`:4252`), which reads
-`getPlayerData(player).subtitleStreamIndex` — assigned at `:4456` from
+`getPlayerData(player).subtitleStreamIndex` - assigned at `:4456` from
 `mediaSource.DefaultSubtitleStreamIndex`, and at `:1920` by `setSubtitleStreamIndex`.
-`getPreviousSource` is called only from `self.nextTrack` (`:4287`) and `self.previousTrack` (`:4314`),
-which are exactly `self.channelUp` (`:4242`) and `self.channelDown` (`:4247`).
+`getPreviousSource` is called only from `self.nextTrack` (`:4287`) and `self.previousTrack` (`:4314`).
 
-**Trigger:** the *second* `PlaybackInfo` — a queue advance onto a Live TV channel
-(channel-up / channel-down, or `nextTrack` from any previous item), not the first play.
+**Pure channel switching does not trigger it.** Measured against the software-tuner rig, an opened
+Live TV source carries `DefaultAudioStreamIndex = -1` and `DefaultSubtitleStreamIndex = null`. The
+audio branch does run (`-1` is a number) but `rankStreamType`'s early return only writes
+`trackOptions` for `Subtitle`, and the subtitle branch never runs because `null` is not a number. So
+after a channel plays, `channelUp`/`channelDown` (`:4242`/`:4247`, both `nextTrack`/`previousTrack`)
+leave `isIdFallbackNeeded` false. `toggleSubtitles` cannot change that either: with no subtitle
+streams, `setSubtitleStreamIndex` returns early at `!currentStream && !newStream` (`:1849`) before
+it would set player data to `-1`.
+
+**The reachable trigger is a mixed queue.** An ordinary video whose subtitle selection is remembered
+as "off" leaves `getPlayerData(player).subtitleStreamIndex === -1` (server side:
+`MediaSourceManager.cs:516-518` writes `DefaultSubtitleStreamIndex = -1` from
+`userData.SubtitleStreamIndex`). A Live TV channel can be added to the play queue while that video
+is playing - `playbackManager.canQueue(channel)` is `canQueueMediaType('Video')`, which is true with
+a video player active, so `itemContextMenu.js:91` offers "AddToPlayQueue" on a channel card. When
+the queue advances onto the channel, `prevIndex == -1` fires the subtitle early return,
+`isIdFallbackNeeded` becomes true, and the channel item id is sent as `MediaSourceId`.
+
+This is reproduced at the request boundary in
+`src/components/playback/livetvPlaybackInfoRequest.test.ts`, which drives the real manager through
+`play()` then `nextTrack()`.
 
 ## 4. Deviation from the task premise
 
