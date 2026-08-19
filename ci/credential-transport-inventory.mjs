@@ -697,6 +697,77 @@ producers({
     ).filter((h) => !/\.(test|spec)\./.test(h.file))
 });
 
+// --- 17b. DIRECT AUDIO — REMOVED --------------------------------------------------------------
+absence({
+    id: 'direct-audio-removed',
+    surface: '/Audio/{itemId}/stream and /Audio/{itemId}/stream.{container}',
+    producer:
+        'NOBODY. `getAudioStreamUrl` builds `Audio/{id}/universal` and nothing else; the generated AudioApi declares the stream operations and no first-party module calls them.',
+    consumer: 'n/a — the family has no production producer to consume it',
+    construction: 'n/a',
+    identities: 'n/a',
+    scope: 'Media, if anything ever produced one',
+    childInherits: 'n/a',
+    durableToday: false,
+    provingTest:
+        'this category: the route cannot be produced by first-party source, by the packaged dependency, or by the production bundle. Re-derived after every build.',
+    assert: () => {
+        // Anything that composes the route, however it is spelled: a template literal, a
+        // concatenation, or the generated client's own path template.
+        // Deliberately narrow. `getAudioStreamUrl`, `getAudioStreamIndex` and
+        // `getAudioStreamForDisplay` are first-party helpers with nothing to do with the route;
+        // a regex that matched them would fail on nineteen innocent lines and teach the next
+        // reader to widen the ignore list instead of reading the gate.
+        //
+        // The CONCATENATION arm is the one that matters and is the one a narrower regex misses.
+        // The first version of this gate required no quote between `Audio/` and `/stream`, so
+        // `apiClient.getUrl('Audio/' + item.Id + '/stream')` — the exact shape every other audio
+        // url in this codebase is written in — sailed straight through it. That was measured, not
+        // imagined: the hostile control restoring that line left the gate green.
+        const rx =
+            /Audio\/\{itemId\}\/stream|Audio\/[^'"`\s]*\/stream|Audio\/['"`]\s*\+[^;\n]{0,100}\/stream|Audio\/\$\{[^}]{0,60}\}\/stream|\bgetAudioStream\s*\(|\bgetAudioStreamByContainer\s*\(|\bheadAudioStream(ByContainer)?\s*\(/;
+        const firstParty = grep(SRC_FILES, rx).filter(
+            (h) => !/\.(test|spec)\./.test(h.file)
+        );
+        // The packaged dependency is a second producer surface: patched or not, it ships.
+        const dependency = DEP_PRESENT
+            ? grep([DEP_FILE], /Audio\/[^'"`\s]*\/stream/)
+            : [];
+        // The bundle is the only surface a browser can execute. A tree-shaken template that
+        // never reaches dist/ is not a producer; one that does is, whoever wrote it.
+        const bundle = DIST_PRESENT
+            ? grep(
+                  DIST_FILES.filter((f) => f.endsWith('.js')),
+                  /Audio\/["'`]?\s*\+[^;]{0,40}\/stream|Audio\/\{itemId\}\/stream/
+              )
+            : [];
+        if (!DIST_PRESENT) {
+            return {
+                ok: false,
+                detail: 'no production build present — the bundle half of this proof cannot be evaluated; run npm run build:production'
+            };
+        }
+        const ok =
+            firstParty.length === 0 &&
+            dependency.length === 0 &&
+            bundle.length === 0;
+        return {
+            ok,
+            detail: ok
+                ? `REMOVED: no first-party producer (${SRC_FILES.length} source file(s) scanned), none in ${DEP_FILE}, and none in ${
+                      DIST_FILES.filter((f) => f.endsWith('.js')).length
+                  } built script(s). The generated SDK still declares the operations, which is what a generated client does; nothing reaches them.`
+                : `DIRECT AUDIO IS BACK: ${[
+                      ...firstParty,
+                      ...dependency,
+                      ...bundle
+                  ]
+                      .map((h) => `${h.file}:${h.line}`)
+                      .join(', ')}`
+        };
+    }
+});
+
 // --- 18. LIVE TV -------------------------------------------------------------------------------
 absence({
     id: 'livetv-delivery-routes',

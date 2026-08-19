@@ -275,6 +275,137 @@ export async function seedAssLibrary(
 }
 
 /**
+ * A video long enough for trickplay, in a library that asks for trickplay extraction.
+ *
+ * Two details are load-bearing.
+ *
+ *   * The RUNTIME. `TrickplayManager.CanGenerateTrickplay` refuses anything shorter than the
+ *     configured interval, which is 10 s by default; a 60 s fixture clears it with room to spare
+ *     and yields six tiles.
+ *   * The LIBRARY NAME is unique per call, and the virtual folder is removed on dispose. Every
+ *     other fixture here leaves its folder behind, and a repeat run then resolves the PREVIOUS
+ *     run's item — whose files were deleted — so playback never starts and the spec fails on a
+ *     timeout that says nothing about trickplay. Measured three times before this was fixed.
+ */
+export interface SeededTrickplayLibrary {
+    root: string;
+    label: string;
+    itemName: string;
+    dispose: () => Promise<void>;
+}
+
+export async function seedTrickplayLibrary(
+    a: Admin,
+    prefix = 'A1 Trickplay'
+): Promise<SeededTrickplayLibrary> {
+    const label = `${prefix} ${Math.random().toString(36).slice(2, 8)}`;
+    const itemName = `${label} Probe`;
+    const root = mkdtempSync(join(tmpdir(), 'a1-trick-'));
+    const dir = join(root, itemName);
+    mkdirSync(dir, { recursive: true });
+    ffmpeg([
+        '-f',
+        'lavfi',
+        '-i',
+        'testsrc=size=640x360:rate=24:duration=60',
+        '-f',
+        'lavfi',
+        '-i',
+        'sine=frequency=440:duration=60',
+        '-c:v',
+        'libx264',
+        '-preset',
+        'ultrafast',
+        '-pix_fmt',
+        'yuv420p',
+        '-c:a',
+        'aac',
+        '-metadata',
+        `title=${itemName}`,
+        join(dir, `${itemName}.mp4`)
+    ]);
+
+    const res = await a.api.post('/Library/VirtualFolders', {
+        headers: { ...authed(a), 'Content-Type': 'application/json' },
+        params: {
+            name: label,
+            collectionType: 'homevideos',
+            paths: root,
+            refreshLibrary: 'true'
+        },
+        data: {
+            LibraryOptions: {
+                EnableRealtimeMonitor: false,
+                EnableTrickplayImageExtraction: true,
+                ExtractTrickplayImagesDuringLibraryScan: true,
+                SaveTrickplayWithMedia: false
+            }
+        }
+    });
+    expect(res.ok(), `trickplay library "${label}" must be created`).toBe(true);
+    await waitForItems(a, [itemName]);
+
+    return {
+        root,
+        label,
+        itemName,
+        dispose: async () => {
+            await a.api
+                .delete('/Library/VirtualFolders', {
+                    headers: authed(a),
+                    params: { name: label, refreshLibrary: 'false' }
+                })
+                .catch(() => undefined);
+            rmSync(root, { recursive: true, force: true });
+        }
+    };
+}
+
+/** Run the server's REAL trickplay task and wait until the item reports tiles. */
+export async function generateTrickplay(
+    a: Admin,
+    itemId: string
+): Promise<Record<string, unknown>> {
+    const tasks = await a.api.get('/ScheduledTasks', { headers: authed(a) });
+    expect(tasks.ok(), 'the scheduled task list must be readable').toBe(true);
+    const task = (
+        (await tasks.json()) as Array<{ Id: string; Key: string }>
+    ).find((t) => t.Key === 'RefreshTrickplayImages');
+    expect(
+        task,
+        'the server must expose the RefreshTrickplayImages task'
+    ).toBeTruthy();
+    const started = await a.api.post(`/ScheduledTasks/Running/${task!.Id}`, {
+        headers: authed(a)
+    });
+    expect(started.ok(), 'the trickplay task must start').toBe(true);
+
+    let resolutions: Record<string, unknown> = {};
+    await expect
+        .poll(
+            async () => {
+                const res = await a.api.get(
+                    `/Users/${a.userId}/Items/${itemId}`,
+                    {
+                        headers: authed(a)
+                    }
+                );
+                if (!res.ok()) return 0;
+                const body = await res.json();
+                resolutions = (body.Trickplay ?? {}) as Record<string, unknown>;
+                return Object.keys(resolutions).length;
+            },
+            {
+                timeout: 300_000,
+                intervals: [5000],
+                message: 'the trickplay task must produce tiles for the fixture'
+            }
+        )
+        .toBeGreaterThan(0);
+    return resolutions;
+}
+
+/**
  * Turn on the fallback font list and point it at a real directory.
  *
  * `htmlVideoPlayer` only fetches `/FallbackFont/Fonts` when the encoding configuration says

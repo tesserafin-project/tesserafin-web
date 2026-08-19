@@ -67,6 +67,7 @@ const ACCEPTANCE_ROSTER = [
     'longPlayback.spec.ts',
     'matrix.spec.ts',
     'migratedTrace.spec.ts',
+    'trickplay.spec.ts',
     'reloginRuntime.spec.ts'
 ];
 

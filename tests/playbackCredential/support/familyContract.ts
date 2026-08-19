@@ -82,8 +82,9 @@ export const FAMILY_CONTRACT: Record<string, FamilyEntry> = {
         note: 'same path as font: renderSsaAss consumes the server-emitted attachment DeliveryUrl once the ASS track is really selected'
     },
     trickplay: {
-        status: 'unreached',
-        note: 'the rig seeds no trickplay tiles. Needs the library option plus a run of the trickplay task before playback.'
+        status: 'required',
+        owner: 'trickplay.spec.ts',
+        note: 'seedTrickplayLibrary asks for extraction and generateTrickplay runs the real RefreshTrickplayImages task; hovering the OSD position slider then reaches updateTrickplayBubbleHtml, which mints the capability and writes the tile url into the preview style'
     },
     'direct-audio': {
         status: 'unreached',
