@@ -143,11 +143,17 @@ async function mountManager() {
     return { manager, player };
 }
 
-/** Let the manager's un-awaited promise chains settle. Microtask flushes are not enough. */
-async function settle(turns = 40) {
-    for (let i = 0; i < turns; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 5));
-    }
+/**
+ * Wait for the manager's un-awaited promise chains to have produced `count` requests. A fixed
+ * number of macrotask turns would turn a starved machine into a bogus "MediaSourceId" failure;
+ * this fails with its own named message instead, so every assertion below stays about source
+ * selection.
+ */
+async function waitForRequests(count: number) {
+    await vi.waitFor(
+        () => expect(postedPlaybackInfo).toHaveBeenCalledTimes(count),
+        { timeout: 20000, interval: 10 }
+    );
 }
 
 function requests() {
@@ -179,10 +185,10 @@ describe('Live TV PlaybackInfo source selection', () => {
         const { manager, player } = await mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
-        await settle();
+        await waitForRequests(1);
 
         manager.nextTrack(player);
-        await settle();
+        await waitForRequests(2);
 
         const captured = requests();
         expect(captured).toHaveLength(2);
@@ -198,10 +204,10 @@ describe('Live TV PlaybackInfo source selection', () => {
         const { manager, player } = await mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
-        await settle();
+        await waitForRequests(1);
 
         manager.nextTrack(player);
-        await settle();
+        await waitForRequests(2);
 
         const channelRequest = requests()[1];
         const response = await postedPlaybackInfo.mock.results[1].value;
@@ -217,10 +223,10 @@ describe('Live TV PlaybackInfo source selection', () => {
         const { manager, player } = await mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
-        await settle();
+        await waitForRequests(1);
 
         manager.nextTrack(player);
-        await settle();
+        await waitForRequests(2);
 
         const body = requests()[1].playbackInfoDto as Record<string, unknown>;
 
@@ -253,7 +259,7 @@ describe('Live TV PlaybackInfo source selection', () => {
                     mediaSourceId: CHANNEL_ITEM_ID
                 })
                 .catch(() => undefined);
-            await settle(10);
+            await waitForRequests(1);
 
             const body = requests()[0].playbackInfoDto as Record<
                 string,
@@ -269,7 +275,7 @@ describe('Live TV PlaybackInfo source selection', () => {
         await manager.getPlaybackInfo(channelItem(), {
             mediaSourceId: TUNER_SOURCE_ID
         }).catch(() => undefined);
-        await settle(10);
+        await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
         expect(body.MediaSourceId).toBe(TUNER_SOURCE_ID);
@@ -279,7 +285,7 @@ describe('Live TV PlaybackInfo source selection', () => {
         const { manager } = await mountManager();
 
         await manager.getPlaybackInfo(channelItem(), {}).catch(() => undefined);
-        await settle(10);
+        await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
         expect(body).not.toHaveProperty('MediaSourceId');
@@ -297,7 +303,7 @@ describe('Live TV PlaybackInfo source selection', () => {
             videoItem({ MediaSources: [videoSource({ Id: VIDEO_ITEM_ID })] }),
             { mediaSourceId: VIDEO_ITEM_ID }
         ).catch(() => undefined);
-        await settle(10);
+        await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
         expect(body.MediaSourceId).toBe(VIDEO_ITEM_ID);
@@ -318,7 +324,7 @@ describe('Live TV PlaybackInfo source selection', () => {
             mediaSourceId: audio.Id as string,
             mediaType: 'Audio'
         }).catch(() => undefined);
-        await settle(10);
+        await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
         expect(body.MediaSourceId).toBe(audio.Id);
@@ -338,7 +344,7 @@ describe('Live TV PlaybackInfo source selection', () => {
         await manager.getPlaybackInfo(recording, {
             mediaSourceId: recording.Id as string
         }).catch(() => undefined);
-        await settle(10);
+        await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
         expect(body.MediaSourceId).toBe(recording.Id);
