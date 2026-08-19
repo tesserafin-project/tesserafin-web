@@ -103,7 +103,9 @@ test.describe('#153-A1 browser matrix', () => {
 
         const a = await admin();
         const audio = await seedAudioLibrary(a);
-        const ass = await seedAssLibrary(a);
+        // Its OWN library, like the audio one above. `seedAssLibrary` derives the item name
+        // from the label, so two specs sharing the default would share an item as well.
+        const ass = await seedAssLibrary(a, 'A1 Matrix Subtitles');
         const fallbackFont = await enableFallbackFont(a);
 
         const observed: Observed[] = [];
@@ -234,7 +236,7 @@ test.describe('#153-A1 browser matrix', () => {
             );
             const assId = await mediaItemIdByName(
                 a,
-                'A1 Subtitle Probe',
+                'A1 Matrix Subtitles Probe',
                 'Video'
             );
 
