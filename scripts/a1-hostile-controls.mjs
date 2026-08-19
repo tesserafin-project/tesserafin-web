@@ -323,7 +323,12 @@ const CONTROLS = [
         replace:
             '                            null,\n                            playSessionId',
         assertion: ACCEPT('libassFamilies'),
-        marker: 'the Attachments capability must be bound to its media source'
+        // MEASURED, and it is not the assertion you would guess. An `Attachments` capability
+        // minted without its media source is REFUSED by the server, so the attachment never
+        // arrives at all and the family poll is what fails. The property is still the binding;
+        // this is the shape it fails in, and naming the assertion that actually fires is the
+        // difference between a control and a wish.
+        marker: 'selecting the track must reach the font list, a font file and the attachment'
     },
     {
         id: 'c19',
@@ -334,7 +339,9 @@ const CONTROLS = [
         replace:
             '        ).trickplayValue(\n            item.Id,\n            null,',
         assertion: ACCEPT('trickplay'),
-        marker: 'the Trickplay capability must be bound to its media source'
+        // Same shape as c18: the server refuses a `Trickplay` capability that names no media
+        // source, so no tile is ever served and that is the assertion that fires.
+        marker: 'a trickplay tile must have been served'
     },
     {
         id: 'c20',
