@@ -228,3 +228,71 @@ through `POST /System/Configuration/encoding` for the fallback font path.
 * It does not change OpenAPI, the generated SDK, or SDK provenance.
 * It does not claim short-lived URL credentials are safe to disclose. They are shorter-lived and
   narrower, and they still appear in playlist bodies, DOM attributes and CSS.
+
+## 11. Deferred: Live TV and legacy HLS — `BLOCKED_BY_LIVE_TV_MEDIA_SOURCE_SELECTION`
+
+Two families cannot be proven on this branch, and the reason is a defect that has nothing to do
+with credential transport. It is written down here rather than in a commit message because the
+work resumes on a different branch, and whoever picks it up needs the measurement, not a summary.
+
+### What blocks them
+
+A live channel's item reports its own **channel id** as the media source id, while `PlaybackInfo`
+only accepts the **tuner source's** id. The client sends the former, so `PlaybackInfo` returns zero
+media sources and live playback can never start.
+
+Reproduced with raw `fetch`, no browser and no web bundle in the path:
+
+```
+channelId        ebaba90c74e20a134a0b97a5434c4999
+item  sourceIds  ["ebaba90c74e20a134a0b97a5434c4999"]   GET /Users/{u}/Items/{ch}
+pinfo sourceIds  ["0d564244e1f261eb5f469f17cbe1399f"]   POST /Items/{ch}/PlaybackInfo
+pinfo sourceIds  ["0d564244e1f261eb5f469f17cbe1399f"]   second call — stable, not a race
+with the item id as MediaSourceId -> sources = 0, ErrorCode = NoCompatibleStream
+```
+
+Field elimination, in the browser, against the same `channelId` the browser itself used — one
+field removed from its own `PlaybackInfo` body per row:
+
+```
+empty body                sources = 1
+browser body verbatim     sources = 0   NoCompatibleStream
+minus MediaSourceId       sources = 1   <-- the only removal that restores the source
+minus DeviceProfile       sources = 0
+minus AutoOpenLiveStream  sources = 0
+minus IsPlayback          sources = 0
+minus UserId / StartTimeTicks / SubtitleStreamIndex /
+      MaxStreamingBitrate / PlaybackAttemptId / AlwaysBurnIn…
+                          sources = 0
+```
+
+API-only, with no device profile at all, every field combination still yields one source — so the
+profile is not the filter and no single browser field other than `MediaSourceId` is either.
+
+### What was proven anyway, and what was not
+
+The server does hand out a `/LiveTv/LiveStreamFiles/**` path with `SupportsDirectPlay = true` and
+exactly one `RequiredHttpHeaders` entry, measured through `POST /LiveStreams/Open`. So the web-side
+gate — `Protocol === 'Http' && !RequiredHttpHeaders.length` — is both real and load-bearing, and the
+`RequiredHttpHeaders` control has something to bite on.
+
+What is NOT proven is the runtime property itself: no browser request ever reached
+`/LiveTv/LiveStreamFiles/**`, `/LiveTv/LiveRecordings/**`, or any `/Videos` delivery route, because
+playback never started. **Absence here is not evidence.** This is deliberately not recorded as a
+passing Live TV proof, and no skipped test stands in for one.
+
+Legacy HLS falls with it. Its child route is produced only by the EVENT playlist —
+`Videos/{itemId}/live.m3u8` starts its transcode with `isEventPlaylist = true`, which adds
+`-hls_base_url "hls/{playlistId}/"`, so the children are `/Videos/{itemId}/hls/…` — and only a live
+stream produces that playlist. `HlsSegmentController` models both routes, the segment one with
+`[RequiresPlaybackCapability(Media, "itemId", null)]`, i.e. the null media-source binding the family
+contract calls for. The contract is in place; only the runtime proof is missing.
+
+### The prerequisite branch
+
+* cut from clean `main`, not from this branch;
+* one minimal repair to the Live TV `PlaybackInfo` request — do not send the item-derived
+  `MediaSourceId` for a live channel;
+* dedicated regression tests for live-channel media-source selection;
+* **no credential-transport changes**;
+* merge it before resuming A1 Phase 4 and the legacy-HLS proof.
