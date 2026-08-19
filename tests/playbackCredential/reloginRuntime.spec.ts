@@ -23,7 +23,7 @@ import { dirname, join } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { signIn } from '../e2e/support/b2';
+import { PASSWORD, signIn, USER } from '../e2e/support/b2';
 import { mediaItemIdByName, seedAudioLibrary } from './support/fixtures';
 import { admin, playControl } from './support/rig';
 
@@ -77,6 +77,34 @@ async function signOut(page: Page): Promise<void> {
     });
     await logout.click();
     await page.waitForURL(/#\/(login|selectserver)/, { timeout: 30_000 });
+}
+
+/**
+ * Sign in again WITHOUT loading a new document.
+ *
+ * `b2.signIn` opens with `page.goto('/')`, and that is a full document load: a new `ApiClient`, a
+ * new runtime, an empty seam - the entire defect this file exists for, hidden. Measured: with the
+ * pre-repair teardown restored in `boot.ts`, the version of this file that called `signIn` twice
+ * PASSED. After a sign-out the shell has already routed to `#/login` on its own, so the form is
+ * right there in the document that just tore its credentials down.
+ */
+async function signInAgainInPlace(page: Page): Promise<void> {
+    const loginName = page.locator('#txtManualName:visible');
+    await expect(
+        loginName,
+        'signing out must leave the login form in the SAME document'
+    ).toBeVisible({ timeout: 30_000 });
+    const accepted = page.waitForResponse(
+        (res) =>
+            /\/users\/authenticatebyname/i.test(res.url()) &&
+            res.status() < 400,
+        { timeout: 20_000 }
+    );
+    await loginName.fill(USER);
+    await page.locator('#txtManualPassword:visible').fill(PASSWORD);
+    await page.locator('button[type="submit"]:visible').first().click();
+    await accepted;
+    await page.waitForURL('**/#/home**', { timeout: 20_000 });
 }
 
 test.describe('#153-A1 sign out and back in', () => {
@@ -156,11 +184,12 @@ test.describe('#153-A1 sign out and back in', () => {
 
             await signOut(page);
 
-            // NO RELOAD between the two sessions. A reload builds a fresh `ApiClient` and hides the
-            // entire defect: the point is that the SAME instance is reused, exactly as it is for a
-            // person who signs out and signs back in without touching the browser.
+            // NO DOCUMENT LOAD between the two sessions - see signInAgainInPlace. The point is that
+            // the SAME `ApiClient` is reused, exactly as it is for a person who signs out and signs
+            // back in without touching the browser. `play()` moves by hash only, which stays in the
+            // same document too.
             phase = 'after';
-            await signIn(page);
+            await signInAgainInPlace(page);
             await play(audioId);
             await expect
                 .poll(() => media.filter((m) => m.phase === 'after').length, {
