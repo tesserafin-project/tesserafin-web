@@ -1,6 +1,22 @@
 /**
  * #153-A1 phase 0 — the REAL baseline network trace.
  *
+ * NOT AN ACCEPTANCE SPEC, AND IT DOES NOT LIVE IN THE ACCEPTANCE DIRECTORY (#153-A1-R2 phase 1).
+ * This is a PRE-MIGRATION characterization probe: it records what the client did BEFORE the
+ * credential transport was migrated. Run deliberately against the migrated candidate it is
+ * expected to be red, and that red is a historical measurement, never a candidate result.
+ *
+ * It is kept out of the acceptance suite STRUCTURALLY rather than by a filter. The acceptance
+ * config (`playwright.credential.config.ts`) has `testDir: ./tests/playbackCredential`; this file
+ * is in a sibling directory, so no glob, `grep-invert` or `testIgnore` edit can readmit it — a
+ * filter is one character away from being switched off, a directory boundary is not. It is
+ * deliberately NOT marked `skip`, NOT `fixme` and NOT `fail`: those are all ways of keeping a red
+ * result inside a suite while reporting green.
+ *
+ * Run it with:  npm run test:a1-baseline-characterization
+ * The roster gate `ci/verify-a1-acceptance-roster.mjs` fails if this file ever appears in the
+ * acceptance suite's resolved test list.
+ *
  * The static inventory (`ci/credential-transport-inventory.mjs`) says which producers exist. This
  * says what the browser ACTUALLY requests against a real server, with a real production bundle and
  * real media, using an EPHEMERAL runtime-generated durable token that this rig boots fresh.
@@ -22,7 +38,7 @@ import {
     playControl,
     sessionToken,
     TRANSCODE_TITLE
-} from './support/rig';
+} from '../playbackCredential/support/rig';
 
 /** Where a request url falls in the credential-transport taxonomy. */
 type RouteClass =
