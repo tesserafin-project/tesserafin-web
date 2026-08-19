@@ -49,6 +49,8 @@ const GATE = 'ci/credential-transport-inventory.mjs';
 const ROSTER_GATE = 'ci/verify-a1-acceptance-roster.mjs';
 const CONTRACT = 'tests/playbackCredential/support/familyContract.ts';
 const DELETE_HELPER = 'src/scripts/deleteHelper.js';
+const VIDEO_OSD = 'src/apps/legacy/controllers/playback/video/index.js';
+const HTML_VIDEO = 'src/plugins/htmlVideoPlayer/plugin.js';
 
 /** The assertion commands, kept short so a control is a few seconds, not a few minutes. */
 const UNIT = [
@@ -80,6 +82,20 @@ const ROSTER = ['node', 'ci/verify-a1-acceptance-roster.mjs'];
  * whose invariants run at import. So `--list` is a real assertion on the contract and costs a
  * second, where running the suite would cost twenty minutes.
  */
+/**
+ * Browser controls. These need the rig up (`TESSERAFIN_E2E_BASE_URL`), and they are the only way
+ * to reopen a property that lives in a real playback: a capability's SCOPE BINDING is invisible to
+ * every source-level gate, because the url looks identical either way.
+ */
+const ACCEPT = (spec) => [
+    'npx',
+    'playwright',
+    'test',
+    '--config',
+    'playwright.credential.config.ts',
+    spec
+];
+
 const CONTRACT_IMPORT = [
     'npx',
     'playwright',
@@ -280,6 +296,51 @@ const CONTROLS = [
             "        status: 'unreached',\n        owner: 'trickplay.spec.ts',",
         assertion: CONTRACT_IMPORT,
         marker: 'declared unreached but names an owner'
+    },
+    {
+        id: 'c17',
+        name: 'bind the item-less Fonts capability to the durable token instead',
+        file: HTML_VIDEO,
+        find: "const fallbackFontList = apiClient.getUrl('/FallbackFont/Fonts', {\n            playbackCapability: fontsCapability\n        });",
+        replace:
+            "const fallbackFontList = apiClient.getUrl('/FallbackFont/Fonts', {\n            ApiKey: apiClient.accessToken()\n        });",
+        assertion: ACCEPT('libassFamilies'),
+        marker: 'must carry a playbackCapability'
+    },
+    {
+        id: 'c18',
+        name: 'drop the media-source binding from the Attachments capability',
+        // The url is IDENTICAL either way: only the mint body names the media source, so no
+        // source-level gate and no url assertion can see this. That is why the control exists.
+        file: HTML_VIDEO,
+        find: '                            this._currentPlayOptions?.mediaSource?.Id ?? null,\n                            playSessionId',
+        replace:
+            '                            null,\n                            playSessionId',
+        assertion: ACCEPT('libassFamilies'),
+        marker: 'the Attachments capability must be bound to its media source'
+    },
+    {
+        id: 'c19',
+        name: 'drop the media-source binding from the Trickplay capability',
+        file: VIDEO_OSD,
+        find: '        ).trickplayValue(\n            item.Id,\n            mediaSourceId,',
+        replace:
+            '        ).trickplayValue(\n            item.Id,\n            null,',
+        assertion: ACCEPT('trickplay'),
+        marker: 'the Trickplay capability must be bound to its media source'
+    },
+    {
+        id: 'c20',
+        name: 'unbind the universal-audio capability from its play session',
+        // The revision this reopens filed the audio capability under the broker's own synthetic
+        // id. Every url still looked correct; only the REPLAY after the stop can tell, because a
+        // capability nobody revoked answers 200.
+        file: PLAYBACK,
+        find: '    const capability = await (await brokerFor(apiClient)).mediaValue(\n        item.Id,\n        null,\n        playSessionId\n    );',
+        replace:
+            "    const capability = await (await brokerFor(apiClient)).mediaValue(\n        item.Id,\n        null,\n        ''\n    );",
+        assertion: ACCEPT('audioRevocation'),
+        marker: 'must be refused with 401/403'
     },
     {
         id: 'c13',
