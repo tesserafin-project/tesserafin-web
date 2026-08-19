@@ -77,6 +77,8 @@ const PATCHER_VERIFY = [
 /** The WHOLE inventory, not one phase: the absence categories only run there. */
 const GATE_FULL = ['node', 'ci/credential-transport-inventory.mjs'];
 const ROSTER = ['node', 'ci/verify-a1-acceptance-roster.mjs'];
+/** The bundle the browser controls assert against. */
+const BUILD = ['npm', 'run', 'build:production'];
 /**
  * Resolving the acceptance suite IMPORTS every spec, and every spec imports the family contract,
  * whose invariants run at import. So `--list` is a real assertion on the contract and costs a
@@ -283,7 +285,9 @@ const CONTROLS = [
         find: "    'trickplay.spec.ts',\n",
         replace: '',
         assertion: ROSTER,
-        marker: 'unexpected'
+        // The gate's own words. Its header calls this case "unexpected"; the message it prints
+        // says "UNDECLARED", and the marker has to match the output, not the prose.
+        marker: 'UNDECLARED spec(s)'
     },
     {
         id: 'c16',
@@ -299,6 +303,7 @@ const CONTROLS = [
     },
     {
         id: 'c17',
+        rebuild: true,
         name: 'bind the item-less Fonts capability to the durable token instead',
         file: HTML_VIDEO,
         find: "const fallbackFontList = apiClient.getUrl('/FallbackFont/Fonts', {\n            playbackCapability: fontsCapability\n        });",
@@ -309,6 +314,7 @@ const CONTROLS = [
     },
     {
         id: 'c18',
+        rebuild: true,
         name: 'drop the media-source binding from the Attachments capability',
         // The url is IDENTICAL either way: only the mint body names the media source, so no
         // source-level gate and no url assertion can see this. That is why the control exists.
@@ -321,6 +327,7 @@ const CONTROLS = [
     },
     {
         id: 'c19',
+        rebuild: true,
         name: 'drop the media-source binding from the Trickplay capability',
         file: VIDEO_OSD,
         find: '        ).trickplayValue(\n            item.Id,\n            mediaSourceId,',
@@ -331,6 +338,7 @@ const CONTROLS = [
     },
     {
         id: 'c20',
+        rebuild: true,
         name: 'unbind the universal-audio capability from its play session',
         // The revision this reopens filed the audio capability under the broker's own synthetic
         // id. Every url still looked correct; only the REPLAY after the stop can tell, because a
@@ -474,6 +482,25 @@ for (const control of CONTROLS) {
         );
         git(['checkout', '--', control.file]);
         continue;
+    }
+
+    // A control whose assertion drives a BROWSER asserts against `dist/`, not against `src/`.
+    // Without this rebuild the mutation never reaches the page: measured, and all four
+    // scope-binding controls came back INERT while the mutation was plainly applied on disk.
+    if (control.rebuild) {
+        const built = run(BUILD);
+        if (built.status !== 0) {
+            results.push({
+                ...control,
+                verdict: 'ERROR',
+                detail: 'the production build failed under the mutation'
+            });
+            process.stdout.write(
+                `ERROR ${control.id} ${control.name}: the production build failed under the mutation\n`
+            );
+            git(['checkout', '--', control.file]);
+            continue;
+        }
     }
 
     const outcome = run(control.assertion);
