@@ -272,9 +272,11 @@ describe('Live TV PlaybackInfo source selection', () => {
     it('preserves a resolved tuner source id for a Live TV channel', async () => {
         const { manager } = await mountManager();
 
-        await manager.getPlaybackInfo(channelItem(), {
-            mediaSourceId: TUNER_SOURCE_ID
-        }).catch(() => undefined);
+        await manager
+            .getPlaybackInfo(channelItem(), {
+                mediaSourceId: TUNER_SOURCE_ID
+            })
+            .catch(() => undefined);
         await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
@@ -299,10 +301,14 @@ describe('Live TV PlaybackInfo source selection', () => {
         );
         const { manager } = await mountManager();
 
-        await manager.getPlaybackInfo(
-            videoItem({ MediaSources: [videoSource({ Id: VIDEO_ITEM_ID })] }),
-            { mediaSourceId: VIDEO_ITEM_ID }
-        ).catch(() => undefined);
+        await manager
+            .getPlaybackInfo(
+                videoItem({
+                    MediaSources: [videoSource({ Id: VIDEO_ITEM_ID })]
+                }),
+                { mediaSourceId: VIDEO_ITEM_ID }
+            )
+            .catch(() => undefined);
         await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
@@ -318,12 +324,15 @@ describe('Live TV PlaybackInfo source selection', () => {
         );
         const { manager, player } = await mountManager();
         // Without this the manager builds an audio stream url instead of asking the server.
-        (player as Record<string, unknown>).useServerPlaybackInfoForAudio = true;
+        (player as Record<string, unknown>).useServerPlaybackInfoForAudio =
+            true;
 
-        await manager.getPlaybackInfo(audio, {
-            mediaSourceId: audio.Id as string,
-            mediaType: 'Audio'
-        }).catch(() => undefined);
+        await manager
+            .getPlaybackInfo(audio, {
+                mediaSourceId: audio.Id as string,
+                mediaType: 'Audio'
+            })
+            .catch(() => undefined);
         await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
@@ -341,9 +350,11 @@ describe('Live TV PlaybackInfo source selection', () => {
         );
         const { manager } = await mountManager();
 
-        await manager.getPlaybackInfo(recording, {
-            mediaSourceId: recording.Id as string
-        }).catch(() => undefined);
+        await manager
+            .getPlaybackInfo(recording, {
+                mediaSourceId: recording.Id as string
+            })
+            .catch(() => undefined);
         await waitForRequests(1);
 
         const body = requests()[0].playbackInfoDto as Record<string, unknown>;
