@@ -22,7 +22,9 @@
  * OUTPUT SAFETY: the fake ticket and header values are literals invented here. No branch reads or
  * prints a real credential.
  */
-import { readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -90,16 +92,67 @@ const socketTarget = TARGETS.find(
 const installedPath = join(PACKAGE, socketTarget.relative);
 const installed = readFileSync(installedPath, 'utf8');
 
-function pristineOf(target, content) {
-    if (sha256(content) === target.pristineSha256) return content;
+function invert(fragments, content) {
     let out = content;
-    for (const fragment of [...target.fragments].reverse()) {
+    for (const fragment of [...fragments].reverse()) {
         out = out.split(fragment.safe).join(fragment.unsafe);
     }
     return out;
 }
 
-const pristine = pristineOf(socketTarget, installed);
+/**
+ * The COMMITTED fragment table, used only to invert the installed file back to pristine.
+ *
+ * Why not the working tree's: a deliberate-break control mutates a fragment, and inverting a file
+ * that was patched with the ORIGINAL fragments using MUTATED ones cannot succeed. The test would
+ * then die at setup and the control would be reported as ERROR — a mutation nobody measured —
+ * instead of reopening the defect it was written to reopen. `scripts/a1-hostile-controls.mjs`
+ * refuses to run on a dirty tree, so HEAD is always the unmutated reference.
+ *
+ * The probe below is still built from the WORKING TREE's fragments. That split is the whole point:
+ * reconstruction stays trustworthy while the behaviour under test moves with the edit.
+ */
+async function committedFragments(target) {
+    const shown = spawnSync(
+        'git',
+        ['show', `HEAD:scripts/${'patch-jellyfin-sdk.mjs'}`],
+        { cwd: REPO, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }
+    );
+    if (shown.status !== 0 || !shown.stdout) return target.fragments;
+    const dir = mkdtempSync(join(tmpdir(), 'a1-sdk-head-'));
+    const path = join(dir, 'patch-jellyfin-sdk.mjs');
+    // The committed patcher imports a sibling by relative path; point it at the real one.
+    writeFileSync(
+        path,
+        shown.stdout.replace(
+            "'./patch-jellyfin-apiclient.mjs'",
+            JSON.stringify(
+                pathToFileURL(
+                    join(REPO, 'scripts', 'patch-jellyfin-apiclient.mjs')
+                ).href
+            )
+        ),
+        'utf8'
+    );
+    try {
+        const head = await import(pathToFileURL(path).href);
+        const match = head.TARGETS?.find((entry) => entry.id === target.id);
+        return match?.fragments ?? target.fragments;
+    } catch {
+        return target.fragments;
+    } finally {
+        rmSync(dir, { recursive: true, force: true });
+    }
+}
+
+let pristine =
+    sha256(installed) === socketTarget.pristineSha256
+        ? installed
+        : invert(await committedFragments(socketTarget), installed);
+if (sha256(pristine) !== socketTarget.pristineSha256) {
+    // Last resort: a tree whose HEAD predates this target at all.
+    pristine = invert(socketTarget.fragments, installed);
+}
 if (sha256(pristine) !== socketTarget.pristineSha256) {
     process.stderr.write(
         'could not reconstruct the pristine websocket service; refusing to report a behaviour ' +
