@@ -130,13 +130,13 @@ const CLEAN_MAIN_CHANNEL_REQUEST_VALUES: Record<string, unknown> = {
     UserId: USER_ID
 };
 
-async function mountManager() {
-    const { PlaybackManager } = await import(
-        'components/playback/playbackmanager'
-    );
-    const { pluginManager } = await import('components/pluginManager');
-    const Events = (await import('utils/events')).default;
+// Imported at module scope on purpose. Doing this inside a test means a test timeout can abort a
+// dynamic import mid-flight and poison the module cache for every later test in the file.
+const { PlaybackManager } = await import('components/playback/playbackmanager');
+const { pluginManager } = await import('components/pluginManager');
+const Events = (await import('utils/events')).default;
 
+function mountManager() {
     const manager = new PlaybackManager();
     const player = createFakePlayer();
     Events.trigger(pluginManager, 'registered', [player]);
@@ -160,7 +160,9 @@ function requests() {
     return postedPlaybackInfo.mock.calls.map((call) => call[0]);
 }
 
-describe('Live TV PlaybackInfo source selection', () => {
+// The queue-advance fixture drives a real play() plus a queue advance; under full-suite load that
+// is well past vitest's 5 s default.
+describe('Live TV PlaybackInfo source selection', { timeout: 60000 }, () => {
     beforeEach(() => {
         postedPlaybackInfo.mockReset();
         alerts.length = 0;
@@ -182,7 +184,7 @@ describe('Live TV PlaybackInfo source selection', () => {
      * source list to nothing, and playback dies with `NoCompatibleStream`.
      */
     it('omits the placeholder id when a queue advance lands on a Live TV channel', async () => {
-        const { manager, player } = await mountManager();
+        const { manager, player } = mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
         await waitForRequests(1);
@@ -201,7 +203,7 @@ describe('Live TV PlaybackInfo source selection', () => {
     });
 
     it('returns a real tuner source, not NoCompatibleStream, for that same fixture', async () => {
-        const { manager, player } = await mountManager();
+        const { manager, player } = mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
         await waitForRequests(1);
@@ -220,7 +222,7 @@ describe('Live TV PlaybackInfo source selection', () => {
     });
 
     it('changes no other field of the channel request', async () => {
-        const { manager, player } = await mountManager();
+        const { manager, player } = mountManager();
 
         await manager.play({ items: [videoItem(), channelItem()] });
         await waitForRequests(1);
@@ -250,7 +252,7 @@ describe('Live TV PlaybackInfo source selection', () => {
     ])(
         'omits a placeholder id supplied directly for a %s item',
         async (_label, type) => {
-            const { manager } = await mountManager();
+            const { manager } = mountManager();
 
             // The assertion is about the request that went out. Whether the *response* can be
             // turned into a stream is a different property, covered by its own test.
@@ -270,7 +272,7 @@ describe('Live TV PlaybackInfo source selection', () => {
     );
 
     it('preserves a resolved tuner source id for a Live TV channel', async () => {
-        const { manager } = await mountManager();
+        const { manager } = mountManager();
 
         await manager
             .getPlaybackInfo(channelItem(), {
@@ -284,7 +286,7 @@ describe('Live TV PlaybackInfo source selection', () => {
     });
 
     it('omits MediaSourceId for a Live TV channel when no source id is supplied', async () => {
-        const { manager } = await mountManager();
+        const { manager } = mountManager();
 
         await manager.getPlaybackInfo(channelItem(), {}).catch(() => undefined);
         await waitForRequests(1);
@@ -299,7 +301,7 @@ describe('Live TV PlaybackInfo source selection', () => {
                 [VIDEO_ITEM_ID]: [videoSource({ Id: VIDEO_ITEM_ID })]
             })
         );
-        const { manager } = await mountManager();
+        const { manager } = mountManager();
 
         await manager
             .getPlaybackInfo(
@@ -322,7 +324,7 @@ describe('Live TV PlaybackInfo source selection', () => {
                 [audio.Id as string]: [audioSource({ Id: audio.Id as string })]
             })
         );
-        const { manager, player } = await mountManager();
+        const { manager, player } = mountManager();
         // Without this the manager builds an audio stream url instead of asking the server.
         (player as Record<string, unknown>).useServerPlaybackInfoForAudio =
             true;
@@ -348,7 +350,7 @@ describe('Live TV PlaybackInfo source selection', () => {
                 ]
             })
         );
-        const { manager } = await mountManager();
+        const { manager } = mountManager();
 
         await manager
             .getPlaybackInfo(recording, {
