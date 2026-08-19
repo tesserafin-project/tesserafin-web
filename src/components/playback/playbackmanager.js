@@ -426,10 +426,12 @@ function playSessionIdFor(requestOptions) {
  * depend on a credential having been dropped, and a broker that cannot be reached is a broker with
  * no timers to cancel.
  *
- * WHAT THIS DOES NOT REACH. A capability the broker filed under its own synthetic play session -
- * today the universal-audio one, see `getAudioStreamUrl` - is not matched by this call, because the
- * id it was filed under is not the id playback reports. That gap is #153-A1's open question, not
- * something this helper can close.
+ * IT REACHES EVERY FAMILY, and that is a property of the call sites rather than of this function:
+ * a capability is only matched if it was filed under the id playback reports. Both families that
+ * once broke that rule now hold it - `getAudioStreamUrl` binds to the play session it invents and
+ * puts in the url, and the direct-play branch puts the id it mints under into the url too. The two
+ * `*Revocation.spec.ts` files are the gates on that, and they fail with a 200 on the replay if
+ * either binding is loosened.
  */
 function releaseCapabilitiesForPlaySession(serverId, playSessionId) {
     if (!playSessionId) return;
@@ -3961,21 +3963,32 @@ export class PlaybackManager {
                     mediaSource.SupportsDirectPlay ||
                     mediaSource.SupportsDirectStream
                 ) {
-                    // #153-A1: a Media capability bound to THIS item and media source, minted
-                    // here at the asynchronous boundary. There is no ApiKey fallback: a refused
-                    // mint rejects, and the caller's existing playback-failure path reports it.
+                    // #153-A1: a Media capability bound to THIS item, media source AND play
+                    // session, minted here at the asynchronous boundary. There is no ApiKey
+                    // fallback: a refused mint rejects, and the caller's existing
+                    // playback-failure path reports it.
+                    //
+                    // THE PLAY SESSION GOES IN THE URL, and that is load-bearing rather than
+                    // cosmetic. `streamInfo.playSessionId` is read back out of this url with
+                    // `getParam('playSessionId', mediaUrl)`, and it is what the client reports
+                    // every lifecycle event with and what `onPlaybackStopped` hands back. Minted
+                    // under an id the url did not carry, the capability was filed under a play
+                    // session NOTHING ever reports: every `/Sessions/Playing*` call went out with
+                    // an empty `PlaySessionId`, `SessionManager.OnPlaybackStopped` skips
+                    // revocation on an empty one, and the capability went on serving media after
+                    // the playback that minted it had ended. Measured, 206 on a replay after the
+                    // stop; `tests/playbackCredential/directPlayRevocation.spec.ts` is that
+                    // measurement turned into a gate.
+                    const playSessionId = playSessionIdFor(requestOptions);
                     const mediaCapability = await (
                         await brokerFor(apiClient)
-                    ).mediaValue(
-                        item.Id,
-                        mediaSource.Id,
-                        playSessionIdFor(requestOptions)
-                    );
+                    ).mediaValue(item.Id, mediaSource.Id, playSessionId);
 
                     directOptions = {
                         Static: true,
                         mediaSourceId: mediaSource.Id,
                         deviceId: apiClient.deviceId(),
+                        PlaySessionId: playSessionId,
                         playbackCapability: mediaCapability
                     };
 

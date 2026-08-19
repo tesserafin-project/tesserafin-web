@@ -99,12 +99,12 @@ test.describe('#153-A1 universal-audio revocation', () => {
             });
         });
 
-        page.on('request', (request) => {
-            const url = request.url();
+        page.on('request', (req) => {
+            const url = req.url();
             if (!/\/Sessions\/Playing/i.test(url)) return;
             let body: Record<string, unknown> = {};
             try {
-                body = JSON.parse(request.postData() ?? '{}');
+                body = JSON.parse(req.postData() ?? '{}');
             } catch {
                 body = {};
             }
@@ -218,18 +218,18 @@ test.describe('#153-A1 universal-audio revocation', () => {
             requests.length,
             'both playbacks requested the universal audio route'
         ).toBeGreaterThan(1);
-        for (const request of requests) {
+        for (const observed of requests) {
             expect(
-                request.carriesApiKeyParam,
-                `${request.redactedUrl} must not carry ApiKey/api_key`
+                observed.carriesApiKeyParam,
+                `${observed.redactedUrl} must not carry ApiKey/api_key`
             ).toBe(false);
             expect(
-                request.carriesPlaybackCapability,
-                `${request.redactedUrl} must carry a playbackCapability`
+                observed.carriesPlaybackCapability,
+                `${observed.redactedUrl} must carry a playbackCapability`
             ).toBe(true);
             expect(
-                (request.status ?? 0) < 400,
-                `${request.redactedUrl} must succeed (got ${request.status})`
+                (observed.status ?? 0) < 400,
+                `${observed.redactedUrl} must succeed (got ${observed.status})`
             ).toBe(true);
         }
 
