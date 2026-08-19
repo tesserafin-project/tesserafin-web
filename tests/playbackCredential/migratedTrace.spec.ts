@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { expect, test } from '@playwright/test';
 
 import { MOVIE_TITLE, signIn } from '../e2e/support/b2';
+import { checkFamilyContract, familiesOwnedBy } from './support/familyContract';
 import {
     expectPlaybackAdvances,
     openDetailByName,
@@ -277,9 +278,23 @@ test.describe('#153-A1 migrated credential trace', () => {
             'at least one socket upgrade carries a webSocketTicket'
         ).toBe(true);
 
-        // Live TV delivery stays unreached.
+        // THE CONTRACT. This file used to assert only over the requests it observed, so it passed
+        // whether or not HLS and subtitles were reached at all. `familyContract.ts` names the
+        // families it owns and fails when one is absent; it also fails when a family declared
+        // unreachable there IS reached, which is what the old bare "live tv stays at zero" line
+        // was reaching for without saying why zero was expected or what would happen if it moved.
+        const reached = new Set(observed.map((e) => e.routeClass));
+        const verdict = checkFamilyContract(
+            reached,
+            familiesOwnedBy('migratedTrace.spec.ts')
+        );
         expect(
-            observed.filter((e) => e.routeClass === 'livetv-delivery').length
-        ).toBe(0);
+            verdict.missing,
+            `families this file owns but did not reach; reached ${[...reached].sort().join(', ')}`
+        ).toEqual([]);
+        expect(
+            verdict.staleExcuses,
+            'a family declared unreachable in familyContract.ts was reached; promote it'
+        ).toEqual([]);
     });
 });
