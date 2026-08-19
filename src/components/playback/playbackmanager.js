@@ -458,24 +458,27 @@ async function getAudioStreamUrl(
 
     startingPlaySession++;
     const playSessionId = String(startingPlaySession);
-    // #153-A1, MEASURED: the capability is deliberately NOT bound to `playSessionId`.
+    // #153-A1: the capability IS bound to `playSessionId`, the value this client reports playback
+    // lifecycle with. That is the contract in #153 - bound to the play session, invalidated when it
+    // ends - and this is the one family whose play session the client has to invent, because the
+    // url is built before any `PlaybackInfo` round trip.
     //
-    // That value is invented here AND is what this client reports playback lifecycle with.
-    // `SessionManager.OnPlaybackStopped` revokes every capability bound to the reported play
-    // session, and the audio path reports a stop at 0 ms as part of starting — so binding to it
-    // made the client revoke its own credential and the next request answered 401. The server log
-    // named it: two `PlaybackCapability was challenged` lines immediately followed by
-    // `Playback stopped reported for play session "<counter>" (correlated False, session null)`.
+    // MEASURED, AND CORRECTED. An earlier revision refused to bind here, on the observation that
+    // binding made the next request answer 401. The 401 was real; the play session was not its
+    // cause. `SessionManager.OnPlaybackStopped` revokes every capability bound to the reported play
+    // session - correctly - and the broker then served the SAME capability out of its cache,
+    // because nothing dropped the cache entry when playback ended. `onPlaybackStopped` now hands
+    // the play session back, so the second playback mints a fresh capability.
     //
-    // An empty play session makes the broker use its own per-instance id, which nothing reports
-    // lifecycle for. This weakens NO comparison: `/Audio/{id}/universal` carries
-    // `[RequiresPlaybackCapability(Media, "itemId", "mediaSourceId")]` with no play-session key, so
-    // the server never compares one here. Item and media source are unchanged; only the revocation
-    // anchor moves off an id the client destroys itself.
+    // Re-measured on the real rig with the binding restored: the audio path reports exactly one
+    // `/Sessions/Playing` at 0 ms, one `/Sessions/Playing/Progress`, and one
+    // `/Sessions/Playing/Stopped` at the end of the track. There is no stop at 0 ms during start.
+    // `tests/playbackCredential/audioRevocation.spec.ts` plays the same item twice in one document
+    // and fails with a 401 if the release wiring is removed.
     const capability = await (await brokerFor(apiClient)).mediaValue(
         item.Id,
         null,
-        ''
+        playSessionId
     );
 
     return apiClient.getUrl(url, {
