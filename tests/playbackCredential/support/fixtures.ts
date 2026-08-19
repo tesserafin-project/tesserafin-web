@@ -45,7 +45,25 @@ export interface SeededLibrary {
     root: string;
     /** Item names the library should expose once the scan settles. */
     itemNames: string[];
-    dispose: () => void;
+    /**
+     * Remove the temporary media AND the virtual folder.
+     *
+     * Deleting only the directory is what every version of these fixtures used to do, and it is
+     * why a rig that has run one spec twice starts failing: the folder survives, the scan still
+     * lists the DISPOSED item, `mediaItemIdByName` resolves it, and playback answers 404 on a
+     * file that is not there any more. Async because removing the folder is a server call.
+     */
+    dispose: () => Promise<void>;
+}
+
+/** Remove a virtual folder, ignoring the case where it is already gone. */
+async function removeLibrary(a: Admin, name: string): Promise<void> {
+    await a.api
+        .delete('/Library/VirtualFolders', {
+            headers: authed(a),
+            params: { name, refreshLibrary: 'false' }
+        })
+        .catch(() => undefined);
 }
 
 function authed(a: Admin) {
@@ -185,7 +203,10 @@ export async function seedAudioLibrary(
     return {
         root,
         itemNames: [name],
-        dispose: () => rmSync(root, { recursive: true, force: true })
+        dispose: async () => {
+            await removeLibrary(a, label);
+            rmSync(root, { recursive: true, force: true });
+        }
     };
 }
 
@@ -270,7 +291,10 @@ export async function seedAssLibrary(
     return {
         root,
         itemNames: [name],
-        dispose: () => rmSync(root, { recursive: true, force: true })
+        dispose: async () => {
+            await removeLibrary(a, label);
+            rmSync(root, { recursive: true, force: true });
+        }
     };
 }
 

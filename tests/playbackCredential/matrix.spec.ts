@@ -276,8 +276,8 @@ test.describe('#153-A1 browser matrix', () => {
             await page.waitForTimeout(2_000);
         } finally {
             await fallbackFont.dispose();
-            audio.dispose();
-            ass.dispose();
+            await audio.dispose();
+            await ass.dispose();
             await a.dispose();
             writeReport();
         }

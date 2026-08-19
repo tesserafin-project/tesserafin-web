@@ -35,6 +35,12 @@ interface Lifecycle {
     playSessionId: string | null;
 }
 
+/** One mint, by its REQUEST body. No response is ever read. */
+interface MintRecord {
+    scopes: string[];
+    playSessionId: string | null;
+}
+
 /** Path plus sorted query KEY names. No value of any kind is recorded. */
 function redact(url: string): string {
     try {
@@ -58,20 +64,61 @@ test.describe('#153-A1 direct-play video revocation', () => {
         let firstUrl: string | null = null;
         let redactedFirst = '';
         let replayStatus: number | null = null;
+        let replayBytes: number | null = null;
+        let bestBytes = 0;
+        let urlPlaySessionId: string | null = null;
+        const mints: MintRecord[] = [];
+        const renewals: string[] = [];
+        let stopReported = false;
 
-        page.on('response', (response) => {
+        page.on('response', async (response) => {
             const url = response.url();
             if (!/\/videos\/[^/]+\/stream/i.test(url)) return;
             if (firstUrl === null) {
                 firstUrl = url;
                 redactedFirst = redact(url);
+                try {
+                    urlPlaySessionId = new URL(url).searchParams.get(
+                        'PlaySessionId'
+                    );
+                } catch {
+                    urlPlaySessionId = null;
+                }
             }
             statuses.push(response.status());
+            try {
+                bestBytes = Math.max(bestBytes, (await response.body()).length);
+            } catch {
+                /* a stream the browser aborted has no readable body; the max survives */
+            }
         });
 
         page.on('request', (req) => {
             const url = req.url();
+            if (
+                /\/Playback\/Capabilities$/i.test(url) &&
+                req.method() === 'POST'
+            ) {
+                let minted: Record<string, unknown> = {};
+                try {
+                    minted = JSON.parse(req.postData() ?? '{}');
+                } catch {
+                    minted = {};
+                }
+                mints.push({
+                    scopes: Array.isArray(minted.Scopes)
+                        ? (minted.Scopes as string[])
+                        : [],
+                    playSessionId: (minted.PlaySessionId as string) ?? null
+                });
+                return;
+            }
+            if (/\/Playback\/Capabilities\/.+\/Renew/i.test(url)) {
+                renewals.push(stopReported ? 'after-stop' : 'before-stop');
+                return;
+            }
             if (!/\/Sessions\/Playing/i.test(url)) return;
+            if (/\/Sessions\/Playing\/Stopped/i.test(url)) stopReported = true;
             let body: Record<string, unknown> = {};
             try {
                 body = JSON.parse(req.postData() ?? '{}');
@@ -96,8 +143,12 @@ test.describe('#153-A1 direct-play video revocation', () => {
             const report = {
                 redactedFirst,
                 statuses,
+                bestBytes,
                 lifecycle,
-                replayStatus
+                mints,
+                renewals,
+                replayStatus,
+                replayBytes
             };
             writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
             // eslint-disable-next-line no-console
@@ -144,6 +195,7 @@ test.describe('#153-A1 direct-play video revocation', () => {
                     headers: { Range: 'bytes=0-0' }
                 });
                 replayStatus = response.status();
+                replayBytes = (await response.body()).length;
             } finally {
                 await replay.dispose();
             }
@@ -163,10 +215,58 @@ test.describe('#153-A1 direct-play video revocation', () => {
             `${redactedFirst} must not carry ApiKey/api_key`
         ).toBe(false);
 
-        // The contract: the play session ended, so its capability is dead.
+        // Real bytes before the stop. A 2xx with an empty body is not media, and the pre-stop
+        // half of this contract is that the capability WORKED.
         expect(
-            replayStatus,
-            `the ended play session's capability must be refused (got ${replayStatus})`
-        ).toBeGreaterThanOrEqual(400);
+            bestBytes,
+            'the direct-play route must have returned real media bytes'
+        ).toBeGreaterThan(0);
+
+        // The play session is non-empty, and it is the SAME one at the mint, in the url and in
+        // the lifecycle report. An earlier revision minted under a synthetic id and reported a
+        // different one; every url in that revision still looked correct.
+        const mediaMints = mints.filter((m) => m.scopes.includes('Media'));
+        expect(
+            mediaMints.length,
+            'a Media capability was minted'
+        ).toBeGreaterThan(0);
+        expect(urlPlaySessionId ?? '', 'the url names a play session').not.toBe(
+            ''
+        );
+        expect(
+            mediaMints.some((m) => m.playSessionId === urlPlaySessionId),
+            'the url must carry the play session it was minted under'
+        ).toBe(true);
+        const reportedStarts = lifecycle
+            .filter((l) => l.path.endsWith('/Playing'))
+            .map((l) => l.playSessionId ?? '');
+        for (const reported of reportedStarts) {
+            expect(
+                reported,
+                'every reported start names a play session'
+            ).not.toBe('');
+        }
+        expect(
+            reportedStarts.includes(urlPlaySessionId ?? ''),
+            'the url must carry the play session playback reported'
+        ).toBe(true);
+
+        // The contract: the play session ended, so its capability is dead. `401/403`
+        // specifically - a 404 or a 416 would satisfy `>= 400` while saying nothing about
+        // authorization.
+        expect(
+            [401, 403],
+            `the ended play session's capability must be refused with 401/403 (got ${replayStatus})`
+        ).toContain(replayStatus);
+        expect(
+            replayBytes,
+            'a refused replay must return no media bytes at all'
+        ).toBe(0);
+
+        // Nothing renews a play session that has ended.
+        expect(
+            renewals.filter((phase) => phase === 'after-stop'),
+            'no renewal may be attempted after the play session ended'
+        ).toEqual([]);
     });
 });

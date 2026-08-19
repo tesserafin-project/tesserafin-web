@@ -252,7 +252,7 @@ test.describe('#153-A1 libass families', () => {
             await page.waitForTimeout(2_000);
         } finally {
             await fallback.dispose();
-            ass.dispose();
+            await ass.dispose();
             await a.dispose();
             writeReport();
         }

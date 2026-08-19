@@ -44,6 +44,16 @@ interface AudioRequest {
     carriesPlaybackCapability: boolean;
     carriesApiKeyParam: boolean;
     status: number | null;
+    /** Real bytes. A 200 with an empty body is not media. */
+    bytes: number | null;
+    /** The play session the URL itself names. */
+    urlPlaySessionId: string | null;
+}
+
+/** One mint, by its REQUEST body. No response is ever read. */
+interface MintRecord {
+    scopes: string[];
+    playSessionId: string | null;
 }
 
 interface Lifecycle {
@@ -79,8 +89,12 @@ test.describe('#153-A1 universal-audio revocation', () => {
         let token = '';
         let firstPlaybackUrl: string | null = null;
         let replayStatus: number | null = null;
+        let replayBytes: number | null = null;
+        const mints: MintRecord[] = [];
+        const renewalsAfterStop: string[] = [];
+        let stopReported = false;
 
-        page.on('response', (response) => {
+        page.on('response', async (response) => {
             const url = response.url();
             if (!/\/audio\/[^/]+\/universal/i.test(url)) return;
             let keys: string[] = [];
@@ -91,18 +105,61 @@ test.describe('#153-A1 universal-audio revocation', () => {
             }
             // Held in memory for the replay below, and never recorded anywhere.
             if (firstPlaybackUrl === null) firstPlaybackUrl = url;
+            let bytes: number | null = null;
+            try {
+                bytes = (await response.body()).length;
+            } catch {
+                bytes = null;
+            }
+            let urlPlaySessionId: string | null = null;
+            try {
+                urlPlaySessionId = new URL(url).searchParams.get(
+                    'PlaySessionId'
+                );
+            } catch {
+                urlPlaySessionId = null;
+            }
             requests.push({
                 redactedUrl: redact(url),
                 carriesPlaybackCapability: keys.includes('playbackCapability'),
                 carriesApiKeyParam: keys.some(
                     (k) => k.toLowerCase() === 'apikey' || k === 'api_key'
                 ),
-                status: response.status()
+                status: response.status(),
+                bytes,
+                urlPlaySessionId
             });
         });
 
         page.on('request', (req) => {
             const url = req.url();
+            // Mints and renewals, by REQUEST body only. The renewal route names the capability,
+            // never the play session, so a renewal seen AFTER the stop is recorded by its arrival
+            // time rather than by matching an id.
+            if (
+                /\/Playback\/Capabilities$/i.test(url) &&
+                req.method() === 'POST'
+            ) {
+                let body: Record<string, unknown> = {};
+                try {
+                    body = JSON.parse(req.postData() ?? '{}');
+                } catch {
+                    body = {};
+                }
+                mints.push({
+                    scopes: Array.isArray(body.Scopes)
+                        ? (body.Scopes as string[])
+                        : [],
+                    playSessionId: (body.PlaySessionId as string) ?? null
+                });
+                return;
+            }
+            if (/\/Playback\/Capabilities\/.+\/Renew/i.test(url)) {
+                renewalsAfterStop.push(
+                    stopReported ? 'after-stop' : 'before-stop'
+                );
+                return;
+            }
             if (!/\/Sessions\/Playing/i.test(url)) return;
             let body: Record<string, unknown> = {};
             try {
@@ -110,6 +167,7 @@ test.describe('#153-A1 universal-audio revocation', () => {
             } catch {
                 body = {};
             }
+            if (/\/Sessions\/Playing\/Stopped/i.test(url)) stopReported = true;
             lifecycle.push({
                 path: new URL(url).pathname,
                 playSessionId: (body.PlaySessionId as string) ?? null,
@@ -126,7 +184,14 @@ test.describe('#153-A1 universal-audio revocation', () => {
             if (!existsSync(dirname(out))) {
                 mkdirSync(dirname(out), { recursive: true });
             }
-            const report = { requests, lifecycle, replayStatus };
+            const report = {
+                requests,
+                lifecycle,
+                mints,
+                renewalsAfterStop,
+                replayStatus,
+                replayBytes
+            };
             writeFileSync(out, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
             // eslint-disable-next-line no-console
             console.log(JSON.stringify(report, null, 2));
@@ -187,6 +252,7 @@ test.describe('#153-A1 universal-audio revocation', () => {
                     headers: { Range: 'bytes=0-0' }
                 });
                 replayStatus = response.status();
+                replayBytes = (await response.body()).length;
             } finally {
                 await replay.dispose();
             }
@@ -208,7 +274,7 @@ test.describe('#153-A1 universal-audio revocation', () => {
                 .toBeGreaterThan(afterFirst);
             await page.waitForTimeout(4_000);
         } finally {
-            audio.dispose();
+            await audio.dispose();
             await a.dispose();
             writeReport();
         }
@@ -235,13 +301,78 @@ test.describe('#153-A1 universal-audio revocation', () => {
             ).toBe(true);
         }
 
+        // Real bytes, not merely a 2xx. An empty 200 is not media, and the whole point of the
+        // pre-stop half is that the capability WORKED before it was revoked.
+        expect(
+            Math.max(...requests.map((r) => r.bytes ?? 0)),
+            'a playback must have carried real media bytes'
+        ).toBeGreaterThan(0);
+
         // THE CONTRACT. The capability the first playback carried is dead now that its play session
         // has ended. Filed under the broker's synthetic play session instead, nothing revokes it and
         // this replay answers 200.
+        //
+        // `401/403` specifically, not "any 4xx": a 404 would mean the item vanished and a 416 would
+        // mean the Range was wrong, and either would pass a `>= 400` assertion while proving
+        // nothing about authorization.
         expect(
-            replayStatus,
-            `the ended play session's capability must be refused (got ${replayStatus})`
-        ).toBeGreaterThanOrEqual(400);
+            [401, 403],
+            `the ended play session's capability must be refused with 401/403 (got ${replayStatus})`
+        ).toContain(replayStatus);
+        expect(
+            replayBytes,
+            'a refused replay must return no media bytes at all'
+        ).toBe(0);
+
+        // The MINT and the LIFECYCLE name the same play session, and it is not empty. Without this
+        // the capability could be minted under one identity and reported under another - which is
+        // exactly the defect the synthetic-id revision had, and no url alone can show it.
+        const mediaMints = mints.filter((m) => m.scopes.includes('Media'));
+        expect(
+            mediaMints.length,
+            'a Media capability was minted'
+        ).toBeGreaterThan(0);
+        for (const mint of mediaMints) {
+            expect(
+                mint.playSessionId ?? '',
+                'every mint must name a non-empty play session'
+            ).not.toBe('');
+        }
+        const reportedStarts = lifecycle
+            .filter((l) => l.path.endsWith('/Playing'))
+            .map((l) => l.playSessionId ?? '');
+        for (const reported of reportedStarts) {
+            expect(
+                reported,
+                'every reported start names a play session'
+            ).not.toBe('');
+        }
+        const urlSessions = new Set(
+            requests
+                .map((r) => r.urlPlaySessionId ?? '')
+                .filter((v) => v !== '')
+        );
+        expect(
+            urlSessions.size,
+            'the media urls must name a play session'
+        ).toBeGreaterThan(0);
+        for (const urlSession of urlSessions) {
+            expect(
+                mediaMints.some((m) => m.playSessionId === urlSession),
+                `the url's play session ${urlSession.slice(0, 4)}… must be the one it was minted under`
+            ).toBe(true);
+            expect(
+                reportedStarts.includes(urlSession),
+                "the url's play session must be the one playback reported"
+            ).toBe(true);
+        }
+
+        // No renewal was attempted for a play session that had already ended. The broker cancels
+        // the timer in `releasePlaySession`; a surviving timer is what this would catch.
+        expect(
+            renewalsAfterStop.filter((phase) => phase === 'after-stop'),
+            'no renewal may be attempted after the play session ended'
+        ).toEqual([]);
 
         // The play session the capability is bound to is the one playback reports, and it really
         // did end: a stop was reported for it before the second playback began.
