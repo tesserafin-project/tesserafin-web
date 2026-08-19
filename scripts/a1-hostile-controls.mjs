@@ -46,6 +46,9 @@ const SDK_PATCHER = 'scripts/patch-jellyfin-sdk.mjs';
 const PLAYBACK = 'src/components/playback/playbackmanager.js';
 const PATCHER = 'scripts/patch-jellyfin-apiclient.mjs';
 const GATE = 'ci/credential-transport-inventory.mjs';
+const ROSTER_GATE = 'ci/verify-a1-acceptance-roster.mjs';
+const CONTRACT = 'tests/playbackCredential/support/familyContract.ts';
+const DELETE_HELPER = 'src/scripts/deleteHelper.js';
 
 /** The assertion commands, kept short so a control is a few seconds, not a few minutes. */
 const UNIT = [
@@ -68,6 +71,22 @@ const PATCHER_VERIFY = [
     'node',
     'scripts/patch-jellyfin-apiclient.mjs',
     '--verify'
+];
+/** The WHOLE inventory, not one phase: the absence categories only run there. */
+const GATE_FULL = ['node', 'ci/credential-transport-inventory.mjs'];
+const ROSTER = ['node', 'ci/verify-a1-acceptance-roster.mjs'];
+/**
+ * Resolving the acceptance suite IMPORTS every spec, and every spec imports the family contract,
+ * whose invariants run at import. So `--list` is a real assertion on the contract and costs a
+ * second, where running the suite would cost twenty minutes.
+ */
+const CONTRACT_IMPORT = [
+    'npx',
+    'playwright',
+    'test',
+    '--config',
+    'playwright.credential.config.ts',
+    '--list'
 ];
 
 /**
@@ -228,6 +247,39 @@ const CONTROLS = [
         replace: "            ticket = 'bypass';",
         assertion: SOCKET_TEST,
         marker: 'without a ticket provider it mints nothing and opens no socket'
+    },
+    {
+        id: 'c14',
+        name: 'restore a production producer of /Audio/{id}/stream',
+        // The CONCATENATION shape, deliberately. The first version of the absence gate required
+        // no quote between `Audio/` and `/stream`, so exactly this line passed it — the control
+        // was run, came back green, and that is how the gate was found to be inert.
+        file: DELETE_HELPER,
+        find: "'Audio/' + item.Id + '/Lyrics'",
+        replace: "'Audio/' + item.Id + '/stream'",
+        assertion: GATE_FULL,
+        marker: 'DIRECT AUDIO IS BACK'
+    },
+    {
+        id: 'c15',
+        name: 'drop a spec from the acceptance roster',
+        file: ROSTER_GATE,
+        find: "    'trickplay.spec.ts',\n",
+        replace: '',
+        assertion: ROSTER,
+        marker: 'unexpected'
+    },
+    {
+        id: 'c16',
+        name: 'demote a reached family back to unreached',
+        // A family that is reached but declared unreached is the stale-excuse half of the
+        // contract. The invariant runs at import, so resolving the suite is enough to reach it.
+        file: CONTRACT,
+        find: "        status: 'required',\n        owner: 'trickplay.spec.ts',",
+        replace:
+            "        status: 'unreached',\n        owner: 'trickplay.spec.ts',",
+        assertion: CONTRACT_IMPORT,
+        marker: 'declared unreached but names an owner'
     },
     {
         id: 'c13',
