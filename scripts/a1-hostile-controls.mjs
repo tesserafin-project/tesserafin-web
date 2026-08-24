@@ -328,7 +328,12 @@ const CONTROLS = [
         // arrives at all and the family poll is what fails. The property is still the binding;
         // this is the shape it fails in, and naming the assertion that actually fires is the
         // difference between a control and a wish.
-        marker: 'selecting the track must reach the font list, a font file and the attachment'
+        // MEASURED AGAIN against the S-MERGE server (#153-WEB-PUBLISH-R0): the spec no longer
+        // fails on the reach check. The attachment request now REACHES the server and is refused
+        // there, so the assertion that fires is the later per-family success check. The property
+        // is unchanged and still caught; only which assertion names it moved. Naming the reach
+        // check here graded a perfectly good RED as ERROR.
+        marker: 'attachment must have succeeded'
     },
     {
         id: 'c19',
