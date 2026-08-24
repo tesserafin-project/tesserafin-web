@@ -1,0 +1,4 @@
+# runtime artefacts of the rig, never committed
+fixture/
+tuner.log
+tunerhost.json
