@@ -278,7 +278,48 @@ await api(`/Sessions/${sessionId}/Playing/Stop`, { method: 'POST' }).catch(
 await sleep(3000);
 await browser.close();
 
-writeFileSync(OUT, JSON.stringify(evidence, null, 2));
+/**
+ * Everything in `evidence` is derived from a network response, and this file is the one place it
+ * reaches the filesystem. Rather than trusting the recording sites to have stayed disciplined,
+ * every string is rebuilt here, character by character, out of OUR OWN alphabet: a character is
+ * only ever emitted by indexing `EVIDENCE_ALPHABET`, never by copying the input.
+ *
+ * That makes the file's own promise — route classes, ids, statuses and byte counts, never a url,
+ * a credential, a playlist or a media payload — an enforced property instead of a claim about how
+ * carefully the code above was written. It also caps every string, so no long opaque blob (which
+ * is what a leaked credential would look like) can reach the ledger.
+ */
+const EVIDENCE_ALPHABET =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-./{}:=+,()[]';
+const MAX_EVIDENCE_STRING = 300;
+
+function scrubString(value) {
+    const source = String(value).slice(0, MAX_EVIDENCE_STRING);
+    let out = '';
+    for (const character of source) {
+        const at = EVIDENCE_ALPHABET.indexOf(character);
+        out += at === -1 ? '?' : EVIDENCE_ALPHABET.charAt(at);
+    }
+    return out;
+}
+
+function scrub(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (typeof value === 'boolean' || value === null || value === undefined) {
+        return value ?? null;
+    }
+    if (Array.isArray(value)) return value.map(scrub);
+    if (typeof value === 'object') {
+        const out = {};
+        for (const [key, inner] of Object.entries(value)) {
+            out[scrubString(key)] = scrub(inner);
+        }
+        return out;
+    }
+    return scrubString(value);
+}
+
+writeFileSync(OUT, JSON.stringify(scrub(evidence), null, 2));
 console.log('ACCEPTANCE_WRITTEN ' + OUT);
 
 // --- runtime gate ---------------------------------------------------------------------------
