@@ -145,3 +145,49 @@ credential-runtime or #153-A1 change is required.
   textual proximity only, no semantic overlap.
 - No other open PR touches `src/components/playback/**`; the remaining open PRs are Dependabot
   bumps limited to `package.json` / `package-lock.json`.
+
+## 10. The rig's positive oracle (#153-WEB-R2)
+
+`#153-WEB-R1` finding **F4-1**: `scripts/livetv-rig/acceptance.mjs` graded source selection with
+`returnedSourceIds[0] !== CHANNEL_ID`. That is a negative property — a server answering with a
+*wrong but different* id passed it — so the rig could not tell "the tuner source was selected" from
+"something other than the channel item was selected".
+
+### Where the expected id comes from
+
+`scripts/livetv-rig/expected-source-id.py` derives it from the rig's own fixture:
+
+| Step | Anchor |
+|------|--------|
+| the channel's `Path` is the trimmed non-`#` playlist line | `src/Tesserafin.LiveTv/TunerHosts/M3uParser.cs:106` |
+| the media source id is that path's MD5, GUID-formatted `N` | `src/Tesserafin.LiveTv/TunerHosts/M3UTunerHost.cs:195` |
+| `GetMD5` hashes the **UTF-16LE** bytes and re-reads them through .NET's little-endian `Guid` field layout | `Tesserafin.Common/Extensions/BaseExtensions.cs:30` |
+
+For this rig's fixture that is `http://127.0.0.1:18099/channel1.ts` →
+`f00baff0a649bca042e0aca880a6eaad`, and the value is **computed, never hardcoded**: changing
+`TESSERAFIN_TUNER_PORT` moves it and the gate follows.
+
+### When it becomes available
+
+`run-acceptance.sh` derives it immediately after `make-fixture.sh` — **before** the tuner process
+starts, before `POST /LiveTv/TunerHosts`, before the channel indexes, and before the browser exists.
+It is handed to the harness as `LTV_EXPECTED_SOURCE_ID`.
+
+### Why the response cannot influence it
+
+The *input* to the hash is a line this rig wrote itself; only the *hash contract* is replicated from
+the server, and a pure function of a value we own is not a value derived from the system under test.
+The oracle is also kept out of record selection: the channel `PlaybackInfo` record is still chosen by
+`itemId === CHANNEL_ID`, so a false oracle fails the equality instead of timing out on selection.
+A missing or non-32-hex oracle **fails** the gate rather than skipping the assertion.
+
+### What the gate now asserts
+
+1. exactly one media source is returned (`sourceCount !== 1` fails — the raw body carries one);
+2. that source's id equals the independently derived tuner source id, printing both named values;
+3. that id is not the channel item id (the original defect shape, kept as a second property);
+4. the browser did not send the channel item id as `MediaSourceId`, and no `ErrorCode` came back.
+
+`scripts/livetv-rig/hostile-controls.mjs` is the permanent proof that all of it is load-bearing: it
+mutates the returned id, the oracle, and the returned id to `CHANNEL_ID`, each in an isolated
+copy under `scripts/livetv-rig/controls/`, and requires the gate to fail **naming that property**.

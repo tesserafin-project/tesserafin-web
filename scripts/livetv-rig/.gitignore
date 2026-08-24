@@ -2,3 +2,6 @@
 fixture/
 tuner.log
 tunerhost.json
+# isolated copies the hostile controls mutate; inside the repo so node_modules resolves
+controls/
+__pycache__/

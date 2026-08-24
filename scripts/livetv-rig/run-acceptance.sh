@@ -25,6 +25,20 @@ say "authenticated"
 
 # --- the ephemeral software tuner ------------------------------------------------------------
 [ -f "$D/fixture/channel1.ts" ] || bash "$D/make-fixture.sh" >&2
+
+# --- the independent positive oracle -------------------------------------------------------
+# Derived HERE, from the fixture this rig just wrote, and therefore before the tuner host is
+# registered, before the channel is indexed and before the PlaybackInfo request being graded
+# exists. See expected-source-id.py for the three server anchors the hash contract replicates.
+# The input is fixture-owned; nothing in the response under test can influence it.
+EXPECTED_SOURCE_ID="$(python3 "$D/expected-source-id.py" "$D/fixture/playlist.m3u")" || {
+    say "could not derive the expected tuner source id from the fixture playlist"; exit 2; }
+case "$EXPECTED_SOURCE_ID" in
+    [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
+    *) say "the derived expected tuner source id is not a 32-hex id: $EXPECTED_SOURCE_ID"; exit 2 ;;
+esac
+say "expected tuner source id $EXPECTED_SOURCE_ID (from the fixture playlist, pre-PlaybackInfo)"
+
 python3 "$D/tuner-server.py" > "$D/tuner.log" 2>&1 &
 TUNER_PID=$!
 trap 'kill "$TUNER_PID" 2>/dev/null; wait "$TUNER_PID" 2>/dev/null' EXIT
@@ -71,7 +85,19 @@ say "movie $MOVIE_ID"
 
 # --- drive the browser ---------------------------------------------------------------------------
 TESSERAFIN_E2E_TOKEN="$TOKEN" LTV_RIG_ASSERT="${LTV_RIG_ASSERT:-1}" \
+    LTV_EXPECTED_SOURCE_ID="$EXPECTED_SOURCE_ID" \
     node "$D/acceptance.mjs" "$MOVIE_ID" "$CHANNEL_ID" "$OUT" "s-merge"
 STATUS=$?
+
+# --- the rig's permanent hostile controls ----------------------------------------------------
+# Opt-in, because they re-drive the browser three more times. They reuse THIS session's server,
+# tuner host and channel; nothing else can, which is why they are invoked from here.
+if [ "${LTV_RIG_CONTROLS:-0}" = "1" ] && [ "$STATUS" -eq 0 ]; then
+    say "running the rig hostile controls"
+    TESSERAFIN_E2E_TOKEN="$TOKEN" \
+        node "$D/hostile-controls.mjs" "$MOVIE_ID" "$CHANNEL_ID" "$EXPECTED_SOURCE_ID" \
+        "$(dirname -- "$OUT")"
+    STATUS=$?
+fi
 say "harness exited $STATUS"
 exit "$STATUS"

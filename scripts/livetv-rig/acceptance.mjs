@@ -24,6 +24,17 @@ const OUT = process.argv[4];
 /** Section 5 of #153 asks for at least 30 s of real browser progression. */
 const MIN_ADVANCE_SECONDS = Number(process.env.LTV_RIG_MIN_ADVANCE ?? '30');
 const LABEL = process.argv[5] ?? 'run';
+/**
+ * The INDEPENDENT positive oracle: the tuner media-source id the fixture owns, derived by
+ * `expected-source-id.py` from the URL line this rig's own `make-fixture.sh` wrote into
+ * `fixture/playlist.m3u` - before the tuner host was registered, before the channel was indexed
+ * and before the PlaybackInfo request graded below existed. It is NOT read out of that response.
+ *
+ * #153-WEB-R1 F4-1: the gate previously asserted only `returnedId !== CHANNEL_ID`, so any
+ * wrong-but-different id passed. Absent or malformed, this now FAILS the gate rather than
+ * relaxing it - an oracle that can go missing is an assertion that can be switched off.
+ */
+const EXPECTED_SOURCE_ID = process.env.LTV_EXPECTED_SOURCE_ID ?? null;
 const PASSWORD = process.env.TESSERAFIN_E2E_PASSWORD ?? '';
 const USERNAME = process.env.TESSERAFIN_E2E_USER ?? '';
 
@@ -352,7 +363,10 @@ function categoriseMessages(messages) {
  * id is NOT the channel item id" — survives without the id itself being written.
  */
 function idNamer() {
+    // `tuner-source` is a LOCAL constant, not a response value, so naming it here keeps the
+    // ledger's rebuilt-from-our-own-alphabet property intact.
     const known = new Map([
+        [EXPECTED_SOURCE_ID, 'tuner-source'],
         [MOVIE_ID, 'movie-item'],
         [CHANNEL_ID, 'channel-item']
     ]);
@@ -438,7 +452,9 @@ console.log('ACCEPTANCE_WRITTEN ' + OUT);
 // a no-op:
 //
 //   1. SOURCE SELECTION. The browser must not send a Live TV channel's placeholder MediaSourceId,
-//      and the server must answer with a real tuner source rather than NoCompatibleStream.
+//      and the server must answer with EXACTLY ONE media source whose id is the tuner source id
+//      the fixture owns - not merely some id that differs from the channel item id, which is all
+//      an earlier revision asserted (#153-WEB-R1 F4-1) and which a wrong id passed.
 //
 //   2. DELIVERY. The channel must actually play: a live playlist, real fragment BYTES, and the
 //      <video> element's own currentTime advancing. An earlier revision could only assert (1),
@@ -464,16 +480,38 @@ if (process.env.LTV_RIG_ASSERT === '1') {
                 `source-selection: channel PlaybackInfo returned ErrorCode ${first.errorCode}`
             );
         }
-        if (!(first.sourceCount >= 1)) {
+        if (first.sourceCount !== 1) {
             failures.push(
-                `source-selection: channel PlaybackInfo returned ${first.sourceCount} sources`
+                `source-selection: channel PlaybackInfo returned ${first.sourceCount} media sources, expected exactly 1`
             );
         }
-        if (first.returnedSourceIds[0] === CHANNEL_ID) {
+        const actualSourceId = first.returnedSourceIds[0] ?? null;
+        if (actualSourceId === CHANNEL_ID) {
             failures.push(
                 'source-selection: the returned source id is the channel item id, not a tuner id'
             );
         }
+        // The POSITIVE property. `expected` is locally derived and safe to print verbatim;
+        // `actual` came off the wire, so naming both is what makes a failure diagnosable. Neither
+        // is a credential.
+        if (EXPECTED_SOURCE_ID && actualSourceId !== EXPECTED_SOURCE_ID) {
+            failures.push(
+                'source-selection: the returned media source id is not the tuner source id the ' +
+                    `fixture owns (expected ${EXPECTED_SOURCE_ID}, actual ${actualSourceId})`
+            );
+        }
+    }
+    // Checked after the record, never before it: the oracle must not take part in SELECTING the
+    // PlaybackInfo record, or a false oracle would time out instead of failing the equality.
+    if (!EXPECTED_SOURCE_ID) {
+        failures.push(
+            'source-selection: no independent expected tuner source id was supplied ' +
+                '(LTV_EXPECTED_SOURCE_ID)'
+        );
+    } else if (!/^[0-9a-f]{32}$/i.test(EXPECTED_SOURCE_ID)) {
+        failures.push(
+            `source-selection: the expected tuner source id is not a 32-hex id (${EXPECTED_SOURCE_ID})`
+        );
     }
     // Delivery. Byte counts come from content-length, so a 200 with an empty body cannot pass.
     const routeTotal = (predicate) =>
