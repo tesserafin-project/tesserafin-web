@@ -42,6 +42,61 @@ vi.mock('@jellyfin/sdk/lib/utils/api/media-info-api', () => ({
     getMediaInfoApi: () => ({ getPostedPlaybackInfo: postedPlaybackInfo })
 }));
 
+/**
+ * #153 A1xP0 INTEGRATION: the credential runtime, stubbed at its ONE transport seam.
+ *
+ * `playbackmanager` now mints a playback capability before it builds a media url
+ * (`lib/playbackCredentials/broker` -> `install.createBroker`). `install.requireTesserafinApi`
+ * THROWS when an `ApiClient` carries no `_tesserafinSdk`, by design — a failed credential
+ * initialisation is a refusal, never a silent degrade to the durable token. In production
+ * `connectionManager` always sets that field; a bare test double never had it, so the first
+ * item's url build threw, playback ended on the `ErrorDefault` / `HeaderPlaybackError` alert,
+ * and the queue never advanced. The visible symptom was one `PlaybackInfo` where the fixture
+ * needs two — a source-selection failure that had nothing to do with source selection.
+ *
+ * Stubbed HERE rather than by hand-rolling a broker, so the real `PlaybackCredentialBroker`,
+ * the real cache and the real play-session binding all still run; only the axios round trip is
+ * replaced. Shapes match `PlaybackCredentialBroker.test.ts`'s own fixtures.
+ */
+let mintedCapabilities = 0;
+const FIFTEEN_MINUTES = 900_000;
+
+vi.mock('lib/tesserafin-sdk/generated/api/playback-credentials-api', () => ({
+    PlaybackCredentialsApi: class {
+        mintPlaybackCapability({
+            playbackCapabilityRequestDto
+        }: {
+            playbackCapabilityRequestDto: { PlaySessionId?: string };
+        }) {
+            mintedCapabilities += 1;
+            return Promise.resolve({
+                data: {
+                    CapabilityId: `ltvp0-cap-${mintedCapabilities}`,
+                    Value: `ltvp0-value-${mintedCapabilities}`,
+                    IssuedAt: new Date(Date.now()).toISOString(),
+                    ExpiresAt: new Date(
+                        Date.now() + FIFTEEN_MINUTES
+                    ).toISOString(),
+                    Scopes: [],
+                    PlaySessionId: playbackCapabilityRequestDto?.PlaySessionId
+                }
+            });
+        }
+
+        renewPlaybackCapability({ capabilityId }: { capabilityId: string }) {
+            return Promise.resolve({
+                data: {
+                    CapabilityId: capabilityId,
+                    IssuedAt: new Date(Date.now()).toISOString(),
+                    ExpiresAt: new Date(
+                        Date.now() + FIFTEEN_MINUTES
+                    ).toISOString()
+                }
+            });
+        }
+    }
+}));
+
 vi.mock('components/alert', () => ({
     default: (opts: unknown) => {
         alerts.push(opts);
@@ -50,6 +105,13 @@ vi.mock('components/alert', () => ({
 }));
 
 const apiClient = {
+    // The seam `lib/playbackCredentials/install.ts` reads. Present on every real `ApiClient`
+    // (`connectionManager` sets it and calls `.update()` on it at each re-login); without it the
+    // credential runtime refuses, and every url build downstream of `PlaybackInfo` throws.
+    _tesserafinSdk: {
+        basePath: 'http://127.0.0.1:8096',
+        configuration: {}
+    },
     serverId: () => SERVER_ID,
     serverAddress: () => 'http://127.0.0.1:8096',
     accessToken: () => 'test-token',
@@ -79,7 +141,6 @@ const apiClient = {
     reportPlaybackStart: () => Promise.resolve(),
     reportPlaybackProgress: () => Promise.resolve(),
     reportPlaybackStopped: () => Promise.resolve(),
-    getLiveStreamFile: () => '',
     sendMessage: () => undefined,
     ajax: () => Promise.resolve({})
 };
