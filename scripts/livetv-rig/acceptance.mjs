@@ -279,47 +279,158 @@ await sleep(3000);
 await browser.close();
 
 /**
- * Everything in `evidence` is derived from a network response, and this file is the one place it
- * reaches the filesystem. Rather than trusting the recording sites to have stayed disciplined,
- * every string is rebuilt here, character by character, out of OUR OWN alphabet: a character is
- * only ever emitted by indexing `EVIDENCE_ALPHABET`, never by copying the input.
+ * PROJECTION, not serialisation.
  *
- * That makes the file's own promise — route classes, ids, statuses and byte counts, never a url,
- * a credential, a playlist or a media payload — an enforced property instead of a claim about how
- * carefully the code above was written. It also caps every string, so no long opaque blob (which
- * is what a leaked credential would look like) can reach the ledger.
+ * Everything in `evidence` is derived from a network response — route classes from response urls,
+ * source ids and error codes from response bodies, console text from the browser — and this is the
+ * one place any of it would reach the filesystem. Hosted CodeQL was right to flag the naive write
+ * (`js/http-to-file-access`, "write to file system depends on untrusted data"), and a character
+ * filter did not answer it: filtered response bytes are still response bytes.
+ *
+ * So the ledger is not a filtered copy of `evidence`. It is REBUILT from this module's own
+ * constants: every string below is either a literal declared here or a number. A response value
+ * can select which literal is emitted; it is never itself emitted. That makes the header's promise
+ * — no url, no credential, no playlist, no media payload — a property of the writer rather than of
+ * how carefully each recording site was written.
+ *
+ * The gate is unaffected: it asserts against `evidence` in memory, before this runs.
  */
-const EVIDENCE_ALPHABET =
-    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-./{}:=+,()[]';
-const MAX_EVIDENCE_STRING = 300;
+const ROUTE_CLASSES = [
+    ['hls-master', /master\.m3u8$/],
+    ['hls-live-playlist', /live\.m3u8$/],
+    ['hls-playlist', /\.m3u8$/],
+    // Order matters: a direct-play url ends in .mp4 too, so it has to be claimed before the
+    // segment rule, and the segment rule is anchored on the /hls/ path the server actually emits.
+    ['direct-stream', /\/Videos\/[^/]+\/stream/i],
+    ['hls-segment', /\/hls\d*\/.*\.(ts|mp4|m4s)$/],
+    ['playback-info', /PlaybackInfo$/],
+    ['live-stream-media-info', /LiveStreams\/MediaInfo$/],
+    ['subtitle', /Subtitles/],
+    ['trickplay', /Trickplay/],
+    ['attachment', /Attachments/],
+    ['font', /FallbackFont/],
+    ['session', /\/Sessions/],
+    ['web-asset', /^\/web\//],
+    ['item', /\/Items|\/Users/],
+    ['system', /\/System|\/Branding|\/QuickConnect|\/SyncPlay/]
+];
 
-function scrubString(value) {
-    const source = String(value).slice(0, MAX_EVIDENCE_STRING);
-    let out = '';
-    for (const character of source) {
-        const at = EVIDENCE_ALPHABET.indexOf(character);
-        out += at === -1 ? '?' : EVIDENCE_ALPHABET.charAt(at);
+const ERROR_CODES = ['NoCompatibleStream', 'NotAllowed', 'RateLimitExceeded'];
+
+const CONSOLE_CATEGORIES = [
+    ['resource-load-failed', /Failed to load resource/i],
+    ['hls-error', /HLS Error/i],
+    ['websocket', /WebSocket/i],
+    ['player-null', /player cannot be null/i]
+];
+
+/** The literal for whichever class matches, or our own fallback. Never the input. */
+function routeClassOf(text) {
+    for (const [name, pattern] of ROUTE_CLASSES) {
+        if (pattern.test(text)) return name;
     }
-    return out;
+    return 'other';
 }
 
-function scrub(value) {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    if (typeof value === 'boolean' || value === null || value === undefined) {
-        return value ?? null;
+function categoriseMessages(messages) {
+    const counts = { total: messages.length };
+    for (const [name] of CONSOLE_CATEGORIES) counts[name] = 0;
+    counts.uncategorised = 0;
+    for (const message of messages) {
+        const hit = CONSOLE_CATEGORIES.find(([, pattern]) =>
+            pattern.test(message)
+        );
+        if (hit) counts[hit[0]] += 1;
+        else counts.uncategorised += 1;
     }
-    if (Array.isArray(value)) return value.map(scrub);
-    if (typeof value === 'object') {
-        const out = {};
-        for (const [key, inner] of Object.entries(value)) {
-            out[scrubString(key)] = scrub(inner);
+    return counts;
+}
+
+/**
+ * Ids are replaced by a per-run ordinal. `known` maps the two ids this run was told to drive (the
+ * movie and the channel) onto their own names, so the interesting relation — "the returned source
+ * id is NOT the channel item id" — survives without the id itself being written.
+ */
+function idNamer() {
+    const known = new Map([
+        [MOVIE_ID, 'movie-item'],
+        [CHANNEL_ID, 'channel-item']
+    ]);
+    const seen = new Map();
+    return (value) => {
+        if (value === null || value === undefined) return null;
+        const key = String(value);
+        const name = known.get(key);
+        if (name) return name;
+        if (!seen.has(key)) seen.set(key, `other-id-${seen.size + 1}`);
+        return seen.get(key);
+    };
+}
+
+function projectEvidence(source) {
+    const nameOf = idNamer();
+    const routes = {};
+    for (const [key, value] of Object.entries(source.routes)) {
+        const cut = key.lastIndexOf(' ');
+        const status = Number.parseInt(key.slice(cut + 1), 10) || 0;
+        const projected = `${routeClassOf(key.slice(0, cut))} ${status}`;
+        if (!routes[projected]) {
+            routes[projected] = {
+                count: 0,
+                bytes: 0,
+                playbackCapability: 0,
+                durableToken: 0
+            };
         }
-        return out;
+        routes[projected].count += value.count;
+        routes[projected].bytes += value.bytes;
+        routes[projected].playbackCapability += value.playbackCapability;
+        routes[projected].durableToken += value.durableToken;
     }
-    return scrubString(value);
+
+    return {
+        label: LABEL,
+        routes,
+        playbackInfoRequests: source.playbackInfoRequests.map((request) => ({
+            item: nameOf(request.itemId),
+            sentMediaSourceId: nameOf(request.sentMediaSourceId),
+            sentMediaSourceIdPresent:
+                request.sentMediaSourceId !== null &&
+                request.sentMediaSourceId !== undefined,
+            sentSubtitleStreamIndex:
+                typeof request.sentSubtitleStreamIndex === 'number'
+                    ? request.sentSubtitleStreamIndex
+                    : null,
+            status: Number(request.status) || 0,
+            sourceCount:
+                typeof request.sourceCount === 'number'
+                    ? request.sourceCount
+                    : null,
+            returnedSourceIds: (request.returnedSourceIds ?? []).map(nameOf),
+            errorCode: request.errorCode
+                ? (ERROR_CODES.find((code) => code === request.errorCode) ??
+                  'other')
+                : null
+        })),
+        playbackAdvanced: source.playbackAdvanced
+            ? {
+                  present: Boolean(source.playbackAdvanced.present),
+                  first: Number(source.playbackAdvanced.first) || 0,
+                  last: Number(source.playbackAdvanced.last) || 0,
+                  advanced: Boolean(source.playbackAdvanced.advanced),
+                  advancedSeconds:
+                      Number(source.playbackAdvanced.advancedSeconds) || 0,
+                  sampleCount: (source.playbackAdvanced.samples ?? []).length
+              }
+            : null,
+        finalNowPlaying: nameOf(source.finalNowPlayingItemId),
+        finalNowPlayingIsChannel: source.finalNowPlayingItemId === CHANNEL_ID,
+        consoleErrors: categoriseMessages(source.consoleErrors),
+        pageErrors: categoriseMessages(source.pageErrors)
+    };
 }
 
-writeFileSync(OUT, JSON.stringify(scrub(evidence), null, 2));
+writeFileSync(OUT, JSON.stringify(projectEvidence(evidence), null, 2));
 console.log('ACCEPTANCE_WRITTEN ' + OUT);
 
 // --- runtime gate ---------------------------------------------------------------------------
