@@ -25,7 +25,7 @@
         "autoprefixer": "10.5.2",
         "axe-core": "4.13.0",
         "babel-loader": "10.1.1",
-        "caniuse-lite": "1.0.30001800",
+        "caniuse-lite": "1.0.30001809",
         "copy-webpack-plugin": "14.0.0",
         "cross-env": "10.1.0",
         "css-loader": "7.1.4",
