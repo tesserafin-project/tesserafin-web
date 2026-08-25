@@ -87,6 +87,13 @@ jobs:
           # not recognise rather than silently leaving a sink in place.
           - verify:jellyfin-apiclient-patch
           - test:jellyfin-apiclient-patch
+          # #153-A1. A SECOND package builds a socket url with the durable
+          # session token: `@jellyfin/sdk`'s `Api.subscribe`/`Api.update`. It
+          # gets its own repository-owned transform, so it needs its own leg —
+          # this list is hardcoded, and a gate that only runs in `validate:full`
+          # locally is a gate hosted CI cannot enforce.
+          - verify:jellyfin-sdk-patch
+          - test:jellyfin-sdk-patch
 
     steps:
       - name: Checkout ⬇️

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /*
- * Remove `jellyfin-apiclient`'s credential-bearing console statements at install time (#152).
+ * Remove `jellyfin-apiclient`'s credential-bearing console statements (#152) and its durable-token
+ * WebSocket url construction (#153-A1), at install time.
  *
  * WHY THIS EXISTS
  *
@@ -92,7 +93,7 @@ import {
     unlinkSync,
     writeFileSync
 } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -114,7 +115,7 @@ export const MAP_RELATIVE = join('dist', 'jellyfin-apiclient.js.map');
 export const PRISTINE_SHA256 =
     'b39363f92f6946407d57623068699520e26bd9e784c93aabf9754544aad04832';
 export const PATCHED_SHA256 =
-    '49aef09f849a52bdcfb05129110c5d8cc2820e4e082451cb062062fac659948b';
+    '68068867e336be4e97f345ec437afc30303e3ea306f059581837b5c94f885f60';
 
 /**
  * Every credential-capable console statement in the published bundle, with the sanitized form that
@@ -125,6 +126,23 @@ export const PATCHED_SHA256 =
  * credentials document itself.
  */
 export const UNSAFE_FRAGMENTS = [
+    {
+        category: 'transport',
+        note:
+            '#153-A1. openWebSocket built the socket url with `?api_key=<accessToken()>` — the ' +
+            'durable session token, in a url. This app never calls it: `lib/playbackCredentials/' +
+            'boot.ts` occupies `Api.webSocket` before any subscriber runs, so every upgrade goes ' +
+            'through the ticketed service instead, and this method has ZERO first-party callers. ' +
+            'It is replaced by a refusal rather than by a ticketed url on purpose: a dead code ' +
+            'path that quietly still works is how a bypass of the injection would fall back to ' +
+            'the durable token without anything failing.',
+        unsafe: 't+="?api_key=".concat(e),t+="&deviceId=".concat(this.deviceId()),',
+        // Kept SHORT on purpose: the replacement lands in the initial delivery graph, whose
+        // gzip ceiling had 17 bytes of headroom, and the long form put it 14 bytes over. The
+        // issue number is the pointer; the full rationale is the note above, not the runtime
+        // string.
+        safe: '(function(){throw new Error("openWebSocket disabled: #153-A1")})(),'
+    },
     {
         category: 'credentials',
         note: 'openWebSocket — the socket url built with `api_key=<accessToken()>`. This is #152.',
@@ -216,19 +234,27 @@ class PatchError extends Error {}
  * `realpath` collapses symlinks first, so a link planted inside `node_modules` cannot redirect the
  * write to another tree.
  */
-export function resolvePackageDir(root) {
-    const expected = join(resolve(root), 'node_modules', PACKAGE_NAME);
+export function resolvePackageDir(root, packageName = PACKAGE_NAME) {
+    const expected = join(
+        resolve(root),
+        'node_modules',
+        ...packageName.split('/')
+    );
     if (!existsSync(expected)) return null;
     if (lstatSync(expected).isSymbolicLink())
         throw new PatchError(
-            `${PACKAGE_NAME} resolves through a symlink; refusing to patch`
+            `${packageName} resolves through a symlink; refusing to patch`
         );
     const real = realpathSync(expected);
     const realRoot = realpathSync(resolve(root));
-    const rel = relative(join(realRoot, 'node_modules'), real);
-    if (rel !== PACKAGE_NAME)
+    // `relative` yields the platform separator; the package name always uses `/`, so normalise
+    // before comparing or a scoped package would never match on Windows.
+    const rel = relative(join(realRoot, 'node_modules'), real)
+        .split(sep)
+        .join('/');
+    if (rel !== packageName)
         throw new PatchError(
-            `${PACKAGE_NAME} resolves outside its own package root; refusing to patch`
+            `${packageName} resolves outside its own package root; refusing to patch`
         );
     return real;
 }
@@ -503,7 +529,7 @@ export function run({
                     'pre-patch sources verbatim'
             );
         log(
-            `${PACKAGE_NAME}@${version}: already patched (${UNSAFE_FRAGMENTS.length} sinks removed).`
+            `${PACKAGE_NAME}@${version}: already patched (${UNSAFE_FRAGMENTS.length} fragment(s) rewritten).`
         );
         return 'already-patched';
     }
@@ -538,7 +564,9 @@ export function run({
     rmSync(join(packageDir, MAP_RELATIVE), { force: true });
 
     log(
-        `${PACKAGE_NAME}@${version}: patched — ${UNSAFE_FRAGMENTS.length} credential-capable console sink(s) removed.`
+        `${PACKAGE_NAME}@${version}: patched — ${UNSAFE_FRAGMENTS.length} credential-capable fragment(s) rewritten ` +
+            `(${UNSAFE_FRAGMENTS.filter((f) => f.category === 'transport').length} transport, ` +
+            `${UNSAFE_FRAGMENTS.filter((f) => f.category !== 'transport').length} console).`
     );
     return 'patched';
 }

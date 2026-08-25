@@ -8,6 +8,8 @@ import Dashboard from 'utils/dashboard';
 import Events from 'utils/events';
 import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
 
+import { disposePlaybackCredentials } from 'lib/playbackCredentials/broker';
+
 import ConnectionManager from './connectionManager';
 
 const normalizeImageOptions = (options) => {
@@ -47,6 +49,14 @@ class ServerConnections extends ConnectionManager {
         this.firstConnection = null;
 
         Events.on(this, 'localusersignedout', (_e, logoutInfo) => {
+            // #153-A1: the media capabilities belong to the session that just ended. Dropping
+            // them here cancels every renewal timer, so nothing keeps extending a credential for
+            // a user who signed out. The socket is not this handler's business: ConnectionManager
+            // calls `Api.update()` with an empty access token, and the patched WebSocketService
+            // disconnects and cancels any ticket mint in flight.
+            for (const apiClient of this.getApiClients()) {
+                disposePlaybackCredentials(apiClient);
+            }
             setUserInfo(null, null);
             // Ensure the updated credentials are persisted to storage
             credentialProvider.credentials(credentialProvider.credentials());
@@ -65,6 +75,15 @@ class ServerConnections extends ConnectionManager {
 
             // Calling getApi will ensure apiClient._sdk is initialized.
             this.getApi(apiClient.serverId());
+            // ...and getTesserafinApi the same for _tesserafinSdk, which is what the credential
+            // broker mints through.
+            this.getTesserafinApi(apiClient.serverId());
+
+            // #153-A1-R2: nothing is installed onto `_sdk.webSocket` any more. `Api.subscribe()`
+            // builds the SHIPPED WebSocketService, which the sdk patcher taught to mint a fresh
+            // single-use ticket for every physical upgrade attempt - including every reconnect -
+            // and to refuse to connect at all when no ticket can be minted. Both this binding and
+            // the direct `api.subscribe(...)` call sites get that socket with no seam in between.
             apiClient.subscribe = apiClient._sdk.subscribe.bind(apiClient._sdk);
         });
     }
