@@ -62,14 +62,9 @@ test('the two themes produced a matched pair of every required state', () => {
 
     /*
      * Two themes that resolved to the same presentation would make the pairing pointless, so the
-     * floor is that the resolved values actually differ. This is NOT the deferred project of making
-     * Classic and Frosted look more different from each other.
-     *
-     * The comparison is on resolved TOKENS rather than on the `data-rf-*` recipe attributes,
-     * because on these surfaces the recipe attribute set is empty — the presentation record is
-     * bound on the modern Item Details route, and the wizard, the toolbar and Display preferences
-     * carry the theme through tokens alone. The index records the empty recipe rather than hiding
-     * it, and that is a fact about where the recipe is bound today, not about these captures.
+     * floor is that the resolved tokens actually differ. Since #145 the resolved surface recipe is
+     * bound on `<html>` as well, and `assertMatchedPairs` checks — at every layout — that it and
+     * the wizard card's computed material differ between the themes, not only their tint.
      */
     const tokensOf = (list: CaptureRecord[]) =>
         JSON.stringify(

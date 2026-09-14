@@ -1,6 +1,7 @@
 import React, {
     createContext,
     useContext,
+    useEffect,
     useMemo,
     useSyncExternalStore,
     type FC,
@@ -59,6 +60,28 @@ const DEFAULT_VALUE: PresentationContextValue = {
 
 const PresentationContext =
     createContext<PresentationContextValue>(DEFAULT_VALUE);
+
+/**
+ * Projects `surface` onto `<html>` as `data-rf-surface-<key>`, returning a function that restores
+ * exactly the prior state — the `themes/applyProfiles.ts` contract: an attribute that was absent
+ * goes back to absent, never to the empty string. Kept this small because it ships in the main
+ * bundle.
+ */
+const applySurfaceToRoot = (surface: Record<string, string>) => {
+    const root = document.documentElement;
+    const previous: [string, string | null][] = [];
+    for (const [key, value] of Object.entries(surface)) {
+        const name = `data-rf-surface-${key}`;
+        previous.push([name, root.getAttribute(name)]);
+        root.setAttribute(name, value);
+    }
+    return () => {
+        for (const [name, value] of previous) {
+            if (value === null) root.removeAttribute(name);
+            else root.setAttribute(name, value);
+        }
+    };
+};
 
 export interface PresentationProviderProps {
     /** Registry theme id, e.g. `official.classic`. A theme with no manifest yields the default. */
@@ -124,6 +147,19 @@ export const PresentationProvider: FC<PresentationProviderProps> = ({
             activatable: true
         };
     }, [themeId, value, localPresentation]);
+
+    const { variant, border, elevation } = resolved.presentation.surface;
+
+    /*
+     * The root provider also projects the resolved surface onto `<html>` (#145), so surfaces that
+     * are not React primitives — the legacy first-run wizard — can take a theme's material from CSS
+     * without reading a theme id. A provider given `value` (a Theme Studio preview, a test) is a
+     * nested, local presentation and must never repaint the document behind it.
+     */
+    useEffect(() => {
+        if (value) return;
+        return applySurfaceToRoot({ variant, border, elevation });
+    }, [value, variant, border, elevation]);
 
     return (
         <PresentationContext.Provider value={resolved}>

@@ -15,6 +15,11 @@ import {
     scanPage,
     type AxeResult
 } from '../e2e/support/axe';
+import {
+    FROSTED,
+    REQUESTED_THEMES,
+    waitForResolvedTheme
+} from './support/captureBody';
 import { administrator, installFixtureApi, USER_A } from './support/fixtureApi';
 import {
     addCustomPack,
@@ -83,14 +88,16 @@ test.afterAll(() => {
 
 const fresh = (
     page: Parameters<typeof installFixtureApi>[0],
-    baseURL: string
+    baseURL: string,
+    theme?: string
 ) =>
     installFixtureApi(page, baseURL, DIST, {
         signedIn: false,
         wizardCompleted: false,
         users: [administrator()],
         currentUserId: USER_A,
-        packs: []
+        packs: [],
+        theme
     });
 
 async function signIn(page: Parameters<typeof installFixtureApi>[0]) {
@@ -99,6 +106,27 @@ async function signIn(page: Parameters<typeof installFixtureApi>[0]) {
     await page.fill(`${USER_PAGE} #txtPasswordConfirm`, 'axe-test-password');
     await page.click(`${USER_PAGE} button[type="submit"]`);
     await page.waitForURL(/#\/wizard\/library/, { timeout: 30_000 });
+}
+
+/**
+ * Sign in, then reload with the setup still incomplete so the application resolves the user's
+ * theme by itself — the same route `captureBody` takes. Before sign-in there is no user whose theme
+ * could resolve, which is why the user step above is scanned in the default theme only.
+ *
+ * The surface variant is asserted as well as the theme id: a Glass scan that ran against an opaque
+ * card would be a Classic scan under a Glass label (#145).
+ */
+async function signInAs(
+    page: Parameters<typeof installFixtureApi>[0],
+    theme: string
+) {
+    await signIn(page);
+    await page.reload();
+    await waitForResolvedTheme(page, theme);
+    await expect(page.locator('html')).toHaveAttribute(
+        'data-rf-surface-variant',
+        theme === FROSTED ? 'glass' : 'opaque'
+    );
 }
 
 test('the engine is the pinned one', () => {
@@ -124,22 +152,31 @@ test('the user step is clean, including its failure state', async ({
     record('wizard/user — authentication failed', await scanPage(page));
 });
 
-test('the seeding step is clean, empty and populated', async ({
-    page,
-    baseURL
-}) => {
-    await fresh(page, baseURL!);
-    await openUserStep(page);
-    await signIn(page);
+/*
+ * Once per official theme (#145): the wizard card takes each theme's material, so contrast on a
+ * frosted card over its wash is a different measurement from contrast on an opaque one.
+ */
+for (const theme of REQUESTED_THEMES) {
+    test(`the seeding step is clean, empty and populated, in ${theme}`, async ({
+        page,
+        baseURL
+    }) => {
+        await fresh(page, baseURL!, theme);
+        await openUserStep(page);
+        await signInAs(page, theme);
 
-    await openPacksStep(page);
-    record('wizard/packs — nothing selected', await scanPage(page));
+        await openPacksStep(page);
+        record(
+            `wizard/packs — nothing selected (${theme})`,
+            await scanPage(page)
+        );
 
-    await selectPack(page, 'Music');
-    await selectPack(page, 'Sport');
-    await addCustomPack(page, 'Grandad’s tapes');
-    record('wizard/packs — populated', await scanPage(page));
-});
+        await selectPack(page, 'Music');
+        await selectPack(page, 'Sport');
+        await addCustomPack(page, 'Grandad’s tapes');
+        record(`wizard/packs — populated (${theme})`, await scanPage(page));
+    });
+}
 
 test('the settings control is clean', async ({ page, baseURL }) => {
     await installFixtureApi(page, baseURL!, DIST, {
@@ -171,21 +208,23 @@ test('the settings control is clean', async ({ page, baseURL }) => {
     );
 });
 
-test('the seeding step is clean at a mobile viewport', async ({
-    page,
-    baseURL
-}) => {
-    // Target size and reflow rules only fire at a small viewport, so the same DOM has to be scanned
-    // again there rather than assumed to carry over from desktop.
-    await page.setViewportSize({ width: 412, height: 915 });
-    await fresh(page, baseURL!);
-    await openUserStep(page);
-    await signIn(page);
-    await openPacksStep(page);
-    await selectPack(page, 'Music');
+for (const theme of REQUESTED_THEMES) {
+    test(`the seeding step is clean at a mobile viewport, in ${theme}`, async ({
+        page,
+        baseURL
+    }) => {
+        // Target size and reflow rules only fire at a small viewport, so the same DOM has to be
+        // scanned again there rather than assumed to carry over from desktop.
+        await page.setViewportSize({ width: 412, height: 915 });
+        await fresh(page, baseURL!, theme);
+        await openUserStep(page);
+        await signInAs(page, theme);
+        await openPacksStep(page);
+        await selectPack(page, 'Music');
 
-    record(
-        'wizard/packs — mobile viewport',
-        await scanPage(page, [PACKS_PAGE])
-    );
-});
+        record(
+            `wizard/packs — mobile viewport (${theme})`,
+            await scanPage(page, [PACKS_PAGE])
+        );
+    });
+}

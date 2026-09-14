@@ -265,6 +265,111 @@ describe('applying a draft takes effect without a reload', () => {
     });
 });
 
+describe('document surface binding (#145)', () => {
+    const html = document.documentElement;
+    const surfaceAttributes = () => ({
+        variant: html.getAttribute('data-rf-surface-variant'),
+        border: html.getAttribute('data-rf-surface-border'),
+        elevation: html.getAttribute('data-rf-surface-elevation')
+    });
+
+    afterEach(() => {
+        clearAppliedPresentation();
+        html.removeAttribute('data-rf-surface-variant');
+        html.removeAttribute('data-rf-surface-border');
+        html.removeAttribute('data-rf-surface-elevation');
+    });
+
+    it('projects the resolved surface of each official theme onto <html>', () => {
+        act(() => {
+            root.render(<PresentationProvider themeId='official.glass' />);
+        });
+        expect(surfaceAttributes()).toEqual({
+            variant: 'glass',
+            border: 'hairline',
+            elevation: 'level2'
+        });
+
+        act(() => {
+            root.render(<PresentationProvider themeId='official.classic' />);
+        });
+        expect(surfaceAttributes()).toEqual({
+            variant: 'opaque',
+            border: 'none',
+            elevation: 'level1'
+        });
+    });
+
+    it('follows the resolved record, not the theme id', () => {
+        // A legacy preset has no manifest and gets the platform default; an applied draft wins over
+        // the official manifest. Neither is visible from the id alone.
+        act(() => {
+            root.render(<PresentationProvider themeId='blueradiance' />);
+        });
+        expect(surfaceAttributes()).toEqual(
+            PLATFORM_DEFAULT_PRESENTATION.surface
+        );
+
+        act(() => {
+            saveAppliedPresentation({ surface: { variant: 'glass' } });
+        });
+        expect(surfaceAttributes().variant).toBe('glass');
+    });
+
+    it('restores <html> exactly on unmount — absent stays absent', () => {
+        html.setAttribute('data-rf-surface-variant', 'before');
+        act(() => {
+            root.render(<PresentationProvider themeId='official.glass' />);
+        });
+        act(() => {
+            root.render(<></>);
+        });
+        expect(surfaceAttributes()).toEqual({
+            variant: 'before',
+            border: null,
+            elevation: null
+        });
+    });
+
+    it('a provider given `value` never writes the document', () => {
+        const preview = {
+            presentation: {
+                ...PLATFORM_DEFAULT_PRESENTATION,
+                surface: {
+                    variant: 'glass' as const,
+                    border: 'hairline' as const,
+                    elevation: 'level3' as const
+                }
+            },
+            fallbacks: [],
+            activatable: true
+        };
+
+        act(() => {
+            root.render(<PresentationProvider value={preview} />);
+        });
+        expect(surfaceAttributes()).toEqual({
+            variant: null,
+            border: null,
+            elevation: null
+        });
+
+        // Nested inside the root provider, the preview must not repaint what the root bound.
+        act(() => {
+            root.render(
+                <PresentationProvider themeId='official.classic'>
+                    <PresentationProvider value={preview} />
+                </PresentationProvider>
+            );
+        });
+        expect(surfaceAttributes()).toEqual({
+            variant: 'opaque',
+            border: 'none',
+            elevation: 'level1'
+        });
+    });
+});
+
 describe('manifest / registry parity', () => {
     it('every manifest still resolves through the registry', () => {
         // `getManifestForThemeId` keys on `tokenThemeId ?? id`. A registry rename would silently
