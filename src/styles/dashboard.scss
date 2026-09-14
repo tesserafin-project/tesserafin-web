@@ -1,5 +1,3 @@
-@use '../ui/styles/glass-surface' as glass;
-
 .dashboardColumn,
 .dashboardSections {
     flex-direction: column;
@@ -258,76 +256,12 @@ div[data-role=controlgroup] a.ui-btn-active {
     background: #fff;
 }
 
-.wizardContent form {
-    max-width: 100%;
-}
-
-/*
- * The first-run wizard's material (#145), taken from the resolved `presentation.surface` that
- * `PresentationProvider` projects onto `<html>` and from `--rf-*` tokens — never from a theme id.
- *
- * Only material moves: background, radius, hairline, elevation, blur. Padding, width and every
- * box dimension stay as above, so the step geometry repaired in #144 is untouched — which is why
- * the hairline is an inset `outline` and not a `border`.
- */
-:root[data-rf-surface-variant] .wizardContent {
-    border-radius: var(--rf-shape-radius-lg, 0);
-}
-
-/* The inner step forms must not paint over the card's material. */
-:root[data-rf-surface-variant] .wizardContent form {
-    background: none;
-}
-
-:root[data-rf-surface-variant='opaque'] .wizardContent {
-    background: var(--rf-color-surface, #202020);
-}
-
-:root[data-rf-surface-variant='glass'] .wizardContent {
-    @include glass.rf-glass-surface;
-}
-
-:root[data-rf-surface-border='hairline'] .wizardContent {
-    outline: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
-    outline-offset: -1px;
-}
-
-:root[data-rf-surface-elevation='level0'] .wizardContent {
-    box-shadow: var(--rf-elevation-level0, none);
-}
-
-:root[data-rf-surface-elevation='level1'] .wizardContent {
-    box-shadow: var(--rf-elevation-level1, none);
-}
-
-:root[data-rf-surface-elevation='level2'] .wizardContent {
-    box-shadow: var(--rf-elevation-level2, none);
-}
-
-:root[data-rf-surface-elevation='level3'] .wizardContent {
-    box-shadow: var(--rf-elevation-level3, none);
-}
-
-/*
- * A blur over a flat page is invisible, so glass alone gets one faint primary wash behind the card
- * for the frost to read against. Image only — the page colour stays the theme's — and gone under
- * reduced transparency, where glass keeps its hairline, radius and elevation.
- */
-:root[data-rf-surface-variant='glass'] .wizardPage {
-    background-image:
-        radial-gradient(
-            ellipse at 50% 0%,
-            color-mix(in srgb, var(--rf-color-primary, #4fd1ff) 8%, transparent),
-            transparent 70%
-        );
-
-    @media (prefers-reduced-transparency: reduce) {
-        background-image: none;
-    }
-}
-
 .wizardNavigation {
     text-align: right;
+}
+
+.wizardContent form {
+    max-width: 100%;
 }
 
 .scheduledTaskPaperIconItem {
