@@ -61,41 +61,25 @@ const DEFAULT_VALUE: PresentationContextValue = {
 const PresentationContext =
     createContext<PresentationContextValue>(DEFAULT_VALUE);
 
-/** The three document attributes carrying the resolved `presentation.surface`, and nothing else. */
-const SURFACE_ATTRIBUTES = {
-    variant: 'data-rf-surface-variant',
-    border: 'data-rf-surface-border',
-    elevation: 'data-rf-surface-elevation'
-} as const;
-
 /**
- * Projects `surface` onto `root`, returning a function that restores `root` to exactly the state it
- * was in beforehand — the same contract as `themes/applyProfiles.ts`: an attribute that was absent
- * goes back to absent, never to the empty string.
+ * Projects `surface` onto `<html>` as `data-rf-surface-<key>`, returning a function that restores
+ * exactly the prior state — the `themes/applyProfiles.ts` contract: an attribute that was absent
+ * goes back to absent, never to the empty string. Kept this small because it ships in the main
+ * bundle.
  */
-export const applySurfaceToRoot = (
-    root: HTMLElement,
-    surface: ResolvedPresentation['surface']
-): (() => void) => {
-    const keys = Object.keys(SURFACE_ATTRIBUTES) as Array<
-        keyof typeof SURFACE_ATTRIBUTES
-    >;
-    const previous = keys.map((key) =>
-        root.getAttribute(SURFACE_ATTRIBUTES[key])
+const applySurfaceToRoot = (surface: Record<string, string>) => {
+    const root = document.documentElement;
+    const names = Object.keys(surface).map((key) => `data-rf-surface-${key}`);
+    const previous = names.map((name) => root.getAttribute(name));
+    names.forEach((name, i) =>
+        root.setAttribute(name, Object.values(surface)[i])
     );
-    for (const key of keys)
-        root.setAttribute(SURFACE_ATTRIBUTES[key], surface[key]);
-
-    return () => {
-        keys.forEach((key, index) => {
-            const value = previous[index];
-            if (value === null) {
-                root.removeAttribute(SURFACE_ATTRIBUTES[key]);
-            } else {
-                root.setAttribute(SURFACE_ATTRIBUTES[key], value);
-            }
-        });
-    };
+    return () =>
+        names.forEach((name, i) =>
+            previous[i] === null
+                ? root.removeAttribute(name)
+                : root.setAttribute(name, previous[i])
+        );
 };
 
 export interface PresentationProviderProps {
@@ -173,11 +157,7 @@ export const PresentationProvider: FC<PresentationProviderProps> = ({
      */
     useEffect(() => {
         if (value) return;
-        return applySurfaceToRoot(document.documentElement, {
-            variant,
-            border,
-            elevation
-        });
+        return applySurfaceToRoot({ variant, border, elevation });
     }, [value, variant, border, elevation]);
 
     return (
