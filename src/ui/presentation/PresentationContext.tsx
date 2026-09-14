@@ -1,6 +1,7 @@
 import React, {
     createContext,
     useContext,
+    useEffect,
     useMemo,
     useSyncExternalStore,
     type FC,
@@ -59,6 +60,43 @@ const DEFAULT_VALUE: PresentationContextValue = {
 
 const PresentationContext =
     createContext<PresentationContextValue>(DEFAULT_VALUE);
+
+/** The three document attributes carrying the resolved `presentation.surface`, and nothing else. */
+const SURFACE_ATTRIBUTES = {
+    variant: 'data-rf-surface-variant',
+    border: 'data-rf-surface-border',
+    elevation: 'data-rf-surface-elevation'
+} as const;
+
+/**
+ * Projects `surface` onto `root`, returning a function that restores `root` to exactly the state it
+ * was in beforehand — the same contract as `themes/applyProfiles.ts`: an attribute that was absent
+ * goes back to absent, never to the empty string.
+ */
+export const applySurfaceToRoot = (
+    root: HTMLElement,
+    surface: ResolvedPresentation['surface']
+): (() => void) => {
+    const keys = Object.keys(SURFACE_ATTRIBUTES) as Array<
+        keyof typeof SURFACE_ATTRIBUTES
+    >;
+    const previous = keys.map((key) =>
+        root.getAttribute(SURFACE_ATTRIBUTES[key])
+    );
+    for (const key of keys)
+        root.setAttribute(SURFACE_ATTRIBUTES[key], surface[key]);
+
+    return () => {
+        keys.forEach((key, index) => {
+            const value = previous[index];
+            if (value === null) {
+                root.removeAttribute(SURFACE_ATTRIBUTES[key]);
+            } else {
+                root.setAttribute(SURFACE_ATTRIBUTES[key], value);
+            }
+        });
+    };
+};
 
 export interface PresentationProviderProps {
     /** Registry theme id, e.g. `official.classic`. A theme with no manifest yields the default. */
@@ -124,6 +162,23 @@ export const PresentationProvider: FC<PresentationProviderProps> = ({
             activatable: true
         };
     }, [themeId, value, localPresentation]);
+
+    const { variant, border, elevation } = resolved.presentation.surface;
+
+    /*
+     * The root provider also projects the resolved surface onto `<html>` (#145), so surfaces that
+     * are not React primitives — the legacy first-run wizard — can take a theme's material from CSS
+     * without reading a theme id. A provider given `value` (a Theme Studio preview, a test) is a
+     * nested, local presentation and must never repaint the document behind it.
+     */
+    useEffect(() => {
+        if (value) return;
+        return applySurfaceToRoot(document.documentElement, {
+            variant,
+            border,
+            elevation
+        });
+    }, [value, variant, border, elevation]);
 
     return (
         <PresentationContext.Provider value={resolved}>

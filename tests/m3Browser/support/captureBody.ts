@@ -54,6 +54,8 @@ export interface CaptureRecord {
     tokens: Record<string, string>;
     /** Every `data-rf-*` presentation attribute the resolver put on the document. */
     recipe: Record<string, string>;
+    /** Computed material of the wizard card and page (#145); `null` on non-wizard states. */
+    material: Record<string, string> | null;
     /** The signed-in user, read out of the application's own credential store. */
     userId: string | null;
     /** The persisted preference the resolver read, and where it lived. */
@@ -128,7 +130,28 @@ async function evidence(page: Page, tokenNames: string[]) {
                   .filter(Boolean)
                   .join('');
 
+        // The material the theme gave the wizard card and page (#145), read as computed style so a
+        // tint-only difference cannot pass for a material one. `null` off the wizard.
+        const card = document.querySelector<HTMLElement>(
+            '#wizardPacksPage .wizardContent'
+        );
+        let material: Record<string, string> | null = null;
+        if (card) {
+            const cardStyle = getComputedStyle(card);
+            material = {
+                backgroundColor: cardStyle.backgroundColor,
+                backdropFilter: cardStyle.backdropFilter,
+                borderRadius: cardStyle.borderRadius,
+                boxShadow: cardStyle.boxShadow,
+                outline: `${cardStyle.outlineStyle} ${cardStyle.outlineWidth}`,
+                pageBackgroundImage: getComputedStyle(
+                    card.closest('.wizardPage') ?? card
+                ).backgroundImage
+            };
+        }
+
         return {
+            material,
             resolvedTheme: root.getAttribute('data-rf-theme'),
             mode: root.getAttribute('data-rf-mode'),
             tokens,
@@ -151,7 +174,10 @@ async function evidence(page: Page, tokenNames: string[]) {
  * display-preferences query resolved. Screenshotting before that is a race that passes on an idle
  * machine and files a Classic image under a Frosted name on a loaded one.
  */
-async function waitForResolvedTheme(page: Page, theme: string): Promise<void> {
+export async function waitForResolvedTheme(
+    page: Page,
+    theme: string
+): Promise<void> {
     await page.waitForFunction(
         (expected: string) =>
             document.documentElement.getAttribute('data-rf-theme') === expected,
@@ -242,6 +268,7 @@ function shooter(
             mode: seen.mode,
             tokens: seen.tokens,
             recipe: seen.recipe,
+            material: seen.material,
             userId: seen.userId,
             persisted: {
                 key: seen.userId ? `${seen.userId}-appTheme` : '(no session)',
@@ -602,6 +629,37 @@ export function assertMatchedPairs(
             throw new Error(
                 `${state}: the two themes produced byte-identical images ` +
                     `(${a.sha256}) - one of them did not resolve what it claims`
+            );
+        }
+
+        /*
+         * #145: the themes must differ in material on the wizard, not only in tint. The recipe is
+         * read off `<html>`, the material off the card's computed style.
+         */
+        if (
+            a.recipe['data-rf-surface-variant'] !== 'opaque' ||
+            b.recipe['data-rf-surface-variant'] !== 'glass'
+        ) {
+            throw new Error(
+                `${state}: surface recipe is not Classic=opaque / Frosted=glass ` +
+                    `(${JSON.stringify(a.recipe)} vs ${JSON.stringify(b.recipe)})`
+            );
+        }
+        if (!REQUIRED_STATES.includes(state)) continue;
+        const [ma, mb] = [a.material, b.material];
+        if (
+            !ma ||
+            !mb ||
+            ma.backdropFilter !== 'none' ||
+            !mb.backdropFilter.includes('blur') ||
+            ma.outline.startsWith('solid') ||
+            !mb.outline.startsWith('solid') ||
+            ma.pageBackgroundImage !== 'none' ||
+            !mb.pageBackgroundImage.includes('radial-gradient')
+        ) {
+            throw new Error(
+                `${state}: the wizard card's material does not differ as the recipe says ` +
+                    `(${JSON.stringify(ma)} vs ${JSON.stringify(mb)})`
             );
         }
     }
