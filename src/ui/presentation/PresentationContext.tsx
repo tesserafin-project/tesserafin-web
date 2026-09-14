@@ -69,17 +69,18 @@ const PresentationContext =
  */
 const applySurfaceToRoot = (surface: Record<string, string>) => {
     const root = document.documentElement;
-    const names = Object.keys(surface).map((key) => `data-rf-surface-${key}`);
-    const previous = names.map((name) => root.getAttribute(name));
-    names.forEach((name, i) =>
-        root.setAttribute(name, Object.values(surface)[i])
-    );
-    return () =>
-        names.forEach((name, i) =>
-            previous[i] === null
-                ? root.removeAttribute(name)
-                : root.setAttribute(name, previous[i])
-        );
+    const previous: [string, string | null][] = [];
+    for (const [key, value] of Object.entries(surface)) {
+        const name = `data-rf-surface-${key}`;
+        previous.push([name, root.getAttribute(name)]);
+        root.setAttribute(name, value);
+    }
+    return () => {
+        for (const [name, value] of previous) {
+            if (value === null) root.removeAttribute(name);
+            else root.setAttribute(name, value);
+        }
+    };
 };
 
 export interface PresentationProviderProps {
