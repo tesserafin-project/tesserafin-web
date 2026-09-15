@@ -38,7 +38,7 @@ globals before EPUB.js loads and counts constructions, so "the browser used the
 browser's parser" is a measurement rather than an assumption.
 
 The other half of that — the `@xmldom/xmldom` fallback itself, which this
-repository pins to 0.8.13 under an epubjs-scoped override — cannot run here,
+repository pins to 0.8.15 under an epubjs-scoped override — cannot run here,
 because EPUB.js's archive and request layers dereference `window` and
 `XMLHttpRequest`. It is covered by `scripts/epub-xmldom-fallback.test.mjs`
 (`npm run test:epub-xmldom-fallback`), which drives EPUB.js's XML layer with no

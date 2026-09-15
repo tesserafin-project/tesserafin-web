@@ -18,7 +18,7 @@ import { FIXTURE_EPUB, HARNESS_EPUB, watchOrigin } from './support/origin';
  * SCOPE. This proves the *browser* path, where EPUB.js uses the native
  * DOMParser and XMLSerializer; the parser test below measures that rather than
  * assuming it. The non-browser path, where EPUB.js falls back to
- * `@xmldom/xmldom` -- the dependency this repository pins to 0.8.13 under an
+ * `@xmldom/xmldom` -- the dependency this repository pins to 0.8.15 under an
  * epubjs-scoped override -- cannot be exercised here and is covered by
  * scripts/epub-xmldom-fallback.test.mjs. Neither suite is evidence for the
  * other's environment.
