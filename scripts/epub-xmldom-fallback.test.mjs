@@ -3,9 +3,9 @@
  * Deterministic controls for EPUB.js's non-browser XML path
  * (tesserafin-project/tesserafin#95, C2).
  *
- * WHY THIS EXISTS. `package.json` pins `@xmldom/xmldom` to 0.8.13 *only under
+ * WHY THIS EXISTS. `package.json` pins `@xmldom/xmldom` to 0.8.15 *only under
  * epubjs*, above the `^0.7.5` range EPUB.js declares, because every 0.7.x and
- * every 0.8.x below 0.8.13 carries unfixed high-severity advisories. Going
+ * every 0.8.x at or below 0.8.14 carries unfixed high-severity advisories. Going
  * outside a dependency's declared range is a claim about behaviour, and a claim
  * about behaviour has to be tested rather than asserted from the fact that the
  * two versions export the same three names.
