@@ -505,33 +505,6 @@ async function captureSettingsAndNavigation(
         )(state, inspect);
     }
 
-    /*
-     * #173: the toolbar carries a material only once it is SCROLLED — `OffsetAppBar` renders it
-     * `color='transparent'` with elevation 0 at rest, in every theme. The scroll is therefore part
-     * of the state, and this waits for `MuiAppBar-colorDefault` instead of assuming the scroll
-     * took: a resting bar filed as a scrolled one would be two identical images under two theme
-     * names, which is exactly the failure `assertMatchedPairs` exists to catch.
-     */
-    await page.evaluate(() => {
-        const scroller = document.scrollingElement ?? document.documentElement;
-        scroller.scrollTop = 600;
-        window.dispatchEvent(new Event('scroll'));
-    });
-    await page.waitForSelector('.MuiAppBar-root.MuiAppBar-colorDefault', {
-        timeout: RESOLVE_TIMEOUT
-    });
-    await shooter(
-        page,
-        records,
-        label,
-        layout,
-        theme,
-        displayPreferences
-    )(
-        'toolbar-scrolled',
-        'the application toolbar once scrolled, where it takes the theme’s own material'
-    );
-
     await installFixtureApi(page, baseURL, DIST, {
         signedIn: true,
         wizardCompleted: true,
@@ -580,6 +553,42 @@ async function captureSettingsAndNavigation(
                 .first()
                 .focus();
         }
+    );
+
+    /*
+     * #173: the toolbar carries a material only once it is SCROLLED — `OffsetAppBar` renders it
+     * `color='transparent'` with elevation 0 at rest, in every theme.
+     *
+     * It is taken HERE, on Display preferences, and not on `/#/home`, because the document only
+     * scrolls when there is something to scroll: `html` and `body` are both `height: 100%`
+     * (`styles/site.scss`'s `fullpage`), and measured under this fixture `/#/home` is exactly one
+     * viewport tall — 900 of 900 — while this page is 2922. On a page with nothing to scroll the
+     * bar never leaves `colorTransparent`, which is not a theme failure and must not be filed as
+     * one. `body` carries `overflow-y: auto`, so moving `document.scrollingElement` moves
+     * `window.scrollY`, which is what `useScrollTrigger` reads.
+     *
+     * The wait is on `MuiAppBar-colorDefault` rather than on the scroll having been issued: a
+     * resting bar filed as a scrolled one would be two identical images under two theme names,
+     * exactly what `assertMatchedPairs` exists to catch.
+     */
+    await page.evaluate(() => {
+        const scroller = document.scrollingElement ?? document.documentElement;
+        scroller.scrollTop = 500;
+        window.dispatchEvent(new Event('scroll'));
+    });
+    await page.waitForSelector('.MuiAppBar-root.MuiAppBar-colorDefault', {
+        timeout: RESOLVE_TIMEOUT
+    });
+    await shooter(
+        page,
+        records,
+        label,
+        layout,
+        theme,
+        displayPreferences
+    )(
+        'toolbar-scrolled',
+        'the application toolbar once scrolled, where it takes the theme’s own material'
     );
 }
 
