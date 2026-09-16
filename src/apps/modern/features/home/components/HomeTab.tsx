@@ -26,6 +26,8 @@ import {
 import HomeHero from './HomeHero';
 import HomeSection from './HomeSection';
 
+import './HomeTab.scss';
+
 const MY_MEDIA_OPTIONS = { imageAspect: 'backdrop' as const };
 const CONTINUE_WATCHING_OPTIONS = {
     imageAspect: 'backdrop' as const,
