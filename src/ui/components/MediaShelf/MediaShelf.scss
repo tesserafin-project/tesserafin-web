@@ -40,6 +40,35 @@
     display: flex;
     overflow-x: auto;
     overflow-y: hidden;
+
+    /*
+     * Room for what a card paints OUTSIDE its own border box (#177).
+     *
+     * `overflow-x: auto` makes this a scroll container, and a scroll container clips its cross
+     * axis whatever is asked of it: `overflow-y: visible` computes to `auto`, and `overflow-y:
+     * clip` computes to `hidden`, which also takes `overflow-clip-margin` out of reach (measured
+     * in Chromium — it reports `hidden` and a `0px` clip margin either way). Padding is the only
+     * lever left, and the negative margin gives it back to the layout, so the scroller's MARGIN
+     * box — the box the shelf's flex column lays out — is the size it always was and no card
+     * moves. `m3.geometry.shelf.spec.ts` asserts both halves of that.
+     *
+     * Measured on `e7b2d80509` at 1440x900, with the slack the shelf had before this rule (none):
+     *
+     *   | theme              | shadow above/below | focus ring |
+     *   | Tesserafin Classic | 0.00 / 2.00        | 4.00       |
+     *   | Tesserafin Frosted | 4.00 / 12.00       | 4.00       |
+     *
+     * so 8px above and 16px below clear both official recipes. Asymmetric on purpose: the shelf's
+     * own `row-gap` above the scroller is 8px under Frosted, and a negative top margin larger than
+     * that would put this scroll container on top of the header — and on top of the "view all"
+     * link's hit area, since it is the later sibling.
+     *
+     * CEILING: an elevation deeper than the official recipes' `level1`/`level2` overruns 16px —
+     * `level3` alone reaches 32px below. The spec fails when that happens; raise these two values
+     * then rather than guessing at a theme nobody ships.
+     */
+    padding-block: 8px 16px;
+    margin-block: -8px -16px;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
 
