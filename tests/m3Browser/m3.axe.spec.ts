@@ -20,7 +20,12 @@ import {
     REQUESTED_THEMES,
     waitForResolvedTheme
 } from './support/captureBody';
-import { administrator, installFixtureApi, USER_A } from './support/fixtureApi';
+import {
+    administrator,
+    installFixtureApi,
+    MOVIES_VIEW_ID,
+    USER_A
+} from './support/fixtureApi';
 import {
     addCustomPack,
     DIST,
@@ -226,5 +231,58 @@ for (const theme of REQUESTED_THEMES) {
             `wizard/packs — mobile viewport (${theme})`,
             await scanPage(page, [PACKS_PAGE])
         );
+    });
+}
+
+/*
+ * #175, once per official theme: the home shelves and the library route.
+ *
+ * Scanned in FULL, not narrowed to the composition. The two surfaces #173 scanned are a long-lived
+ * settings form and a toolbar with pre-existing findings of their own, which is why that scan was
+ * narrowed and said so; these two routes are `src/ui` compositions and there is nothing here that
+ * needs to be kept out of the reader's view.
+ *
+ * Both themes are scanned because the material differs between them: contrast measured on an
+ * opaque card with a 1px-less box is a different measurement from contrast on a translucent,
+ * hairlined, blurred one, and `MediaCard`'s own focus ring is 2px of `--rf-color-focus`, a token
+ * whose value the theme chooses.
+ */
+for (const theme of REQUESTED_THEMES) {
+    test(`the home shelves and the library route are clean, in ${theme}`, async ({
+        page,
+        baseURL
+    }) => {
+        await installFixtureApi(page, baseURL!, DIST, {
+            signedIn: true,
+            wizardCompleted: true,
+            users: [
+                administrator({
+                    configuration: { PlayDefaultAudioTrack: true }
+                })
+            ],
+            currentUserId: USER_A,
+            packs: [],
+            theme,
+            layout: 'desktop'
+        });
+
+        for (const [route, waitFor, state] of [
+            [
+                '/#/home',
+                '[data-rf-slot="home-composition"] .rf-media-card',
+                'home — shelves'
+            ],
+            [
+                `/#/library/${MOVIES_VIEW_ID}`,
+                '[data-rf-slot="library-composition"] .rf-media-card',
+                'library — browse'
+            ]
+        ] as const) {
+            await page.goto('about:blank');
+            await page.goto(route);
+            await page.waitForSelector(waitFor, { timeout: 45_000 });
+            await waitForResolvedTheme(page, theme);
+            record(`${state} (${theme})`, await scanPage(page));
+        }
     });
 }
