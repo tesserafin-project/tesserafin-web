@@ -17,6 +17,7 @@ import { LibraryProvider } from './features/libraries/hooks/useLibrary';
 import { isLibraryPath } from './features/libraries/utils/path';
 
 import './AppOverrides.scss';
+import './surfaceMaterial.scss';
 
 export const Component = () => {
     const [isDrawerActive, setIsDrawerActive] = useState(false);

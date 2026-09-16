@@ -1,0 +1,99 @@
+/*
+ * Classic vs Frosted beyond tokens (#173), on the two surfaces a signed-in household actually
+ * looks at: the application toolbar and Display preferences. Same contract as the wizard's
+ * `apps/wizard/wizardMaterial.scss` (#145/#169) — the material is read from the `data-rf-surface-*`
+ * recipe that `PresentationProvider` projects onto `<html>` and from `--rf-*` tokens, never from a
+ * theme id.
+ *
+ * Only material moves: background, radius, hairline, elevation, blur. No padding, width or box
+ * dimension is touched, which is why every hairline is an inset `outline` and never a `border`.
+ *
+ * Loaded by `./AppLayout.tsx`, which every modern route reaches through
+ * `lazy: () => import('../AppLayout')` (`./routes/routes.tsx`). Measured on e031889f3b: that
+ * chunk's stylesheet — `91879.*.css`, the one carrying `AppOverrides.scss` — is in NEITHER the
+ * `initial` nor the `startup` delivery tier, so these bytes are outside both budgets. The wizard's
+ * own stylesheet sits the same way, in `26296.*.css`.
+ */
+
+@use '../../ui/styles/glass-surface' as glass;
+
+/*
+ * The toolbar.
+ *
+ * `components/OffsetAppBar.tsx` renders the bar `color='transparent'` with elevation 0 until the
+ * user scrolls, then `color='default'` with elevation. The material is given to the SCROLLED state
+ * only: painting the resting bar would change how the application looks at rest, and that is a
+ * product decision this slice does not get to make on its own.
+ *
+ * `.MuiAppBar-colorDefault` plus the surface attribute is specificity 0,3,0, which beats the 0,1,0
+ * of MUI's own injected class without `!important`.
+ */
+:root[data-rf-surface-variant='opaque'] .MuiAppBar-colorDefault {
+    background: var(--rf-color-surface, #202020);
+}
+
+:root[data-rf-surface-variant='glass'] .MuiAppBar-colorDefault {
+    @include glass.rf-glass-surface;
+}
+
+:root[data-rf-surface-border='hairline'] .MuiAppBar-colorDefault {
+    outline: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    outline-offset: -1px;
+}
+
+:root[data-rf-surface-elevation='level0'] .MuiAppBar-colorDefault {
+    box-shadow: var(--rf-elevation-level0, none);
+}
+
+:root[data-rf-surface-elevation='level1'] .MuiAppBar-colorDefault {
+    box-shadow: var(--rf-elevation-level1, none);
+}
+
+:root[data-rf-surface-elevation='level2'] .MuiAppBar-colorDefault {
+    box-shadow: var(--rf-elevation-level2, none);
+}
+
+:root[data-rf-surface-elevation='level3'] .MuiAppBar-colorDefault {
+    box-shadow: var(--rf-elevation-level3, none);
+}
+
+/*
+ * Display preferences.
+ *
+ * The page's form is the only box on it, and it carries no material at all today: `settingsContainer`
+ * is styled nowhere in the tree, and the class appears in no stylesheet the build emits. The form is
+ * already inset by the container's `padded-left` / `padded-right`, so giving it a surface needs no
+ * padding of its own — which is what keeps this material-only.
+ */
+:root[data-rf-surface-variant] #displayPreferencesPage form {
+    border-radius: var(--rf-shape-radius-lg, 0);
+}
+
+:root[data-rf-surface-variant='opaque'] #displayPreferencesPage form {
+    background: var(--rf-color-surface, #202020);
+}
+
+:root[data-rf-surface-variant='glass'] #displayPreferencesPage form {
+    @include glass.rf-glass-surface;
+}
+
+:root[data-rf-surface-border='hairline'] #displayPreferencesPage form {
+    outline: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    outline-offset: -1px;
+}
+
+:root[data-rf-surface-elevation='level0'] #displayPreferencesPage form {
+    box-shadow: var(--rf-elevation-level0, none);
+}
+
+:root[data-rf-surface-elevation='level1'] #displayPreferencesPage form {
+    box-shadow: var(--rf-elevation-level1, none);
+}
+
+:root[data-rf-surface-elevation='level2'] #displayPreferencesPage form {
+    box-shadow: var(--rf-elevation-level2, none);
+}
+
+:root[data-rf-surface-elevation='level3'] #displayPreferencesPage form {
+    box-shadow: var(--rf-elevation-level3, none);
+}

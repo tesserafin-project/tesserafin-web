@@ -56,6 +56,12 @@ export interface CaptureRecord {
     recipe: Record<string, string>;
     /** Computed material of the wizard card and page (#145); `null` on non-wizard states. */
     material: Record<string, string> | null;
+    /**
+     * Computed material of the post-onboarding surfaces (#173), keyed by surface. An entry is
+     * `null` when that surface is not on screen, so a state can be asserted on exactly the
+     * surfaces it actually shows.
+     */
+    surfaces: Record<string, Record<string, string> | null>;
     /** The signed-in user, read out of the application's own credential store. */
     userId: string | null;
     /** The persisted preference the resolver read, and where it lived. */
@@ -150,8 +156,36 @@ async function evidence(page: Page, tokenNames: string[]) {
             };
         }
 
+        /*
+         * #173: the same measurement, for the two post-onboarding surfaces. Computed style again,
+         * for the same reason — a tint-only difference must not be able to pass for a material one.
+         * `null` when the surface is not on screen.
+         */
+        const readMaterial = (element: HTMLElement | null) => {
+            if (!element) return null;
+            const computed = getComputedStyle(element);
+            return {
+                backgroundColor: computed.backgroundColor,
+                backdropFilter: computed.backdropFilter,
+                borderRadius: computed.borderRadius,
+                boxShadow: computed.boxShadow,
+                outline: `${computed.outlineStyle} ${computed.outlineWidth}`
+            };
+        };
+        const surfaces: Record<string, Record<string, string> | null> = {
+            toolbar: readMaterial(
+                document.querySelector<HTMLElement>('.MuiAppBar-root')
+            ),
+            settingsForm: readMaterial(
+                document.querySelector<HTMLElement>(
+                    '#displayPreferencesPage form'
+                )
+            )
+        };
+
         return {
             material,
+            surfaces,
             resolvedTheme: root.getAttribute('data-rf-theme'),
             mode: root.getAttribute('data-rf-mode'),
             tokens,
@@ -269,6 +303,7 @@ function shooter(
             tokens: seen.tokens,
             recipe: seen.recipe,
             material: seen.material,
+            surfaces: seen.surfaces,
             userId: seen.userId,
             persisted: {
                 key: seen.userId ? `${seen.userId}-appTheme` : '(no session)',
@@ -519,6 +554,42 @@ async function captureSettingsAndNavigation(
                 .focus();
         }
     );
+
+    /*
+     * #173: the toolbar carries a material only once it is SCROLLED — `OffsetAppBar` renders it
+     * `color='transparent'` with elevation 0 at rest, in every theme.
+     *
+     * It is taken HERE, on Display preferences, and not on `/#/home`, because the document only
+     * scrolls when there is something to scroll: `html` and `body` are both `height: 100%`
+     * (`styles/site.scss`'s `fullpage`), and measured under this fixture `/#/home` is exactly one
+     * viewport tall — 900 of 900 — while this page is 2922. On a page with nothing to scroll the
+     * bar never leaves `colorTransparent`, which is not a theme failure and must not be filed as
+     * one. `body` carries `overflow-y: auto`, so moving `document.scrollingElement` moves
+     * `window.scrollY`, which is what `useScrollTrigger` reads.
+     *
+     * The wait is on `MuiAppBar-colorDefault` rather than on the scroll having been issued: a
+     * resting bar filed as a scrolled one would be two identical images under two theme names,
+     * exactly what `assertMatchedPairs` exists to catch.
+     */
+    await page.evaluate(() => {
+        const scroller = document.scrollingElement ?? document.documentElement;
+        scroller.scrollTop = 500;
+        window.dispatchEvent(new Event('scroll'));
+    });
+    await page.waitForSelector('.MuiAppBar-root.MuiAppBar-colorDefault', {
+        timeout: RESOLVE_TIMEOUT
+    });
+    await shooter(
+        page,
+        records,
+        label,
+        layout,
+        theme,
+        displayPreferences
+    )(
+        'toolbar-scrolled',
+        'the application toolbar once scrolled, where it takes the theme’s own material'
+    );
 }
 
 /**
@@ -566,8 +637,22 @@ export const REQUIRED_STATES = [
 export const DESKTOP_ONLY_STATES = [
     'settings-display',
     'nav-media-family-first',
-    'nav-content-pack-first'
+    'nav-content-pack-first',
+    'toolbar-scrolled'
 ];
+
+/**
+ * Which post-onboarding surface each state is evidence ABOUT (#173).
+ *
+ * The two navigation states are deliberately absent: they are evidence about the arrangement of the
+ * primary navigation, captured at rest, where `OffsetAppBar` gives the bar no material in either
+ * theme. Asserting a material difference on them would be asserting something the application does
+ * not do.
+ */
+const SURFACE_BY_STATE: Record<string, string> = {
+    'settings-display': 'settingsForm',
+    'toolbar-scrolled': 'toolbar'
+};
 
 export const statesFor = (layout: string): string[] =>
     layout === 'desktop'
@@ -645,7 +730,35 @@ export function assertMatchedPairs(
                     `(${JSON.stringify(a.recipe)} vs ${JSON.stringify(b.recipe)})`
             );
         }
-        if (!REQUIRED_STATES.includes(state)) continue;
+        if (!REQUIRED_STATES.includes(state)) {
+            /*
+             * #173: the post-onboarding surfaces get the same rule as the wizard card — the two
+             * themes must differ in MATERIAL, not only in tint — applied to whichever surface the
+             * state is evidence about. A state this table does not name asserts nothing here.
+             */
+            const surface = SURFACE_BY_STATE[state];
+            if (!surface) continue;
+            const [sa, sb] = [a.surfaces?.[surface], b.surfaces?.[surface]];
+            if (!sa || !sb) {
+                throw new Error(
+                    `${state}: the ${surface} material was not captured in both themes ` +
+                        `(${JSON.stringify(sa)} vs ${JSON.stringify(sb)})`
+                );
+            }
+            if (
+                sa.backgroundColor === sb.backgroundColor &&
+                sa.backdropFilter === sb.backdropFilter &&
+                sa.boxShadow === sb.boxShadow &&
+                sa.borderRadius === sb.borderRadius &&
+                sa.outline === sb.outline
+            ) {
+                throw new Error(
+                    `${state}: the ${surface}'s material is identical in both themes ` +
+                        `(${JSON.stringify(sa)}) - the recipe changed and the material did not`
+                );
+            }
+            continue;
+        }
         const [ma, mb] = [a.material, b.material];
         if (
             !ma ||
