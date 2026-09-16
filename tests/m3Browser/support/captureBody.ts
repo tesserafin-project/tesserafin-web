@@ -24,7 +24,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page } from '@playwright/test';
 
-import { installFixtureApi, administrator, USER_A } from './fixtureApi';
+import {
+    installFixtureApi,
+    administrator,
+    MOVIES_VIEW_ID,
+    USER_A
+} from './fixtureApi';
 import {
     addCustomPack,
     ARTIFACTS,
@@ -179,6 +184,22 @@ async function evidence(page: Page, tokenNames: string[]) {
             settingsForm: readMaterial(
                 document.querySelector<HTMLElement>(
                     '#displayPreferencesPage form'
+                )
+            ),
+            /*
+             * #175: the card on the home shelves and on the library grid, addressed through the
+             * composition slot rather than through `.rf-media-card` alone — the same card also
+             * renders on Item Details, the content packs and the Theme Studio preview, and a
+             * bare class would have measured whichever of those happened to be on screen.
+             */
+            homeCard: readMaterial(
+                document.querySelector<HTMLElement>(
+                    '[data-rf-slot="home-composition"] .rf-media-card'
+                )
+            ),
+            libraryCard: readMaterial(
+                document.querySelector<HTMLElement>(
+                    '[data-rf-slot="library-composition"] .rf-media-card'
                 )
             )
         };
@@ -593,6 +614,79 @@ async function captureSettingsAndNavigation(
 }
 
 /**
+ * The library route (#175).
+ *
+ * HOME IS NOT CAPTURED AGAIN HERE, and that is the harness's finding rather than a choice. A
+ * `home-shelves` state was written first; `assertMatchedPairs` rejected the run because its image
+ * was byte-identical to `nav-media-family-first`, which already photographs `/#/home` at rest under
+ * the same arrangement. It was the same photograph under a second name. The home card's material is
+ * therefore asserted ON that existing state — see `SURFACE_BY_STATE` — and no second shot is taken.
+ *
+ * The library route is reached through `/#/library/view-movies`, the route `LibraryView` owns, and
+ * not through `/#/movies`, which is a different page. It renders itself only when the library item's
+ * `CollectionType` is one `libraryRedirect.ts` supports; the fixture's authored `view-movies` folder
+ * is what makes that true. Before it the route `<Navigate replace>`d to the LEGACY `mixed` page —
+ * measured, not assumed — so there was no modern grid to photograph at all.
+ *
+ * Captured AT REST. Measured under this fixture at 1440x900 the document is 900 of 900, exactly one
+ * viewport: there is nothing to scroll, and a scrolled state filed here would be the resting page
+ * under a scrolled name, the mistake #173's `toolbar-scrolled` capture had to be moved off
+ * `/#/home` to avoid.
+ *
+ * The two themes put a DIFFERENT CONTAINER on this route — `presentation.page.library.layout` is
+ * `grid` under Classic and `shelf` under Frosted (#128/#129, already shipped) — which is why the
+ * material assertion is about the card and not about the container around it.
+ */
+async function captureLibrary(
+    page: Page,
+    baseURL: string,
+    label: string,
+    layout: 'desktop' | 'mobile' | 'tv',
+    theme: string,
+    records: CaptureRecord[]
+): Promise<void> {
+    if (layout !== 'desktop') return;
+    const displayPreferences = { CustomPrefs: {} };
+
+    await installFixtureApi(page, baseURL, DIST, {
+        signedIn: true,
+        wizardCompleted: true,
+        users: [
+            administrator({
+                configuration: {
+                    PlayDefaultAudioTrack: true,
+                    ContentPackBrowsingPreference: 'MediaFamilyFirst'
+                }
+            })
+        ],
+        currentUserId: USER_A,
+        packs: [],
+        theme,
+        layout
+    });
+
+    // `about:blank` first: a `goto` that differs only in its hash does not reload the document.
+    await page.goto('about:blank');
+    await page.goto(`/#/library/${MOVIES_VIEW_ID}`);
+    await page.waitForSelector(
+        '[data-rf-slot="library-composition"] .rf-media-card',
+        { timeout: RESOLVE_TIMEOUT }
+    );
+    await waitForResolvedTheme(page, theme);
+    await shooter(
+        page,
+        records,
+        label,
+        layout,
+        theme,
+        displayPreferences
+    )(
+        'library-grid',
+        'the library route at rest \u2014 a grid under Classic, a shelf under Frosted, the same cards in both'
+    );
+}
+
+/**
  * Captures the paired M3 states for ONE requested theme. Every capture in the returned set resolved
  * the theme it asked for, or the run threw before writing anything.
  */
@@ -613,6 +707,7 @@ export async function captureTheme(
         theme,
         records
     );
+    await captureLibrary(page, baseURL, label, layout, theme, records);
     return records;
 }
 
@@ -638,20 +733,41 @@ export const DESKTOP_ONLY_STATES = [
     'settings-display',
     'nav-media-family-first',
     'nav-content-pack-first',
-    'toolbar-scrolled'
+    'toolbar-scrolled',
+    'library-grid'
 ];
 
 /**
- * Which post-onboarding surface each state is evidence ABOUT (#173).
+ * Which post-onboarding surface each state is evidence ABOUT (#173, #175).
  *
- * The two navigation states are deliberately absent: they are evidence about the arrangement of the
- * primary navigation, captured at rest, where `OffsetAppBar` gives the bar no material in either
- * theme. Asserting a material difference on them would be asserting something the application does
- * not do.
+ * `nav-media-family-first` is a `/#/home` shot at rest. #173 left it unasserted because the surface
+ * IT was about was the toolbar, and at rest `OffsetAppBar` gives the bar no material in either
+ * theme. That reasoning was about the toolbar and not about the page: the home shelves' cards do
+ * carry material at rest, so #175 asserts THAT surface on this existing shot rather than taking a
+ * second, byte-identical photograph of the same screen.
+ *
+ * `nav-content-pack-first` stays absent. It is the same page under a different arrangement, so
+ * naming it too would assert the same card twice and buy nothing.
  */
 const SURFACE_BY_STATE: Record<string, string> = {
     'settings-display': 'settingsForm',
-    'toolbar-scrolled': 'toolbar'
+    'toolbar-scrolled': 'toolbar',
+    'nav-media-family-first': 'homeCard',
+    'library-grid': 'libraryCard'
+};
+
+/**
+ * Properties a state's surface must differ in, where "differs somewhere" is not enough (#175).
+ *
+ * The card on these two routes ALREADY differed between the themes before #175: `MediaCard.scss`
+ * includes the same glass mixin and reads `--rf-shape-radius-md`, so background, blur and radius
+ * were theme-bound already. A check that only asked for one of the five properties to move would
+ * therefore have passed with #175 reverted — an assertion that cannot fail is not evidence. These
+ * are the two properties the slice actually binds, and both must move.
+ */
+const MATERIAL_MUST_DIFFER: Record<string, readonly string[]> = {
+    'nav-media-family-first': ['boxShadow', 'outline'],
+    'library-grid': ['boxShadow', 'outline']
 };
 
 export const statesFor = (layout: string): string[] =>
@@ -756,6 +872,15 @@ export function assertMatchedPairs(
                     `${state}: the ${surface}'s material is identical in both themes ` +
                         `(${JSON.stringify(sa)}) - the recipe changed and the material did not`
                 );
+            }
+            for (const property of MATERIAL_MUST_DIFFER[state] ?? []) {
+                if (sa[property] === sb[property]) {
+                    throw new Error(
+                        `${state}: the ${surface}'s ${property} is the same in both themes ` +
+                            `(${sa[property]}) - this state's material difference has to include ` +
+                            'it, or the check would pass on a difference that predates the slice'
+                    );
+                }
             }
             continue;
         }

@@ -1,6 +1,7 @@
 /*
- * Classic vs Frosted beyond tokens (#173), on the two surfaces a signed-in household actually
- * looks at: the application toolbar and Display preferences. Same contract as the wizard's
+ * Classic vs Frosted beyond tokens, on the surfaces a signed-in household actually looks at: the
+ * application toolbar and Display preferences (#173), then the home shelves and the library grid
+ * (#175). Same contract as the wizard's
  * `apps/wizard/wizardMaterial.scss` (#145/#169) — the material is read from the `data-rf-surface-*`
  * recipe that `PresentationProvider` projects onto `<html>` and from `--rf-*` tokens, never from a
  * theme id.
@@ -96,4 +97,59 @@
 
 :root[data-rf-surface-elevation='level3'] #displayPreferencesPage form {
     box-shadow: var(--rf-elevation-level3, none);
+}
+
+/*
+ * Home shelves and the library grid (#175).
+ *
+ * MEASURED BEFORE WRITING ANY OF THIS, and it is the reason this block is as small as it is:
+ * `MediaCard.scss` already includes the same `glass.rf-glass-surface` mixin and already reads
+ * `--rf-shape-radius-md`, so a card's background, blur and radius are ALREADY bound to the active
+ * theme on both routes. Repainting them from here would be a second sheet fighting the primitive
+ * for the same three properties, and would make a difference that already exists look like this
+ * slice's work.
+ *
+ * What the recipe genuinely does not reach on these two routes is `surface.border` and
+ * `surface.elevation`: `.rf-media-card` carries no outline outside `:focus-visible`, and no
+ * box-shadow at all. Those two, and only those two, are what this adds.
+ *
+ * Scoped to the two published composition slots — `HomeTab.tsx`'s `home-composition` and
+ * `LibraryView.tsx`'s `library-composition` — rather than to `.rf-media-card` globally, because
+ * the same card also renders on Item Details, the content packs and the Theme Studio preview,
+ * which are not this ticket's surfaces. Scoping by slot also covers the library route under both
+ * recipes without naming either: `presentation.page.library.layout` is `grid` under Classic and
+ * `shelf` under Frosted, so the container differs by theme and the card does not.
+ *
+ * Elevation comes first so that specificity ascends down the file (`no-descending-specificity`).
+ */
+:root[data-rf-surface-elevation='level0'] [data-rf-slot='home-composition'] .rf-media-card,
+:root[data-rf-surface-elevation='level0'] [data-rf-slot='library-composition'] .rf-media-card {
+    box-shadow: var(--rf-elevation-level0, none);
+}
+
+:root[data-rf-surface-elevation='level1'] [data-rf-slot='home-composition'] .rf-media-card,
+:root[data-rf-surface-elevation='level1'] [data-rf-slot='library-composition'] .rf-media-card {
+    box-shadow: var(--rf-elevation-level1, none);
+}
+
+:root[data-rf-surface-elevation='level2'] [data-rf-slot='home-composition'] .rf-media-card,
+:root[data-rf-surface-elevation='level2'] [data-rf-slot='library-composition'] .rf-media-card {
+    box-shadow: var(--rf-elevation-level2, none);
+}
+
+:root[data-rf-surface-elevation='level3'] [data-rf-slot='home-composition'] .rf-media-card,
+:root[data-rf-surface-elevation='level3'] [data-rf-slot='library-composition'] .rf-media-card {
+    box-shadow: var(--rf-elevation-level3, none);
+}
+
+/*
+ * `:not(:focus-visible)` is load-bearing, not decoration. `.rf-media-card:focus-visible` in
+ * `MediaCard.scss` is specificity 0,2,0 and these selectors are higher, so without the guard a
+ * hairline theme would have silently replaced the 2px focus ring with a 1px inset divider on
+ * every card on both routes.
+ */
+:root[data-rf-surface-border='hairline'] [data-rf-slot='home-composition'] .rf-media-card:not(:focus-visible),
+:root[data-rf-surface-border='hairline'] [data-rf-slot='library-composition'] .rf-media-card:not(:focus-visible) {
+    outline: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
+    outline-offset: -1px;
 }

@@ -30,6 +30,35 @@ export const SERVER_ID = 'server-1';
 export const ACCESS_TOKEN = 'fixture-token';
 
 export const USER_A = 'user-a';
+
+/**
+ * The one authored library the modern `/library/:libraryId` route can actually render (#175), and
+ * the items behind it. `movies` because `libraryRedirect.ts` supports only `movies` and `tvshows`;
+ * anything else redirects the route away to a legacy page.
+ *
+ * No `ImageTags`, deliberately: `MediaCard` then draws its own placeholder inside the card box, so
+ * the surface under test is present without the fixture having to serve image bytes.
+ */
+export const MOVIES_VIEW_ID = 'view-movies';
+
+const MOVIES_VIEW_ITEMS = [
+    'Le Voyage dans la Lune',
+    'Metropolis',
+    'Les Vacances de M. Hulot',
+    'Cléo de 5 à 7',
+    'Playtime',
+    'Le Ballon rouge',
+    'La Jetée',
+    'Ne fais pas ça'
+].map((name, index) => ({
+    Id: `movie-${index + 1}`,
+    Name: name,
+    Type: 'Movie',
+    IsFolder: false,
+    ServerId: SERVER_ID,
+    ProductionYear: 1902 + index,
+    UserData: { PlaybackPositionTicks: 0, Played: false }
+}));
 export const USER_B = 'user-b';
 
 export interface ApiLedger {
@@ -308,6 +337,16 @@ export async function installFixtureApi(
          */
         const lower = path.toLowerCase();
 
+        /*
+         * Read case-insensitively on purpose: the generated SDK sends `parentId` and
+         * `jellyfin-apiclient` sends `ParentId`, and a branch that saw only one of them would be a
+         * fixture that answers differently depending on which client happened to ask.
+         */
+        const parentId =
+            Array.from(url.searchParams.entries()).find(
+                ([key]) => key.toLowerCase() === 'parentid'
+            )?.[1] ?? null;
+
         const headers = route.request().headers();
         const hasToken = /Token="?[^",]+/.test(
             headers.authorization ?? headers['x-emby-authorization'] ?? ''
@@ -373,7 +412,7 @@ export async function installFixtureApi(
              */
             const views = [
                 {
-                    Id: 'view-movies',
+                    Id: MOVIES_VIEW_ID,
                     Name: 'Movies',
                     CollectionType: 'movies',
                     Type: 'CollectionFolder',
@@ -401,7 +440,47 @@ export async function installFixtureApi(
          * whole page with an error boundary. The toolbar assertions then failed for a reason that
          * had nothing to do with navigation.
          */
+        /*
+         * #175: the MODERN library route, `/library/view-movies`.
+         *
+         * `LibraryView` reads the library's own item through `useLibraryInfo` -> `useItem` ->
+         * `getLibraryApi(api).getItem({ userId, itemId })`, and renders its own grid only when that
+         * item's `CollectionType` is one `libraryRedirect.ts` calls supported. Under the generic
+         * empty answer below the type was `undefined`, so the route `<Navigate replace>`d to the
+         * LEGACY `mixed` page — measured, not assumed: the probe landed on
+         * `#/mixed?topParentId=view-movies&collectionType=mixed`, which is not the surface #175 is
+         * about.
+         *
+         * Both branches are keyed on the single authored library id, so every other caller of
+         * `/Items` keeps the empty answer it has always had and no existing spec moves.
+         */
+        if (lower.endsWith(`/items/${MOVIES_VIEW_ID}`))
+            return json({
+                Id: MOVIES_VIEW_ID,
+                Name: 'Movies',
+                CollectionType: 'movies',
+                Type: 'CollectionFolder',
+                IsFolder: true,
+                ServerId: SERVER_ID
+            });
         if (lower.startsWith('/items/latest')) return json([]);
+        /*
+         * AFTER `/Items/Latest`, and that order is load-bearing for the same reason the comment
+         * above gives: home asks `/Items/Latest?parentId=<view>` per library view, so a
+         * `parentId`-keyed branch placed before it answers the query-result shape where a BARE
+         * ARRAY is expected. Measured, not reasoned about — with this branch one line higher, home
+         * rendered `TypeError: (e ?? []).map is not a function` in both themes.
+         */
+        if (
+            lower.startsWith('/items') &&
+            method === 'GET' &&
+            parentId === MOVIES_VIEW_ID
+        )
+            return json({
+                Items: MOVIES_VIEW_ITEMS,
+                TotalRecordCount: MOVIES_VIEW_ITEMS.length,
+                StartIndex: 0
+            });
         if (lower.startsWith('/useritems/resume'))
             return json({ Items: [], TotalRecordCount: 0, StartIndex: 0 });
         if (lower.startsWith('/items') && method === 'GET')
