@@ -1,0 +1,63 @@
+/**
+ * HomeTab — the home composition's own geometry (#179). Only `--rf-*` custom properties are read
+ * here, with static fallbacks, per RFC-0005 §6/§7.3.
+ */
+
+/*
+ * THE INLINE HALF OF #177. #178 gave the shelf scroller vertical slack inside `MediaShelf.scss`;
+ * the horizontal edge is a different defect and it is the home composition's, not the card's.
+ *
+ * `MediaCard:focus-visible` is `outline: 2px` at `outline-offset: 2px`, so its ring reaches 4px
+ * outside the card's border box. Measured on `bd6614da15`, `/#/home`, both official themes, at
+ * 1440x900 and at 412x839: every box from `body` down to `.rf-media-shelf__scroller` is full-bleed
+ * (`padding-inline: 0`), scroller left `0`, first card left `0`. The ring's outer half was painted
+ * at x = -4..0. At 412 the shelf also scrolls (scrollWidth 535 > 412) and the last card's right
+ * edge landed on the viewport's own right edge, so that half was off-screen too.
+ *
+ * 4px is the ring's own reach (`outline-width + outline-offset`) and so the smallest gutter that
+ * fits it. Not a spacing token: a theme may move `--rf-spacing-*`, and a gutter smaller than the
+ * ring is the defect again. It shifts the shelf titles, the "view all" links and the peek by 4px —
+ * equal to the ring slack it buys, not more.
+ */
+.rf-home-composition {
+    padding-inline: 4px;
+
+    /*
+     * WHY THE SCROLLER IS TOUCHED AT ALL, when the gutter belongs to the composition.
+     *
+     * Because the gutter alone is INERT, and that was measured rather than assumed. `overflow-x:
+     * auto` makes the scroller a scroll container, which clips at its padding box on BOTH axes,
+     * and in LTR `scrollLeft` cannot go negative, so the strip just outside the content-box start
+     * is not reachable by scrolling either. With the gutter and nothing else the scroller sits at
+     * 4..1436 and the first card at 4 — the ring is off the CARD's edge but still inside the
+     * SCROLLER's clip. Proof, at 1440x900 with the ring painted opaque for the probe: the 4px band
+     * left of the card's border box is byte-identical focused and blurred. The gutter moved the
+     * clip inward; it did not remove it.
+     *
+     * So the scroller needs the same cancelled padding #178 used vertically — `padding-inline`
+     * for the clip, an equal negative `margin-inline` to give it straight back to the layout. The
+     * scroller's MARGIN box is therefore unchanged: measured 0..1440 at 1440 and 0..412 at 412,
+     * `documentElement.scrollWidth` equal to the viewport at both. This is NOT the rejected
+     * `-8..1448` shape: that one had no gutter to spend, so the negative margin pushed the shelf
+     * past the viewport. Here it spends exactly the composition's own 4px and stops at the edge,
+     * which also keeps the peek the width it always was.
+     *
+     * `scroll-padding-inline` is the third part and is not optional. `> *` carries
+     * `scroll-snap-align: start`, which aligns a card's start edge to the SNAPPORT — the scrollport
+     * reduced by `scroll-padding`, `0` by default. Without it, the first snap position puts the
+     * card's border box back on the scrollport start and cancels `padding-inline` outright:
+     * measured at 412, `scrollLeft` settled at 4 and the first card's left went back to 0, ring
+     * off-screen again. Only at 1440 was it hidden, because two cards do not overflow 1440 and a
+     * scroller with nothing to scroll cannot snap the padding away.
+     *
+     * SCOPED TO HOME on purpose. `MediaShelf` also renders on the library and the TV rows, whose
+     * containers have no gutter to absorb a negative margin — there the same rule would bleed 4px
+     * outside its parent. Those surfaces have the same defect and are deliberately not in this
+     * slice; fixing them means giving those compositions a gutter first, exactly as here.
+     */
+    .rf-media-shelf__scroller {
+        padding-inline: 4px;
+        margin-inline: -4px;
+        scroll-padding-inline: 4px;
+    }
+}
