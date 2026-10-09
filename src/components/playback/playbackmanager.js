@@ -969,6 +969,9 @@ function validatePlaybackInfoResult(instance, result) {
     return true;
 }
 
+/** How long a recovery reload may take to start before it is declared failed. */
+const SOFTWARE_RECOVERY_TIMEOUT_MS = 30000;
+
 function showPlaybackInfoErrorMessage(instance, errorCode) {
     alert({
         text: globalize.translate(errorCode),
@@ -2427,8 +2430,10 @@ export class PlaybackManager {
 
             if (playerData.softwareRecoveryCancelled) {
                 // The viewer stopped while the recovery was being prepared. Nothing is started:
-                // the transcode just requested is released and the stop is reported, at the
-                // position the failed stream had reached.
+                // the transcode just requested is released. The stop itself has usually been
+                // reported already - `onPlaybackStopped` ran when the viewer stopped and cleared
+                // `streamInfo` - and is reported here only if it has not.
+                const stopAlreadyReported = !playerData.streamInfo;
                 playerData.softwareRecoveryPending = false;
                 playerData.isChangingStream = false;
                 loading.hide();
@@ -2437,7 +2442,9 @@ export class PlaybackManager {
                     .catch(function () {
                         /* best effort, as everywhere else */
                     });
-                onPlaybackStopped.call(player, {});
+                if (!stopAlreadyReported) {
+                    onPlaybackStopped.call(player, {});
+                }
                 return Promise.resolve();
             }
 
@@ -2451,6 +2458,8 @@ export class PlaybackManager {
 
                     if (playerData.softwareRecoveryPending) {
                         playerData.softwareRecoveryPending = false;
+                        // The recovered stream is healthy: the failed one's position is history.
+                        playerData.transcodeFailureTicks = 0;
                         loading.hide();
                     }
 
@@ -3840,6 +3849,7 @@ export class PlaybackManager {
                     playerData.softwareRecoveryAttempted = false;
                     playerData.softwareRecoveryPending = false;
                     playerData.softwareRecoveryCancelled = false;
+                    playerData.softwareRecoveryToken = null;
                     playerData.transcodeFailureTicks = 0;
                     player.lastPlaybackFailure = null;
 
@@ -4866,6 +4876,34 @@ export class PlaybackManager {
                     loading.show();
                     toast(globalize.translate('MessagePlaybackRecovering'));
                     changeStream(player, failureTicks, {});
+
+                    // The reload is several requests with no failure path of their own. If it
+                    // has neither started nor been stopped after this long, it is not going to:
+                    // end the loading state and say so. The token keeps a timer from an earlier
+                    // recovery away from a later one.
+                    const recoveryToken = {};
+                    playerData.softwareRecoveryToken = recoveryToken;
+                    setTimeout(function () {
+                        if (
+                            playerData.softwareRecoveryToken !==
+                                recoveryToken ||
+                            !playerData.softwareRecoveryPending ||
+                            playerData.softwareRecoveryCancelled
+                        ) {
+                            return;
+                        }
+                        playerData.softwareRecoveryPending = false;
+                        playerData.isChangingStream = false;
+                        loading.hide();
+                        Events.trigger(self, 'playbackerror', [
+                            MediaError.TRANSCODE_FAILED
+                        ]);
+                        onPlaybackStopped.call(
+                            player,
+                            {},
+                            `.${MediaError.TRANSCODE_FAILED}`
+                        );
+                    }, SOFTWARE_RECOVERY_TIMEOUT_MS);
                     return;
                 }
 
@@ -4913,8 +4951,10 @@ export class PlaybackManager {
                         currentlyPreventsAudioStreamCopy
                     )
                 ) {
+                    // After a failed response the element has been torn down and reads zero;
+                    // the position captured before that is the one to continue from.
                     const startTime =
-                        getCurrentTicks(player) ||
+                        (failure ? failureTicks : getCurrentTicks(player)) ||
                         streamInfo.playerStartPositionTicks;
                     const isRemoteSource =
                         streamInfo.item.LocationType === 'Remote';
@@ -4951,7 +4991,13 @@ export class PlaybackManager {
             const player = this;
 
             if (getPlayerData(player).isChangingStream) {
-                return;
+                // A stream change ends the old stream without ending playback - except when the
+                // viewer stopped while a recovery reload was in flight. That stop is reported.
+                if (!getPlayerData(player).softwareRecoveryCancelled) {
+                    return;
+                }
+                getPlayerData(player).isChangingStream = false;
+                loading.hide();
             }
 
             stopPlaybackProgressTimer(player);
@@ -4970,7 +5016,8 @@ export class PlaybackManager {
                 errorOccurred || data.softwareRecoveryCancelled
                     ? data.transcodeFailureTicks
                     : 0;
-            data.softwareRecoveryCancelled = false;
+            // `softwareRecoveryCancelled` is deliberately left set: the reload may still arrive
+            // in `setSrcIntoPlayer`, which must find it. A new play request clears it.
             if (
                 failedAtTicks &&
                 state.PlayState &&
