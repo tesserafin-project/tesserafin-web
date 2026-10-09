@@ -859,6 +859,19 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
             expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
         });
 
+        it('keeps the position when the reload after a failure gets no answer', async () => {
+            const rig = mount();
+            await startLadderReload(rig).then((reload) =>
+                reload.reject(new Error('no answer'))
+            );
+            await settle();
+
+            await rig.manager.stop(rig.player);
+            await settle();
+
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+        });
+
         it('ignores the failed first start of a playback that was replaced', async () => {
             const rig = mount();
             const normalPlay = rig.player.play;

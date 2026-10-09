@@ -2440,9 +2440,13 @@ export class PlaybackManager {
                                 onChangeCannotStart(player, change);
                             }
                         })
-                        .catch(function () {
+                        .catch(function (err) {
                             // No answer, or one that could not be turned into a stream. A recovery
                             // is ended by its timer; a switch simply did not happen.
+                            console.error(
+                                '[playbackmanager] stream change failed',
+                                err?.message
+                            );
                             if (!change.afterFailure) {
                                 endChange(change);
                             }
