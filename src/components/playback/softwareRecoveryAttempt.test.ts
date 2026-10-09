@@ -201,12 +201,22 @@ function mount(): Rig {
     mounted += 1;
     player.name = 'P2R1TestPlayer' + mounted;
     player.id = 'p2r1testplayer' + mounted;
-    // A real player announces its own stop, and reads a position while it plays.
+    // A real player announces its own stop, and reads a position only while it has a stream:
+    // the element is torn down with a failed one and reads zero until the next has started.
+    let positionMs = 0;
+    const play = player.play as (streamInfo: unknown) => Promise<void>;
+    player.play = (streamInfo: unknown) =>
+        play(streamInfo).then(() => {
+            positionMs = FAILED_AT_MS;
+        });
+    player.tearDown = () => {
+        positionMs = 0;
+    };
     player.stop = () => {
         Events.trigger(player, 'stopped');
         return Promise.resolve();
     };
-    player.currentTime = () => FAILED_AT_MS;
+    player.currentTime = () => positionMs;
     Events.trigger(pluginManager, 'registered', [player]);
     current = { manager, player };
     return current;
@@ -221,6 +231,7 @@ function failTranscode(
         positionMs: FAILED_AT_MS,
         transcodeRecovery
     };
+    (player.tearDown as () => void)();
     Events.trigger(player, 'error', [{ type: MediaError.SERVER_ERROR }]);
 }
 
@@ -626,5 +637,112 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
         expect(rig.player.played).toHaveLength(2);
         // The viewer's position is the one the first failure happened at, not zero.
         expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+    });
+
+    // The same isolation for a stream change that is NOT a recovery. The ordinary retry ladder
+    // reloads the stream too, and its answer is just as able to arrive late.
+    describe('any stream change', () => {
+        async function startLadderReload(rig: Rig) {
+            await startPlayback(rig);
+            failTranscode(rig.player, null);
+            await until(() => expect(held).toHaveLength(1));
+            return held.shift() as Deferred;
+        }
+
+        it('does not start the stream when its answer arrives after the viewer stopped', async () => {
+            const rig = mount();
+            const reload = await startLadderReload(rig);
+
+            await rig.manager.stop(rig.player);
+            await settle();
+            // Where the viewer was, not the zero of an element that has no stream.
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+
+            reload.resolve(answer(VIDEO_ITEM_ID, 'session-A-late'));
+            await lateAnswerHandled(rig, 'session-A-late', 1);
+
+            expect(playedSessions(rig)).toEqual(['session-' + VIDEO_ITEM_ID]);
+            expect(reportPlaybackStart).toHaveBeenCalledTimes(1);
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+            expect(playbackErrors).toEqual([]);
+            expect(stopActiveEncodings).toHaveBeenCalledWith('session-A-late');
+        });
+
+        it('leaves playback B alone when A`s answer arrives after B has started', async () => {
+            const rig = mount();
+            const reload = await startLadderReload(rig);
+
+            await rig.manager.stop(rig.player);
+            await settle();
+            await startPlayback(rig, secondItem());
+            const stopsBeforeLateAnswer =
+                reportPlaybackStopped.mock.calls.length;
+
+            reload.resolve(answer(VIDEO_ITEM_ID, 'session-A-late'));
+            await lateAnswerHandled(rig, 'session-A-late', 2);
+
+            expect(playedSessions(rig)).toEqual([
+                'session-' + VIDEO_ITEM_ID,
+                'session-' + SECOND_ITEM_ID
+            ]);
+            expect(rig.manager.currentItem(rig.player).Id).toBe(SECOND_ITEM_ID);
+            expect(rig.manager.playSessionId(rig.player)).toBe(
+                'session-' + SECOND_ITEM_ID
+            );
+            expect(reportPlaybackStopped).toHaveBeenCalledTimes(
+                stopsBeforeLateAnswer
+            );
+            expect(playbackErrors).toEqual([]);
+            expect(alerts).toEqual([]);
+        });
+
+        it.each([
+            ['the ordinary reload', null],
+            ['the software recovery', 'software']
+        ] as const)(
+            'honours a stop that arrives while the stream of %s is loading',
+            async (_label, offer) => {
+                const rig = mount();
+                await startPlayback(rig);
+
+                // The new stream is handed to the player, which has not started it yet.
+                let started: (() => void) | undefined;
+                rig.player.play = (streamInfo: unknown) => {
+                    rig.player.played.push(streamInfo);
+                    return new Promise<void>((resolve) => {
+                        started = resolve;
+                    });
+                };
+                let stops = 0;
+                rig.player.stop = () => {
+                    stops += 1;
+                    Events.trigger(rig.player, 'stopped');
+                    return Promise.resolve();
+                };
+
+                failTranscode(rig.player, offer);
+                await until(() => expect(held).toHaveLength(1));
+                held.shift()?.resolve(answer(VIDEO_ITEM_ID, 'session-A-new'));
+                await until(() => expect(rig.player.played).toHaveLength(2));
+
+                await rig.manager.stop(rig.player);
+                await settle();
+                expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+
+                // The player finishes loading after all: the stream is stopped, not played.
+                started?.();
+                await until(() => expect(stops).toBe(2));
+                await vi.advanceTimersByTimeAsync(RECOVERY_TIMEOUT_MS * 2);
+                await settle();
+
+                expect(reportPlaybackStart).toHaveBeenCalledTimes(1);
+                expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+                expect(playbackErrors).toEqual([]);
+                expect(alerts).toEqual([]);
+                expect(stopActiveEncodings).toHaveBeenCalledWith(
+                    'session-A-new'
+                );
+            }
+        );
     });
 });

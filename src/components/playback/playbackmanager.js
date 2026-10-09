@@ -975,11 +975,12 @@ const SOFTWARE_RECOVERY_TIMEOUT_MS = 30000;
 /**
  * Ends the software recovery a player has in flight, if any.
  *
- * `player.softwareRecovery` is the ONE recovery that may still act on that player: an object
- * created when a failed transcode is reloaded, and handed to every asynchronous step of that
- * reload. A step whose object is no longer the player's own has been stopped, timed out or
- * replaced by another playback, and must change nothing. A flag could not say that - the player
- * object outlives the item, so the next playback would reset the flag and let an old answer in.
+ * Two objects on the player say what may still act on it. `player.playback` is the playback
+ * that is current - made by a play request, gone when that playback is reported stopped or is
+ * replaced. `player.softwareRecovery` is the one recovery reload in flight for it. Every
+ * asynchronous step of a stream change carries the objects it started under, and a step whose
+ * objects are no longer the player's own changes nothing. Flags could not say that: the player
+ * object outlives the item, so the next playback would reset them and let an old answer in.
  * @param {object} playerData The player.
  */
 function endSoftwareRecovery(playerData) {
@@ -2206,6 +2207,17 @@ export class PlaybackManager {
 
             params = params || {};
 
+            // What this change belongs to. Its answer is several requests away; by then the
+            // playback may have been stopped, or the player given to another one.
+            const change = {
+                playback: getPlayerData(player).playback,
+                recovery
+            };
+            if (change.playback) {
+                // Where the viewer is, for a stop that arrives while the element has no stream.
+                change.playback.changeTicks = ticks;
+            }
+
             const liveStreamId = getPlayerData(player).streamInfo.liveStreamId;
             const lastMediaInfoQuery =
                 getPlayerData(player).streamInfo.lastMediaInfoQuery;
@@ -2275,10 +2287,10 @@ export class PlaybackManager {
                         options
                     ).then(async function (result) {
                         if (
-                            abandonStaleRecovery(
+                            abandonStaleChange(
                                 apiClient,
                                 player,
-                                recovery,
+                                change,
                                 result?.PlaySessionId
                             )
                         ) {
@@ -2387,10 +2399,10 @@ export class PlaybackManager {
                             );
 
                             if (
-                                abandonStaleRecovery(
+                                abandonStaleChange(
                                     apiClient,
                                     player,
-                                    recovery,
+                                    change,
                                     streamInfo.playSessionId
                                 )
                             ) {
@@ -2411,7 +2423,7 @@ export class PlaybackManager {
                                 player,
                                 playSessionId,
                                 streamInfo,
-                                recovery
+                                change
                             );
                         }
                     });
@@ -2419,28 +2431,34 @@ export class PlaybackManager {
         }
 
         /**
-         * Drops a software recovery's answer when the recovery is no longer the player's own, or
-         * the viewer has stopped. The transcode the answer was for is released; the player, its
-         * state and whatever it is playing now are left exactly as they are.
+         * Whether a stream change no longer belongs to what the player is doing: its playback
+         * was stopped or replaced, or its recovery was ended.
+         * @param {object} player The player.
+         * @param {object} change What the change started under.
+         * @returns {boolean} `true` when the change must not act on the player.
+         */
+        function isStaleChange(player, change) {
+            const playerData = getPlayerData(player);
+            return (
+                playerData.playback !== change.playback ||
+                !!change.playback?.stopped ||
+                (!!change.recovery &&
+                    playerData.softwareRecovery !== change.recovery)
+            );
+        }
+
+        /**
+         * Drops a stream change's answer when the change is stale. The transcode the answer was
+         * for is released; the player, its state and whatever it is playing now are left
+         * exactly as they are.
          * @param {object} apiClient The API client.
          * @param {object} player The player.
-         * @param {object} [recovery] The recovery this step belongs to; none for any other stream change.
+         * @param {object} change What the change started under.
          * @param {string} [playSessionId] The play session the answer opened.
          * @returns {boolean} `true` when the answer was dropped and the caller must stop.
          */
-        function abandonStaleRecovery(
-            apiClient,
-            player,
-            recovery,
-            playSessionId
-        ) {
-            if (!recovery) {
-                return false;
-            }
-
-            const isCurrent =
-                getPlayerData(player).softwareRecovery === recovery;
-            if (isCurrent && !recovery.stopped) {
+        function abandonStaleChange(apiClient, player, change, playSessionId) {
+            if (!change || !isStaleChange(player, change)) {
                 return false;
             }
 
@@ -2450,7 +2468,10 @@ export class PlaybackManager {
                 });
             }
 
-            if (isCurrent) {
+            if (
+                change.playback &&
+                getPlayerData(player).playback === change.playback
+            ) {
                 // Stopped by the viewer, and the player never announced it: report it now.
                 onPlaybackStopped.call(player, {});
             }
@@ -2463,7 +2484,7 @@ export class PlaybackManager {
             player,
             playSessionId,
             streamInfo,
-            recovery
+            change
         ) {
             const playerData = getPlayerData(player);
 
@@ -2499,25 +2520,25 @@ export class PlaybackManager {
                         apiClient,
                         player,
                         streamInfo,
-                        recovery
+                        change
                     ).then(afterSetSrc, afterSetSrc);
                 };
                 apiClient
                     .stopActiveEncodings(playSessionId)
                     .then(proceed, proceed);
             } else {
-                setSrcIntoPlayer(apiClient, player, streamInfo, recovery);
+                setSrcIntoPlayer(apiClient, player, streamInfo, change);
             }
         }
 
-        function setSrcIntoPlayer(apiClient, player, streamInfo, recovery) {
+        function setSrcIntoPlayer(apiClient, player, streamInfo, change) {
             const playerData = getPlayerData(player);
 
             if (
-                abandonStaleRecovery(
+                abandonStaleChange(
                     apiClient,
                     player,
-                    recovery,
+                    change,
                     streamInfo.playSessionId
                 )
             ) {
@@ -2528,14 +2549,10 @@ export class PlaybackManager {
 
             return player.play(streamInfo).then(
                 function () {
-                    if (
-                        recovery &&
-                        (playerData.softwareRecovery !== recovery ||
-                            recovery.stopped)
-                    ) {
-                        // Stopped or replaced while the recovered stream was loading. Its
-                        // transcode is released, and the stream is stopped unless the player
-                        // has since been given another playback's.
+                    if (change && isStaleChange(player, change)) {
+                        // Stopped or replaced while the new stream was loading. Its transcode
+                        // is released, and the stream is stopped unless the player has since
+                        // been given another playback's.
                         apiClient
                             .stopActiveEncodings(streamInfo.playSessionId)
                             .catch(function () {
@@ -2554,7 +2571,10 @@ export class PlaybackManager {
                     streamInfo.started = true;
                     streamInfo.ended = false;
 
-                    if (recovery) {
+                    if (change?.playback) {
+                        change.playback.changeTicks = 0;
+                    }
+                    if (change?.recovery) {
                         endSoftwareRecovery(playerData);
                         // The recovered stream is healthy: the failed one's position is history.
                         playerData.transcodeFailureTicks = 0;
@@ -2563,13 +2583,10 @@ export class PlaybackManager {
                     sendProgressUpdate(player, 'timeupdate');
                 },
                 function (e) {
-                    if (recovery) {
-                        if (
-                            playerData.softwareRecovery !== recovery ||
-                            recovery.stopped
-                        ) {
-                            return;
-                        }
+                    if (change && isStaleChange(player, change)) {
+                        return;
+                    }
+                    if (change?.recovery) {
                         // The one recovery was used and did not start. What follows is an
                         // ordinary failure of this playback, no longer a recovery in flight.
                         endSoftwareRecovery(playerData);
@@ -3732,6 +3749,7 @@ export class PlaybackManager {
                     const streamInfo = createStreamInfoFromUrlItem(item);
                     streamInfo.fullscreen = playOptions.fullscreen;
                     getPlayerData(player).isChangingStream = false;
+                    getPlayerData(player).playback = null;
                     return player
                         .play(streamInfo)
                         .then(() => {
@@ -3949,6 +3967,7 @@ export class PlaybackManager {
                     // tesserafin#119: a new play request is a new incident. `playerData` is the
                     // player object itself and outlives the item, so this is reset here.
                     endSoftwareRecovery(playerData);
+                    playerData.playback = { stopped: false, changeTicks: 0 };
                     playerData.softwareRecoveryAttempted = false;
                     playerData.transcodeFailureTicks = 0;
                     player.lastPlaybackFailure = null;
@@ -4979,7 +4998,7 @@ export class PlaybackManager {
                     !playerData.softwareRecoveryAttempted
                 ) {
                     playerData.softwareRecoveryAttempted = true;
-                    const recovery = { stopped: false, timer: null };
+                    const recovery = { timer: null };
                     playerData.softwareRecovery = recovery;
                     loading.show();
                     toast(globalize.translate('MessagePlaybackRecovering'));
@@ -4991,7 +5010,7 @@ export class PlaybackManager {
                         if (playerData.softwareRecovery !== recovery) {
                             return;
                         }
-                        if (recovery.stopped) {
+                        if (playerData.playback?.stopped) {
                             // The viewer stopped and the player never announced it.
                             onPlaybackStopped.call(player, {});
                             return;
@@ -5091,12 +5110,10 @@ export class PlaybackManager {
         function onPlaybackStopped(e, displayErrorCode) {
             const player = this;
 
-            const recovery = getPlayerData(player).softwareRecovery;
-
             if (getPlayerData(player).isChangingStream) {
                 // A stream change ends the old stream without ending playback - except when the
-                // viewer stopped while a recovery reload was in flight. That stop is reported.
-                if (!recovery?.stopped) {
+                // viewer asked for the stop while the change was in flight. That stop is real.
+                if (!getPlayerData(player).playback?.stopped) {
                     return;
                 }
                 getPlayerData(player).isChangingStream = false;
@@ -5112,12 +5129,15 @@ export class PlaybackManager {
             const errorOccurred =
                 displayErrorCode && typeof displayErrorCode === 'string';
 
-            // The element was torn down with the failed stream and reads zero by now. Reporting
-            // that would overwrite the viewer's resume point with the beginning.
+            // The element was torn down with the failed stream, or is between two streams, and
+            // reads zero by now. Reporting that would overwrite the viewer's resume point with
+            // the beginning.
             const failedAtTicks =
-                errorOccurred || recovery?.stopped
+                (errorOccurred || data.softwareRecovery
                     ? data.transcodeFailureTicks
-                    : 0;
+                    : 0) ||
+                data.playback?.changeTicks ||
+                0;
             if (
                 failedAtTicks &&
                 state.PlayState &&
@@ -5126,9 +5146,10 @@ export class PlaybackManager {
                 state.PlayState.PositionTicks = failedAtTicks;
             }
             const failedItem = errorOccurred ? streamInfo?.item : null;
-            // Playback is over, so its recovery is too: an answer that arrives from here on
-            // finds a recovery that is no longer the player's and is dropped.
+            // Playback is over, and its recovery with it: a stream change's answer that arrives
+            // from here on finds neither on the player and is dropped.
             endSoftwareRecovery(data);
+            data.playback = null;
 
             // reefin #43: give the v2 session back. Placed here, before the reporting and
             // queue-advance work below, so a session is released even if something further
@@ -5279,18 +5300,20 @@ export class PlaybackManager {
 
             const serverId = self.currentItem(activePlayer).ServerId;
 
-            // Replaced while a recovery reload was in flight: the reload is over, and the
-            // position reported for the old item is where it failed, not the torn-down
-            // element's zero.
+            // The old playback ends here, whatever it had in flight. If that was a stream
+            // change, the position reported for the old item is where the viewer was, not the
+            // zero of an element that has no stream.
             const replaced = getPlayerData(activePlayer);
-            if (replaced.softwareRecovery) {
-                endSoftwareRecovery(replaced);
-                replaced.isChangingStream = false;
-                if (state.PlayState && !state.PlayState.PositionTicks) {
-                    state.PlayState.PositionTicks =
-                        replaced.transcodeFailureTicks;
-                }
+            if (state.PlayState && !state.PlayState.PositionTicks) {
+                state.PlayState.PositionTicks =
+                    (replaced.softwareRecovery &&
+                        replaced.transcodeFailureTicks) ||
+                    replaced.playback?.changeTicks ||
+                    0;
             }
+            endSoftwareRecovery(replaced);
+            replaced.playback = null;
+            replaced.isChangingStream = false;
 
             // User started playing something new while existing content is playing
             let promise;
@@ -5851,10 +5874,10 @@ export class PlaybackManager {
                 this._playNextAfterEnded = false;
             }
 
-            // tesserafin#119: a stop asked for while a recovery reload is in flight wins. The
-            // reload checks this before it starts anything (`abandonStaleRecovery`).
-            if (player.softwareRecovery) {
-                player.softwareRecovery.stopped = true;
+            // A stop asked for while a stream change is in flight wins. The change checks this
+            // before it starts anything (`abandonStaleChange`).
+            if (player.playback) {
+                player.playback.stopped = true;
             }
 
             // TODO: remove second param
