@@ -93,6 +93,11 @@ const LatestMediaSection: FC<LatestMediaSectionProps> = ({
     );
 };
 
+/** The dashboard is another app behind the same hash router; a hash change is all it takes. */
+const openLibrarySettings = () => {
+    window.location.hash = '#/dashboard/libraries';
+};
+
 /**
  * The modern Home tab, composed from the active theme's resolved `presentation.page.home` recipe
  * (RFC-0007 §4.7).
@@ -123,7 +128,8 @@ const LatestMediaSection: FC<LatestMediaSectionProps> = ({
  * Theme Studio must not offer a control that only moves in its preview.
  */
 const HomeTab: FC = () => {
-    const { __legacyApiClient__ } = useApi();
+    const { __legacyApiClient__, user } = useApi();
+    const isAdministrator = !!user?.Policy?.IsAdministrator;
 
     /*
      * Unconditional, and above the recipe read on purpose — see invariant 1. Moving any of these
@@ -172,6 +178,19 @@ const HomeTab: FC = () => {
                         onRetry={() => void userViewsQuery.refetch()}
                         isEmpty={!userViews?.length}
                         emptyLabel={globalize.translate('MessageNothingHere')}
+                        // A server with no library is where a first run that skipped the
+                        // library step lands. Say what to do, as the legacy home page did.
+                        emptyDescription={
+                            isAdministrator
+                                ? undefined
+                                : globalize.translate('AskAdminToCreateLibrary')
+                        }
+                        emptyActionLabel={
+                            isAdministrator
+                                ? globalize.translate('ButtonAddMediaLibrary')
+                                : undefined
+                        }
+                        onEmptyAction={openLibrarySettings}
                     >
                         <MediaShelf title={myMediaTitle} density={density}>
                             {toMediaCardPropsArray(
