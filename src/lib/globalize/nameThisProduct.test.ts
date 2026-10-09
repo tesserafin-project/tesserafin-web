@@ -28,7 +28,7 @@ describe('nameThisProduct()', () => {
                 'Translating Jellyfin is an ongoing project.',
             // A technical example and a URL.
             LabelAppNameExample: 'Example: Sickbeard, Jellyfin',
-            SomeLink: 'https://jellyfin.org/docs/ for Jellyfin',
+            SomeLink: 'https://example.org/Jellyfin/docs for Jellyfin',
             // A placeholder string outside the first run.
             PleaseRestartServerName: 'Please restart Jellyfin on {0}.'
         };
