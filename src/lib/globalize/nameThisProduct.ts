@@ -10,7 +10,8 @@ export function nameThisProduct(
     return Object.fromEntries(
         Object.entries(dictionary).map(([key, value]) => [
             key,
-            typeof value === 'string'
+            // The one string that is about the upstream project itself.
+            typeof value === 'string' && key !== 'LabelDisplayLanguageHelp'
                 ? value.replace(/Jellyfin/g, 'Tesserafin')
                 : value
         ])

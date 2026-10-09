@@ -19,6 +19,14 @@ describe('nameThisProduct()', () => {
         });
     });
 
+    it('leaves the sentence about upstream translation alone', () => {
+        const upstream = {
+            LabelDisplayLanguageHelp:
+                'Translating Jellyfin is an ongoing project.'
+        };
+        expect(nameThisProduct(upstream)).toEqual(upstream);
+    });
+
     it('passes non-string members of a JSON module through', () => {
         const nested = { a: 'Jellyfin' };
         expect(nameThisProduct({ default: nested })).toEqual({

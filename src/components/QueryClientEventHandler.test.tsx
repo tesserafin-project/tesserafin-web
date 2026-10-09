@@ -16,10 +16,10 @@ import QueryClientEventHandler from './QueryClientEventHandler';
  */
 
 let subscribedTypes: string[] = [];
-let serverSays: () => void = () => undefined;
+let serverSays: (message: { MessageType: string }) => void = () => undefined;
 const unsubscribe = vi.fn();
 const api = {
-    subscribe: vi.fn((types: string[], handler: () => void) => {
+    subscribe: vi.fn((types: string[], handler: typeof serverSays) => {
         subscribedTypes = types;
         serverSays = handler;
         return unsubscribe;
@@ -78,22 +78,36 @@ describe('QueryClientEventHandler', () => {
         ]);
     });
 
-    it('refreshes the home page and every item list when the server reports a change', () => {
-        serverSays();
+    it('refreshes the home page, item lists and views when the library changes', () => {
+        serverSays({
+            MessageType: OutboundWebSocketMessageType.LibraryChanged
+        });
 
         expect(isInvalidated(['Home', 'u1', 'LatestMedia', 'lib'])).toBe(true);
         expect(isInvalidated(['Home', 'u1', 'ResumeItems'])).toBe(true);
         expect(isInvalidated(['User', 'u1', 'Items', 'lib'])).toBe(true);
         expect(isInvalidated(['User', 'u1', 'Views'])).toBe(true);
-        expect(isInvalidated(['Items', {}])).toBe(true);
     });
 
-    it('leaves other users and unrelated queries alone', () => {
-        serverSays();
+    it('refreshes only the home page when play state changes', () => {
+        serverSays({
+            MessageType: OutboundWebSocketMessageType.UserDataChanged
+        });
+
+        expect(isInvalidated(['Home', 'u1', 'ResumeItems'])).toBe(true);
+        expect(isInvalidated(['User', 'u1', 'Items', 'lib'])).toBe(false);
+        expect(isInvalidated(['User', 'u1', 'Views'])).toBe(false);
+    });
+
+    it('leaves other users, shuffled lists and unrelated queries alone', () => {
+        serverSays({
+            MessageType: OutboundWebSocketMessageType.LibraryChanged
+        });
 
         expect(isInvalidated(['Home', 'someone-else', 'ResumeItems'])).toBe(
             false
         );
+        expect(isInvalidated(['Items', {}])).toBe(false);
         expect(isInvalidated(['Configuration'])).toBe(false);
     });
 
