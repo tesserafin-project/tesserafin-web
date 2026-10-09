@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "waivers": [
+        {
+            "ecosystem": "npm",
+            "package": "braces",
+            "advisory": "GHSA-VFJ7-8CJW-P6XM",
+            "severity": "high",
+            "justification": "No patched release exists (braces 3.0.3 is the latest; first_patched_version is null). Reached only through development tooling (stylelint, fast-glob, webpack-dev-server via micromatch and chokidar 3): every occurrence is dev-only in the lockfile and none of it is in the production bundle. Patterns come from repository configuration; no path from untrusted input was found. Residual risk: a pattern in a config change can crash lint, build or the dev server. Time-bounded, no automatic renewal; see the issue.",
+            "issue": "https://github.com/tesserafin-project/tesserafin-web/issues/188",
+            "owner": "all3f0r1",
+            "created": "2026-10-09",
+            "expires": "2026-10-23"
+        }
+    ]
+}
