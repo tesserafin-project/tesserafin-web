@@ -2199,7 +2199,7 @@ export class PlaybackManager {
             return player.duration();
         }
 
-        function changeStream(player, ticks, params, recovery) {
+        function changeStream(player, ticks, params, recovery, afterFailure) {
             if (canPlayerSeek(player) && params == null) {
                 player.currentTime(parseInt(ticks / 10000, 10));
                 return;
@@ -2212,6 +2212,9 @@ export class PlaybackManager {
             const change = {
                 playback: getPlayerData(player).playback,
                 recovery,
+                // The stream in place has failed and is gone: unlike a switch the viewer
+                // asked for, there is nothing left playing if this change does not happen.
+                afterFailure: !!(recovery || afterFailure),
                 // Where the viewer is, for a stop that arrives while the element has no stream.
                 ticks
             };
@@ -2286,8 +2289,8 @@ export class PlaybackManager {
                         currentMediaSource.Id,
                         liveStreamId,
                         options
-                    ).then(
-                        async function (result) {
+                    )
+                        .then(async function (result) {
                             if (
                                 abandonStaleChange(
                                     apiClient,
@@ -2436,13 +2439,14 @@ export class PlaybackManager {
                             } else {
                                 onChangeCannotStart(player, change);
                             }
-                        },
-                        function () {
-                            // No answer at all. A recovery is ended by its timer; any other
-                            // change simply did not happen.
-                            endChange(change);
-                        }
-                    );
+                        })
+                        .catch(function () {
+                            // No answer, or one that could not be turned into a stream. A recovery
+                            // is ended by its timer; a switch simply did not happen.
+                            if (!change.afterFailure) {
+                                endChange(change);
+                            }
+                        });
                 });
         }
 
@@ -2471,7 +2475,10 @@ export class PlaybackManager {
                 onPlaybackStopped.call(player, {});
                 return;
             }
-            endChange(change);
+            // After a failure nothing is playing, and the position stays the one to report.
+            if (!change.afterFailure) {
+                endChange(change);
+            }
         }
 
         /**
@@ -4011,10 +4018,11 @@ export class PlaybackManager {
                     // tesserafin#119: a new play request is a new incident. `playerData` is the
                     // player object itself and outlives the item, so this is reset here.
                     endSoftwareRecovery(playerData);
-                    playerData.playback = {
+                    const startedPlayback = {
                         stopped: false,
                         pendingChange: null
                     };
+                    playerData.playback = startedPlayback;
                     playerData.softwareRecoveryAttempted = false;
                     playerData.transcodeFailureTicks = 0;
                     player.lastPlaybackFailure = null;
@@ -4040,6 +4048,11 @@ export class PlaybackManager {
                             );
                         },
                         function (err) {
+                            // Stopped or replaced while it was loading: not this playback's
+                            // start, nor its error, to report any more.
+                            if (playerData.playback !== startedPlayback) {
+                                return;
+                            }
                             // TODO: Improve this because it will report playback start on a failure
                             onPlaybackStartedFn();
                             onPlaybackStarted(
@@ -4048,11 +4061,8 @@ export class PlaybackManager {
                                 streamInfo,
                                 mediaSource
                             );
-                            const playback = playerData.playback;
                             setTimeout(function () {
-                                // Stopped or replaced in the meantime: not this playback's
-                                // error to handle any more.
-                                if (playerData.playback !== playback) {
+                                if (playerData.playback !== startedPlayback) {
                                     return;
                                 }
                                 onPlaybackError.call(player, err, {
@@ -5135,16 +5145,22 @@ export class PlaybackManager {
                     const tryVideoStreamCopy =
                         isRemoteSource && !isAlreadyFallbacking;
 
-                    changeStream(player, startTime, {
-                        EnableDirectPlay: false,
-                        EnableDirectStream: tryVideoStreamCopy,
-                        AllowVideoStreamCopy: tryVideoStreamCopy,
-                        AllowAudioStreamCopy:
-                            currentlyPreventsAudioStreamCopy ||
-                            currentlyPreventsVideoStreamCopy
-                                ? false
-                                : null
-                    });
+                    changeStream(
+                        player,
+                        startTime,
+                        {
+                            EnableDirectPlay: false,
+                            EnableDirectStream: tryVideoStreamCopy,
+                            AllowVideoStreamCopy: tryVideoStreamCopy,
+                            AllowAudioStreamCopy:
+                                currentlyPreventsAudioStreamCopy ||
+                                currentlyPreventsVideoStreamCopy
+                                    ? false
+                                    : null
+                        },
+                        null,
+                        true
+                    );
 
                     return;
                 }

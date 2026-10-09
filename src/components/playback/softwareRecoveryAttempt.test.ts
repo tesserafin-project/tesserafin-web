@@ -820,18 +820,19 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
             expect(rig.player.played).toHaveLength(1);
         });
 
-        it('forgets the position of a change that never happened', async () => {
+        const refused = {
+            data: { MediaSources: [], ErrorCode: 'NoCompatibleStream' }
+        };
+
+        it('forgets the position of a switch that never happened', async () => {
             const rig = mount();
             await startPlayback(rig);
 
-            // An ordinary reload that the server refuses: the stream in place keeps playing.
-            Events.trigger(rig.player, 'error', [
-                { type: MediaError.MEDIA_DECODE_ERROR }
-            ]);
+            // The viewer asks for another audio track and the server refuses: the stream in
+            // place keeps playing.
+            rig.manager.setAudioStreamIndex(1, rig.player);
             await until(() => expect(held).toHaveLength(1));
-            held.shift()?.resolve({
-                data: { MediaSources: [], ErrorCode: 'NoCompatibleStream' }
-            });
+            held.shift()?.resolve(refused);
             await until(() => expect(alerts).toHaveLength(1));
             await settle();
 
@@ -841,6 +842,56 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
             await settle();
 
             expect(stoppedPositions()).toEqual([0]);
+        });
+
+        it('keeps the position when the reload after a failure is refused', async () => {
+            const rig = mount();
+            await startLadderReload(rig).then((reload) =>
+                reload.resolve(refused)
+            );
+            await until(() => expect(alerts).toHaveLength(1));
+            await settle();
+
+            // Nothing is playing; the viewer dismisses the message and leaves.
+            await rig.manager.stop(rig.player);
+            await settle();
+
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+        });
+
+        it('ignores the failed first start of a playback that was replaced', async () => {
+            const rig = mount();
+            const normalPlay = rig.player.play;
+            let failFirstStart: ((reason: unknown) => void) | undefined;
+            rig.player.play = (streamInfo: unknown) => {
+                rig.player.played.push(streamInfo);
+                rig.player.play = normalPlay;
+                return new Promise<void>((_resolve, reject) => {
+                    failFirstStart = reject;
+                });
+            };
+
+            // A never gets past loading its first stream; B replaces it.
+            rig.manager.play({ items: [videoItem()] });
+            await until(() => expect(held).toHaveLength(1));
+            held.shift()?.resolve(
+                answer(VIDEO_ITEM_ID, 'session-' + VIDEO_ITEM_ID)
+            );
+            await until(() => expect(rig.player.played).toHaveLength(1));
+            await startPlayback(rig, secondItem());
+            const requests = postedPlaybackInfo.mock.calls.length;
+            const starts = reportPlaybackStart.mock.calls.length;
+
+            failFirstStart?.(MediaError.SERVER_ERROR);
+            await settle();
+            await vi.advanceTimersByTimeAsync(1000);
+            await settle();
+
+            expect(postedPlaybackInfo).toHaveBeenCalledTimes(requests);
+            expect(reportPlaybackStart).toHaveBeenCalledTimes(starts);
+            expect(playbackErrors).toEqual([]);
+            expect(alerts).toEqual([]);
+            expect(rig.manager.currentItem(rig.player).Id).toBe(SECOND_ITEM_ID);
         });
     });
 });
