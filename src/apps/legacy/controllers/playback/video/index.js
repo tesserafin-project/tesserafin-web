@@ -1883,13 +1883,10 @@ export default function (view) {
 
     let playPauseClickTimeout;
     function onViewHideStopPlayback() {
-        // A player that is between two streams - reloading after a failed transcode - reports
-        // that it is not playing. Leaving the view must still stop it, or the reload would
+        // A player that is between two streams - reloading after a failure - reports that it is
+        // not playing. Leaving the view must still stop it, or the reload would
         // start playback again after the viewer has gone.
-        if (
-            playbackManager.isPlayingVideo() ||
-            currentPlayer?.softwareRecovery
-        ) {
+        if (playbackManager.isPlayingVideo() || currentPlayer?.playback) {
             shell.disableFullscreen();
 
             clearTimeout(playPauseClickTimeout);

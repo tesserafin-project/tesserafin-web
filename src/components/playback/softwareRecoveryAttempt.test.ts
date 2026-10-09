@@ -731,10 +731,12 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
 
                 // The player finishes loading after all: the stream is stopped, not played.
                 started?.();
-                await until(() => expect(stops).toBe(2));
+                await settle();
                 await vi.advanceTimersByTimeAsync(RECOVERY_TIMEOUT_MS * 2);
                 await settle();
 
+                // One stop: the reported one already took the player down.
+                expect(stops).toBe(1);
                 expect(reportPlaybackStart).toHaveBeenCalledTimes(1);
                 expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
                 expect(playbackErrors).toEqual([]);
@@ -744,5 +746,101 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
                 );
             }
         );
+
+        it('does not stop B when A`s stream finishes loading after B replaced it', async () => {
+            const rig = mount();
+            await startPlayback(rig);
+
+            // A's new stream is handed to the player, which has not started it yet.
+            const normalPlay = rig.player.play;
+            let started: (() => void) | undefined;
+            rig.player.play = (streamInfo: unknown) => {
+                rig.player.played.push(streamInfo);
+                rig.player.play = normalPlay;
+                return new Promise<void>((resolve) => {
+                    started = resolve;
+                });
+            };
+            let stops = 0;
+            rig.player.stop = () => {
+                stops += 1;
+                Events.trigger(rig.player, 'stopped');
+                return Promise.resolve();
+            };
+
+            failTranscode(rig.player, 'software');
+            await until(() => expect(held).toHaveLength(1));
+            held.shift()?.resolve(answer(VIDEO_ITEM_ID, 'session-A-new'));
+            await until(() => expect(rig.player.played).toHaveLength(2));
+
+            // B replaces A without a stop. Tearing A's element down settles A's play() while
+            // B is still asking the server what to play - the player has no stream just then.
+            const item = secondItem();
+            const playing = rig.manager.play({ items: [item] });
+            await until(() => expect(held).toHaveLength(1));
+            const stopsWhenBStarted = stops;
+            const reportsWhenBStarted = reportPlaybackStopped.mock.calls.length;
+            started?.();
+            await settle();
+            const stopsAfterAsPlaySettled = stops;
+
+            held.shift()?.resolve(
+                answer(SECOND_SOURCE_ID, 'session-' + SECOND_ITEM_ID)
+            );
+            await playing;
+            await until(() => expect(rig.player.played).toHaveLength(3));
+            await vi.advanceTimersByTimeAsync(RECOVERY_TIMEOUT_MS * 2);
+            await settle();
+
+            expect(stopsAfterAsPlaySettled).toBe(stopsWhenBStarted);
+            expect(stops).toBe(stopsWhenBStarted);
+            expect(reportPlaybackStopped).toHaveBeenCalledTimes(
+                reportsWhenBStarted
+            );
+            expect(rig.manager.currentItem(rig.player).Id).toBe(SECOND_ITEM_ID);
+            expect(playbackErrors).toEqual([]);
+            expect(stopActiveEncodings).toHaveBeenCalledWith('session-A-new');
+        });
+
+        it('ends a recovery once when its answer cannot be played', async () => {
+            const rig = mount();
+            const recovery = await startRecovery(rig);
+
+            recovery.resolve({
+                data: { MediaSources: [], ErrorCode: 'NoCompatibleStream' }
+            });
+            await until(() => expect(alerts).toHaveLength(1));
+            await vi.advanceTimersByTimeAsync(RECOVERY_TIMEOUT_MS * 2);
+            await settle();
+
+            // One message, one stop where the viewer was, and nothing from the timer after.
+            expect(alerts).toHaveLength(1);
+            expect(playbackErrors).toEqual([]);
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+            expect(rig.player.played).toHaveLength(1);
+        });
+
+        it('forgets the position of a change that never happened', async () => {
+            const rig = mount();
+            await startPlayback(rig);
+
+            // An ordinary reload that the server refuses: the stream in place keeps playing.
+            Events.trigger(rig.player, 'error', [
+                { type: MediaError.MEDIA_DECODE_ERROR }
+            ]);
+            await until(() => expect(held).toHaveLength(1));
+            held.shift()?.resolve({
+                data: { MediaSources: [], ErrorCode: 'NoCompatibleStream' }
+            });
+            await until(() => expect(alerts).toHaveLength(1));
+            await settle();
+
+            // Later the viewer stops with the element reading zero for its own reasons.
+            (rig.player.tearDown as () => void)();
+            await rig.manager.stop(rig.player);
+            await settle();
+
+            expect(stoppedPositions()).toEqual([0]);
+        });
     });
 });

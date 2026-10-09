@@ -2211,11 +2211,12 @@ export class PlaybackManager {
             // playback may have been stopped, or the player given to another one.
             const change = {
                 playback: getPlayerData(player).playback,
-                recovery
+                recovery,
+                // Where the viewer is, for a stop that arrives while the element has no stream.
+                ticks
             };
             if (change.playback) {
-                // Where the viewer is, for a stop that arrives while the element has no stream.
-                change.playback.changeTicks = ticks;
+                change.playback.pendingChange = change;
             }
 
             const liveStreamId = getPlayerData(player).streamInfo.liveStreamId;
@@ -2285,149 +2286,192 @@ export class PlaybackManager {
                         currentMediaSource.Id,
                         liveStreamId,
                         options
-                    ).then(async function (result) {
-                        if (
-                            abandonStaleChange(
-                                apiClient,
-                                player,
-                                change,
-                                result?.PlaySessionId
-                            )
-                        ) {
-                            return;
-                        }
-
-                        if (validatePlaybackInfoResult(self, result)) {
-                            currentMediaSource = result.MediaSources[0];
-
-                            // #153-A1: the play session the capability binds to.
-                            options.playSessionId = result.PlaySessionId;
-
-                            const streamInfo = await createStreamInfo(
-                                apiClient,
-                                currentItem.MediaType,
-                                currentItem,
-                                currentMediaSource,
-                                ticks,
-                                player,
-                                options
-                            );
-                            streamInfo.fullscreen =
-                                currentPlayOptions.fullscreen;
-                            streamInfo.lastMediaInfoQuery = lastMediaInfoQuery;
-                            streamInfo.resetSubtitleOffset = false;
-
-                            if (!streamInfo.url) {
-                                cancelPlayback();
-                                showPlaybackInfoErrorMessage(
-                                    self,
-                                    `PlaybackError.${MediaError.NO_MEDIA_ERROR}`
-                                );
-                                return;
-                            }
-
-                            // reefin #43: re-enter v2 on the retry/stream-change path. Until this
-                            // call, a retry ALWAYS played the legacy URL built above, silently
-                            // abandoning the v2 session the player adopted at start while the
-                            // server kept serving its stale plan. When this player still holds a
-                            // live adopted v2 session (the teardown trigger is the owner of
-                            // record), re-plan it with PUT Playback/Sessions/{id} - carrying the
-                            // SAME PlaybackAttemptId as the PlaybackInfo call just above (the
-                            // retry belongs to the attempt that started it) plus the retry
-                            // ladder's constraint prohibitions - and play the re-planned stream.
-                            // Any failure (flag off, no adopted session, PUT/GET failure, 422)
-                            // leaves streamInfo untouched, so the legacy URL below plays exactly
-                            // as before; failures past the fork log an explicit console warning
-                            // rather than a silent fallback. Awaited for the same reason the
-                            // initial path awaits its trigger: changeStreamToUrl() hands this
-                            // exact object to player.play().
-                            await applyV2PlaybackReplanIfEnabled(
-                                streamInfo,
-                                {
-                                    api: ServerConnections.getApi(
-                                        apiClient.serverId()
-                                    ),
-                                    itemId: currentItem.Id,
-                                    mediaType: currentItem.MediaType,
-                                    userId: apiClient.getCurrentUserId(),
-                                    mediaSourceId: currentMediaSource.Id,
-                                    startTimeTicks: ticks || 0,
-                                    playbackAttemptId:
-                                        getPlayerData(player).playbackAttemptId,
-                                    sessionId: adoptedV2PlaybackSessionId(
-                                        getPlayerData(player)
-                                    ),
-                                    // The PlaySessionId the outgoing (v2) streamInfo carries -
-                                    // captured before changeStreamToUrl() replaces it. A re-plan
-                                    // keeps the session's original id; only a new attempt mints
-                                    // a new one.
-                                    playSessionId,
-                                    // The ladder's own prohibitions, so the server re-plans AWAY
-                                    // from the decision that just failed. `?? undefined`
-                                    // collapses the legacy `null` ("not constrained") onto the
-                                    // constraint builder's own defaults.
-                                    constraintOverrides: {
-                                        allowDirectPlay:
-                                            params.EnableDirectPlay ??
-                                            undefined,
-                                        allowDirectStream:
-                                            params.EnableDirectStream ??
-                                            undefined,
-                                        allowVideoStreamCopy:
-                                            params.AllowVideoStreamCopy ??
-                                            undefined,
-                                        allowAudioStreamCopy:
-                                            params.AllowAudioStreamCopy ??
-                                            undefined
-                                    }
-                                },
-                                apiClient,
-                                {
-                                    // Same fallback-only role as on the initial path (see the
-                                    // applyV2PlaybackUrlIfEnabled call site): the server's
-                                    // reported MimeType outranks this for every play method.
-                                    directPlayMimeType: getMimeType(
-                                        (
-                                            currentItem.MediaType || ''
-                                        ).toLowerCase(),
-                                        (
-                                            currentMediaSource.Container || ''
-                                        ).toLowerCase()
-                                    ),
-                                    requestOptions: options
-                                }
-                            );
-
+                    ).then(
+                        async function (result) {
                             if (
                                 abandonStaleChange(
                                     apiClient,
                                     player,
                                     change,
-                                    streamInfo.playSessionId
+                                    result?.PlaySessionId
                                 )
                             ) {
                                 return;
                             }
 
-                            getPlayerData(player).subtitleStreamIndex =
-                                subtitleStreamIndex;
-                            getPlayerData(player).secondarySubtitleStreamIndex =
-                                secondarySubtitleStreamIndex;
-                            getPlayerData(player).audioStreamIndex =
-                                audioStreamIndex;
-                            getPlayerData(player).maxStreamingBitrate =
-                                maxBitrate;
+                            if (validatePlaybackInfoResult(self, result)) {
+                                currentMediaSource = result.MediaSources[0];
 
-                            changeStreamToUrl(
-                                apiClient,
-                                player,
-                                playSessionId,
-                                streamInfo,
-                                change
-                            );
+                                // #153-A1: the play session the capability binds to.
+                                options.playSessionId = result.PlaySessionId;
+
+                                const streamInfo = await createStreamInfo(
+                                    apiClient,
+                                    currentItem.MediaType,
+                                    currentItem,
+                                    currentMediaSource,
+                                    ticks,
+                                    player,
+                                    options
+                                );
+                                streamInfo.fullscreen =
+                                    currentPlayOptions.fullscreen;
+                                streamInfo.lastMediaInfoQuery =
+                                    lastMediaInfoQuery;
+                                streamInfo.resetSubtitleOffset = false;
+
+                                if (!streamInfo.url) {
+                                    onChangeCannotStart(player, change);
+                                    cancelPlayback();
+                                    showPlaybackInfoErrorMessage(
+                                        self,
+                                        `PlaybackError.${MediaError.NO_MEDIA_ERROR}`
+                                    );
+                                    return;
+                                }
+
+                                // reefin #43: re-enter v2 on the retry/stream-change path. Until this
+                                // call, a retry ALWAYS played the legacy URL built above, silently
+                                // abandoning the v2 session the player adopted at start while the
+                                // server kept serving its stale plan. When this player still holds a
+                                // live adopted v2 session (the teardown trigger is the owner of
+                                // record), re-plan it with PUT Playback/Sessions/{id} - carrying the
+                                // SAME PlaybackAttemptId as the PlaybackInfo call just above (the
+                                // retry belongs to the attempt that started it) plus the retry
+                                // ladder's constraint prohibitions - and play the re-planned stream.
+                                // Any failure (flag off, no adopted session, PUT/GET failure, 422)
+                                // leaves streamInfo untouched, so the legacy URL below plays exactly
+                                // as before; failures past the fork log an explicit console warning
+                                // rather than a silent fallback. Awaited for the same reason the
+                                // initial path awaits its trigger: changeStreamToUrl() hands this
+                                // exact object to player.play().
+                                await applyV2PlaybackReplanIfEnabled(
+                                    streamInfo,
+                                    {
+                                        api: ServerConnections.getApi(
+                                            apiClient.serverId()
+                                        ),
+                                        itemId: currentItem.Id,
+                                        mediaType: currentItem.MediaType,
+                                        userId: apiClient.getCurrentUserId(),
+                                        mediaSourceId: currentMediaSource.Id,
+                                        startTimeTicks: ticks || 0,
+                                        playbackAttemptId:
+                                            getPlayerData(player)
+                                                .playbackAttemptId,
+                                        sessionId: adoptedV2PlaybackSessionId(
+                                            getPlayerData(player)
+                                        ),
+                                        // The PlaySessionId the outgoing (v2) streamInfo carries -
+                                        // captured before changeStreamToUrl() replaces it. A re-plan
+                                        // keeps the session's original id; only a new attempt mints
+                                        // a new one.
+                                        playSessionId,
+                                        // The ladder's own prohibitions, so the server re-plans AWAY
+                                        // from the decision that just failed. `?? undefined`
+                                        // collapses the legacy `null` ("not constrained") onto the
+                                        // constraint builder's own defaults.
+                                        constraintOverrides: {
+                                            allowDirectPlay:
+                                                params.EnableDirectPlay ??
+                                                undefined,
+                                            allowDirectStream:
+                                                params.EnableDirectStream ??
+                                                undefined,
+                                            allowVideoStreamCopy:
+                                                params.AllowVideoStreamCopy ??
+                                                undefined,
+                                            allowAudioStreamCopy:
+                                                params.AllowAudioStreamCopy ??
+                                                undefined
+                                        }
+                                    },
+                                    apiClient,
+                                    {
+                                        // Same fallback-only role as on the initial path (see the
+                                        // applyV2PlaybackUrlIfEnabled call site): the server's
+                                        // reported MimeType outranks this for every play method.
+                                        directPlayMimeType: getMimeType(
+                                            (
+                                                currentItem.MediaType || ''
+                                            ).toLowerCase(),
+                                            (
+                                                currentMediaSource.Container ||
+                                                ''
+                                            ).toLowerCase()
+                                        ),
+                                        requestOptions: options
+                                    }
+                                );
+
+                                if (
+                                    abandonStaleChange(
+                                        apiClient,
+                                        player,
+                                        change,
+                                        streamInfo.playSessionId
+                                    )
+                                ) {
+                                    return;
+                                }
+
+                                getPlayerData(player).subtitleStreamIndex =
+                                    subtitleStreamIndex;
+                                getPlayerData(
+                                    player
+                                ).secondarySubtitleStreamIndex =
+                                    secondarySubtitleStreamIndex;
+                                getPlayerData(player).audioStreamIndex =
+                                    audioStreamIndex;
+                                getPlayerData(player).maxStreamingBitrate =
+                                    maxBitrate;
+
+                                changeStreamToUrl(
+                                    apiClient,
+                                    player,
+                                    playSessionId,
+                                    streamInfo,
+                                    change
+                                );
+                            } else {
+                                onChangeCannotStart(player, change);
+                            }
+                        },
+                        function () {
+                            // No answer at all. A recovery is ended by its timer; any other
+                            // change simply did not happen.
+                            endChange(change);
                         }
-                    });
+                    );
                 });
+        }
+
+        /**
+         * Forgets a stream change that is over, so that its position is not reported for a
+         * later stop it has nothing to do with.
+         * @param {object} change The change.
+         */
+        function endChange(change) {
+            if (change?.playback?.pendingChange === change) {
+                change.playback.pendingChange = null;
+            }
+        }
+
+        /**
+         * A stream change whose answer cannot be played; the caller says so to the viewer. A
+         * recovery ends here, with its stop reported once and no second dialog from its timer.
+         * @param {object} player The player.
+         * @param {object} change The change.
+         */
+        function onChangeCannotStart(player, change) {
+            if (
+                change.recovery &&
+                getPlayerData(player).softwareRecovery === change.recovery
+            ) {
+                onPlaybackStopped.call(player, {});
+                return;
+            }
+            endChange(change);
         }
 
         /**
@@ -2558,10 +2602,10 @@ export class PlaybackManager {
                             .catch(function () {
                                 /* best effort, as everywhere else */
                             });
-                        if (
-                            !playerData.streamInfo ||
-                            playerData.streamInfo === streamInfo
-                        ) {
+                        // Only while this stream is still the player's: after a reported
+                        // stop the player is gone already, and after a replacement it is
+                        // the next playback's.
+                        if (playerData.streamInfo === streamInfo) {
                             self.stop(player);
                         }
                         return;
@@ -2571,9 +2615,7 @@ export class PlaybackManager {
                     streamInfo.started = true;
                     streamInfo.ended = false;
 
-                    if (change?.playback) {
-                        change.playback.changeTicks = 0;
-                    }
+                    endChange(change);
                     if (change?.recovery) {
                         endSoftwareRecovery(playerData);
                         // The recovered stream is healthy: the failed one's position is history.
@@ -2598,6 +2640,8 @@ export class PlaybackManager {
                         type: getMediaError(e),
                         streamInfo
                     });
+                    // After, not before: a terminal stop above reports from this position.
+                    endChange(change);
                 }
             );
         }
@@ -3967,7 +4011,10 @@ export class PlaybackManager {
                     // tesserafin#119: a new play request is a new incident. `playerData` is the
                     // player object itself and outlives the item, so this is reset here.
                     endSoftwareRecovery(playerData);
-                    playerData.playback = { stopped: false, changeTicks: 0 };
+                    playerData.playback = {
+                        stopped: false,
+                        pendingChange: null
+                    };
                     playerData.softwareRecoveryAttempted = false;
                     playerData.transcodeFailureTicks = 0;
                     player.lastPlaybackFailure = null;
@@ -4001,7 +4048,13 @@ export class PlaybackManager {
                                 streamInfo,
                                 mediaSource
                             );
+                            const playback = playerData.playback;
                             setTimeout(function () {
+                                // Stopped or replaced in the meantime: not this playback's
+                                // error to handle any more.
+                                if (playerData.playback !== playback) {
+                                    return;
+                                }
                                 onPlaybackError.call(player, err, {
                                     type: getMediaError(err),
                                     streamInfo
@@ -5136,7 +5189,7 @@ export class PlaybackManager {
                 (errorOccurred || data.softwareRecovery
                     ? data.transcodeFailureTicks
                     : 0) ||
-                data.playback?.changeTicks ||
+                data.playback?.pendingChange?.ticks ||
                 0;
             if (
                 failedAtTicks &&
@@ -5308,7 +5361,7 @@ export class PlaybackManager {
                 state.PlayState.PositionTicks =
                     (replaced.softwareRecovery &&
                         replaced.transcodeFailureTicks) ||
-                    replaced.playback?.changeTicks ||
+                    replaced.playback?.pendingChange?.ticks ||
                     0;
             }
             endSoftwareRecovery(replaced);
