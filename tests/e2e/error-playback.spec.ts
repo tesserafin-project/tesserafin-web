@@ -1,5 +1,6 @@
 import { expect, test } from './support/origin-inventory';
 import { request, type Page, type Route } from '@playwright/test';
+import { detailPlayControl } from './support/b2';
 
 /**
  * B1 (#54) — playback failure, through the real product UI.
@@ -153,9 +154,7 @@ async function signIn(page: Page) {
 /** Opens the item's real detail page and presses its real play button. */
 async function pressPlay(page: Page, itemId: string) {
     await page.goto(`/#/details?id=${itemId}`);
-    const play = page
-        .locator('button.btnPlay:visible, button[title*="Play" i]:visible')
-        .first();
+    const play = detailPlayControl(page);
     await expect(
         play,
         'the item detail page must offer a play control'
@@ -415,7 +414,7 @@ test.describe('playback failure (B1)', () => {
             // it is a real document navigation even when only the fragment differs, which would
             // reload the SPA and destroy the marker that proves no reload was needed.
             await expect(
-                page.locator('button.btnPlay:visible').first(),
+                detailPlayControl(page),
                 'the item page must still be interactive after the error is dismissed'
             ).toBeVisible({ timeout: 25_000 });
             await page.evaluate(() => {

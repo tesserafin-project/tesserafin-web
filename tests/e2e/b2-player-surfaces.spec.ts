@@ -11,6 +11,7 @@ import {
     expectTvLayout,
     measureLayoutStable,
     openItemDetail,
+    detailPlayControl,
     openPlayer,
     signIn,
     useTheme
@@ -80,9 +81,7 @@ test.describe('B2 player: controls and the terminal error dialog at every form f
                         ? route.abort('connectionrefused')
                         : route.continue()
                 );
-                const playFailing = page
-                    .locator('.mainDetailButtons .btnPlay:visible')
-                    .first();
+                const playFailing = detailPlayControl(page);
                 await expect(
                     playFailing,
                     'the item detail page must offer a play control'
