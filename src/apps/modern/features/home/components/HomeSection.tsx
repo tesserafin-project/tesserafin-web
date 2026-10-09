@@ -17,6 +17,11 @@ export interface HomeSectionProps {
      * §3.3/§5). Omit it for sections that are fine hiding entirely when there's nothing to show.
      */
     emptyLabel?: string;
+    /** What to do about the empty section, shown under `emptyLabel`. */
+    emptyDescription?: string;
+    /** A single way out of the empty section; rendered only together with `onEmptyAction`. */
+    emptyActionLabel?: string;
+    onEmptyAction?: () => void;
 }
 
 const SectionHeading: FC<{ title: string }> = ({ title }) => (
@@ -42,6 +47,9 @@ const HomeSection: FC<PropsWithChildren<HomeSectionProps>> = ({
     onRetry,
     isEmpty,
     emptyLabel,
+    emptyDescription,
+    emptyActionLabel,
+    onEmptyAction,
     children
 }) => {
     if (isLoading) {
@@ -72,7 +80,12 @@ const HomeSection: FC<PropsWithChildren<HomeSectionProps>> = ({
         return (
             <div className='rf-home-section'>
                 <SectionHeading title={title} />
-                <EmptyState title={emptyLabel} />
+                <EmptyState
+                    title={emptyLabel}
+                    description={emptyDescription}
+                    actionLabel={emptyActionLabel}
+                    onAction={onEmptyAction}
+                />
             </div>
         );
     }

@@ -775,7 +775,7 @@ let navDrawerInstance;
 let mainDrawerButton;
 let headerHomeButton;
 let currentDrawerType;
-let documentTitle = 'Reefin';
+let documentTitle = 'Tesserafin';
 let pageTitleElement;
 let headerBackButton;
 let headerUserButton;

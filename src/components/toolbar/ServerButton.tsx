@@ -27,7 +27,7 @@ const ServerButton: FC = () => {
             component={Link}
             to='/'
         >
-            {isPending ? '' : systemInfo?.ServerName || 'Reefin'}
+            {isPending ? '' : systemInfo?.ServerName || 'Tesserafin'}
         </Button>
     );
 };

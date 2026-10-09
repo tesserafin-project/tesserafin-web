@@ -18,7 +18,7 @@ const DrawerHeaderLink = () => {
                 <Box component='img' src={appIcon} sx={{ height: '2.5rem' }} />
             </ListItemIcon>
             <ListItemText
-                primary={systemInfo?.ServerName || 'Reefin'}
+                primary={systemInfo?.ServerName || 'Tesserafin'}
                 secondary={getDisplayVersion(systemInfo?.Version)}
                 slotProps={{
                     primary: { variant: 'h6' }
