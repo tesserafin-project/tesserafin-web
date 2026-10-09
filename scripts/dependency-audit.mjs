@@ -25,6 +25,8 @@
  * those was not a complete answer, and an incomplete answer is never "clean".
  *
  *   0  CLEAN            valid, complete report; no unresolved high/critical
+ *                       (reported as COMPLIANT WITH TEMPORARY WAIVER when a
+ *                       waiver is what makes it pass)
  *   1  POLICY VIOLATION at least one unresolved high/critical finding, or a
  *                       waiver that does not hold up (expired, mismatched,
  *                       stale)
@@ -678,7 +680,11 @@ function main(argv) {
 
     const verdict =
         blocking.length > 0 || stale.length > 0 ? EXIT_POLICY : EXIT_CLEAN;
-    const label = verdict === EXIT_CLEAN ? 'CLEAN' : 'POLICY VIOLATION';
+    // Exit 0 with a waiver in force is not "clean": findings exist and were accepted for a time.
+    // The verdict and the exit status are unchanged; only the word is.
+    const passLabel =
+        waived.length > 0 ? 'COMPLIANT WITH TEMPORARY WAIVER' : 'CLEAN';
+    const label = verdict === EXIT_CLEAN ? passLabel : 'POLICY VIOLATION';
 
     const summary = renderSummary({
         label,

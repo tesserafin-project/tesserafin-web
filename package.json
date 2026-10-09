@@ -116,11 +116,17 @@
         "sass-embedded": "1.100.0"
     },
     "overrides": {
+        "@stylistic/stylelint-plugin": {
+            "postcss-selector-parser": "7.1.6"
+        },
         "epubjs": {
             "@xmldom/xmldom": "0.8.15"
         },
         "get-uri": {
             "basic-ftp": "6.2.3"
+        },
+        "sockjs": {
+            "uuid": "11.1.1"
         },
         "vite": "6.4.3"
     },
@@ -157,7 +163,7 @@
         "verify:bundle-budget": "node scripts/verify-bundle-budget.mjs",
         "verify:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-json delivery-stats/report.json",
         "report:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-only --report-json delivery-stats/report-preview.json",
-        "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --summary dependency-audit-out/summary.md",
+        "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --waivers ci/dependency-audit-waivers.json --summary dependency-audit-out/summary.md",
         "test:dependency-audit": "node scripts/dependency-audit.test.mjs",
         "test:delivery-budget": "node scripts/delivery-budget.test.mjs",
         "test:epub-xmldom-fallback": "node scripts/epub-xmldom-fallback.test.mjs",

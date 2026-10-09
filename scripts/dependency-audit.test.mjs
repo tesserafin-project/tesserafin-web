@@ -308,11 +308,19 @@ expectReport(0, 'a high finding under an exact, unexpired waiver', HIGH_ONE, [
     '--waivers',
     waiverFile('waivers-valid.json', [waiver()])
 ]);
+assertOutput(
+    'COMPLIANT WITH TEMPORARY WAIVER \\(exit 0\\)',
+    '  ...and it is reported as a waiver, not as clean'
+);
 
 expectReport(0, 'an empty waiver set alongside a clean report', CLEAN, [
     '--waivers',
     waiverFile('waivers-empty.json', [])
 ]);
+assertOutput(
+    'dependency-audit: CLEAN \\(exit 0\\)',
+    '  ...and that one is clean'
+);
 
 // A downstream effect entry carries no advisory of its own; it is covered only
 // when every package it comes through is itself fully covered.
