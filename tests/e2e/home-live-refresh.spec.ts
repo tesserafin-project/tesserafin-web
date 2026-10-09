@@ -44,6 +44,7 @@ test('the open Home page shows a new resume position without a reload', async ({
     const movieId = (await found.json()).Items[0].Id as string;
     const userData = `/UserItems/${movieId}/UserData?userId=${User.Id}`;
 
+    let changed = false;
     try {
         await signIn(page);
         const continueWatching = page.getByRole('heading', {
@@ -57,6 +58,7 @@ test('the open Home page shows a new resume position without a reload', async ({
             'precondition: nothing is in progress on this rig'
         ).toHaveCount(0);
 
+        changed = true;
         const saved = await api.post(userData, {
             headers,
             data: { PlaybackPositionTicks: 5_000_000 }
@@ -68,10 +70,14 @@ test('the open Home page shows a new resume position without a reload', async ({
             'the open Home page must show the new resume position on its own'
         ).toBeVisible({ timeout: 20_000 });
     } finally {
-        await api.post(userData, {
-            headers,
-            data: { PlaybackPositionTicks: 0 }
-        });
+        // Only undo what this test did: a rig that already had something in progress fails the
+        // precondition, and its state is evidence, not ours to clear.
+        if (changed) {
+            await api.post(userData, {
+                headers,
+                data: { PlaybackPositionTicks: 0 }
+            });
+        }
         await api.dispose();
     }
 });

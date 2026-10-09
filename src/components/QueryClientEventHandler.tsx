@@ -11,24 +11,25 @@ const QueryClientEventHandler: FC = () => {
     const queryClient = useQueryClient();
     const { api, user } = useApi();
 
-    const invalidate = useCallback(() => {
-        for (const queryKey of [
-            ['Home', user?.Id],
-            ['User', user?.Id, 'Items'],
-            ['User', user?.Id, 'Views'],
-            ['Items']
-        ]) {
-            void queryClient.invalidateQueries({ queryKey });
-        }
-    }, [queryClient, user?.Id]);
+    const invalidateItemQueries = useCallback(
+        () =>
+            queryClient.invalidateQueries({
+                queryKey: ['User', user?.Id, 'Items']
+            }),
+        [queryClient, user?.Id]
+    );
 
     useEffect(() => {
-        Events.on(document, EventType.REFRESH_NEEDED, invalidate);
+        Events.on(document, EventType.REFRESH_NEEDED, invalidateItemQueries);
 
         return () => {
-            Events.off(document, EventType.REFRESH_NEEDED, invalidate);
+            Events.off(
+                document,
+                EventType.REFRESH_NEEDED,
+                invalidateItemQueries
+            );
         };
-    }, [invalidate]);
+    }, [invalidateItemQueries]);
 
     /**
      * The server says the library or this user's play state changed, so what the cache holds about
@@ -45,9 +46,23 @@ const QueryClientEventHandler: FC = () => {
                 OutboundWebSocketMessageType.LibraryChanged,
                 OutboundWebSocketMessageType.UserDataChanged
             ],
-            invalidate
+            ({ MessageType }) => {
+                void queryClient.invalidateQueries({
+                    queryKey: ['Home', user.Id]
+                });
+                // Play state moves on every progress report; only a library change is worth
+                // re-asking for lists and views.
+                if (
+                    MessageType === OutboundWebSocketMessageType.LibraryChanged
+                ) {
+                    void invalidateItemQueries();
+                    void queryClient.invalidateQueries({
+                        queryKey: ['User', user.Id, 'Views']
+                    });
+                }
+            }
         );
-    }, [api, user?.Id, invalidate]);
+    }, [api, user?.Id, queryClient, invalidateItemQueries]);
 
     return null;
 };
