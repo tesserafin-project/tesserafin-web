@@ -10,6 +10,9 @@ function getToastContainer() {
     if (!toastContainer) {
         toastContainer = document.createElement('div');
         toastContainer.classList.add('toastContainer');
+        // Announced, not only shown: a toast is how a playback recovery tells the viewer what it is doing.
+        toastContainer.setAttribute('role', 'status');
+        toastContainer.setAttribute('aria-live', 'polite');
         document.body.appendChild(toastContainer);
     }
 

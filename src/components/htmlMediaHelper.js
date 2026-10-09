@@ -116,6 +116,26 @@ export function handleHlsJsMediaError(instance, reject) {
     }
 }
 
+/**
+ * What the server said can be done about a failed transcode, read from the failed response.
+ * @param {object} data The hls.js error data.
+ * @returns {'software'|'none'|null} `null` when the response is not a reported transcode failure.
+ */
+export function getTranscodeRecovery(data) {
+    if (data?.response?.code !== 410) return null;
+
+    let value = null;
+    try {
+        value = data.networkDetails?.getResponseHeader?.(
+            'X-Tesserafin-Playback-Recovery'
+        );
+    } catch {
+        // A header that cannot be read is a failure with no offer attached.
+    }
+
+    return value === 'software' ? 'software' : 'none';
+}
+
 export function onErrorInternal(instance, type) {
     // Needed for video
     if (instance.destroyCustomTrack) {
@@ -273,12 +293,21 @@ export function bindEventsToHlsPlayer(
     reject
 ) {
     hls.on(Hls.Events.MANIFEST_PARSED, function () {
-        playWithPromise(elem, onErrorFn).then(resolve, function () {
-            if (reject) {
-                reject();
+        playWithPromise(elem, onErrorFn).then(
+            function () {
+                // Playback has started, so `reject` has nothing left to reject. It used to stay set,
+                // and every later failure went to it instead of to `onErrorInternal`: a stream that
+                // broke after it had started failed in silence, with no error event at all.
                 reject = null;
+                resolve();
+            },
+            function () {
+                if (reject) {
+                    reject();
+                    reject = null;
+                }
             }
-        });
+        );
     });
 
     hls.on(Hls.Events.ERROR, function (event, data) {
@@ -298,6 +327,14 @@ export function bindEventsToHlsPlayer(
             data.response.code >= 400
         ) {
             console.debug('hls.js response error code: ' + data.response.code);
+
+            // Read BEFORE the player is torn down: destroying hls.js detaches the element and
+            // its position goes back to zero. The header is the server saying that the transcode
+            // behind this stream failed, and whether reloading it can help (tesserafin#119).
+            instance.lastPlaybackFailure = {
+                positionMs: (elem.currentTime || 0) * 1000,
+                transcodeRecovery: getTranscodeRecovery(data)
+            };
 
             // Trigger failure differently depending on whether this is prior to start of playback, or after
             hls.destroy();

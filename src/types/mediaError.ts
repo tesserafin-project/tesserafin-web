@@ -9,5 +9,7 @@ export enum MediaError {
     NETWORK_ERROR = 'NETWORK_ERROR',
     NO_MEDIA_ERROR = 'NO_MEDIA_ERROR',
     PLAYER_ERROR = 'PLAYER_ERROR',
-    SERVER_ERROR = 'SERVER_ERROR'
+    SERVER_ERROR = 'SERVER_ERROR',
+    /** The server's transcode for this stream ended with a failure it reported as such. */
+    TRANSCODE_FAILED = 'TRANSCODE_FAILED'
 }

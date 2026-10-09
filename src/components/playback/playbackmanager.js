@@ -18,6 +18,8 @@ import globalize from '../../lib/globalize';
 import loading from '../loading/loading';
 import { appHost } from '../apphost';
 import alert from '../alert';
+import confirm from '../confirm/confirm';
+import toast from '../toast/toast';
 import { includesAny } from '../../utils/container.ts';
 import { getItems } from '../../utils/jellyfin-apiclient/getItems.ts';
 import { getItemBackdropImageUrl } from '../../utils/jellyfin-apiclient/backdropImage';
@@ -2423,6 +2425,22 @@ export class PlaybackManager {
         function setSrcIntoPlayer(apiClient, player, streamInfo) {
             const playerData = getPlayerData(player);
 
+            if (playerData.softwareRecoveryCancelled) {
+                // The viewer stopped while the recovery was being prepared. Nothing is started:
+                // the transcode just requested is released and the stop is reported, at the
+                // position the failed stream had reached.
+                playerData.softwareRecoveryPending = false;
+                playerData.isChangingStream = false;
+                loading.hide();
+                apiClient
+                    .stopActiveEncodings(streamInfo.playSessionId)
+                    .catch(function () {
+                        /* best effort, as everywhere else */
+                    });
+                onPlaybackStopped.call(player, {});
+                return Promise.resolve();
+            }
+
             playerData.streamInfo = streamInfo;
 
             return player.play(streamInfo).then(
@@ -2430,6 +2448,18 @@ export class PlaybackManager {
                     playerData.isChangingStream = false;
                     streamInfo.started = true;
                     streamInfo.ended = false;
+
+                    if (playerData.softwareRecoveryPending) {
+                        playerData.softwareRecoveryPending = false;
+                        loading.hide();
+                    }
+
+                    if (playerData.softwareRecoveryCancelled) {
+                        // The stop arrived while the new stream was already loading.
+                        playerData.softwareRecoveryCancelled = false;
+                        self.stop(player);
+                        return;
+                    }
 
                     sendProgressUpdate(player, 'timeupdate');
                 },
@@ -3805,6 +3835,14 @@ export class PlaybackManager {
                     playerData.playbackAttemptId =
                         playOptions.playbackAttemptId;
 
+                    // tesserafin#119: a new play request is a new incident. `playerData` is the
+                    // player object itself and outlives the item, so this is reset here.
+                    playerData.softwareRecoveryAttempted = false;
+                    playerData.softwareRecoveryPending = false;
+                    playerData.softwareRecoveryCancelled = false;
+                    playerData.transcodeFailureTicks = 0;
+                    player.lastPlaybackFailure = null;
+
                     // reefin #43: take ownership of the v2 session this streamInfo was built
                     // from, so the stop path can give it back with DELETE. A no-op unless the
                     // decision above actually came from v2 (flag on, POST succeeded) - legacy
@@ -4801,6 +4839,54 @@ export class PlaybackManager {
             const streamInfo =
                 error.streamInfo || getPlayerData(player).streamInfo;
 
+            // tesserafin#119. The server reported that the transcode behind this stream failed.
+            // `lastPlaybackFailure` is consumed here so it cannot be read twice.
+            const failure = player.lastPlaybackFailure;
+            player.lastPlaybackFailure = null;
+            const playerData = getPlayerData(player);
+            const failureTicks = failure
+                ? Math.floor(failure.positionMs * 10000) +
+                      (streamInfo?.transcodingOffsetTicks || 0) ||
+                  streamInfo?.playerStartPositionTicks ||
+                  0
+                : 0;
+
+            if (failure?.transcodeRecovery && streamInfo?.url) {
+                playerData.transcodeFailureTicks = failureTicks;
+
+                // ONE automatic reload per item, and only when the server says a reload will be
+                // served in software. The server starts nothing by itself, so this is the only
+                // retry of the incident; the ladder below is not entered for it.
+                if (
+                    failure.transcodeRecovery === 'software' &&
+                    !playerData.softwareRecoveryAttempted
+                ) {
+                    playerData.softwareRecoveryAttempted = true;
+                    playerData.softwareRecoveryPending = true;
+                    loading.show();
+                    toast(globalize.translate('MessagePlaybackRecovering'));
+                    changeStream(player, failureTicks, {});
+                    return;
+                }
+
+                // Either nothing can be done, or it was done and failed too. Say so and stop.
+                if (
+                    failure.transcodeRecovery === 'none' &&
+                    playerData.softwareRecoveryAttempted
+                ) {
+                    loading.hide();
+                    Events.trigger(self, 'playbackerror', [
+                        MediaError.TRANSCODE_FAILED
+                    ]);
+                    onPlaybackStopped.call(
+                        player,
+                        e,
+                        `.${MediaError.TRANSCODE_FAILED}`
+                    );
+                    return;
+                }
+            }
+
             if (streamInfo?.url) {
                 // Read the retry inputs from the typed decision carried on streamInfo, never by
                 // string-matching the URL. The old heuristics parsed `transcodereasons` and
@@ -4851,9 +4937,14 @@ export class PlaybackManager {
                 }
             }
 
-            Events.trigger(self, 'playbackerror', [errorType]);
+            // A reported transcode failure that reaches the end of the ladder is named as one.
+            const terminalType = failure?.transcodeRecovery
+                ? MediaError.TRANSCODE_FAILED
+                : errorType;
 
-            onPlaybackStopped.call(player, e, `.${errorType}`);
+            Events.trigger(self, 'playbackerror', [terminalType]);
+
+            onPlaybackStopped.call(player, e, `.${terminalType}`);
         }
 
         function onPlaybackStopped(e, displayErrorCode) {
@@ -4872,6 +4963,23 @@ export class PlaybackManager {
 
             const errorOccurred =
                 displayErrorCode && typeof displayErrorCode === 'string';
+
+            // The element was torn down with the failed stream and reads zero by now. Reporting
+            // that would overwrite the viewer's resume point with the beginning.
+            const failedAtTicks =
+                errorOccurred || data.softwareRecoveryCancelled
+                    ? data.transcodeFailureTicks
+                    : 0;
+            data.softwareRecoveryCancelled = false;
+            if (
+                failedAtTicks &&
+                state.PlayState &&
+                !state.PlayState.PositionTicks
+            ) {
+                state.PlayState.PositionTicks = failedAtTicks;
+            }
+            const failedItem = errorOccurred ? streamInfo?.item : null;
+            data.softwareRecoveryPending = false;
 
             // reefin #43: give the v2 session back. Placed here, before the reporting and
             // queue-advance work below, so a session is released even if something further
@@ -4961,7 +5069,31 @@ export class PlaybackManager {
                 removeCurrentPlayer(player);
             }
 
-            if (errorOccurred) {
+            if (
+                errorOccurred &&
+                displayErrorCode === `.${MediaError.TRANSCODE_FAILED}` &&
+                failedItem
+            ) {
+                // Not a dead end: the viewer can ask again, from where playback stopped, or leave.
+                confirm({
+                    title: globalize.translate('HeaderPlaybackError'),
+                    text: globalize.translate(
+                        'PlaybackError' + displayErrorCode
+                    ),
+                    confirmText: globalize.translate('Retry'),
+                    cancelText: globalize.translate('ButtonBack')
+                }).then(
+                    () =>
+                        self.play({
+                            ids: [failedItem.Id],
+                            serverId: failedItem.ServerId,
+                            startPositionTicks: failedAtTicks || 0
+                        }),
+                    () => {
+                        /* Back: the player is already closed. */
+                    }
+                );
+            } else if (errorOccurred) {
                 showPlaybackInfoErrorMessage(
                     self,
                     'PlaybackError' + displayErrorCode
@@ -5555,6 +5687,12 @@ export class PlaybackManager {
         if (player) {
             if (enableLocalPlaylistManagement(player)) {
                 this._playNextAfterEnded = false;
+            }
+
+            // tesserafin#119: a stop asked for while a recovery reload is in flight wins. The
+            // reload checks this before it starts anything (`setSrcIntoPlayer`).
+            if (player.softwareRecoveryPending) {
+                player.softwareRecoveryCancelled = true;
             }
 
             // TODO: remove second param
