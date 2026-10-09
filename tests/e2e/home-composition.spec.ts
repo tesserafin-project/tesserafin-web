@@ -1,6 +1,6 @@
 import { expect, test } from './support/origin-inventory';
 import { AXE_VERSION, formatViolations, scanPage } from './support/axe';
-import { signIn } from './support/b2';
+import { seedResumePosition, signIn } from './support/b2';
 import type { Page } from '@playwright/test';
 
 /**
@@ -115,6 +115,17 @@ test.describe('Home page composition, against the live route', () => {
     test('renders the official composition, then changes it on Apply, keeps it across a reload, and gives it back on reset', async ({
         page
     }) => {
+        // The hero re-presents the first item to continue and renders nothing without one, and
+        // the rig seeds no play state. Without this the applied recipe has no hero to show.
+        const clearResumePosition = await seedResumePosition();
+        try {
+            await composeApplyReloadReset(page);
+        } finally {
+            await clearResumePosition();
+        }
+    });
+
+    async function composeApplyReloadReset(page: Page) {
         await signIn(page);
         await page.goto('/#/home', { waitUntil: 'domcontentloaded' });
         await waitForHomeSettled(page);
@@ -185,7 +196,7 @@ test.describe('Home page composition, against the live route', () => {
             'reset must restore the official composition exactly'
         ).toEqual(official);
         expect(await page.locator(HERO).count()).toBe(0);
-    });
+    }
 
     test('boots and falls back when the stored composition is corrupt', async ({
         page

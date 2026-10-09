@@ -65,6 +65,45 @@ export async function apiUserId(): Promise<string> {
 }
 
 /**
+ * Puts a resume position on the seeded movie through the server's own API, and returns the undo.
+ *
+ * Sections that re-present "the thing to continue" — Continue Watching, the Home hero — render
+ * nothing on a rig where nothing is in progress, and `ci/serve-e2e.sh` seeds exactly that rig. A
+ * test about those sections has to bring the state it is about, or it asserts on an empty page.
+ */
+export async function seedResumePosition(): Promise<() => Promise<void>> {
+    const api = await request.newContext({ baseURL: BASE_URL });
+    const auth = await api.post('/Users/AuthenticateByName', {
+        headers: { Authorization: AUTH_HEADER },
+        data: { Username: USER, Pw: PASSWORD }
+    });
+    expect(auth.ok(), 'the admin fixture user must authenticate').toBe(true);
+    const { AccessToken, User } = await auth.json();
+    const headers = { Authorization: `${AUTH_HEADER}, Token="${AccessToken}"` };
+
+    const found = await api.get(
+        `/Items?recursive=true&includeItemTypes=Movie&searchTerm=${encodeURIComponent(MOVIE_TITLE)}&userId=${User.Id}`,
+        { headers }
+    );
+    const movieId = (await found.json()).Items[0].Id as string;
+    const userData = `/UserItems/${movieId}/UserData?userId=${User.Id}`;
+
+    const saved = await api.post(userData, {
+        headers,
+        data: { PlaybackPositionTicks: 5_000_000 }
+    });
+    expect(saved.ok(), 'the resume position must be accepted').toBe(true);
+
+    return async () => {
+        await api.post(userData, {
+            headers,
+            data: { PlaybackPositionTicks: 0 }
+        });
+        await api.dispose();
+    };
+}
+
+/**
  * Applies the form factor.
  *
  * FOR TV, THROUGH THE PRODUCT'S OWN SETTING, not by writing the class. `components/layoutManager`
@@ -212,6 +251,23 @@ export async function openItemDetail(page: Page) {
 }
 
 /**
+ * The item page's primary play control, found the way a user finds it: the button in the action
+ * bar whose accessible name is "Play", or "Resume" once the item has a position.
+ *
+ * The migrated Item Details route no longer renders the legacy `.mainDetailButtons .btnPlay`
+ * (DetailActionBar.tsx renders plain buttons named by their translated label), so a class selector
+ * waits for a control that is never there. The name is localized and rigs run in English or in
+ * French, hence both spellings. Anchored on both ends: "Play from beginning" and "Play trailer"
+ * sit in the same bar. Scoped to the action bar because cards further down the page carry play
+ * overlays of their own.
+ */
+export function detailPlayControl(page: Page) {
+    return page
+        .locator('[data-detail-section="mainDetailButtons"]')
+        .getByRole('button', { name: /^(Play|Resume|Lire|Reprendre)$/ });
+}
+
+/**
  * Starts playback from the item detail page and leaves the player on screen, paused.
  *
  * TWO THINGS MAKE THE NAIVE VERSION FLAKY, and both were observed against the release candidate.
@@ -226,12 +282,10 @@ export async function openItemDetail(page: Page) {
  *    controls, the layout measurement, the accessibility scan — about a player that is still on
  *    screen rather than one that ended mid-assertion.
  *
- * The control itself is `.mainDetailButtons .btnPlay`, not a title match: the button's `title` is
- * localized (the rig runs in French, where it is "Lire"), so `button[title*="Play"]` matches
- * nothing there.
+ * The control is found by `detailPlayControl`, which see.
  */
 export async function openPlayer(page: Page) {
-    const play = page.locator('.mainDetailButtons .btnPlay:visible').first();
+    const play = detailPlayControl(page);
     await expect(
         play,
         'the item detail page must offer a play control'

@@ -208,9 +208,14 @@ test.describe('theme: Tesserafin Glass', () => {
 
     const gotoLibrary = async (page: import('@playwright/test').Page) => {
         await page.goto(`/#/library/${libraryId}`);
-        await expect(page.locator('[data-rf-slot="media-grid"]')).toBeVisible({
-            timeout: 20_000
-        });
+        // The library's own items, in whichever layout the active theme composes: Classic's
+        // recipe is a grid, Glass's is `"layout": "shelf"` (tesserafin-design/themes/glass), so
+        // waiting for `media-grid` waited for something Glass never renders.
+        await expect(
+            page
+                .locator('[data-rf-library-layout] [data-rf-slot="media-card"]')
+                .first()
+        ).toBeVisible({ timeout: 20_000 });
     };
 
     test('Classic (default) renders flat surfaces on /home and /library', async ({
