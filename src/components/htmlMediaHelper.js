@@ -118,6 +118,10 @@ export function handleHlsJsMediaError(instance, reject) {
 
 /**
  * What the server said can be done about a failed transcode, read from the failed response.
+ *
+ * Only the server's own statement counts: status 410 together with one of the two values it
+ * sends. A 410 from anything else on the way - a proxy, a cache, another server - carries no
+ * such header, and is an ordinary HTTP error, not a diagnosed transcode failure.
  * @param {object} data The hls.js error data.
  * @returns {'software'|'none'|null} `null` when the response is not a reported transcode failure.
  */
@@ -130,10 +134,10 @@ export function getTranscodeRecovery(data) {
             'X-Tesserafin-Playback-Recovery'
         );
     } catch {
-        // A header that cannot be read is a failure with no offer attached.
+        // A header that cannot be read was not received, as far as this client can tell.
     }
 
-    return value === 'software' ? 'software' : 'none';
+    return value === 'software' || value === 'none' ? value : null;
 }
 
 export function onErrorInternal(instance, type) {

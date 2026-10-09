@@ -69,12 +69,32 @@ describe('getTranscodeRecovery()', () => {
         expect(getTranscodeRecovery(failedSegment(410, 'none'))).toBe('none');
     });
 
-    it('treats a 410 without a readable offer as a failure with none', () => {
-        expect(getTranscodeRecovery(failedSegment(410))).toBe('none');
-        expect(getTranscodeRecovery(failedSegment(410, 'anything-else'))).toBe(
-            'none'
-        );
-        expect(getTranscodeRecovery({ response: { code: 410 } })).toBe('none');
+    // POLISH-2-R1: a 410 is the server's statement only when it carries one of the two values
+    // the server sends. Anything else is an HTTP error nobody diagnosed.
+    it('does not read an instruction into a 410 that carries none', () => {
+        expect(getTranscodeRecovery(failedSegment(410))).toBeNull();
+        expect(getTranscodeRecovery({ response: { code: 410 } })).toBeNull();
+        expect(
+            getTranscodeRecovery({
+                response: { code: 410 },
+                networkDetails: {
+                    getResponseHeader: () => {
+                        throw new Error('header not exposed');
+                    }
+                }
+            })
+        ).toBeNull();
+    });
+
+    it.each([
+        'anything-else',
+        '',
+        'Software',
+        'SOFTWARE',
+        ' software',
+        'none,software'
+    ])('does not recognise the value %j', (value) => {
+        expect(getTranscodeRecovery(failedSegment(410, value))).toBeNull();
     });
 
     it('is silent about every other failure', () => {
@@ -155,5 +175,19 @@ describe('bindEventsToHlsPlayer() - a transcode that fails', () => {
             (instance.lastPlaybackFailure as { transcodeRecovery: unknown })
                 .transcodeRecovery
         ).toBeNull();
+    });
+
+    it('a 410 without the server`s instruction is recorded as an ordinary error', async () => {
+        const { handlers, instance, errors, resolve } = bind();
+
+        handlers.manifestParsed('manifestParsed');
+        await vi.waitFor(() => expect(resolve).toHaveBeenCalled());
+        handlers.error('error', failedSegment(410));
+
+        expect(errors).toEqual([{ type: MediaError.SERVER_ERROR }]);
+        expect(instance.lastPlaybackFailure).toEqual({
+            positionMs: 143760,
+            transcodeRecovery: null
+        });
     });
 });

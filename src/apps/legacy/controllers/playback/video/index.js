@@ -1888,7 +1888,7 @@ export default function (view) {
         // start playback again after the viewer has gone.
         if (
             playbackManager.isPlayingVideo() ||
-            currentPlayer?.softwareRecoveryPending
+            currentPlayer?.softwareRecovery
         ) {
             shell.disableFullscreen();
 
