@@ -1,5 +1,7 @@
 import React, { type FC } from 'react';
 
+import { Ambient } from 'ui';
+
 import { scaledImageUrl, type DetailItem } from '../adapters/itemDetailsApi';
 import { hasBackdrop } from '../utils/itemPredicates';
 import type { HeroLayout } from '../utils/itemDetailsRecipe';
@@ -67,10 +69,12 @@ function backdropUrl(item: DetailItem): string | null {
  * has not turned the details banner off. `minimal` additionally drops the logotype. The poster is
  * rendered under all three, for every class.
  */
-const DetailImage: FC<{ item: DetailItem; hero: HeroLayout }> = ({
-    item,
-    hero
-}) => {
+const DetailImage: FC<{
+    item: DetailItem;
+    hero: HeroLayout;
+    /** The recipe's `backdrop: 'ambient'`: the poster also stands, blurred, behind the page. */
+    ambient?: boolean;
+}> = ({ item, hero, ambient }) => {
     const backdrop = hasBackdrop(item) ? backdropUrl(item) : null;
     const logo = logoUrl(item);
     const poster = posterUrl(item);
@@ -90,6 +94,9 @@ const DetailImage: FC<{ item: DetailItem; hero: HeroLayout }> = ({
                 />
             ) : null}
 
+            {/* The poster's own URL, so the layer never adds a request (RFC-0007 §6.1). */}
+            {poster && ambient ? <Ambient src={poster} /> : null}
+
             <div className='rf-item-details__poster' data-detail-image='poster'>
                 {poster ? (
                     <img
@@ -98,10 +105,15 @@ const DetailImage: FC<{ item: DetailItem; hero: HeroLayout }> = ({
                         alt=''
                     />
                 ) : (
+                    // The initial, not an empty slab: a 24rem blank beside the title read as a
+                    // broken image. Hidden from assistive tech — the title names the item.
                     <span
                         className='rf-item-details__poster-placeholder'
                         aria-hidden='true'
-                    />
+                    >
+                        {/* A code point, not a UTF-16 unit: an emoji's half is not a letter. */}
+                        {Array.from(item.Name ?? '')[0]}
+                    </span>
                 )}
             </div>
 

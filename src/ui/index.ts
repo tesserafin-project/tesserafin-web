@@ -21,6 +21,8 @@ export type {
     LoadingStateVariant
 } from './components/states/LoadingState';
 export { LoadingState } from './components/states/LoadingState';
+export type { AmbientProps } from './components/Ambient/Ambient';
+export { Ambient } from './components/Ambient/Ambient';
 export type { FilterDrawerProps } from './components/FilterDrawer/FilterDrawer';
 export { FilterDrawer } from './components/FilterDrawer/FilterDrawer';
 export type {

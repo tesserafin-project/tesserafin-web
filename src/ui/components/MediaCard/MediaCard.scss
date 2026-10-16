@@ -95,6 +95,17 @@ button.rf-media-card:hover {
     font-size: var(--rf-typography-font-size-xxl, 1.8rem);
 }
 
+.rf-media-card__placeholder-title {
+    display: -webkit-box;
+    overflow: hidden;
+    padding: var(--rf-spacing-md, 16px);
+    font-size: var(--rf-typography-font-size-md, 1rem);
+    text-align: center;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+}
+
 .rf-media-card__progress {
     position: absolute;
     right: 0;

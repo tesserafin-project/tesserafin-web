@@ -18,10 +18,10 @@
  */
 
 import {
-    HOME_BACKDROPS,
+    PAGE_BACKDROPS,
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
-    type HomeBackdrop,
+    type PageBackdrop,
     type HomeRecipe,
     type HomeSection,
     type HomeShelfDensity,
@@ -58,12 +58,13 @@ export interface ResolvedPresentation {
         home: {
             sections: readonly HomeSection[];
             shelfDensity: HomeShelfDensity;
-            backdrop: HomeBackdrop;
+            backdrop: PageBackdrop;
         };
         library: Required<LibraryRecipe>;
         itemDetails: {
             hero: ItemDetailsHero;
             sections: readonly ItemDetailsSection[];
+            backdrop: PageBackdrop;
         };
     };
 }
@@ -153,7 +154,8 @@ export const PLATFORM_DEFAULT_PRESENTATION: ResolvedPresentation = {
          */
         itemDetails: {
             hero: 'backdrop',
-            sections: [...ITEM_DETAILS_SECTIONS]
+            sections: [...ITEM_DETAILS_SECTIONS],
+            backdrop: 'none'
         }
     }
 };
@@ -198,7 +200,7 @@ const HOME_SECTION_NAMES: ReadonlySet<string> = new Set(HOME_SECTIONS);
 const HOME_SHELF_DENSITY_NAMES: ReadonlySet<string> = new Set(
     HOME_SHELF_DENSITIES
 );
-const HOME_BACKDROP_NAMES: ReadonlySet<string> = new Set(HOME_BACKDROPS);
+const PAGE_BACKDROP_NAMES: ReadonlySet<string> = new Set(PAGE_BACKDROPS);
 
 /**
  * The Home recipe is the first presentation value that is an ARRAY, and the first that reaches the
@@ -252,7 +254,7 @@ function sanitizeHomeRecipe(override: HomeRecipe | undefined): HomeRecipe {
 
     if (
         typeof override.backdrop === 'string' &&
-        HOME_BACKDROP_NAMES.has(override.backdrop)
+        PAGE_BACKDROP_NAMES.has(override.backdrop)
     ) {
         clean.backdrop = override.backdrop;
     }
@@ -330,7 +332,7 @@ const ITEM_DETAILS_HERO_NAMES: ReadonlySet<string> = new Set(
  *     `localStorage` record;
  *   - if nothing survives, `sections` is ignored and the platform default order applies — an Item
  *     Details page with no content is not a composition anyone chose;
- *   - an unknown `hero` is ignored on its own, so one bad key never costs the other.
+ *   - an unknown `hero` or `backdrop` is ignored on its own, so one bad key never costs another.
  *
  * The last point is the one Step 2 is asked to prove: `{"hero":"cinematic","sections":["cast"]}`
  * must keep `cast` and fall back to the default hero, not discard both.
@@ -361,6 +363,13 @@ function sanitizeItemDetailsRecipe(
         ITEM_DETAILS_HERO_NAMES.has(override.hero)
     ) {
         clean.hero = override.hero;
+    }
+
+    if (
+        typeof override.backdrop === 'string' &&
+        PAGE_BACKDROP_NAMES.has(override.backdrop)
+    ) {
+        clean.backdrop = override.backdrop;
     }
 
     return clean;

@@ -179,17 +179,19 @@ export const HOME_SHELF_DENSITIES = [
 export type HomeShelfDensity = (typeof HOME_SHELF_DENSITIES)[number];
 
 /**
- * What stands behind the Home composition (THEME-PRESENTATION-1).
+ * What stands behind a page's composition (THEME-PRESENTATION-1), for the Home and Item Details
+ * recipes alike.
  *
- * `ambient` lays the hero's artwork, blurred and dimmed, behind the whole page, so a translucent
- * surface has something to frost; without it a glass card stands on a flat colour and reads as an
- * opaque one. It re-uses the image the `hero` section already shows: no request of its own, and
- * nothing to show when the recipe has no `hero` or the item has no artwork. The renderer drops it
+ * `ambient` lays the page's lead artwork, blurred and dimmed, behind the whole page, so a
+ * translucent surface has something to frost; without it a glass card stands on a flat colour and
+ * reads as an opaque one. It only ever RE-USES an image the page already shows — Home's `hero`
+ * artwork, the details poster — so it never makes a request of its own, and it shows nothing when
+ * there is no such image (Home without `hero`, an item without a poster). The renderer drops it
  * under the `reducedTransparency` and `lowPower` profiles.
  */
-export const HOME_BACKDROPS = ['none', 'ambient'] as const;
+export const PAGE_BACKDROPS = ['none', 'ambient'] as const;
 
-export type HomeBackdrop = (typeof HOME_BACKDROPS)[number];
+export type PageBackdrop = (typeof PAGE_BACKDROPS)[number];
 
 /**
  * The content families an Item Details recipe may order (RFC-0007 §4.7).
@@ -260,13 +262,14 @@ export type ItemDetailsHero = (typeof ITEM_DETAILS_HEROES)[number];
 
 export interface ItemDetailsRecipe {
     hero?: ItemDetailsHero;
+    backdrop?: PageBackdrop;
     sections?: readonly ItemDetailsSection[];
 }
 
 export interface HomeRecipe {
     sections?: readonly HomeSection[];
     shelfDensity?: HomeShelfDensity;
-    backdrop?: HomeBackdrop;
+    backdrop?: PageBackdrop;
 }
 
 /**

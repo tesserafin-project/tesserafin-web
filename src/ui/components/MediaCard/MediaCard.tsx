@@ -20,7 +20,7 @@ export interface MediaCardProps {
     /** Renders the card as an `<a>` when set; takes precedence over `onClick`. */
     href?: string;
     onClick?: (event: MouseEvent<HTMLElement>) => void;
-    /** Shown in place of the image when `imageUrl` is absent. */
+    /** Shown in place of the image when `imageUrl` is absent; the title when omitted. */
     placeholderIcon?: ReactNode;
     className?: string;
 }
@@ -73,8 +73,14 @@ export const MediaCard: FC<MediaCardProps> = ({
             {imageUrl ? (
                 <img className='rf-media-card__image' src={imageUrl} alt='' />
             ) : (
+                // The title by default (THEME-PRESENTATION-1): a season or series with no artwork
+                // was a blank tile until its caption was read. Hidden: the caption names it.
                 <span className='rf-media-card__placeholder' aria-hidden='true'>
-                    {placeholderIcon}
+                    {placeholderIcon ?? (
+                        <span className='rf-media-card__placeholder-title'>
+                            {title}
+                        </span>
+                    )}
                 </span>
             )}
             {typeof progressPercent === 'number' &&
