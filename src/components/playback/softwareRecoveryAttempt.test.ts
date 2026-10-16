@@ -872,6 +872,34 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
             expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
         });
 
+        it('says the item is unavailable when the reload after a failure is answered 404', async () => {
+            const rig = mount();
+            await startLadderReload(rig).then((reload) =>
+                reload.reject({ response: { status: 404 } })
+            );
+            await until(() => expect(alerts).toHaveLength(1));
+            await settle();
+
+            // tesserafin-web#195: access withdrawn mid-playback. The player stops and says why,
+            // once, and the position is the one the viewer was at.
+            expect(JSON.stringify(alerts[0])).toContain(
+                'PlaybackError.ItemUnavailable'
+            );
+            expect(stoppedPositions()).toEqual([FAILED_AT_TICKS]);
+        });
+
+        it('says playback failed when the reload after a failure gets no answer', async () => {
+            const rig = mount();
+            await startLadderReload(rig).then((reload) =>
+                reload.reject(new Error('no answer'))
+            );
+            await until(() => expect(alerts).toHaveLength(1));
+
+            expect(JSON.stringify(alerts[0])).toContain(
+                `PlaybackError.${MediaError.SERVER_ERROR}`
+            );
+        });
+
         it('ignores the failed first start of a playback that was replaced', async () => {
             const rig = mount();
             const normalPlay = rig.player.play;

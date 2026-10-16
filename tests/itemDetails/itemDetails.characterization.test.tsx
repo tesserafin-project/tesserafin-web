@@ -26,6 +26,7 @@
  *      silently.
  */
 import React from 'react';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import contract from '../fixtures/item-details/legacy-contract.json';
@@ -790,6 +791,68 @@ describe('migrated Item Details — loading and failure', () => {
         ).toBeNull();
         expect(renderedActions(mounted.container)).toEqual([]);
         expect(renderedSections(mounted.container)).toEqual([]);
+    });
+
+    /**
+     * tesserafin-web#195. The server answers an item this user may not see exactly as one that does
+     * not exist: 404. That is not a connection failure, retrying cannot help, and the page must not
+     * tell "hidden" from "missing". The same holds when access is withdrawn while the page is open:
+     * the refused refetch replaces the page rather than leaving Play on an item the server refuses.
+     */
+    it('says the item is unavailable, without a retry, when the server answers 404', async () => {
+        const testCase = ITEM_DETAILS_CASES.find((entry) => entry.id === 'movie');
+        if (!testCase) throw new Error('no movie case fixture');
+        const recorded = classFor('movie');
+        const responderOptions = {
+            item: testCase.item,
+            user: testCase.user,
+            lists: testCase.lists
+        };
+        const legacy = pick(
+            legacyResponders(responderOptions),
+            expectedReads(recorded)
+        );
+        const getItem = legacy.getItem as (...args: unknown[]) => unknown;
+        let refuse = false;
+        const api = createFailClosedApi({
+            legacy: {
+                ...legacy,
+                getItem: (...args: unknown[]) =>
+                    refuse
+                        ? Promise.reject(new Response(null, { status: 404 }))
+                        : getItem(...args)
+            },
+            sdk: pick(sdkResponders(responderOptions), recorded.reads.sdk)
+        });
+        libraryApiRef.current = api.libraryApi;
+        serverConnections.getApiClient.mockReturnValue(api.apiClient);
+        serverConnections.currentApiClient.mockReturnValue(api.apiClient);
+        serverConnections.getApi.mockReturnValue({});
+
+        const { default: ItemDetailsPage } = await import(
+            '../../src/apps/modern/features/details/components/ItemDetailsPage'
+        );
+        const client = createTestQueryClient();
+        const mounted = await renderRoute(
+            <ItemDetailsPage
+                searchParams={new URLSearchParams({ id: 'movie-1' })}
+            />,
+            client
+        );
+        await settle();
+        expect(renderedActions(mounted.container)).not.toEqual([]);
+
+        refuse = true;
+        await act(() => client.refetchQueries());
+        await settle();
+
+        const error = mounted.container.querySelector(
+            '[data-rf-slot="state-error"]'
+        );
+        expect(error?.textContent).toContain('MessageItemUnavailable');
+        expect(error?.textContent).not.toContain('MessageUnableToConnectToServer');
+        expect(error?.querySelector('button')).toBeNull();
+        expect(renderedActions(mounted.container)).toEqual([]);
     });
 
     /**

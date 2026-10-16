@@ -299,6 +299,12 @@
             "note": "translation"
         },
         {
+            "module": "utils/httpStatus",
+            "classification": "PURE",
+            "surface": null,
+            "note": "#195. Reads the status off a failed primary read; issues nothing"
+        },
+        {
             "module": "scripts/datetime",
             "classification": "PURE",
             "surface": null,

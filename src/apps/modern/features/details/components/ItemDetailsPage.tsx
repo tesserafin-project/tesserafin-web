@@ -2,6 +2,7 @@ import React, { useMemo, type FC } from 'react';
 
 import globalize from 'lib/globalize';
 import { ErrorState, LoadingState } from 'ui';
+import { isItemUnavailable } from 'utils/httpStatus';
 
 import { useItemDetailsPrimary } from '../api/useItemDetails';
 import { parseDetailsRouteParams } from '../utils/routeParams';
@@ -47,6 +48,17 @@ const ItemDetailsPage: FC<ItemDetailsPageProps> = ({ searchParams }) => {
             <LoadingState
                 variant='block'
                 label={globalize.translate('Loading')}
+            />
+        );
+    }
+
+    // Checked before the data: a refetch refused after the item was withdrawn keeps the old data,
+    // and a page offering Play on an item the server now refuses is the stale page #10 forbids.
+    if (primary.isError && isItemUnavailable(primary.error)) {
+        return (
+            <ErrorState
+                title={globalize.translate('HeaderItemUnavailable')}
+                message={globalize.translate('MessageItemUnavailable')}
             />
         );
     }
