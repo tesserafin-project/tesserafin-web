@@ -111,6 +111,27 @@ button.rf-media-card:hover {
     background: var(--rf-color-primary, #00a4dc);
 }
 
+.rf-media-card__played {
+    position: absolute;
+    top: var(--rf-spacing-xs, 6px);
+    right: var(--rf-spacing-xs, 6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6em;
+    height: 1.6em;
+    border-radius: 50%;
+    background: var(--rf-color-primary, #00a4dc);
+    color: var(--rf-color-on-primary, #fff);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+
+    svg {
+        width: 1.1em;
+        height: 1.1em;
+        fill: currentcolor;
+    }
+}
+
 .rf-media-card__text {
     display: flex;
     flex-direction: column;

@@ -1,4 +1,6 @@
+import globalize from 'lib/globalize';
 import { ImageType } from 'lib/tesserafin-sdk';
+import { getWatchState } from 'utils/watchState';
 
 import type { ImageApiClient } from 'apps/modern/features/home/utils/mediaCardProps';
 import type { ItemDto } from 'types/base/models/item-dto';
@@ -65,20 +67,19 @@ export const toMediaCardProps = (
     apiClient: ImageApiClient | undefined,
     imageAspect: MediaCardProps['imageAspect']
 ): MediaCardProps => {
-    // `ItemDto` (unlike the raw `BaseItemDto`) flattens `UserItemDataDto`'s fields directly onto the
-    // item instead of nesting them under `UserData` (`types/base/models/item-dto.ts`'s `UserItem`
-    // mixin omits `UserData`'s own `Key`/`ItemId`, which don't apply once flattened).
-    const playedPercentage = item.PlayedPercentage ?? undefined;
+    // The `ItemDto` type flattens `UserItemDataDto` onto the item, but the response it is cast from
+    // nests it under `UserData`, as the server sends it. Reading the flattened field found nothing,
+    // so no library card ever showed progress (WEB-UX-1).
+    const watch = getWatchState(item.UserData);
 
     return {
         title: item.Name ?? '',
         subtitle: item.ProductionYear ? String(item.ProductionYear) : undefined,
         imageUrl: getItemImageUrl(item, apiClient),
         imageAspect,
-        progressPercent:
-            playedPercentage && playedPercentage > 0 && playedPercentage < 100
-                ? playedPercentage
-                : undefined,
+        progressPercent: watch.progressPercent,
+        played: watch.played,
+        playedLabel: globalize.translate('Watched'),
         href: getItemHref(item, apiClient?.serverId?.())
     };
 };

@@ -13,6 +13,10 @@ export interface MediaCardProps {
     imageAspect: MediaCardImageAspect;
     /** 0-100; renders a progress bar over the image (e.g. "continue watching") when set. */
     progressPercent?: number;
+    /** Marks the item as watched, with a check over the image. */
+    played?: boolean;
+    /** Accessible name of the watched mark; callers translate (`src/ui` imports no `globalize`). */
+    playedLabel?: string;
     /** Renders the card as an `<a>` when set; takes precedence over `onClick`. */
     href?: string;
     onClick?: (event: MouseEvent<HTMLElement>) => void;
@@ -32,6 +36,8 @@ export const MediaCard: FC<MediaCardProps> = ({
     imageUrl,
     imageAspect,
     progressPercent,
+    played,
+    playedLabel = 'Watched',
     href,
     onClick,
     placeholderIcon,
@@ -95,6 +101,17 @@ export const MediaCard: FC<MediaCardProps> = ({
                         />
                     </span>
                 )}
+            {played && (
+                <span
+                    className='rf-media-card__played'
+                    role='img'
+                    aria-label={playedLabel}
+                >
+                    <svg viewBox='0 0 24 24' aria-hidden='true' focusable='false'>
+                        <path d='M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z' />
+                    </svg>
+                </span>
+            )}
         </span>
     );
 

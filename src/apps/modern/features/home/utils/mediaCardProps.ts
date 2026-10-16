@@ -1,3 +1,4 @@
+import globalize from 'lib/globalize';
 import type { BaseItemDto } from 'lib/tesserafin-sdk';
 import { CollectionType, ImageType } from 'lib/tesserafin-sdk';
 import type { MediaCardImageAspect, MediaCardProps } from 'ui';
@@ -5,6 +6,7 @@ import {
     getCanonicalLibraryUrl,
     isCanonicalLibraryCollectionType
 } from 'constants/libraryRoute';
+import { getWatchState } from 'utils/watchState';
 
 /**
  * The slice of `jellyfin-apiclient`'s `ApiClient` this adapter needs (RFC-0005 §11 W13.6, WP4) -
@@ -225,7 +227,7 @@ export const toMediaCardProps = (
     apiClient: ImageApiClient | undefined,
     options: MediaCardPropsOptions
 ): MediaCardProps => {
-    const playedPercentage = item.UserData?.PlayedPercentage ?? undefined;
+    const watch = getWatchState(item.UserData);
 
     return {
         title: item.Name ?? '',
@@ -234,10 +236,9 @@ export const toMediaCardProps = (
             (item.ProductionYear ? String(item.ProductionYear) : undefined),
         imageUrl: getItemImageUrl(item, apiClient, !!options.preferThumb),
         imageAspect: options.imageAspect,
-        progressPercent:
-            playedPercentage && playedPercentage > 0 && playedPercentage < 100
-                ? playedPercentage
-                : undefined,
+        progressPercent: watch.progressPercent,
+        played: watch.played,
+        playedLabel: globalize.translate('Watched'),
         href: getItemHref(item, apiClient?.serverId?.())
     };
 };

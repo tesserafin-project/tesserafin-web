@@ -67,6 +67,27 @@ describe('MediaCard', () => {
         expect(progress?.getAttribute('aria-valuenow')).toBe('42');
     });
 
+    it('marks a watched item with a named check, and nothing otherwise', () => {
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='Seen'
+                    imageAspect='poster'
+                    played
+                    playedLabel='Vu'
+                />
+            );
+        });
+        expect(
+            container.querySelector('[role="img"]')?.getAttribute('aria-label')
+        ).toBe('Vu');
+
+        act(() => {
+            root.render(<MediaCard title='Unseen' imageAspect='poster' />);
+        });
+        expect(container.querySelector('[role="img"]')).toBeNull();
+    });
+
     it('does not render a progressbar when progressPercent is absent', () => {
         act(() => {
             root.render(<MediaCard title='No progress' imageAspect='square' />);

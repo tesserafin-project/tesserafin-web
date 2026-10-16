@@ -1,6 +1,8 @@
 import React, { type FC } from 'react';
 
+import globalize from 'lib/globalize';
 import { MediaCard, MediaGrid, type MediaCardImageAspect } from 'ui';
+import { getWatchState } from 'utils/watchState';
 
 import type { DetailItem } from '../adapters/itemDetailsApi';
 import { scaledImageUrl } from '../adapters/itemDetailsApi';
@@ -52,6 +54,10 @@ const ItemCollectionGrid: FC<ItemCollectionGridProps> = ({
                 }
                 imageUrl={primaryImageUrl(item)}
                 imageAspect={aspect}
+                {...getWatchState(
+                    item.UserData as Parameters<typeof getWatchState>[0]
+                )}
+                playedLabel={globalize.translate('Watched')}
                 href={itemHref(item)}
                 className='itemDetailsCard'
             />

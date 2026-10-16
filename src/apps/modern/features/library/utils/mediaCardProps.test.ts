@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('lib/globalize', () => ({
+    default: { translate: (key: string) => key }
+}));
+
 import type { ItemDto } from 'types/base/models/item-dto';
 
 import type { ImageApiClient } from './mediaCardProps';
@@ -87,9 +91,11 @@ describe('toMediaCardProps()', () => {
         expect(props.href).toBe('#/details?id=item-1&serverId=item-server');
     });
 
+    // The server nests play state under `UserData`; the flattened `ItemDto` field is never sent.
+    // A test built on the flattened shape passed while no library card ever showed progress.
     it('reports an in-progress percentage as progressPercent', () => {
         const props = toMediaCardProps(
-            item({ PlayedPercentage: 42 }),
+            item({ UserData: { PlayedPercentage: 42 } }),
             fakeApiClient(),
             'poster'
         );
@@ -97,17 +103,28 @@ describe('toMediaCardProps()', () => {
         expect(props.progressPercent).toBe(42);
     });
 
+    it('marks a watched item, in the viewer language', () => {
+        const props = toMediaCardProps(
+            item({ UserData: { Played: true } }),
+            fakeApiClient(),
+            'poster'
+        );
+
+        expect(props.played).toBe(true);
+        expect(props.playedLabel).toBe('Watched');
+    });
+
     it('omits progressPercent for fully played or unplayed items', () => {
         expect(
             toMediaCardProps(
-                item({ PlayedPercentage: 100 }),
+                item({ UserData: { PlayedPercentage: 100 } }),
                 fakeApiClient(),
                 'poster'
             ).progressPercent
         ).toBeUndefined();
         expect(
             toMediaCardProps(
-                item({ PlayedPercentage: 0 }),
+                item({ UserData: { PlayedPercentage: 0 } }),
                 fakeApiClient(),
                 'poster'
             ).progressPercent

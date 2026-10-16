@@ -1928,6 +1928,7 @@ nothing imports any more.
 | `ui` | `UI` | — | the published design system: MediaCard, MediaGrid, EmptyState, ErrorState, LoadingState |
 | `lib/globalize` | `PURE` | — | translation |
 | `utils/httpStatus` | `PURE` | — | #195. Reads the status off a failed primary read; issues nothing |
+| `utils/watchState` | `PURE` | — | WEB-UX-1. Derives a card's progress and watched mark from the item's UserData |
 | `scripts/datetime` | `PURE` | — | date formatting |
 | `dompurify` | `PURE` | — | overview sanitisation |
 | `markdown-it` | `PURE` | — | overview rendering |

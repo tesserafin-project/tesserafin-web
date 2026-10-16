@@ -305,6 +305,12 @@
             "note": "#195. Reads the status off a failed primary read; issues nothing"
         },
         {
+            "module": "utils/watchState",
+            "classification": "PURE",
+            "surface": null,
+            "note": "WEB-UX-1. Derives a card's progress and watched mark from the item's UserData"
+        },
+        {
             "module": "scripts/datetime",
             "classification": "PURE",
             "surface": null,
