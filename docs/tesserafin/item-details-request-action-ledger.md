@@ -1927,6 +1927,7 @@ nothing imports any more.
 | `components/Page` | `UI` | — | the page shell |
 | `ui` | `UI` | — | the published design system: MediaCard, MediaGrid, EmptyState, ErrorState, LoadingState |
 | `lib/globalize` | `PURE` | — | translation |
+| `utils/httpStatus` | `PURE` | — | #195. Reads the status off a failed primary read; issues nothing |
 | `scripts/datetime` | `PURE` | — | date formatting |
 | `dompurify` | `PURE` | — | overview sanitisation |
 | `markdown-it` | `PURE` | — | overview rendering |

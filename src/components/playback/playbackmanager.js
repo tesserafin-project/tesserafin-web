@@ -8,6 +8,7 @@ import merge from 'lodash-es/merge';
 import Screenfull from 'screenfull';
 
 import Events from '../../utils/events.ts';
+import { isItemUnavailable } from '../../utils/httpStatus.ts';
 import datetime from '../../scripts/datetime';
 import appSettings from '../../scripts/settings/appSettings';
 import itemHelper from '../itemHelper';
@@ -2449,6 +2450,20 @@ export class PlaybackManager {
                             );
                             if (!change.afterFailure) {
                                 endChange(change);
+                            } else if (
+                                !change.recovery &&
+                                !isStaleChange(player, change)
+                            ) {
+                                // The failed stream is gone and its replacement was refused:
+                                // nothing will play. Without this the player sat on its last
+                                // frame with no word (#195). A recovery has its own timer.
+                                const code = isItemUnavailable(err)
+                                    ? '.ItemUnavailable'
+                                    : `.${MediaError.SERVER_ERROR}`;
+                                Events.trigger(self, 'playbackerror', [
+                                    code.slice(1)
+                                ]);
+                                onPlaybackStopped.call(player, {}, code);
                             }
                         });
                 });
@@ -3328,11 +3343,14 @@ export class PlaybackManager {
                 firstItem = items[playStartIndex];
             }
 
-            // If it's still null then there's nothing to play
+            // If it's still null then there's nothing to play. Asked for by id, that is the server
+            // withholding the item: it lists a refused id exactly as a missing one (#195).
             if (!firstItem) {
                 showPlaybackInfoErrorMessage(
                     self,
-                    `PlaybackError.${MediaError.NO_MEDIA_ERROR}`
+                    options.ids?.length
+                        ? 'PlaybackError.ItemUnavailable'
+                        : `PlaybackError.${MediaError.NO_MEDIA_ERROR}`
                 );
                 return Promise.reject();
             }
@@ -3472,7 +3490,10 @@ export class PlaybackManager {
 
             let displayErrorCode = 'ErrorDefault';
 
-            if (e instanceof Response) {
+            if (isItemUnavailable(e)) {
+                // tesserafin-web#195: refused and missing are one answer, so one message.
+                displayErrorCode = 'PlaybackError.ItemUnavailable';
+            } else if (e instanceof Response) {
                 if (e.status >= 500) {
                     displayErrorCode = `PlaybackError.${MediaError.SERVER_ERROR}`;
                 } else if (e.status >= 400) {
