@@ -37,6 +37,7 @@ import {
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
     ITEM_DETAILS_HEROES,
+    PAGE_BACKDROPS,
     PLATFORM_DEFAULT_PRESENTATION,
     WEB_RENDERER_CAPABILITIES,
     type HomeRecipe,
@@ -292,8 +293,10 @@ const HomeCompositionEditor: FC<HomeCompositionEditorProps> = ({
         ...HOME_SECTIONS.filter((section) => !selected.includes(section))
     ];
 
+    // Spread, not rebuilt: a key this control does not own (`backdrop`) must survive an edit to the
+    // ones it does. Rebuilding the object here silently dropped it from a Frosted-based draft.
     const setSections = (sections: readonly HomeSection[]) =>
-        onChange({ sections, shelfDensity: density });
+        onChange({ ...recipe, sections, shelfDensity: density });
 
     const toggle = (section: HomeSection) => {
         if (selected.includes(section)) {
@@ -374,8 +377,22 @@ const HomeCompositionEditor: FC<HomeCompositionEditorProps> = ({
                 options={HOME_SHELF_DENSITIES}
                 onChange={(value) =>
                     onChange({
+                        ...recipe,
                         sections: selected,
                         shelfDensity: value as HomeRecipe['shelfDensity']
+                    })
+                }
+            />
+
+            <Choice
+                label='Backdrop'
+                value={recipe?.backdrop ?? DEFAULT_HOME.backdrop}
+                options={PAGE_BACKDROPS}
+                onChange={(value) =>
+                    onChange({
+                        ...recipe,
+                        sections: selected,
+                        backdrop: value as HomeRecipe['backdrop']
                     })
                 }
             />
@@ -507,8 +524,9 @@ const ItemDetailsCompositionEditor: FC<ItemDetailsCompositionEditorProps> = ({
         ...PUBLISHED_FAMILIES.filter((family) => !selected.includes(family))
     ];
 
+    // Spread for the same reason as Home's: `backdrop` is not this list's to drop.
     const setSections = (sections: readonly ItemDetailsSection[]) =>
-        onChange({ hero, sections });
+        onChange({ ...recipe, hero, sections });
 
     const toggle = (family: ItemDetailsSection) => {
         if (selected.includes(family)) {
@@ -544,8 +562,23 @@ const ItemDetailsCompositionEditor: FC<ItemDetailsCompositionEditorProps> = ({
                 options={ITEM_DETAILS_HEROES}
                 onChange={(value) =>
                     onChange({
+                        ...recipe,
                         hero: value as ItemDetailsRecipe['hero'],
                         sections: selected
+                    })
+                }
+            />
+
+            <Choice
+                label='Backdrop'
+                value={recipe?.backdrop ?? DEFAULT_ITEM_DETAILS.backdrop}
+                options={PAGE_BACKDROPS}
+                onChange={(value) =>
+                    onChange({
+                        ...recipe,
+                        hero,
+                        sections: selected,
+                        backdrop: value as ItemDetailsRecipe['backdrop']
                     })
                 }
             />

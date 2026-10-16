@@ -22,6 +22,7 @@ export type {
     SurfacePresentation,
     ThemeAssetRole,
     ThemeCapability,
+    PageBackdrop,
     ThemeLineage,
     ThemeManifest,
     ThemeMode,
@@ -39,6 +40,7 @@ export {
     LIBRARY_CARD_ASPECTS,
     LIBRARY_FILTER_PRESENTATIONS,
     LIBRARY_LAYOUTS,
+    PAGE_BACKDROPS,
     THEME_CAPABILITIES,
     THEME_CONTRACT_VERSION,
     WEB_RENDERER_CAPABILITIES
