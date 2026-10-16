@@ -281,6 +281,10 @@
                     "description": "The Item Details recipe. `hero` selects an artwork LAYOUT treatment — it never causes an extra request, never overrides the user's details-banner setting, never gives a Person or a Book a backdrop, and the poster is rendered under all three. `sections` orders and selects durable user-facing CONTENT FAMILIES. The enum widened from five to eleven names in #129 Step 2, when the route began reading the recipe: the original five are retained verbatim so every manifest valid before remains valid, and the six additions are the families the five could not name. None of these is a DOM identifier, a component name or an item type, and there is deliberately no name for the item's identity, its action bar, its track selectors, its user-data controls, its recording editor, a permission gate or a warning — those are fixed regions outside theme authority (RFC-0007 §6.1).",
                     "properties": {
                         "hero": { "enum": ["backdrop", "poster", "minimal"] },
+                        "backdrop": {
+                            "description": "What stands behind the Item Details composition. `ambient` lays the poster the page already shows, blurred and dimmed, behind the page; it issues no request of its own and shows nothing for an item without a poster.",
+                            "enum": ["none", "ambient"]
+                        },
                         "sections": {
                             "type": "array",
                             "minItems": 1,

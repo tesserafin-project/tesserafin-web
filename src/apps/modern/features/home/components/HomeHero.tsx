@@ -4,6 +4,7 @@ import { playbackManager } from 'components/playback/playbackmanager';
 import globalize from 'lib/globalize';
 import datetime from 'scripts/datetime';
 import type { BaseItemDto } from 'lib/tesserafin-sdk';
+import { Ambient } from 'ui';
 
 import { toMediaCardProps, type ImageApiClient } from '../utils/mediaCardProps';
 
@@ -71,10 +72,8 @@ export const HomeHero: FC<HomeHeroProps> = ({
             data-rf-slot='home-hero'
             aria-labelledby='rf-home-hero-title'
         >
-            {imageUrl && ambient && (
-                // The same URL as the artwork below, so the browser fetches it once.
-                <img className='rf-home-hero__ambient' src={imageUrl} alt='' />
-            )}
+            {/* The same URL as the artwork below, so the browser fetches it once. */}
+            {imageUrl && ambient && <Ambient src={imageUrl} />}
             {imageUrl && (
                 // Decorative: the title beside it is the accessible name of the region, so
                 // announcing the artwork again would only repeat it (WCAG 1.1.1, decorative).

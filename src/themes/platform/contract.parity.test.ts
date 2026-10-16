@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import themeSchema from '../../../tesserafin-design/schema/theme.schema.json';
 import {
-    HOME_BACKDROPS,
+    PAGE_BACKDROPS,
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
     ITEM_DETAILS_HEROES,
@@ -109,7 +109,7 @@ describe('contract.ts <-> theme.schema.json', () => {
         expect([...HOME_SHELF_DENSITIES]).toEqual(
             home.properties.shelfDensity.enum
         );
-        expect([...HOME_BACKDROPS]).toEqual(home.properties.backdrop.enum);
+        expect([...PAGE_BACKDROPS]).toEqual(home.properties.backdrop.enum);
     });
 
     it('publishes the Library recipe vocabulary as runtime lists identical to the schema', () => {
@@ -152,10 +152,14 @@ describe('contract.ts <-> theme.schema.json', () => {
                     properties: {
                         hero: { enum: string[] };
                         sections: { items: { enum: string[] } };
+                        backdrop: { enum: string[] };
                     };
                 }
             >
         ).itemDetails;
+        expect([...PAGE_BACKDROPS]).toEqual(
+            itemDetails.properties.backdrop.enum
+        );
         expect([...ITEM_DETAILS_SECTIONS]).toEqual(
             itemDetails.properties.sections.items.enum
         );

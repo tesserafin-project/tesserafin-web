@@ -61,9 +61,13 @@
 }
 
 .rf-item-details__poster-placeholder {
-    display: block;
+    display: grid;
+    place-items: center;
     width: 100%;
     height: 100%;
+    color: var(--rf-color-text-muted, rgb(255 255 255 / 70%));
+    font-size: calc(3 * var(--rf-typography-font-size-xxl, 1.5rem));
+    font-weight: var(--rf-typography-font-weight-bold, 700);
 }
 
 .rf-item-details__logo {
@@ -385,6 +389,36 @@
 
     .rf-item-details__track label {
         margin-top: var(--rf-spacing-xs, 4px);
+    }
+
+    /*
+     * Every treatment but `poster` keeps the poster small on a phone and BESIDE the name
+     * (THEME-PRESENTATION-1): centred at 14rem it pushed the tracks below the first screen. Only
+     * `poster` makes the artwork the page's lead, so only `poster` keeps it large and on top.
+     */
+    .rf-item-details:not([data-rf-hero='poster']) {
+        grid-template-columns: 6rem minmax(0, 1fr);
+
+        .rf-item-details__poster {
+            grid-row: 1 / span 3;
+            justify-self: stretch;
+            width: auto;
+        }
+
+        .rf-item-details__section[data-detail-slot] {
+            grid-column: 1 / -1;
+        }
+
+        .rf-item-details__logo,
+        .rf-item-details__section[data-detail-section='nameContainer'],
+        .rf-item-details__section[data-detail-section^='itemMiscInfo'] {
+            grid-column: 2;
+        }
+
+        /* Beside a 6rem poster the full-size name ran to five lines. */
+        .rf-item-details__section[data-detail-section='nameContainer'] h1 {
+            font-size: var(--rf-typography-font-size-xl, 1.5rem);
+        }
     }
 }
 

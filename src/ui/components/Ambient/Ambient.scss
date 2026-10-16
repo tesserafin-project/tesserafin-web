@@ -1,0 +1,44 @@
+/**
+ * Ambient (THEME-PRESENTATION-1). Only `--rf-*` custom properties, with static fallbacks.
+ */
+
+/*
+ * A page recipe's `backdrop: 'ambient'` (RFC-0007 §4.7, Home and Item Details). Fixed behind the
+ * whole page, so the translucent surfaces frost the artwork instead of a flat colour. An ancestor's `overflow: hidden` does not clip it: a
+ * fixed box escapes every ancestor without a transform. Dimmed hard because section titles and
+ * card text stand on it with no surface of their own.
+ *
+ * Dropped under two profiles: `reducedTransparency` zeroes `--rf-blur-lg`, which would leave a
+ * sharp picture behind the text, and `lowPower` is exactly the device a viewport-sized blurred
+ * layer costs most.
+ */
+.rf-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(var(--rf-blur-lg, 28px)) brightness(0.3);
+    transform: scale(1.1);
+    pointer-events: none;
+
+    :is([data-rf-profile='reduced-transparency'], [data-rf-profile='low-power']) & {
+        display: none;
+    }
+}
+
+/*
+ * `z-index: -1` puts the layer under everything in the root stacking context — the tab bar and the
+ * header included, which is the point — but also under the legacy shell's fixed, opaque
+ * `.backgroundContainer`. Isolating the page's composition instead painted the layer OVER the tab
+ * bar, which sits outside it. So the shell's background steps aside while a layer is shown, the
+ * way the shell's own `.withBackdrop` does for its backdrops. Not under the two profiles that hide the
+ * layer: there the shell's background stays, or the page fell through to `html`'s legacy colour,
+ * which is not Frosted's — a visible seam on a laptop running low on battery.
+ */
+html:not([data-rf-profile='reduced-transparency'], [data-rf-profile='low-power']):has(.rf-ambient) {
+    .backgroundContainer {
+        background: none;
+    }
+}

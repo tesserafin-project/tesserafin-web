@@ -46,6 +46,7 @@
             },
             "itemDetails": {
                 "hero": "poster",
+                "backdrop": "ambient",
                 "sections": [
                     "overview",
                     "cast",

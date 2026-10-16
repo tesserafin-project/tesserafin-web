@@ -661,7 +661,11 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
              * record never named it as one — it was a template element — so it is asserted by its
              * own gate rather than by the section list.
              */}
-            <DetailImage item={item} hero={hero} />
+            <DetailImage
+                item={item}
+                hero={hero}
+                ambient={recipe.backdrop === 'ambient'}
+            />
 
             {/*
              * The FIXED HEADER. Anchored above the recipe and in its product-defined order: item
