@@ -40,7 +40,7 @@
                 "backdrop": "ambient"
             },
             "library": {
-                "layout": "shelf",
+                "layout": "grid",
                 "cardAspect": "backdrop",
                 "filters": "drawer"
             },

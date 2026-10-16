@@ -4,6 +4,8 @@
  * RFC-0005 §6/§7.3.
  */
 
+@use '../../styles/glass-surface' as glass;
+
 .rf-filter-drawer {
     display: inline-flex;
 }
@@ -35,11 +37,19 @@
 .rf-filter-drawer__backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1;
     padding: 0;
     background: var(--rf-color-scrim, rgba(0, 0, 0, 0.5));
     border: 0;
     cursor: default;
+}
+
+/*
+ * 1200 is MUI's drawer level, above the app bar's 1100 (THEME-PRESENTATION-1). At 1 and 2 the
+ * panel opened UNDER the header: its close button sat beneath the user avatar on a phone.
+ */
+.rf-filter-drawer__backdrop,
+.rf-filter-drawer__panel {
+    z-index: 1200;
 }
 
 .rf-filter-drawer__panel {
@@ -47,7 +57,6 @@
     top: 0;
     right: 0;
     bottom: 0;
-    z-index: 2;
     display: flex;
     flex-direction: column;
     gap: var(--rf-spacing-md, 16px);
@@ -61,7 +70,13 @@
     padding: var(--rf-spacing-md, 16px);
     overflow-y: auto;
     color: var(--rf-color-text, #fff);
-    background: var(--rf-color-surface, #101010);
+
+    /*
+     * The shared surface, not a bare `--rf-color-surface`: under Frosted that colour is 55% opaque,
+     * and with no blur behind it the filters were drawn straight over the page's own text.
+     */
+    @include glass.rf-glass-surface;
+
     border-left: 1px solid var(--rf-color-divider, rgba(255, 255, 255, 0.12));
 
     /* Motion is opt-in: the panel is usable with none, and the reduced-motion profile gets none. */
