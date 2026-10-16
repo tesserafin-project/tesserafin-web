@@ -1,5 +1,11 @@
-import React, { type FC, type ReactNode, useMemo } from 'react';
+import React, {
+    type ComponentProps,
+    type FC,
+    type ReactNode,
+    useMemo
+} from 'react';
 
+import LibraryIcon from 'apps/modern/components/LibraryIcon';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
 import type { BaseItemDto } from 'lib/tesserafin-sdk';
@@ -16,6 +22,7 @@ import { useResumeItems } from '../api/useResumeItems';
 import { useUserViews } from '../api/useUserViews';
 import {
     getLatestMediaCardOptions,
+    toMediaCardProps,
     toMediaCardPropsArray
 } from '../utils/mediaCardProps';
 import { getLatestMediaViews } from '../utils/latestMediaViews';
@@ -27,6 +34,8 @@ import HomeHero from './HomeHero';
 import HomeSection from './HomeSection';
 
 import './HomeTab.scss';
+
+type LibraryIconItem = ComponentProps<typeof LibraryIcon>['item'];
 
 const MY_MEDIA_OPTIONS = { imageAspect: 'backdrop' as const };
 const CONTINUE_WATCHING_OPTIONS = {
@@ -193,16 +202,26 @@ const HomeTab: FC = () => {
                         onEmptyAction={openLibrarySettings}
                     >
                         <MediaShelf title={myMediaTitle} density={density}>
-                            {toMediaCardPropsArray(
-                                userViews,
-                                __legacyApiClient__,
-                                MY_MEDIA_OPTIONS
-                            ).map((cardProps) => (
-                                <MediaCard
-                                    key={cardProps.href}
-                                    {...cardProps}
-                                />
-                            ))}
+                            {(userViews ?? []).map((view) => {
+                                const cardProps = toMediaCardProps(
+                                    view,
+                                    __legacyApiClient__,
+                                    MY_MEDIA_OPTIONS
+                                );
+                                // A library with no artwork drew an empty tile: show what it
+                                // holds, the same icon the navigation uses (WEB-UX-1).
+                                return (
+                                    <MediaCard
+                                        key={cardProps.href}
+                                        {...cardProps}
+                                        placeholderIcon={
+                                            <LibraryIcon
+                                                item={view as LibraryIconItem}
+                                            />
+                                        }
+                                    />
+                                );
+                            })}
                         </MediaShelf>
                     </HomeSection>
                 );

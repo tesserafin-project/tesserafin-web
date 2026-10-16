@@ -20,7 +20,17 @@
  * equal to the ring slack it buys, not more.
  */
 .rf-home-composition {
-    padding-inline: 4px;
+    /*
+     * WEB-UX-1. The 4px above was the ring's slack and nothing more, so Home ran edge to edge
+     * while the library and detail pages sit on a page gutter: titles and cards jammed against the
+     * viewport and against each other. The page gutter now matches theirs and sections get a
+     * rhythm. `max()` keeps the ring's 4px a floor whatever a theme does to its spacing tokens.
+     */
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-lg, 24px);
+    padding-block: var(--rf-spacing-md, 16px);
+    padding-inline: max(4px, var(--rf-spacing-md, 16px));
 
     /*
      * WHY THE SCROLLER IS TOUCHED AT ALL, when the gutter belongs to the composition.

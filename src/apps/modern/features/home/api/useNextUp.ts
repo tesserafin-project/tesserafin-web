@@ -36,7 +36,10 @@ export const useNextUp = () => {
     return useQuery(
         getNextUpQuery(reefinApi, {
             userId: user?.Id,
-            limit: NEXT_UP_LIMIT
+            limit: NEXT_UP_LIMIT,
+            // A part-watched episode is already in Continue Watching. Listing it again here put
+            // the same card twice on one screen (WEB-UX-1).
+            enableResumable: false
         })
     );
 };
