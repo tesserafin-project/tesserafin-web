@@ -32,7 +32,7 @@ function versionHidden(sources: string[]): boolean {
     );
     return (
         container.querySelector('[data-detail-select="selectSource"]')
-            ?.parentElement?.hidden ?? false
+            ?.parentElement?.hidden === true
     );
 }
 
