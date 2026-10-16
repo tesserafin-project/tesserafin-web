@@ -751,6 +751,28 @@ describe('migrated Item Details — episodic hierarchy', () => {
     });
 });
 
+describe('migrated Item Details — what Play says it will do (WEB-UX-1)', () => {
+    const playLabel = (container: HTMLElement) =>
+        container
+            .querySelector('[data-detail-action="btnPlay"]')
+            ?.getAttribute('aria-label');
+
+    it('names the position a resumable item continues from', async () => {
+        const mounted = await mountCase('movie-resumable');
+        expect(playLabel(mounted.view)).toMatch(/^ResumeAt/);
+    });
+
+    it('says Play for an item never started', async () => {
+        const mounted = await mountCase('movie');
+        expect(playLabel(mounted.view)).toBe('Play');
+    });
+
+    it('names the episode a series continues with', async () => {
+        const mounted = await mountCase('series');
+        expect(playLabel(mounted.view)).toMatch(/^(Resume|Play)Episode/);
+    });
+});
+
 describe('migrated Item Details — loading and failure', () => {
     /**
      * Delta D3. `SUSPECT` #2 in the legacy route: a failed primary read rendered nothing, showed no
@@ -800,7 +822,9 @@ describe('migrated Item Details — loading and failure', () => {
      * the refused refetch replaces the page rather than leaving Play on an item the server refuses.
      */
     it('says the item is unavailable, without a retry, when the server answers 404', async () => {
-        const testCase = ITEM_DETAILS_CASES.find((entry) => entry.id === 'movie');
+        const testCase = ITEM_DETAILS_CASES.find(
+            (entry) => entry.id === 'movie'
+        );
         if (!testCase) throw new Error('no movie case fixture');
         const recorded = classFor('movie');
         const responderOptions = {
@@ -850,7 +874,9 @@ describe('migrated Item Details — loading and failure', () => {
             '[data-rf-slot="state-error"]'
         );
         expect(error?.textContent).toContain('MessageItemUnavailable');
-        expect(error?.textContent).not.toContain('MessageUnableToConnectToServer');
+        expect(error?.textContent).not.toContain(
+            'MessageUnableToConnectToServer'
+        );
         expect(error?.querySelector('button')).toBeNull();
         expect(renderedActions(mounted.container)).toEqual([]);
     });

@@ -11,9 +11,10 @@ describe('getWatchState', () => {
     });
 
     it('marks a watched item and shows no bar', () => {
-        expect(
-            getWatchState({ Played: true, PlayedPercentage: 100 })
-        ).toEqual({ progressPercent: undefined, played: true });
+        expect(getWatchState({ Played: true, PlayedPercentage: 100 })).toEqual({
+            progressPercent: undefined,
+            played: true
+        });
     });
 
     it('shows nothing for an unwatched item or missing data', () => {

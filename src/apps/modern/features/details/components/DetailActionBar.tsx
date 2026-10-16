@@ -11,6 +11,7 @@ import itemContextMenu from 'components/itemContextMenu';
 import { appHost } from 'components/apphost';
 import { AppFeature } from 'constants/appFeature';
 import globalize from 'lib/globalize';
+import datetime from 'scripts/datetime';
 import PlayedButton from 'elements/emby-playstatebutton/PlayedButton';
 import FavoriteButton from 'elements/emby-ratingbutton/FavoriteButton';
 
@@ -86,6 +87,39 @@ interface DetailActionBarProps {
     actions: ItemActions;
     /** True when the collection's children contain nothing playable. */
     suppressPlayback?: boolean;
+    /** A series' next episode for this viewer: Play continues there, so the button says so. */
+    nextEpisode?: DetailItem;
+}
+
+const positionOf = (item: DetailItem | undefined): number =>
+    (item?.UserData as { PlaybackPositionTicks?: number } | undefined)
+        ?.PlaybackPositionTicks ?? 0;
+
+/**
+ * What Play will actually do, in its label (WEB-UX-1). "Resume" alone hid where; on a series,
+ * "Play" hid that it continues an episode the viewer is in the middle of.
+ */
+function playLabel(
+    item: DetailItem,
+    isResumable: boolean,
+    nextEpisode: DetailItem | undefined
+): string {
+    if (nextEpisode) {
+        const code = `S${String(nextEpisode.ParentIndexNumber ?? '')}:E${String(
+            nextEpisode.IndexNumber ?? ''
+        )}`;
+        return globalize.translate(
+            positionOf(nextEpisode) > 0 ? 'ResumeEpisode' : 'PlayEpisode',
+            code
+        );
+    }
+    if (isResumable) {
+        return globalize.translate(
+            'ResumeAt',
+            datetime.getDisplayRunningTime(positionOf(item))
+        );
+    }
+    return globalize.translate('Play');
 }
 
 /**
@@ -98,7 +132,8 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
     item,
     user,
     actions,
-    suppressPlayback
+    suppressPlayback,
+    nextEpisode
 }) => {
     const gates = playbackGates(item);
     const canPlay = gates.canPlay && !suppressPlayback;
@@ -148,9 +183,7 @@ const DetailActionBar: FC<DetailActionBarProps> = ({
             {canPlay ? (
                 <ActionButton
                     name='btnPlay'
-                    label={globalize.translate(
-                        gates.isResumable ? 'ButtonResume' : 'Play'
-                    )}
+                    label={playLabel(item, gates.isResumable, nextEpisode)}
                     onClick={actions.play}
                 />
             ) : null}

@@ -19,7 +19,10 @@ $mui-bp-xl: 1536px;
 // Library pages excluding the item details page and tabbed pages
 .libraryPage:not(
     .itemDetailPage
-) {
+),
+// The item details page draws its backdrop inside its own block, under the app bar. The legacy
+// 7.5em reserved above it for the old backdrop left an empty band on every item (WEB-UX-1).
+.libraryPage.itemDetailPage {
     padding-top: 0 !important;
 }
 

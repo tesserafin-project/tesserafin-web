@@ -95,7 +95,7 @@ describe('toMediaCardProps()', () => {
     // A test built on the flattened shape passed while no library card ever showed progress.
     it('reports an in-progress percentage as progressPercent', () => {
         const props = toMediaCardProps(
-            item({ UserData: { PlayedPercentage: 42 } }),
+            item({ UserData: { Key: 'k', ItemId: 'i', PlayedPercentage: 42 } }),
             fakeApiClient(),
             'poster'
         );
@@ -105,7 +105,7 @@ describe('toMediaCardProps()', () => {
 
     it('marks a watched item, in the viewer language', () => {
         const props = toMediaCardProps(
-            item({ UserData: { Played: true } }),
+            item({ UserData: { Key: 'k', ItemId: 'i', Played: true } }),
             fakeApiClient(),
             'poster'
         );
@@ -117,14 +117,18 @@ describe('toMediaCardProps()', () => {
     it('omits progressPercent for fully played or unplayed items', () => {
         expect(
             toMediaCardProps(
-                item({ UserData: { PlayedPercentage: 100 } }),
+                item({
+                    UserData: { Key: 'k', ItemId: 'i', PlayedPercentage: 100 }
+                }),
                 fakeApiClient(),
                 'poster'
             ).progressPercent
         ).toBeUndefined();
         expect(
             toMediaCardProps(
-                item({ UserData: { PlayedPercentage: 0 } }),
+                item({
+                    UserData: { Key: 'k', ItemId: 'i', PlayedPercentage: 0 }
+                }),
                 fakeApiClient(),
                 'poster'
             ).progressPercent
