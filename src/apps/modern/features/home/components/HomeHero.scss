@@ -12,7 +12,13 @@
     display: flex;
     align-items: flex-end;
     overflow: hidden;
-    min-height: 12rem;
+
+    /*
+     * Cinematic on a wide screen (THEME-PRESENTATION-1): at 12rem the hero was a stretched card,
+     * 14% of a 900px viewport. 55vh makes it the page's entrance and leaves the first shelf's
+     * titles above the fold; the rem cap stops it swallowing a tall monitor.
+     */
+    min-height: min(55vh, 34rem);
     border-radius: var(--rf-shape-radius-lg, 12px);
     background-color: var(--rf-color-surface, #202020);
     box-shadow: var(--rf-elevation-level1, none);
@@ -24,6 +30,43 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/*
+ * `backdrop: 'ambient'` (RFC-0007 §4.7). Fixed behind the whole page, so the translucent surfaces
+ * frost the artwork instead of a flat colour. `overflow: hidden` above does not clip it: a fixed
+ * box escapes every ancestor without a transform. Dimmed hard because shelf titles and card text
+ * stand on it with no surface of their own.
+ *
+ * Dropped under two profiles: `reducedTransparency` zeroes `--rf-blur-lg`, which would leave a
+ * sharp picture behind the text, and `lowPower` is exactly the device a viewport-sized blurred
+ * layer costs most.
+ */
+.rf-home-hero__ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(var(--rf-blur-lg, 28px)) brightness(0.3);
+    transform: scale(1.1);
+    pointer-events: none;
+
+    :is([data-rf-profile='reduced-transparency'], [data-rf-profile='low-power']) & {
+        display: none;
+    }
+}
+
+/*
+ * `z-index: -1` puts the layer under everything in the root stacking context — the tab bar and the
+ * header included, which is the point — but also under the legacy shell's fixed, opaque
+ * `.backgroundContainer`. Isolating the composition instead painted the layer OVER the tab bar,
+ * which sits outside it. So the shell's background steps aside while a layer is shown, the way the
+ * shell's own `.withBackdrop` does for its backdrops; `html` keeps the same colour underneath.
+ */
+html:has(.rf-home-hero__ambient) .backgroundContainer {
+    background: none;
 }
 
 .rf-home-hero__body {
@@ -53,8 +96,9 @@
     margin: 0;
     color: #fff;
     font-family: var(--rf-typography-font-family-base, sans-serif);
-    font-size: var(--rf-typography-font-size-xxl, 1.5rem);
+    font-size: calc(1.5 * var(--rf-typography-font-size-xxl, 1.5rem));
     font-weight: var(--rf-typography-font-weight-bold, 700);
+    line-height: 1.1;
 
     a {
         color: inherit;
@@ -112,6 +156,7 @@
 
     .rf-home-hero__title {
         color: var(--rf-color-text, #fff);
+        font-size: var(--rf-typography-font-size-xxl, 1.5rem);
     }
 
     .rf-home-hero__subtitle {

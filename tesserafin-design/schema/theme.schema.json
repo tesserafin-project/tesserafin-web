@@ -257,6 +257,10 @@
                         },
                         "shelfDensity": {
                             "enum": ["compact", "comfortable", "spacious"]
+                        },
+                        "backdrop": {
+                            "description": "What stands behind the Home composition. `ambient` lays the hero's artwork, blurred and dimmed, behind the page; it re-uses the hero's image and issues no request of its own.",
+                            "enum": ["none", "ambient"]
                         }
                     }
                 },

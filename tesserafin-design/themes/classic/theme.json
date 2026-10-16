@@ -35,7 +35,7 @@
                     "nextUp",
                     "latestMedia"
                 ],
-                "shelfDensity": "comfortable"
+                "shelfDensity": "compact"
             },
             "library": {
                 "layout": "grid",

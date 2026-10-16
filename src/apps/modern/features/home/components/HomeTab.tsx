@@ -174,6 +174,7 @@ const HomeTab: FC = () => {
                         resumeItems={resumeQuery.data?.Items}
                         nextUpItems={nextUpQuery.data?.Items}
                         apiClient={__legacyApiClient__}
+                        ambient={homeRecipe.backdrop === 'ambient'}
                     />
                 );
 
