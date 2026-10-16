@@ -395,7 +395,11 @@ describe('Library composition — two shipped themes, two compositions', () => {
         ).not.toBeNull();
     });
 
-    it('renders Glass as a backdrop shelf with a filter drawer', async () => {
+    // Glass was a single backdrop SHELF until THEME-PRESENTATION-1: the whole catalogue in one
+    // sideways row, five titles of fifteen visible. It is now a grid of wide cards, sized so a 16:9
+    // card stays a picture rather than a 160px thumbnail. `shelf` itself stays covered by the
+    // applied recipes below.
+    it('renders Glass as a wide-card grid with a filter drawer', async () => {
         await render(
             <PresentationProvider themeId='official.glass'>
                 <LibraryView />
@@ -403,15 +407,18 @@ describe('Library composition — two shipped themes, two compositions', () => {
         );
 
         expect(composition()).toEqual({
-            layout: 'shelf',
+            layout: 'grid',
             cardAspect: 'backdrop',
             filters: 'drawer'
         });
+        const grid = container.querySelector<HTMLElement>(
+            '[data-rf-slot="media-grid"]'
+        );
+        expect(
+            grid?.style.getPropertyValue('--rf-media-grid-min-item-width')
+        ).toBe('16rem');
         expect(
             container.querySelector('[data-rf-slot="media-shelf"]')
-        ).not.toBeNull();
-        expect(
-            container.querySelector('[data-rf-slot="media-grid"]')
         ).toBeNull();
         expect(
             container.querySelector('.rf-media-card--backdrop')

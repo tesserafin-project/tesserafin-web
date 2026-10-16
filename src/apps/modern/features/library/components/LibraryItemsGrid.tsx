@@ -170,7 +170,14 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
                     // In list mode one item per row is the point, so the grid's auto-fill minimum is
                     // widened past any realistic container width rather than the layout being swapped
                     // for a different component: same cards, same DOM, one column.
-                    minItemWidth={viewMode === 'list' ? '100%' : undefined}
+                    //
+                    // A 16:9 card at the poster minimum is a 160x90 thumbnail; 16rem keeps a wide
+                    // card readable as a picture, about five across 1440px and one on a phone.
+                    minItemWidth={
+                        (viewMode === 'list' && '100%') ||
+                        (cardAspect === 'backdrop' && '16rem') ||
+                        undefined
+                    }
                 >
                     {cards}
                 </MediaGrid>

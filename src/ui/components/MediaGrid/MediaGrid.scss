@@ -13,6 +13,14 @@
     gap: var(--rf-spacing-md, 16px);
 }
 
+/*
+ * Compact narrows the cards, not only the gap — the shelf's rule, for the same reason
+ * (THEME-PRESENTATION-1): at one 160px minimum for both densities the toggle moved 12px of gap and
+ * nothing else. 120px fits about ten posters across 1440px and three on a phone. A surface that
+ * sets `--rf-media-grid-min-item-width` (list mode, wide cards) still wins. `sm`, not `xs`: a 4px
+ * gap is exactly the focus ring's reach.
+ */
 .rf-media-grid--compact {
-    gap: var(--rf-spacing-xs, 4px);
+    gap: var(--rf-spacing-sm, 8px);
+    grid-template-columns: repeat(auto-fill, minmax(var(--rf-media-grid-min-item-width, 120px), 1fr));
 }
