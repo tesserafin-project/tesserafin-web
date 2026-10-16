@@ -18,8 +18,10 @@
  */
 
 import {
+    HOME_BACKDROPS,
     HOME_SECTIONS,
     HOME_SHELF_DENSITIES,
+    type HomeBackdrop,
     type HomeRecipe,
     type HomeSection,
     type HomeShelfDensity,
@@ -56,6 +58,7 @@ export interface ResolvedPresentation {
         home: {
             sections: readonly HomeSection[];
             shelfDensity: HomeShelfDensity;
+            backdrop: HomeBackdrop;
         };
         library: Required<LibraryRecipe>;
         itemDetails: {
@@ -110,7 +113,8 @@ export const PLATFORM_DEFAULT_PRESENTATION: ResolvedPresentation = {
                 'nextUp',
                 'latestMedia'
             ],
-            shelfDensity: 'comfortable'
+            shelfDensity: 'comfortable',
+            backdrop: 'none'
         },
         /*
          * Checked against the route before `presentation.page.library` was bound, the way Home's
@@ -194,6 +198,7 @@ const HOME_SECTION_NAMES: ReadonlySet<string> = new Set(HOME_SECTIONS);
 const HOME_SHELF_DENSITY_NAMES: ReadonlySet<string> = new Set(
     HOME_SHELF_DENSITIES
 );
+const HOME_BACKDROP_NAMES: ReadonlySet<string> = new Set(HOME_BACKDROPS);
 
 /**
  * The Home recipe is the first presentation value that is an ARRAY, and the first that reaches the
@@ -212,7 +217,8 @@ const HOME_SHELF_DENSITY_NAMES: ReadonlySet<string> = new Set(
  *     never what a recipe meant;
  *   - if nothing survives, `sections` is ignored and the platform default order applies — an empty
  *     Home is not a composition anyone chose;
- *   - an unknown `shelfDensity` is ignored independently, so one bad key cannot cost the other.
+ *   - an unknown `shelfDensity` or `backdrop` is ignored independently, so one bad key cannot
+ *     cost the others.
  *
  * Note this is sanitisation, not validation: it never throws and never reports. A theme author
  * gets a real error from `validateManifest`; this path exists so that a corrupted browser record
@@ -242,6 +248,13 @@ function sanitizeHomeRecipe(override: HomeRecipe | undefined): HomeRecipe {
         HOME_SHELF_DENSITY_NAMES.has(override.shelfDensity)
     ) {
         clean.shelfDensity = override.shelfDensity;
+    }
+
+    if (
+        typeof override.backdrop === 'string' &&
+        HOME_BACKDROP_NAMES.has(override.backdrop)
+    ) {
+        clean.backdrop = override.backdrop;
     }
 
     return clean;

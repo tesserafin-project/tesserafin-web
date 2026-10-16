@@ -36,7 +36,8 @@
                     "latestMedia",
                     "libraries"
                 ],
-                "shelfDensity": "spacious"
+                "shelfDensity": "spacious",
+                "backdrop": "ambient"
             },
             "library": {
                 "layout": "shelf",

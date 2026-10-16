@@ -101,8 +101,19 @@
     gap: var(--rf-spacing-md, 16px);
 }
 
+/*
+ * Compact is a DENSITY, so it narrows the card, not only the gap (THEME-PRESENTATION-1): with the
+ * width fixed at 260px under every density, `compact` and `spacious` drew the same number of posters
+ * per row and differed by 28px of gap. 168px puts about eight posters across 1440px and two and a
+ * bit across a phone. The gap is `sm`, not `xs`: a 4px gap is exactly the focus ring's reach, so a
+ * focused card's ring met its neighbour's edge.
+ */
 .rf-media-shelf__scroller--compact {
-    gap: var(--rf-spacing-xs, 4px);
+    gap: var(--rf-spacing-sm, 8px);
+
+    > .rf-media-card {
+        width: var(--rf-media-shelf-item-width, 168px);
+    }
 }
 
 .rf-media-shelf__scroller--spacious {

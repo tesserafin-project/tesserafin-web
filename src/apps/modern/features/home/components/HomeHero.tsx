@@ -15,6 +15,8 @@ export interface HomeHeroProps {
     /** Already-fetched Next Up items. Never fetched here. */
     nextUpItems: BaseItemDto[] | null | undefined;
     apiClient: ImageApiClient | undefined;
+    /** The recipe's `backdrop: 'ambient'`: the artwork also stands, blurred, behind the page. */
+    ambient?: boolean;
 }
 
 /**
@@ -49,7 +51,8 @@ export interface HomeHeroProps {
 export const HomeHero: FC<HomeHeroProps> = ({
     resumeItems,
     nextUpItems,
-    apiClient
+    apiClient,
+    ambient
 }) => {
     const item = resumeItems?.[0] ?? nextUpItems?.[0];
     if (!item) return null;
@@ -68,15 +71,16 @@ export const HomeHero: FC<HomeHeroProps> = ({
             data-rf-slot='home-hero'
             aria-labelledby='rf-home-hero-title'
         >
+            {imageUrl && ambient && (
+                // The same URL as the artwork below, so the browser fetches it once.
+                <img className='rf-home-hero__ambient' src={imageUrl} alt='' />
+            )}
             {imageUrl && (
-                <img
-                    className='rf-home-hero__image'
-                    src={imageUrl}
-                    // Decorative: the title beside it is the accessible name of the region, so
-                    // announcing the artwork again would only repeat it (WCAG 1.1.1, decorative).
-                    alt=''
-                    loading='lazy'
-                />
+                // Decorative: the title beside it is the accessible name of the region, so
+                // announcing the artwork again would only repeat it (WCAG 1.1.1, decorative).
+                // Not lazy: the hero is the first thing on the page, and lazy loading held its
+                // largest paint back.
+                <img className='rf-home-hero__image' src={imageUrl} alt='' />
             )}
             <div className='rf-home-hero__body'>
                 <h2 className='rf-home-hero__title' id='rf-home-hero-title'>
