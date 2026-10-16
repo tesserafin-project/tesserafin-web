@@ -130,7 +130,7 @@
         },
         {
             "path": "api/playback-credentials-api.ts",
-            "sha256": "4efada6fa971f2065256c10f60c4308479e8a37315dd45f7128a2fbe5b6695f3"
+            "sha256": "a2248ffc7c7e21a9680deb3d31970d25136e835c44fcf3efeaeda06cee556bd6"
         },
         {
             "path": "api/playlist-api.ts",
