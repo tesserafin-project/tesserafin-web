@@ -8,7 +8,8 @@ export function getHttpStatus(error: unknown): number | undefined {
     const direct = (error as { status?: unknown }).status;
     if (typeof direct === 'number') return direct;
 
-    const nested = (error as { response?: { status?: unknown } }).response?.status;
+    const nested = (error as { response?: { status?: unknown } }).response
+        ?.status;
     return typeof nested === 'number' ? nested : undefined;
 }
 

@@ -3015,6 +3015,14 @@ export class PlaybackManager {
             // TODO: fix calling code to read episodesResult.StartIndex instead when set.
             options.startIndex = episodesResult.StartIndex;
 
+            // Playing a series or season continues the viewer's next episode: from where they
+            // left it, not from its first second (WEB-UX-1). An explicit position still wins.
+            if (!options.shuffle && !options.startPositionTicks) {
+                options.startPositionTicks =
+                    episodesResult.Items[episodesResult.StartIndex]?.UserData
+                        ?.PlaybackPositionTicks || 0;
+            }
+
             episodesResult.TotalRecordCount = episodesResult.Items.length;
 
             return episodesResult;

@@ -698,6 +698,7 @@ const ItemDetailsView: FC<ItemDetailsViewProps> = ({ item, user, params }) => {
                         user={user}
                         actions={actions}
                         suppressPlayback={suppressPlayback}
+                        nextEpisode={list(nextUp.data)[0]}
                     />
                 </DetailSection>
             ) : null}
