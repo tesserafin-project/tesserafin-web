@@ -1,6 +1,8 @@
 import React, { type FC } from 'react';
 
+import { playbackManager } from 'components/playback/playbackmanager';
 import globalize from 'lib/globalize';
+import datetime from 'scripts/datetime';
 import type { BaseItemDto } from 'lib/tesserafin-sdk';
 
 import { toMediaCardProps, type ImageApiClient } from '../utils/mediaCardProps';
@@ -38,6 +40,11 @@ export interface HomeHeroProps {
  *
  * Renders nothing when neither list has an item, exactly like an empty shelf: a hero with no media
  * is not a composition anyone chose.
+ *
+ * ## Play plays
+ *
+ * The action starts playback at the saved position and says so, like the details Play button
+ * (WEB-UX-1-R1); it used to be a link that only opened the details page. The title is that link.
  */
 export const HomeHero: FC<HomeHeroProps> = ({
     resumeItems,
@@ -46,6 +53,8 @@ export const HomeHero: FC<HomeHeroProps> = ({
 }) => {
     const item = resumeItems?.[0] ?? nextUpItems?.[0];
     if (!item) return null;
+
+    const position = item.UserData?.PlaybackPositionTicks ?? 0;
 
     const { title, subtitle, imageUrl, href } = toMediaCardProps(
         item,
@@ -71,14 +80,28 @@ export const HomeHero: FC<HomeHeroProps> = ({
             )}
             <div className='rf-home-hero__body'>
                 <h2 className='rf-home-hero__title' id='rf-home-hero-title'>
-                    {title}
+                    <a href={href}>{title}</a>
                 </h2>
                 {subtitle && (
                     <p className='rf-home-hero__subtitle'>{subtitle}</p>
                 )}
-                <a className='rf-home-hero__action' href={href}>
-                    {globalize.translate('Play')}
-                </a>
+                <button
+                    type='button'
+                    className='rf-home-hero__action'
+                    onClick={() => {
+                        void playbackManager.play({
+                            items: [item],
+                            startPositionTicks: position
+                        });
+                    }}
+                >
+                    {position > 0
+                        ? globalize.translate(
+                              'ResumeAt',
+                              datetime.getDisplayRunningTime(position)
+                          )
+                        : globalize.translate('Play')}
+                </button>
             </div>
         </section>
     );

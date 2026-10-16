@@ -11,6 +11,8 @@ interface SelectorProps {
     options: TrackOption[];
     value: string;
     disabled?: boolean;
+    /** Defaults to "no options". */
+    hidden?: boolean;
     onChange?: (value: string) => void;
 }
 
@@ -28,9 +30,10 @@ const Selector: FC<SelectorProps> = ({
     options,
     value,
     disabled,
+    hidden = options.length === 0,
     onChange
 }) => (
-    <div className='rf-item-details__track' hidden={options.length === 0}>
+    <div className='rf-item-details__track' hidden={hidden}>
         <label htmlFor={`itemDetails-${name}`}>{label}</label>
         <select
             id={`itemDetails-${name}`}
@@ -68,6 +71,8 @@ const TrackSelections: FC<TrackSelectionsProps> = ({ tracks }) => (
             name='selectSource'
             label={globalize.translate('LabelVersion')}
             options={tracks.sources}
+            // A single version is no choice; showing it only adds noise (WEB-UX-1-R1).
+            hidden={tracks.sources.length <= 1}
             value={tracks.selectedSourceId}
             onChange={tracks.selectSource}
         />

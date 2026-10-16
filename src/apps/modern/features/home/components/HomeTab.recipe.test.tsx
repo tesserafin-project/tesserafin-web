@@ -37,10 +37,16 @@ vi.stubGlobal('__WEBPACK_SERVE__', false);
 vi.mock('lib/globalize', () => ({
     default: {
         translate: (key: string, ...args: string[]) =>
-            [key, ...args].join(' ').trim()
+            [key, ...args].join(' ').trim(),
+        getCurrentDateTimeLocale: () => 'en-US'
     },
     translate: (key: string, ...args: string[]) =>
         [key, ...args].join(' ').trim()
+}));
+
+const play = vi.fn();
+vi.mock('components/playback/playbackmanager', () => ({
+    playbackManager: { play: (...args: unknown[]) => play(...args) }
 }));
 
 /** Every SDK call the page makes, in the order the query client ran it. */
@@ -52,7 +58,12 @@ const USER_VIEWS = [
 ];
 
 const RESUME_ITEMS = [
-    { Id: 'resume-1', Name: 'The Quiet Harbour', SeriesName: 'Harbour' }
+    {
+        Id: 'resume-1',
+        Name: 'The Quiet Harbour',
+        SeriesName: 'Harbour',
+        UserData: { PlaybackPositionTicks: 600_000_000 }
+    }
 ];
 
 const NEXT_UP_ITEMS = [{ Id: 'next-1', Name: 'Northern Lights' }];
@@ -229,6 +240,23 @@ describe('Home composition — two shipped themes, two compositions', () => {
         expect(
             container.querySelector('[data-rf-slot="home-hero"]')
         ).not.toBeNull();
+    });
+
+    it('plays the Glass hero from its saved position, and says so', async () => {
+        await render(
+            <PresentationProvider themeId='official.glass'>
+                <HomeTab />
+            </PresentationProvider>
+        );
+        const action = container.querySelector<HTMLButtonElement>(
+            '.rf-home-hero__action'
+        );
+        expect(action?.textContent).toBe('ResumeAt 1:00');
+        await act(async () => action?.click());
+        expect(play).toHaveBeenCalledWith({
+            items: [expect.objectContaining({ Id: 'resume-1' })],
+            startPositionTicks: 600_000_000
+        });
     });
 
     it('gives Glass its declared shelf density, through the real resolver', async () => {
