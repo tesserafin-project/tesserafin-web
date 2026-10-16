@@ -208,9 +208,9 @@ test.describe('theme: Tesserafin Glass', () => {
 
     const gotoLibrary = async (page: import('@playwright/test').Page) => {
         await page.goto(`/#/library/${libraryId}`);
-        // The library's own items, in whichever layout the active theme composes: Classic's
-        // recipe is a grid, Glass's is `"layout": "shelf"` (tesserafin-design/themes/glass), so
-        // waiting for `media-grid` waited for something Glass never renders.
+        // The library's own items, in whichever layout the active theme composes. Both official
+        // recipes are grids today, but a recipe may ask for `"layout": "shelf"`, and waiting for
+        // `media-grid` would then wait for something that is never rendered.
         await expect(
             page
                 .locator('[data-rf-library-layout] [data-rf-slot="media-card"]')
