@@ -55,6 +55,11 @@
     font-family: var(--rf-typography-font-family-base, sans-serif);
     font-size: var(--rf-typography-font-size-xxl, 1.5rem);
     font-weight: var(--rf-typography-font-weight-bold, 700);
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
 }
 
 .rf-home-hero__subtitle {
@@ -74,10 +79,42 @@
     font-family: var(--rf-typography-font-family-base, sans-serif);
     font-size: var(--rf-typography-font-size-sm, 0.875rem);
     font-weight: var(--rf-typography-font-weight-medium, 500);
-    text-decoration: none;
+    border: 0;
+    cursor: pointer;
 
     &:focus-visible {
         outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
         outline-offset: 2px;
+    }
+}
+
+/*
+ * On a phone the artwork is too short for the scrim to separate the title from it, and artwork
+ * often carries its own title text (WEB-UX-1-R1). Below the image, the text stands on the surface.
+ */
+@media (width <= 40rem) {
+    .rf-home-hero {
+        flex-direction: column;
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    .rf-home-hero__image {
+        position: static;
+        height: auto;
+        aspect-ratio: 16 / 9;
+    }
+
+    .rf-home-hero__body {
+        padding: var(--rf-spacing-md, 16px);
+        background-image: none;
+    }
+
+    .rf-home-hero__title {
+        color: var(--rf-color-text, #fff);
+    }
+
+    .rf-home-hero__subtitle {
+        color: var(--rf-color-text-muted, rgba(255, 255, 255, 0.7));
     }
 }
