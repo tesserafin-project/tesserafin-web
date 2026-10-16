@@ -459,6 +459,23 @@ describe('Theme Studio — the Item Details composition control is real', () => 
         expect(resolved.fallbacks).toEqual([]);
     });
 
+    // THEME-PRESENTATION-1. Both editors rebuilt their recipe object from the keys they own, so
+    // reordering a Glass-based draft silently dropped Glass's `backdrop: 'ambient'` on Apply.
+    it('keeps the backdrop when the sections are edited, on both pages', () => {
+        render();
+        clickButtonLabelled('Copy Tesserafin Glass');
+        clickInRow('Next up', 'Move Next up up');
+        clickInItemDetailsRow('Next up', 'Move Next up up');
+        clickButtonLabelled('Apply to Tesserafin');
+
+        const applied = loadAppliedPresentation();
+        expect(applied?.page?.home?.backdrop).toBe('ambient');
+        expect(applied?.page?.itemDetails?.backdrop).toBe('ambient');
+        const resolved = resolvePresentation({ presentation: applied ?? {} });
+        expect(resolved.presentation.page.home.backdrop).toBe('ambient');
+        expect(resolved.presentation.page.itemDetails.backdrop).toBe('ambient');
+    });
+
     it('does not touch the live record until Apply', () => {
         render();
         clickButtonLabelled('Copy Tesserafin Classic');
