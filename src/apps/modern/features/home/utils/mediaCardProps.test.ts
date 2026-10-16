@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('lib/globalize', () => ({
+    default: { translate: (key: string) => key }
+}));
+
 import type { BaseItemDto } from 'lib/tesserafin-sdk';
 import { CollectionType } from 'lib/tesserafin-sdk';
 
