@@ -991,6 +991,7 @@ export class HtmlVideoPlayer {
 
             this.destroyCustomTrack(videoElement);
             videoElement.removeEventListener('timeupdate', this.onTimeUpdate);
+            videoElement.removeEventListener('seeking', this.onSeeking);
             videoElement.removeEventListener('ended', this.onEnded);
             videoElement.removeEventListener(
                 'volumechange',
@@ -1037,6 +1038,19 @@ export class HtmlVideoPlayer {
         const elem = e.target;
         this.destroyCustomTrack(elem);
         onEndedInternal(this, elem, this.onError);
+    };
+
+    /**
+     * A seek into media the server has not transcoded yet moves the element at once, but fires no
+     * timeupdate until data arrives - seconds under a slow encoder. A stop in that window read the
+     * pre-seek cache (the element is reset before `stopped` fires) and saved it as the resume
+     * point, which the server then dropped as under 5 % (#302). The seek target is where the
+     * viewer is.
+     * @private
+     * @param e {Event} The event received from the `<video>` element
+     */
+    onSeeking = (e) => {
+        this.#currentTime = e.target.currentTime;
     };
 
     /**
@@ -1970,6 +1984,7 @@ export class HtmlVideoPlayer {
                 }
 
                 videoElement.addEventListener('timeupdate', this.onTimeUpdate);
+                videoElement.addEventListener('seeking', this.onSeeking);
                 videoElement.addEventListener('ended', this.onEnded);
                 videoElement.addEventListener(
                     'volumechange',
