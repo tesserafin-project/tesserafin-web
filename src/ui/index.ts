@@ -31,7 +31,9 @@ export type {
 } from './components/FloatingSidebar/FloatingSidebar';
 export { FloatingSidebar } from './components/FloatingSidebar/FloatingSidebar';
 export type {
+    MediaCardAction,
     MediaCardImageAspect,
+    MediaCardLink,
     MediaCardProps
 } from './components/MediaCard/MediaCard';
 export { MediaCard } from './components/MediaCard/MediaCard';

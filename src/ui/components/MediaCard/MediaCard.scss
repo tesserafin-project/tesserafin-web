@@ -214,3 +214,159 @@ button.rf-media-card[data-rf-hover='zoom']:hover .rf-media-card__image {
             transparent
         );
 }
+
+/*
+ * Composite card (`actions` / `subtitleLinks`): the root is a `<div>` holding two links to the
+ * item — artwork and title — so it takes the link card's cursor, hover and focus ring itself. The
+ * ring is drawn when the TITLE link has keyboard focus (the artwork link is out of the tab order).
+ */
+.rf-media-card--composite {
+    position: relative;
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .rf-media-card__image-wrap,
+    .rf-media-card__link {
+        cursor: pointer;
+    }
+
+    .rf-media-card__link:focus-visible {
+        outline: none;
+    }
+
+    &:hover {
+        transform: scale(1.02);
+    }
+
+    &:has(.rf-media-card__link:focus-visible) {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+
+    &[data-rf-hover='none']:hover,
+    &[data-rf-hover='zoom']:hover {
+        transform: none;
+    }
+
+    // Through the wrap: one class more than the `a.rf-media-card` zoom rule, which would otherwise out-rank it.
+    &[data-rf-hover='zoom']:hover .rf-media-card__image-wrap .rf-media-card__image {
+        transform: scale(1.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-media-card--composite:hover {
+        transform: none;
+    }
+}
+
+.rf-media-card__sublink {
+    &:hover {
+        text-decoration: underline;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 1px;
+    }
+}
+
+/*
+ * The action layer covers the ARTWORK, not the card: same box as `__image-wrap`, by aspect ratio,
+ * so the corner row lands on the image's bottom edge whatever the caption below it holds.
+ * Hidden until the card is hovered or holds focus on a device that can hover; always shown where
+ * it cannot (touch), since there is no hover to reveal it.
+ */
+.rf-media-card__actions {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: var(--rf-spacing-xs, 4px);
+    padding: var(--rf-spacing-xs, 6px);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--rf-motion-duration-fast, 150ms) var(--rf-motion-easing-standard, ease);
+}
+
+.rf-media-card--poster .rf-media-card__actions {
+    aspect-ratio: 2 / 3;
+}
+
+.rf-media-card--backdrop .rf-media-card__actions {
+    aspect-ratio: 16 / 9;
+}
+
+.rf-media-card--square .rf-media-card__actions {
+    aspect-ratio: 1 / 1;
+}
+
+.rf-media-card--composite:hover .rf-media-card__actions,
+.rf-media-card--composite:focus-within .rf-media-card__actions {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .rf-media-card__actions {
+        opacity: 1;
+    }
+}
+
+.rf-media-card__action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25em;
+    height: 2.25em;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--rf-color-text, #fff);
+    cursor: pointer;
+    pointer-events: auto;
+
+    svg {
+        width: 1.3em;
+        height: 1.3em;
+        fill: currentcolor;
+    }
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    &[aria-pressed='true'] {
+        color: var(--rf-color-primary, #00a4dc);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 1px;
+    }
+}
+
+.rf-media-card__action--primary {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3em;
+    height: 3em;
+    transform: translate(-50%, -50%);
+    background: var(--rf-color-primary, #00a4dc);
+    color: var(--rf-color-on-primary, #fff);
+
+    &:hover {
+        background: var(--rf-color-primary, #00a4dc);
+    }
+
+    svg {
+        width: 1.8em;
+        height: 1.8em;
+    }
+}

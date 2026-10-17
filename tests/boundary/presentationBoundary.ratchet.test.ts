@@ -102,17 +102,39 @@ const PROHIBITED: readonly {
             specifier.includes('@mui/base')
     },
     {
+        id: 'html-injection',
+        why: 'markup assembled as a string bypasses React and lands outside every published component',
+        match: (_specifier, source) =>
+            /\bdangerouslySetInnerHTML\b|\.(?:inner|outer)HTML\s*=|insertAdjacentHTML/.test(
+                source
+            )
+    },
+    {
+        id: 'legacy-scroller',
+        why: 'the emby-scroller / emby-itemscontainer elements are the old card engine, not a theming surface',
+        match: (specifier, source) =>
+            specifier.includes('elements/emby-scroller') ||
+            specifier.includes('elements/emby-itemscontainer') ||
+            /is=["'](?:emby-scroller|emby-itemscontainer)["']/.test(source)
+    },
+    {
         id: 'legacy-theme-event-bus',
         why: 'the legacy themeManager event path predates PresentationContext and cannot report fallbacks',
         match: (specifier) => specifier.includes('scripts/themeManager')
     }
 ];
 
+/*
+ * The `from` alternative may not cross a quote or a `;`: written as `[\s\S]*?` it ran from a
+ * side-effect `import 'x';` on to the NEXT statement's `from`, so every side-effect import followed
+ * by another import — `import 'elements/emby-scroller/emby-scroller';` among them — was never seen.
+ */
 const IMPORT_PATTERN =
-    /(?:import|export)[\s\S]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s*['"]([^'"]+)['"]/g;
+    /(?:import|export)\b[^'";]*?\bfrom\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s*['"]([^'"]+)['"]/g;
 
 function everySourceFileUnder(directory: string): string[] {
     if (!existsSync(directory)) return [];
+    if (statSync(directory).isFile()) return [directory];
     const out: string[] = [];
     for (const entry of readdirSync(directory)) {
         const full = join(directory, entry);
@@ -186,13 +208,24 @@ const BASELINE: Readonly<Record<string, readonly string[]>> = {
     // The `filters: 'drawer'` surface is `ui/components/FilterDrawer`, deliberately not MUI's
     // `Drawer`, so no generated class name became the only thing a theme could target.
     'apps/modern/features/library': [],
-    'apps/modern/features/libraries': ['cardbuilder', 'mui-internals'],
+    'apps/modern/features/libraries': [
+        'cardbuilder',
+        'legacy-scroller',
+        'mui-internals'
+    ],
     // The third page vertical, and MIGRATED rather than bound (#129 Step 1b). Empty from the day
     // it exists: the route that replaced `itemDetails/index.js` composes through published
     // `src/ui` primitives, so there is no `cardbuilder` DOM, no nested React root and no generated
     // MUI class name a theme could be forced to target. Step 2 binds a recipe onto this; it must
     // find the boundary already clean.
-    'apps/modern/features/details': []
+    // `html-injection` here is the item overview: server-authored markdown rendered and
+    // sanitised by DOMPurify (`Overview.tsx`), plus `RecordingFields.tsx` emptying the host it mounts
+    // the legacy recording buttons into. Recorded rather than excused, so a third use is a failure.
+    'apps/modern/features/details': ['html-injection'],
+    // Search (DEBT-WEB-1): its rows were `cardBuilder` HTML injected into `emby-scroller`; they are
+    // `MediaShelf`/`MediaCard` now, for global and library search alike (one route, both families).
+    'apps/legacy/features/search': [],
+    'apps/legacy/routes/search.tsx': []
 };
 
 describe('the modern/legacy presentation boundary — ratchet', () => {

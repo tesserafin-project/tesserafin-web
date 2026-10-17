@@ -6,6 +6,25 @@ import './MediaCard.scss';
 
 export type MediaCardImageAspect = 'poster' | 'backdrop' | 'square';
 
+/** A button laid over the artwork (play, mark watched, favourite, more…). Callers translate `label`. */
+export interface MediaCardAction {
+    /** Stable key, also exposed as `data-action`. */
+    id: string;
+    label: string;
+    icon: ReactNode;
+    onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+    /** A toggle's current state (`aria-pressed`); omit for a plain command. */
+    pressed?: boolean;
+    /** Drawn large in the centre of the artwork rather than in the corner row. */
+    primary?: boolean;
+}
+
+/** A secondary destination named on the card, e.g. an episode's series or a song's artists. */
+export interface MediaCardLink {
+    label: string;
+    href: string;
+}
+
 export interface MediaCardProps {
     title: string;
     subtitle?: string;
@@ -20,6 +39,10 @@ export interface MediaCardProps {
     /** Renders the card as an `<a>` when set; takes precedence over `onClick`. */
     href?: string;
     onClick?: (event: MouseEvent<HTMLElement>) => void;
+    /** Links to other destinations, on a line of their own under `subtitle`, joined by " / ". */
+    subtitleLinks?: MediaCardLink[];
+    actions?: MediaCardAction[];
+    onContextMenu?: (event: MouseEvent<HTMLElement>) => void;
     /** Shown in place of the image when `imageUrl` is absent; the title when omitted. */
     placeholderIcon?: ReactNode;
     className?: string;
@@ -40,6 +63,9 @@ export const MediaCard: FC<MediaCardProps> = ({
     playedLabel = 'Watched',
     href,
     onClick,
+    subtitleLinks,
+    actions,
+    onContextMenu,
     placeholderIcon,
     className
 }) => {
@@ -68,8 +94,8 @@ export const MediaCard: FC<MediaCardProps> = ({
         'data-rf-title-placement': presentation.mediaCard.titlePlacement
     };
 
-    const image = (
-        <span className='rf-media-card__image-wrap'>
+    const imageContent = (
+        <>
             {imageUrl ? (
                 <img className='rf-media-card__image' src={imageUrl} alt='' />
             ) : (
@@ -122,7 +148,10 @@ export const MediaCard: FC<MediaCardProps> = ({
                     </svg>
                 </span>
             )}
-        </span>
+        </>
+    );
+    const image = (
+        <span className='rf-media-card__image-wrap'>{imageContent}</span>
     );
 
     const text = (
@@ -134,6 +163,85 @@ export const MediaCard: FC<MediaCardProps> = ({
         </span>
     );
 
+    /*
+     * Composite card: a card that holds other controls cannot BE a link, since nothing interactive
+     * may nest inside an `<a>`. The artwork and the title are then two links to `href` — the
+     * artwork one out of the tab order and hidden from assistive technology, so the card is still
+     * one stop and one name — and the actions and subtitle links sit beside them.
+     */
+    if (actions?.length || subtitleLinks?.length) {
+        return (
+            <div
+                className={`${classes} rf-media-card--composite`}
+                data-rf-slot='media-card'
+                {...presentationAttrs}
+            >
+                <a
+                    className='rf-media-card__image-wrap'
+                    href={href}
+                    onClick={onClick}
+                    onContextMenu={onContextMenu}
+                    tabIndex={-1}
+                    aria-hidden='true'
+                >
+                    {imageContent}
+                </a>
+                <span className='rf-media-card__text'>
+                    <a
+                        className='rf-media-card__title rf-media-card__link'
+                        href={href}
+                        onClick={onClick}
+                        onContextMenu={onContextMenu}
+                    >
+                        {title}
+                    </a>
+                    {subtitle && (
+                        <span className='rf-media-card__subtitle'>
+                            {subtitle}
+                        </span>
+                    )}
+                    {!!subtitleLinks?.length && (
+                        <span className='rf-media-card__subtitle'>
+                            {subtitleLinks.map((link, index) => (
+                                <React.Fragment key={link.href}>
+                                    {index > 0 && ' / '}
+                                    <a
+                                        className='rf-media-card__sublink'
+                                        href={link.href}
+                                    >
+                                        {link.label}
+                                    </a>
+                                </React.Fragment>
+                            ))}
+                        </span>
+                    )}
+                </span>
+                {!!actions?.length && (
+                    <span className='rf-media-card__actions'>
+                        {actions.map((action) => (
+                            <button
+                                key={action.id}
+                                type='button'
+                                className={`rf-media-card__action${
+                                    action.primary
+                                        ? ' rf-media-card__action--primary'
+                                        : ''
+                                }`}
+                                data-action={action.id}
+                                aria-label={action.label}
+                                title={action.label}
+                                aria-pressed={action.pressed}
+                                onClick={action.onClick}
+                            >
+                                {action.icon}
+                            </button>
+                        ))}
+                    </span>
+                )}
+            </div>
+        );
+    }
+
     if (href) {
         return (
             <a
@@ -142,6 +250,7 @@ export const MediaCard: FC<MediaCardProps> = ({
                 {...presentationAttrs}
                 href={href}
                 onClick={onClick}
+                onContextMenu={onContextMenu}
             >
                 {image}
                 {text}

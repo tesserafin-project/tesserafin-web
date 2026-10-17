@@ -1,4 +1,4 @@
-import React, { type FC, type ReactNode } from 'react';
+import React, { type FC, type ReactNode, type Ref } from 'react';
 
 import './MediaShelf.scss';
 
@@ -21,6 +21,8 @@ export interface MediaShelfProps {
     children: ReactNode;
     className?: string;
     id?: string;
+    /** The horizontal scroll container, for a route that saves and restores a row's offset. */
+    scrollerRef?: Ref<HTMLDivElement>;
 }
 
 /**
@@ -36,7 +38,8 @@ export const MediaShelf: FC<MediaShelfProps> = ({
     density = 'comfortable',
     children,
     className,
-    id
+    id,
+    scrollerRef
 }) => {
     const classes = ['rf-media-shelf', className].filter(Boolean).join(' ');
     const headingId = id ? `${id}-heading` : undefined;
@@ -54,6 +57,7 @@ export const MediaShelf: FC<MediaShelfProps> = ({
                 )}
             </div>
             <div
+                ref={scrollerRef}
                 className={`rf-media-shelf__scroller rf-media-shelf__scroller--${density}`}
                 role='group'
                 aria-labelledby={headingId}

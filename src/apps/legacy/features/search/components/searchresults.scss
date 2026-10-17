@@ -1,0 +1,17 @@
+/*
+ * Search rows (DEBT-WEB-1): the rhythm and ring room Home's composition gives its shelves
+ * (`HomeTab.scss`), on the page gutter `padded-left/right` already gives each row. The scroller's
+ * cancelled inline padding keeps a focused card's 4px ring out of the scroll clip, and
+ * `scroll-padding-inline` stops the first snap position from cancelling it again.
+ */
+.searchResults {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-spacing-lg, 24px);
+
+    .rf-media-shelf__scroller {
+        padding-inline: 4px;
+        margin-inline: -4px;
+        scroll-padding-inline: 4px;
+    }
+}

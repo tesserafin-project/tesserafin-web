@@ -1,8 +1,6 @@
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
 import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
-import { CardShape } from 'components/cardbuilder/utils/shape';
-import { Section } from '../types';
-import { CardOptions } from 'types/cardOptions';
+import type { SearchCardOptions, Section } from '../types';
 import type { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models/base-item-dto';
 import { LIVETV_CARD_OPTIONS } from '../constants/liveTvCardOptions';
 import { SEARCH_SECTIONS_SORT_ORDER } from '../constants/sectionSortOrder';
@@ -23,7 +21,7 @@ export function addSection(
     sections: Section[],
     title: string,
     items: BaseItemDto[] | null | undefined,
-    cardOptions?: CardOptions
+    cardOptions?: SearchCardOptions
 ) {
     if (items && items?.length > 0) {
         sections.push({ title, items, cardOptions });
@@ -45,7 +43,7 @@ export function sortSections(sections: Section[]) {
     });
 }
 
-export function getCardOptionsFromType(type: BaseItemKind) {
+export function getCardOptionsFromType(type: BaseItemKind): SearchCardOptions {
     switch (type) {
         case BaseItemKind.Movie:
         case BaseItemKind.Series:
@@ -65,7 +63,7 @@ export function getCardOptionsFromType(type: BaseItemKind) {
         case BaseItemKind.Audio:
             return {
                 showParentTitle: true,
-                shape: CardShape.SquareOverflow
+                shape: 'square' as const
             };
         case BaseItemKind.LiveTvProgram:
             return LIVETV_CARD_OPTIONS;
