@@ -222,7 +222,12 @@ export function enable() {
                 break;
 
             case 'Escape':
-                if (layoutManager.tv) {
+                // An open dialog closes on 'back'; outside the TV layout nothing else closed it
+                // from the keyboard (WEB-UX-2).
+                if (
+                    layoutManager.tv ||
+                    document.querySelector('.dialog.opened')
+                ) {
                     inputManager.handleCommand('back');
                 } else {
                     capture = false;
