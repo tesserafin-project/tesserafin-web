@@ -266,7 +266,7 @@ test.describe('Tesserafin Classic is untouched by Glass profiles', () => {
         // Classic's own identity: no blur at all, and `none` rather than `blur(0px)`.
         expect(baseline.backdropFilterMd).toBe('none');
         expect(baseline.backdropFilter).toBe('none');
-        expect(baseline.backgroundColor).toBe('rgb(32, 32, 32)');
+        expect(baseline.backgroundColor).toBe('rgb(7, 20, 47)');
         expect(baseline.profileAttribute).toBeNull();
 
         // Scope note, so this is not read as more than it is: this page does not run

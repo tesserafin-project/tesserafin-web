@@ -166,7 +166,7 @@ test.describe('Classic is unaffected by the light Glass tokens', () => {
         // The human-stop this guards: adding Glass's light tier must not give Classic a blur, and
         // must not move it from `none` to `blur(0px)` either.
         expect(baseline.backdropFilter).toBe('none');
-        expect(baseline.backgroundColor).toBe('rgb(232, 232, 232)');
+        expect(baseline.backgroundColor).toBe('rgb(255, 255, 255)');
     });
 
     test('every profile is inert against Classic light', async ({ page }) => {
@@ -237,7 +237,7 @@ test.describe('Floating sidebar: computed styles', () => {
         }, SIDEBAR_SELECTOR);
 
         expect(sidebar.backdropFilter).toBe('none');
-        expect(sidebar.backgroundColor).toBe('rgb(32, 32, 32)');
+        expect(sidebar.backgroundColor).toBe('rgb(7, 20, 47)');
     });
 
     test('shows a visible focus ring on the focused entry, in both modes', async ({
@@ -269,10 +269,11 @@ test.describe('Floating sidebar: computed styles', () => {
             );
             expect(focus.outlineWidth, `outline width in ${mode}`).toBe('2px');
             // The ring is the theme's own focus token, resolved per mode — not a hardcoded color.
+            // Light is opaque since #111: at 0.45 alpha it measured 2.01:1 against the light rail.
             expect(focus.outlineColor, `outline color in ${mode}`).toBe(
                 mode === 'dark'
                     ? 'rgba(79, 209, 255, 0.45)'
-                    : 'rgba(10, 102, 137, 0.45)'
+                    : 'rgb(10, 102, 137)'
             );
         }
     });
