@@ -37,9 +37,21 @@ import {
     TRANSPARENCY_LEVEL
 } from 'components/backdrop/backdrop';
 import { pluginManager } from 'components/pluginManager';
+import { trackMenuItem } from 'components/playback/trackMenuItem';
 
 function getOpenedDialog() {
     return document.querySelector('.dialogContainer .dialog.opened');
+}
+
+// The Off row is a synthetic stream with no language, so it keeps its own name.
+function trackItem(stream) {
+    return stream.Index === -1
+        ? { name: stream.DisplayTitle }
+        : trackMenuItem(
+              stream,
+              globalize.getCurrentLocale(),
+              globalize.translate
+          );
 }
 
 export default function (view) {
@@ -283,8 +295,10 @@ export default function (view) {
 
         // Display the item with its premiere date if it has one
         let title = itemName;
+        // A name taken from a "Title (Year)" folder already carries the year.
         if (item.Type == 'Movie' && item.ProductionYear) {
-            title += ` (${datetime.toLocaleString(item.ProductionYear, { useGrouping: false })})`;
+            const year = ` (${datetime.toLocaleString(item.ProductionYear, { useGrouping: false })})`;
+            if (!title.endsWith(year)) title += year;
         } else if (item.PremiereDate) {
             try {
                 const year = datetime.toLocaleString(
@@ -379,6 +393,20 @@ export default function (view) {
         if (focusElement) focusManager.focus(focusElement);
     };
 
+    // Subtitles rise above the controls while they show, instead of being drawn across the
+    // position bar (videoosd.scss reads the clearance).
+    function setSubtitleClearance(isOsdShown) {
+        const root = document.documentElement;
+        if (isOsdShown) {
+            const controls = osdBottomElement.querySelector('.osdControls');
+            root.style.setProperty(
+                '--rf-osd-clearance',
+                `${controls.offsetHeight}px`
+            );
+        }
+        root.classList.toggle('videoOsd-shown', isOsdShown);
+    }
+
     function showMainOsdControls(focusElement) {
         if (!currentVisibleMenu) {
             const elem = osdBottomElement;
@@ -386,6 +414,7 @@ export default function (view) {
             clearHideAnimationEventListeners(elem);
             elem.classList.remove('hide');
             elem.classList.remove('videoOsdBottom-hidden');
+            setSubtitleClearance(true);
 
             if (!layoutManager.mobile) {
                 _focus(focusElement);
@@ -408,6 +437,7 @@ export default function (view) {
             );
             currentVisibleMenu = null;
             toggleSubtitleSync('hide');
+            setSubtitleClearance(false);
 
             // Firefox does not blur by itself
             if (
@@ -1237,7 +1267,7 @@ export default function (view) {
         const currentIndex = playbackManager.getAudioStreamIndex(player);
         const menuItems = audioTracks.map(function (stream) {
             const opt = {
-                name: stream.DisplayTitle,
+                ...trackItem(stream),
                 id: stream.Index
             };
 
@@ -1291,7 +1321,7 @@ export default function (view) {
 
         const menuItems = streams.map(function (stream) {
             const opt = {
-                name: stream.DisplayTitle,
+                ...trackItem(stream),
                 id: stream.Index
             };
 
@@ -1343,7 +1373,7 @@ export default function (view) {
         });
         const menuItems = streams.map(function (stream) {
             const opt = {
-                name: stream.DisplayTitle,
+                ...trackItem(stream),
                 id: stream.Index
             };
 
@@ -1461,6 +1491,10 @@ export default function (view) {
 
         // Skip modified keys
         if (isKeyModified) return;
+
+        // A menu is open: its keys are its own. Space pausing the video behind an audio menu,
+        // and preventing the menu's own button from activating, was the old behaviour.
+        if (getOpenedDialog()) return;
 
         const key = keyboardnavigation.getKeyName(e);
 
@@ -2030,6 +2064,7 @@ export default function (view) {
         }
     });
     view.addEventListener('viewbeforehide', function () {
+        setSubtitleClearance(false);
         if (statsOverlay) {
             statsOverlay.enabled(false);
         }

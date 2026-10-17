@@ -347,3 +347,89 @@
         transform: rotate(360deg);
     }
 }
+
+/*
+ * WEB-UX-2: the player reads the surface recipe like the rest of the app — the
+ * `data-rf-surface-variant` that `PresentationProvider` projects onto <html> — never a theme id.
+ * The OSD always sits over video, so it stays light-on-dark in both modes.
+ */
+
+// Legible over any frame: the remaining time measured 4.07:1 over a bright one.
+.videoOsdBottom .osdTextContainer,
+.videoOsdBottom .osdTimeText {
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 0.5em rgba(0, 0, 0, 0.5);
+}
+
+// The unplayed track (0.2em of 30% white) vanished over bright frames.
+.videoOsdBottom .mdl-slider-background-flex {
+    height: 0.3em;
+    margin-top: -0.15em;
+    border-radius: 0.15em;
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.videoOsdBottom .osdControls {
+    --rf-osd-accent: var(--rf-color-primary, #00a4dc);
+
+    .mdl-slider-background-lower {
+        background-color: var(--rf-osd-accent);
+    }
+
+    .mdl-slider::-webkit-slider-thumb {
+        background: var(--rf-osd-accent);
+    }
+
+    .mdl-slider::-moz-range-thumb {
+        background: var(--rf-osd-accent);
+    }
+}
+
+// A light palette's primary is tuned for light pages and disappears on the dark scrim.
+:root[data-rf-mode='light'] .videoOsdBottom .osdControls {
+    --rf-osd-accent: #fff;
+}
+
+// A finger needs 44px, the bar gave 28: grow the hit band, not the visible track.
+@media (pointer: coarse) {
+    .videoOsdBottom .sliderContainer.mdl-slider-container {
+        height: 2.75rem;
+    }
+}
+
+// Classic: one dense, deep scrim that carries the controls on any frame.
+:root[data-rf-surface-variant='opaque'] .videoOsdBottom {
+    background: linear-gradient(0deg, rgba(8, 8, 8, 0.9) 0%, rgba(8, 8, 8, 0.7) 40%, rgba(8, 8, 8, 0) 100%);
+}
+
+// Frosted: the controls float on a frosted panel; the video keeps the rest of the frame.
+:root[data-rf-surface-variant='glass'] .videoOsdBottom {
+    background: linear-gradient(0deg, rgba(8, 8, 8, 0.45) 0%, rgba(8, 8, 8, 0) 100%);
+
+    .osdControls {
+        margin: 0 1em;
+        padding: 0.5em 1em 0.25em;
+        border-radius: calc(var(--rf-shape-radius-lg, 0.4em) * 2);
+        background: rgba(12, 14, 20, 0.6);
+        backdrop-filter: var(--rf-backdrop-filter-md, none);
+        outline: 1px solid rgba(255, 255, 255, 0.12);
+        outline-offset: -1px;
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+        .osdControls {
+            background: rgba(12, 14, 20, 0.92);
+        }
+    }
+}
+
+// Subtitles rise above the controls while they show (`--rf-osd-clearance` is set by the player).
+.htmlvideoplayer::-webkit-media-text-track-container,
+.videoSubtitles {
+    transition: transform 0.3s ease-out;
+}
+
+.videoOsd-shown .htmlvideoplayer::-webkit-media-text-track-container,
+.videoOsd-shown .videoSubtitles {
+    transform: translateY(calc(-1 * var(--rf-osd-clearance, 0px)));
+}
