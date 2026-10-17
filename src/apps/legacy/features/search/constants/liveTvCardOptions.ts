@@ -1,4 +1,6 @@
-export const LIVETV_CARD_OPTIONS = {
+import type { SearchCardOptions } from '../types';
+
+export const LIVETV_CARD_OPTIONS: SearchCardOptions = {
     preferThumb: true,
     inheritThumb: false,
     showParentTitleOrTitle: true,

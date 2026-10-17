@@ -4,17 +4,25 @@ import {
     URLSearchParamsInit,
     createSearchParams,
     useLocation,
+    useMatch,
     useSearchParams
 } from 'react-router-dom';
 import SearchIcon from '@mui/icons-material/Search';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import { useItem } from 'hooks/useItem';
 import globalize from 'lib/globalize';
 
-const getUrlParams = (searchParams: URLSearchParams) => {
+const getUrlParams = (
+    searchParams: URLSearchParams,
+    library?: { id?: string; collectionType?: string | null }
+) => {
     const parentId =
-        searchParams.get('parentId') || searchParams.get('topParentId');
-    const collectionType = searchParams.get('collectionType');
+        searchParams.get('parentId') ||
+        searchParams.get('topParentId') ||
+        library?.id;
+    const collectionType =
+        searchParams.get('collectionType') || library?.collectionType;
     const params: URLSearchParamsInit = {};
 
     if (parentId) {
@@ -30,9 +38,21 @@ const getUrlParams = (searchParams: URLSearchParams) => {
 const SearchButton: FC = () => {
     const location = useLocation();
     const [searchParams] = useSearchParams();
+    // `/library/:libraryId` names its library in the path, not the query: without this the button
+    // opened a global search from inside a movies or shows library (DEBT-WEB-1).
+    const libraryId =
+        useMatch('/library/:libraryId/*')?.params.libraryId ?? undefined;
+    const { data: library } = useItem(libraryId);
 
     const isSearchPath = location.pathname === '/search';
-    const search = createSearchParams(getUrlParams(searchParams));
+    const search = createSearchParams(
+        getUrlParams(
+            searchParams,
+            libraryId
+                ? { id: libraryId, collectionType: library?.CollectionType }
+                : undefined
+        )
+    );
     const createSearchLink = {
         pathname: '/search',
         search: search ? `?${search}` : undefined

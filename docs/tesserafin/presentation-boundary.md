@@ -43,6 +43,8 @@ that route would require a theme author to target something the platform has not
 | `themes/<id>/theme.scss` imported by a route | bypasses the token pipeline; the route would be styled by a file, not by tokens |
 | `@mui/material/styles`, `@mui/base`, `@mui/private-*` | generated MUI class names are not a stable public API |
 | `scripts/themeManager` event path | predates `PresentationContext` and cannot report a capability fallback |
+| HTML injection (`dangerouslySetInnerHTML`, `innerHTML =`, `insertAdjacentHTML`) | markup built as a string lands outside every published component |
+| `elements/emby-scroller`, `elements/emby-itemscontainer` (import or `is="…"`) | the old card and scroll engine; its DOM is not a theming surface |
 
 **Explicitly NOT prohibited**, and deliberately left in place:
 
@@ -79,7 +81,9 @@ Three outcomes:
 | **Home** | `/home` | yes (5 files) | **yes** | yes | none | **1 — ready, and BOUND** |
 | **Library** | `/library/:libraryId[/:destination]` | yes (7 files) | **yes** | yes | none | **1 — ready, and BOUND** |
 | Theme Studio | `/themestudio` | via direct component imports | no (renders its own resolution) | yes (5 files) | none | 1 — ready |
-| Libraries (`movies`, `music`, `tv`, `books`, `boxsets`, `playlists`, `musicvideos`, `mixed`, `livetv`, `homevideos`) | 10 paths | no | no | no | `cardbuilder` (5 files), `mui-internals` (1 file) | **2 — hybrid** |
+| Libraries (`movies`, `music`, `tv`, `books`, `boxsets`, `playlists`, `musicvideos`, `mixed`, `livetv`, `homevideos`) | 10 paths | no | no | no | `cardbuilder` (5 files), `legacy-scroller` (2 files), `mui-internals` (1 file) | **2 — hybrid** |
+| Item Details | `/details` | yes | yes | yes | `html-injection` (2 files: the DOMPurify-sanitised overview, and `RecordingFields` clearing its legacy host) | 1 — ready |
+| **Search** (one route, both families) | `/search[?query&parentId&collectionType]` | yes (`MediaShelf`, `MediaCard`, states) | via `MediaCard` | yes | none | **1 — ready** (DEBT-WEB-1) |
 | Details drawer / preferences / syncPlay | in-route components | no | no | no | none *(MUI components, not MUI internals)* | 2 — hybrid |
 
 `ui/` and `themes/platform/` are themselves clean (baseline `[]`), which is what lets the Home and

@@ -5,7 +5,6 @@ import { useApi } from 'hooks/useApi';
 import { addSection, isLivetv } from '../utils/search';
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
 import { LIVETV_CARD_OPTIONS } from '../constants/liveTvCardOptions';
-import { CardShape } from 'components/cardbuilder/utils/shape';
 import { Section } from '../types';
 import { fetchItemsByType } from './fetchItemsByType';
 
@@ -30,7 +29,7 @@ const fetchLiveTv = (
     ).then((moviesData) => {
         addSection(sections, 'Movies', moviesData.Items, {
             ...LIVETV_CARD_OPTIONS,
-            shape: CardShape.PortraitOverflow
+            shape: 'portrait'
         });
     });
 

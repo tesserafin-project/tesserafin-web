@@ -242,4 +242,71 @@ describe('MediaCard — theme presentation (RFC-0007 §4.6)', () => {
         expect(card?.className).toContain('rf-media-card--poster');
         expect(card?.className).not.toContain('rf-media-card--backdrop');
     });
+
+    it('carries actions and subtitle links without nesting controls in a link', () => {
+        const calls: string[] = [];
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='Le phare'
+                    imageAspect='backdrop'
+                    href='#/details?id=e1'
+                    subtitleLinks={[
+                        { label: 'Station Nord', href: '#/details?id=s1' }
+                    ]}
+                    actions={[
+                        {
+                            id: 'played',
+                            label: 'Vu',
+                            icon: null,
+                            pressed: true,
+                            onClick: () => calls.push('played')
+                        }
+                    ]}
+                    onContextMenu={() => calls.push('menu')}
+                />
+            );
+        });
+
+        const card = container.querySelector('[data-rf-slot="media-card"]');
+        expect(card?.tagName).toBe('DIV');
+        expect(card?.querySelector('a button, a a')).toBeNull();
+
+        // One tab stop and one name for the item: the artwork link is hidden and untabbable.
+        const links = [...container.querySelectorAll('a')];
+        expect(links.map((a) => a.getAttribute('href'))).toEqual([
+            '#/details?id=e1',
+            '#/details?id=e1',
+            '#/details?id=s1'
+        ]);
+        expect(links[0].tabIndex).toBe(-1);
+        expect(links[0].getAttribute('aria-hidden')).toBe('true');
+
+        const button = container.querySelector('button');
+        expect(button?.getAttribute('aria-label')).toBe('Vu');
+        expect(button?.getAttribute('aria-pressed')).toBe('true');
+        act(() => button?.click());
+        act(() => {
+            links[1].dispatchEvent(
+                new MouseEvent('contextmenu', { bubbles: true })
+            );
+        });
+        expect(calls).toEqual(['played', 'menu']);
+    });
+
+    it('stays a single link when it has nothing else to offer', () => {
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='T'
+                    imageAspect='poster'
+                    href='#/x'
+                    actions={[]}
+                />
+            );
+        });
+
+        const card = container.querySelector('[data-rf-slot="media-card"]');
+        expect(card?.tagName).toBe('A');
+    });
 });
