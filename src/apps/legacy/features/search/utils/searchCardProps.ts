@@ -5,7 +5,6 @@ import { appRouter } from 'components/router/appRouter';
 import datetime from 'scripts/datetime';
 import globalize from 'lib/globalize';
 import type { MediaCardImageAspect, MediaCardLink, MediaCardProps } from 'ui';
-import { getWatchState } from 'utils/watchState';
 
 import type { SearchCardOptions } from '../types';
 
@@ -306,6 +305,48 @@ const getCaption = (
     };
 };
 
+/**
+ * The marks `indicators.js` drew: a resume bar on what can be resumed (video, book) or on a programme
+ * on air, an unwatched count on a series or season, a check on anything else fully watched.
+ */
+const getWatchMarks = (
+    item: BaseItemDto,
+    now: number
+): Pick<MediaCardProps, 'progressPercent' | 'played' | 'unplayedCount'> => {
+    const userData = item.UserData;
+    const percent = userData?.PlayedPercentage ?? 0;
+    let progressPercent: number | undefined;
+
+    const resumable =
+        (item.MediaType === 'Video' && item.Type !== 'TvChannel') ||
+        item.Type === 'Book' ||
+        item.Type === 'AudioBook';
+    if (
+        resumable &&
+        item.Type !== 'Recording' &&
+        percent > 0 &&
+        percent < 100
+    ) {
+        progressPercent = percent;
+    } else if (
+        (item.Type === 'Program' || item.Type === 'LiveTvProgram') &&
+        item.StartDate &&
+        item.EndDate
+    ) {
+        const start = Date.parse(item.StartDate);
+        const end = Date.parse(item.EndDate);
+        if (now > start && now < end) {
+            progressPercent = Math.round(((now - start) / (end - start)) * 100);
+        }
+    }
+
+    if (!itemHelper.canMarkPlayed(item)) return { progressPercent };
+    if (userData?.UnplayedItemCount) {
+        return { progressPercent, unplayedCount: userData.UnplayedItemCount };
+    }
+    return { progressPercent, played: !!userData?.Played || percent >= 100 };
+};
+
 export const toSearchCardProps = (
     item: BaseItemDto,
     options: SearchCardOptions,
@@ -318,7 +359,6 @@ export const toSearchCardProps = (
     const source = (item as { ProgramInfo?: BaseItemDto }).ProgramInfo || item;
     const image = chooseImage(source, options);
     const imageItemId = image?.itemId || source.Id;
-    const watch = getWatchState(item.UserData);
     const caption = getCaption(item, options, serverId);
 
     return {
@@ -337,9 +377,12 @@ export const toSearchCardProps = (
                 ? imageUrl(imageItemId, image.type, image.tag)
                 : undefined,
         imageAspect,
-        progressPercent: watch.progressPercent,
-        played: watch.played,
+        ...getWatchMarks(item, Date.now()),
         playedLabel: globalize.translate('Watched'),
+        unplayedLabel: globalize.translate(
+            'ValueUnplayedCount',
+            item.UserData?.UnplayedItemCount ?? 0
+        ),
         href: route({ ...item, ServerId: item.ServerId ?? serverId })
     };
 };

@@ -1,12 +1,20 @@
 import type { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 import { getImageApi } from '@jellyfin/sdk/lib/utils/api/image-api';
 import React, { type FC, useEffect, useMemo, useRef } from 'react';
+import type { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models/base-item-dto';
 import { Link } from 'react-router-dom';
 
 import layoutManager from 'components/layoutManager';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import { ErrorState, LoadingState, MediaCard, MediaShelf } from 'ui';
+import browser from 'scripts/browser';
+import {
+    ErrorState,
+    LoadingState,
+    MediaCard,
+    MediaShelf,
+    usePresentation
+} from 'ui';
 
 import { useSearchItems } from '../api/useSearchItems';
 import {
@@ -15,10 +23,30 @@ import {
     type ImageUrlBuilder
 } from '../utils/searchCardProps';
 import { useSearchCardActions } from './searchCardActions';
+import { SearchSelectionBar, useSearchSelection } from './searchSelection';
 
 import './searchresults.scss';
 
 const STATE_KEY = 'searchResultsState';
+const LONG_PRESS_MS = 550;
+
+/** The card under `target`, and its row and position, from the rendered shelves. */
+const locateCard = (
+    target: EventTarget | null,
+    rows?: { items: BaseItemDto[] }[]
+) => {
+    const card = (target as HTMLElement | null)?.closest?.<HTMLElement>(
+        '[data-rf-slot="media-card"]'
+    );
+    const shelf = card?.closest<HTMLElement>('[data-rf-slot="media-shelf"]');
+    const section = rows?.[Number(shelf?.dataset.row)];
+    if (!card?.parentElement || !section) return undefined;
+    const index = Array.prototype.indexOf.call(
+        card.parentElement.children,
+        card
+    );
+    return { card, items: section.items, index, item: section.items[index] };
+};
 const MAX_SAVED = 20;
 
 interface SavedPosition {
@@ -56,6 +84,14 @@ const SearchResults: FC<SearchResultsProps> = ({
     );
     const { api } = useApi();
     const { getActions, onContextMenu, runCommand } = useSearchCardActions();
+    const selection = useSearchSelection();
+    const density = usePresentation().page.home.shelfDensity;
+    // As before: multi-select on desktop and mobile layouts, not on TV.
+    const canSelect = !layoutManager.tv;
+    // The click a mouse release sends right after a long press must not also open the card: only
+    // that card's click, and only just after. A touch long press sends `contextmenu` and no click,
+    // so a plain flag would eat the viewer's next tap.
+    const swallowClick = useRef<{ id: string; until: number } | null>(null);
     const element = useRef<HTMLDivElement>(null);
     const scrollers = useRef<Record<string, HTMLDivElement | null>>({});
     const stateKey = `${parentId ?? ''}|${collectionType ?? ''}|${query ?? ''}`;
@@ -110,27 +146,65 @@ const SearchResults: FC<SearchResultsProps> = ({
         }
     };
 
+    const { cancel: cancelSelection, start: startSelection } = selection;
+    // A selection belongs to one search: another query or scope ends it.
+    useEffect(() => cancelSelection, [stateKey, cancelSelection]);
+
+    // Long press, touch or mouse, starts selecting with the pressed card, as the old rows did.
+    useEffect(() => {
+        const container = element.current;
+        if (!container || !data || !canSelect) return;
+        let timer: number | undefined;
+        let origin = { x: 0, y: 0 };
+        const clear = () => {
+            window.clearTimeout(timer);
+            timer = undefined;
+        };
+        const onDown = (event: PointerEvent) => {
+            const id = locateCard(event.target, data)?.item.Id;
+            if (!id || event.button > 0) return;
+            origin = { x: event.clientX, y: event.clientY };
+            clear();
+            timer = window.setTimeout(() => {
+                timer = undefined;
+                swallowClick.current = { id, until: Date.now() + 700 };
+                startSelection(id);
+            }, LONG_PRESS_MS);
+        };
+        const onMove = (event: PointerEvent) => {
+            if (
+                timer &&
+                (Math.abs(event.clientX - origin.x) >= 5 ||
+                    Math.abs(event.clientY - origin.y) >= 5)
+            ) {
+                clear();
+            }
+        };
+        container.addEventListener('pointerdown', onDown);
+        container.addEventListener('pointermove', onMove);
+        container.addEventListener('pointerup', clear);
+        container.addEventListener('pointercancel', clear);
+        container.addEventListener('pointerleave', clear);
+        return () => {
+            clear();
+            container.removeEventListener('pointerdown', onDown);
+            container.removeEventListener('pointermove', onMove);
+            container.removeEventListener('pointerup', clear);
+            container.removeEventListener('pointercancel', clear);
+            container.removeEventListener('pointerleave', clear);
+        };
+    }, [data, canSelect, startSelection]);
+
     // TV remotes and keyboards send play/menu/record as `command` events on the focused card.
     useEffect(() => {
         const container = element.current;
         if (!container || !data) return;
         const onCommand = (event: Event) => {
-            const target = event.target as HTMLElement;
-            const card = target.closest<HTMLElement>(
-                '[data-rf-slot="media-card"]'
-            );
-            const shelf = card?.closest<HTMLElement>(
-                '[data-rf-slot="media-shelf"]'
-            );
-            const section = data[Number(shelf?.dataset.row)];
-            if (!card?.parentElement || !section) return;
-            const index = Array.prototype.indexOf.call(
-                card.parentElement.children,
-                card
-            );
+            const found = locateCard(event.target, data);
+            if (!found) return;
             const command = (event as CustomEvent<{ command: string }>).detail
                 .command;
-            if (runCommand(command, section.items, index, card)) {
+            if (runCommand(command, found.items, found.index, found.card)) {
                 event.preventDefault();
                 event.stopPropagation();
             }
@@ -181,12 +255,50 @@ const SearchResults: FC<SearchResultsProps> = ({
         );
     }
 
+    const allIds = data.flatMap((section) =>
+        section.items.map((item) => item.Id).filter((id): id is string => !!id)
+    );
+    const selected = selection.selected;
+
     return (
         <div
             ref={element}
             className='searchResults padded-top padded-bottom-page'
-            onClickCapture={rememberPosition}
+            onClickCapture={(event) => {
+                // The click that ends a long press must not also open the card.
+                const swallow = swallowClick.current;
+                swallowClick.current = null;
+                if (
+                    swallow &&
+                    Date.now() < swallow.until &&
+                    locateCard(event.target, data)?.item.Id === swallow.id
+                ) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
+                }
+                if (!selected) rememberPosition();
+            }}
         >
+            {canSelect &&
+                (selected ? (
+                    <SearchSelectionBar
+                        selected={selected}
+                        allIds={allIds}
+                        onCancel={selection.cancel}
+                        onSelectAll={selection.selectAll}
+                    />
+                ) : (
+                    <div className='searchResults-tools padded-left padded-right'>
+                        <button
+                            type='button'
+                            className='searchResults-select'
+                            onClick={() => selection.start()}
+                        >
+                            {globalize.translate('Select')}
+                        </button>
+                    </div>
+                ))}
             {data.map((section, rowIndex) => {
                 const options = { showTitle: true, ...section.cardOptions };
                 const aspect = getRowImageAspect(section.items, options);
@@ -197,7 +309,7 @@ const SearchResults: FC<SearchResultsProps> = ({
                         id={`searchResults-${rowIndex}`}
                         className='searchResults-row padded-left padded-right'
                         title={title}
-                        density='compact'
+                        density={density}
                         scrollerRef={(scroller) => {
                             scrollers.current[section.title] = scroller;
                             if (scroller?.parentElement) {
@@ -217,14 +329,33 @@ const SearchResults: FC<SearchResultsProps> = ({
                                     undefined,
                                     layoutManager.tv
                                 )}
+                                titleLines={2}
                                 actions={getActions(
                                     section.items,
                                     index,
                                     options
                                 )}
-                                onContextMenu={(event) =>
-                                    onContextMenu(section.items, index, event)
+                                selection={
+                                    selected && item.Id
+                                        ? {
+                                              selected: selected.includes(
+                                                  item.Id
+                                              ),
+                                              onToggle: () =>
+                                                  selection.toggle(item.Id!)
+                                          }
+                                        : undefined
                                 }
+                                onContextMenu={(event) => {
+                                    // Touch: a long press selects, as before (Safari never
+                                    // sends this, and has the pointer timer instead).
+                                    if (browser.touch && canSelect && item.Id) {
+                                        event.preventDefault();
+                                        startSelection(item.Id);
+                                        return;
+                                    }
+                                    onContextMenu(section.items, index, event);
+                                }}
                             />
                         ))}
                     </MediaShelf>

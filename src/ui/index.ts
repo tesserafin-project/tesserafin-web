@@ -34,7 +34,8 @@ export type {
     MediaCardAction,
     MediaCardImageAspect,
     MediaCardLink,
-    MediaCardProps
+    MediaCardProps,
+    MediaCardSelection
 } from './components/MediaCard/MediaCard';
 export { MediaCard } from './components/MediaCard/MediaCard';
 export type { MediaGridProps } from './components/MediaGrid/MediaGrid';

@@ -309,4 +309,54 @@ describe('MediaCard — theme presentation (RFC-0007 §4.6)', () => {
         const card = container.querySelector('[data-rf-slot="media-card"]');
         expect(card?.tagName).toBe('A');
     });
+
+    it('shows an unwatched count instead of the watched mark', () => {
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='Station Nord'
+                    imageAspect='poster'
+                    played
+                    unplayedCount={8}
+                    unplayedLabel='8 non vus'
+                />
+            );
+        });
+
+        const count = container.querySelector('.rf-media-card__count');
+        expect(count?.textContent).toBe('8');
+        expect(count?.getAttribute('aria-label')).toBe('8 non vus');
+        expect(container.querySelector('.rf-media-card__played')).toBeNull();
+    });
+
+    it('turns into one toggle while selecting, with no link or action inside', () => {
+        let toggles = 0;
+        act(() => {
+            root.render(
+                <MediaCard
+                    title='Le phare'
+                    imageAspect='backdrop'
+                    href='#/details?id=e1'
+                    subtitleLinks={[{ label: 'Station Nord', href: '#/s' }]}
+                    actions={[
+                        {
+                            id: 'menu',
+                            label: 'Plus',
+                            icon: null,
+                            onClick: () => undefined
+                        }
+                    ]}
+                    selection={{ selected: true, onToggle: () => toggles++ }}
+                />
+            );
+        });
+
+        const card = container.querySelector('[data-rf-slot="media-card"]');
+        expect(card?.tagName).toBe('BUTTON');
+        expect(card?.getAttribute('aria-pressed')).toBe('true');
+        expect(container.querySelectorAll('a, button').length).toBe(1);
+        expect(card?.textContent).toContain('Station Nord');
+        act(() => (card as HTMLButtonElement).click());
+        expect(toggles).toBe(1);
+    });
 });

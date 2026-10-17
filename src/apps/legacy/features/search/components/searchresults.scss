@@ -15,3 +15,73 @@
         scroll-padding-inline: 4px;
     }
 }
+
+/* Multi-select: the entry button, and the bar that replaces it while selecting. */
+.searchResults-tools {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.searchResults-select {
+    padding: 0.4em 1em;
+    border: 1px solid var(--rf-color-outline, rgba(255, 255, 255, 0.3));
+    border-radius: var(--rf-shape-radius-md, 0.2em);
+    background: transparent;
+    color: var(--rf-color-text, #fff);
+    font: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+        outline-offset: 2px;
+    }
+}
+
+.searchSelectionBar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-spacing-md, 16px);
+    padding: var(--rf-spacing-sm, 8px) max(16px, 3.3%);
+    background: var(--rf-color-primary, #00a4dc);
+    color: var(--rf-color-on-primary, #fff);
+}
+
+.searchSelectionBar-count {
+    flex: 1;
+    font-size: var(--rf-typography-font-size-lg, 1.17rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+    font-variant-numeric: tabular-nums;
+}
+
+.searchSelectionBar-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5em;
+    height: 2.5em;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    svg {
+        width: 1.5em;
+        height: 1.5em;
+        fill: currentcolor;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    &:focus-visible {
+        outline: 2px solid currentcolor;
+        outline-offset: 2px;
+    }
+}
