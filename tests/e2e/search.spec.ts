@@ -146,30 +146,19 @@ test.describe('search (B1)', () => {
             // The query is debounced by 500 ms and then issued. Wait on the product's own
             // result state, never on a fixed delay.
             const card = page
-                .locator(`.searchResults a[href*="${expectedId}"]`)
+                .locator(
+                    `.searchResults a[href*="${expectedId}"]:not([tabindex="-1"])`
+                )
                 .first();
             await expect(
                 card,
                 'the seeded movie must appear in the search results'
             ).toBeVisible({ timeout: 25_000 });
 
-            // OPEN THE CARD BY KEYBOARD ACTIVATION, and not for convenience.
-            //
-            // `cardBuilder` renders a hover overlay (`getHoverMenuHtml`:
-            // `.cardOverlayContainer.itemAction[data-action="link"]`) stacked above the
-            // anchor, with a centred Resume button inside it. Two pointer routes were tried
-            // against the real rig and neither expresses "open this item":
-            //
-            //   * `card.click()` never lands — Playwright retried 112 times, each time
-            //     reporting that the overlay's `play_arrow` span intercepts pointer events;
-            //   * clicking the overlay container lands on that Resume button and STARTS
-            //     PLAYBACK — the run navigated to `#/video`, not to the detail page.
-            //
-            // Pressing Enter on the focused anchor activates the link itself. It is a real
-            // user action (the keyboard path the card already supports), it is independent of
-            // hover state and card geometry, and it cannot be satisfied by the play control —
-            // so it asserts exactly what this test claims. `force: true` is deliberately not
-            // used anywhere here: it would assert nothing about the card being reachable.
+            // OPEN THE CARD BY KEYBOARD ACTIVATION: focus the card's one tab stop (its title
+            // link, or the card itself on TV; the artwork link is out of the tab order), press Enter. A pointer
+            // click on the artwork's centre would land on the hover overlay's Play button and
+            // start playback instead of opening the item, which is not what this test claims.
             await card.focus();
             await card.press('Enter');
 

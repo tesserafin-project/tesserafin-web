@@ -2,7 +2,6 @@ import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-ite
 import type { BaseItemDto } from '@jellyfin/sdk/lib/generated-client/models/base-item-dto';
 import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 import { useQuery } from '@tanstack/react-query';
-import { CardShape } from 'components/cardbuilder/utils/shape';
 import { useApi } from '../../../../../hooks/useApi';
 import {
     addSection,
@@ -99,7 +98,7 @@ export const useSearchItems = (
             });
 
             addSection(sections, 'Studios', studios?.Items, {
-                shape: CardShape.SquareOverflow
+                shape: 'square'
             });
 
             addSection(sections, 'HeaderVideos', videos?.Items, {

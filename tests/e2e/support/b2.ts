@@ -176,17 +176,15 @@ export const navSearch = (page: Page) => anyRole(page, SEARCH_NAME);
 export const navLibrary = (page: Page) => anyRole(page, LIBRARY_NAME);
 
 /**
- * The first real search result, whichever shell is live.
- *
- * The modern shell renders results as anchors into `#/details`; the legacy 10-foot shell renders
- * them as `button.card[data-id]` with `data-action="link"`. Both are activated the same way — focus
- * and Enter, for the reason `search.spec.ts` documents at length: the card's hover overlay
- * intercepts pointer events and its Resume button would start playback instead of opening the item.
+ * The first real search result: the card's focusable link to `#/details`, in every shell (DEBT-WEB-1
+ * retired the 10-foot `button.card[data-id]`). A card with actions or secondary links also carries an
+ * artwork link out of the tab order (`tabindex="-1"`); that one is excluded. Activated by focus and
+ * Enter, for the reason `search.spec.ts` gives: a pointer on the artwork's centre would hit the hover
+ * overlay's Play button.
  */
 export function searchResultCard(page: Page) {
     return page
-        .locator('.searchResults a[href*="#/details"]')
-        .or(page.locator('.searchResults button.card[data-id]'))
+        .locator('.searchResults a[href*="#/details"]:not([tabindex="-1"])')
         .first();
 }
 
