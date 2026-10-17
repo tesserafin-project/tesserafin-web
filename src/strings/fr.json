@@ -968,6 +968,7 @@
     "UserProfilesIntro": "Jellyfin supporte les profils utilisateurs avec des paramètres granulaires d'affichage, de sauvegarde de l'état de lecture et de contrôle parental.",
     "ValueDiscNumber": "Disque {0}",
     "ValueEpisodeCount": "{0} épisodes",
+    "ValueUnplayedCount": "{0} non vus",
     "ValueMovieCount": "{0} films",
     "ValueMusicVideoCount": "{0} vidéos musicales",
     "ValueOneEpisode": "1 épisode",

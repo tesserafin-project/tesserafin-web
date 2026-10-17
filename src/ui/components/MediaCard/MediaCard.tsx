@@ -19,6 +19,12 @@ export interface MediaCardAction {
     primary?: boolean;
 }
 
+/** Selection mode: the whole card toggles its selection instead of opening the item. */
+export interface MediaCardSelection {
+    selected: boolean;
+    onToggle: () => void;
+}
+
 /** A secondary destination named on the card, e.g. an episode's series or a song's artists. */
 export interface MediaCardLink {
     label: string;
@@ -39,6 +45,14 @@ export interface MediaCardProps {
     /** Renders the card as an `<a>` when set; takes precedence over `onClick`. */
     href?: string;
     onClick?: (event: MouseEvent<HTMLElement>) => void;
+    /** Lines the title may take before it is cut; 2 where the title is what tells results apart. */
+    titleLines?: 1 | 2;
+    /** Unwatched children (a series' episodes); drawn instead of the watched mark when above 0. */
+    unplayedCount?: number;
+    /** Accessible name of the unwatched count; callers translate. */
+    unplayedLabel?: string;
+    /** Set while the surrounding list is selecting several items. */
+    selection?: MediaCardSelection;
     /** Links to other destinations, on a line of their own under `subtitle`, joined by " / ". */
     subtitleLinks?: MediaCardLink[];
     actions?: MediaCardAction[];
@@ -63,6 +77,10 @@ export const MediaCard: FC<MediaCardProps> = ({
     playedLabel = 'Watched',
     href,
     onClick,
+    titleLines = 1,
+    unplayedCount,
+    unplayedLabel,
+    selection,
     subtitleLinks,
     actions,
     onContextMenu,
@@ -78,6 +96,7 @@ export const MediaCard: FC<MediaCardProps> = ({
     const classes = [
         'rf-media-card',
         `rf-media-card--${imageAspect}`,
+        titleLines === 2 && 'rf-media-card--title-2',
         className
     ]
         .filter(Boolean)
@@ -133,7 +152,16 @@ export const MediaCard: FC<MediaCardProps> = ({
                         />
                     </span>
                 )}
-            {played && (
+            {!!unplayedCount && (
+                <span
+                    className='rf-media-card__count'
+                    role='img'
+                    aria-label={unplayedLabel ?? String(unplayedCount)}
+                >
+                    {unplayedCount > 99 ? '99+' : unplayedCount}
+                </span>
+            )}
+            {played && !unplayedCount && (
                 <span
                     className='rf-media-card__played'
                     role='img'
@@ -162,6 +190,46 @@ export const MediaCard: FC<MediaCardProps> = ({
             )}
         </span>
     );
+
+    /*
+     * Selection mode: one toggle button, nothing else interactive. Activating the card adds or
+     * removes it, as the old multi-select did; links and actions come back when selection ends.
+     */
+    if (selection) {
+        const lines = [
+            subtitle,
+            subtitleLinks?.map((link) => link.label).join(' / ')
+        ].filter(Boolean);
+        return (
+            <button
+                type='button'
+                className={`${classes} rf-media-card--selectable`}
+                data-rf-slot='media-card'
+                {...presentationAttrs}
+                aria-pressed={selection.selected}
+                onClick={selection.onToggle}
+            >
+                <span className='rf-media-card__image-wrap'>
+                    {imageContent}
+                    <span className='rf-media-card__check' aria-hidden='true'>
+                        {selection.selected && (
+                            <svg viewBox='0 0 24 24' focusable='false'>
+                                <path d='M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z' />
+                            </svg>
+                        )}
+                    </span>
+                </span>
+                <span className='rf-media-card__text'>
+                    <span className='rf-media-card__title'>{title}</span>
+                    {lines.map((line) => (
+                        <span key={line} className='rf-media-card__subtitle'>
+                            {line}
+                        </span>
+                    ))}
+                </span>
+            </button>
+        );
+    }
 
     /*
      * Composite card: a card that holds other controls cannot BE a link, since nothing interactive

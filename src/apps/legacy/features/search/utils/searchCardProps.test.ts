@@ -7,7 +7,7 @@ vi.mock('lib/globalize', () => ({
             args.length ? `${key}(${args.join(',')})` : key
     }
 }));
-vi.mock('components/apphost', () => ({ appHost: {} }));
+vi.mock('components/apphost', () => ({ appHost: { supports: () => true } }));
 vi.mock('lib/jellyfin-apiclient', () => ({ ServerConnections: {} }));
 vi.mock('components/router/appRouter', () => ({
     appRouter: {
@@ -45,6 +45,7 @@ describe('search card props', () => {
                 Id: 'e1',
                 Type: 'Episode',
                 Name: 'Le phare',
+                MediaType: 'Video',
                 IndexNumber: 2,
                 ParentIndexNumber: 1,
                 SeriesId: 's1',
@@ -158,5 +159,76 @@ describe('search card props', () => {
         expect(getRowImageAspect(ratios(1.78), { shape: 'square' })).toBe(
             'square'
         );
+    });
+
+    it('marks a series with its unwatched count, and a finished one as watched', () => {
+        const series = (UserData: object) =>
+            card(
+                {
+                    Id: 's',
+                    Type: 'Series',
+                    Name: 'Station Nord',
+                    UserData
+                } as BaseItemDto,
+                getCardOptionsFromType('Series')
+            );
+
+        const partial = series({
+            UnplayedItemCount: 8,
+            PlayedPercentage: 11,
+            Played: false
+        });
+        expect(partial.unplayedCount).toBe(8);
+        expect(partial.unplayedLabel).toBe('ValueUnplayedCount(8)');
+        // The count says what is left; a resume bar on a series would say something else.
+        expect(partial.progressPercent).toBeUndefined();
+        expect(partial.played).toBeFalsy();
+
+        const done = series({ UnplayedItemCount: 0, Played: true });
+        expect(done.unplayedCount).toBeUndefined();
+        expect(done.played).toBe(true);
+    });
+
+    it('draws a resume bar on a part-watched movie, not on a song', () => {
+        const movie = card(
+            {
+                Id: 'm',
+                Type: 'Movie',
+                Name: 'Brume',
+                MediaType: 'Video',
+                UserData: { PlayedPercentage: 30, Played: false, Key: 'm' }
+            },
+            getCardOptionsFromType('Movie')
+        );
+        expect(movie.progressPercent).toBe(30);
+
+        const song = card(
+            {
+                Id: 'a',
+                Type: 'Audio',
+                Name: 'Aurore',
+                MediaType: 'Audio',
+                UserData: { PlayedPercentage: 30, Played: false, Key: 'a' }
+            },
+            getCardOptionsFromType('Audio')
+        );
+        expect(song.progressPercent).toBeUndefined();
+    });
+
+    it('shows how far a programme on air has got', () => {
+        const hour = 3600_000;
+        const now = Date.now();
+        const props = card(
+            {
+                Id: 'p',
+                Type: 'Program',
+                Name: 'Journal',
+                StartDate: new Date(now - hour / 4).toISOString(),
+                EndDate: new Date(now + (3 * hour) / 4).toISOString()
+            },
+            LIVETV_CARD_OPTIONS
+        );
+        expect(props.progressPercent).toBeGreaterThanOrEqual(24);
+        expect(props.progressPercent).toBeLessThanOrEqual(26);
     });
 });

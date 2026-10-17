@@ -370,3 +370,74 @@ button.rf-media-card[data-rf-hover='zoom']:hover .rf-media-card__image {
         height: 1.8em;
     }
 }
+
+/* Unwatched children of a series or season, where the watched mark would otherwise sit. */
+.rf-media-card__count {
+    position: absolute;
+    top: var(--rf-spacing-xs, 6px);
+    right: var(--rf-spacing-xs, 6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6em;
+    height: 1.6em;
+    padding-inline: 0.4em;
+    border-radius: 0.8em;
+    background: var(--rf-color-primary, #00a4dc);
+    color: var(--rf-color-on-primary, #fff);
+    font-size: var(--rf-typography-font-size-sm, 0.875rem);
+    font-weight: var(--rf-typography-font-weight-medium, 500);
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Selection mode: a check box over the artwork, and a ring on the selected cards. */
+.rf-media-card--selectable {
+    cursor: pointer;
+    padding: 0;
+    font: inherit;
+}
+
+.rf-media-card--selectable[aria-pressed='true'] {
+    outline: 3px solid var(--rf-color-primary, #00a4dc);
+    outline-offset: -3px;
+}
+
+.rf-media-card--selectable:focus-visible {
+    outline: 2px solid var(--rf-color-focus, rgba(255, 255, 255, 0.12));
+    outline-offset: 2px;
+}
+
+.rf-media-card__check {
+    position: absolute;
+    top: var(--rf-spacing-xs, 6px);
+    left: var(--rf-spacing-xs, 6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6em;
+    height: 1.6em;
+    border: 2px solid var(--rf-color-text, #fff);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.55);
+
+    svg {
+        width: 1.2em;
+        height: 1.2em;
+        fill: var(--rf-color-on-primary, #fff);
+    }
+}
+
+.rf-media-card--selectable[aria-pressed='true'] .rf-media-card__check {
+    border-color: var(--rf-color-primary, #00a4dc);
+    background: var(--rf-color-primary, #00a4dc);
+}
+
+/* Two-line title (search): an episode's number and enough of its name to tell it apart. */
+.rf-media-card--title-2 .rf-media-card__title {
+    display: -webkit-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
