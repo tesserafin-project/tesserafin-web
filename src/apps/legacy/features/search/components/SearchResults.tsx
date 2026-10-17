@@ -1,4 +1,4 @@
-import React, { type FC } from 'react';
+import React, { type FC, useEffect } from 'react';
 import { useSearchItems } from '../api/useSearchItems';
 import globalize from 'lib/globalize';
 import Loading from 'components/loading/LoadingComponent';
@@ -7,6 +7,8 @@ import { CardShape } from 'components/cardbuilder/utils/shape';
 import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 import { Section } from '../types';
 import { Link } from 'react-router-dom';
+
+const SCROLL_KEY = 'searchResultsScroll';
 
 interface SearchResultsProps {
     parentId?: string;
@@ -27,6 +29,23 @@ const SearchResults: FC<SearchResultsProps> = ({
         collectionType,
         query?.trim()
     );
+
+    // Coming back from a result lands where the viewer left the list, not at the top. The offset
+    // is taken when a result is opened (the next page may scroll to the top before this one
+    // unmounts), and restored a frame after mount, past the page's own `viewshow` scroll reset.
+    useEffect(() => {
+        if (!data?.length) return;
+        const saved = JSON.parse(sessionStorage.getItem(SCROLL_KEY) || 'null');
+        if (saved?.query !== query) return;
+        const frame = requestAnimationFrame(() => window.scrollTo(0, saved.y));
+        return () => cancelAnimationFrame(frame);
+    }, [data, query]);
+
+    const rememberOffset = () =>
+        sessionStorage.setItem(
+            SCROLL_KEY,
+            JSON.stringify({ query, y: window.scrollY })
+        );
 
     if (isPending) return <Loading />;
 
@@ -68,7 +87,10 @@ const SearchResults: FC<SearchResultsProps> = ({
     };
 
     return (
-        <div className={'searchResults padded-top padded-bottom-page'}>
+        <div
+            className={'searchResults padded-top padded-bottom-page'}
+            onClickCapture={rememberOffset}
+        >
             {data.map((section, index) => renderSection(section, index))}
         </div>
     );
