@@ -147,13 +147,18 @@ const SearchResults: FC<SearchResultsProps> = ({
     };
 
     const { cancel: cancelSelection, start: startSelection } = selection;
+    // Read through a ref by the long-press listener, so a refetch landing mid-press does not
+    // re-install it and drop the pending timer.
+    const dataRef = useRef(data);
+    dataRef.current = data;
+    const hasResults = !!data?.length;
     // A selection belongs to one search: another query or scope ends it.
     useEffect(() => cancelSelection, [stateKey, cancelSelection]);
 
     // Long press, touch or mouse, starts selecting with the pressed card, as the old rows did.
     useEffect(() => {
         const container = element.current;
-        if (!container || !data || !canSelect) return;
+        if (!container || !hasResults || !canSelect) return;
         let timer: number | undefined;
         let origin = { x: 0, y: 0 };
         const clear = () => {
@@ -161,7 +166,7 @@ const SearchResults: FC<SearchResultsProps> = ({
             timer = undefined;
         };
         const onDown = (event: PointerEvent) => {
-            const id = locateCard(event.target, data)?.item.Id;
+            const id = locateCard(event.target, dataRef.current)?.item.Id;
             if (!id || event.button > 0) return;
             origin = { x: event.clientX, y: event.clientY };
             clear();
@@ -193,7 +198,7 @@ const SearchResults: FC<SearchResultsProps> = ({
             container.removeEventListener('pointercancel', clear);
             container.removeEventListener('pointerleave', clear);
         };
-    }, [data, canSelect, startSelection]);
+    }, [hasResults, canSelect, startSelection]);
 
     // TV remotes and keyboards send play/menu/record as `command` events on the focused card.
     useEffect(() => {
