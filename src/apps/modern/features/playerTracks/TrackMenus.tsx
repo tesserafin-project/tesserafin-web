@@ -45,6 +45,7 @@ interface OpenMenu {
 }
 
 interface Row {
+    /** A track index, -1 for Off, or `secondary`; also the row's `data-track`. */
     key: string;
     name: string;
     secondaryText?: string;
@@ -74,7 +75,7 @@ function trackRow(
 
 function offRow(current: number, onSelect: (index: number) => void): Row {
     return {
-        key: 'off',
+        key: String(OFF),
         name: globalize.translate('Off'),
         checked: current === OFF,
         onSelect: () => onSelect(OFF)
@@ -205,6 +206,7 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
                     {rows.map((row) => (
                         <button
                             key={row.key}
+                            data-track={row.key}
                             type='button'
                             className='rf-track-menu__item'
                             {...(row.checked == null

@@ -200,7 +200,7 @@ test.describe('#153-A1 libass families', () => {
             await page.mouse.move(700, 450);
             await page.mouse.move(720, 460);
             const subtitleControl = page
-                .locator('.btnSubtitles:visible')
+                .locator('[data-track-menu="subtitles"]:visible')
                 .first();
             await expect(
                 subtitleControl,
@@ -208,7 +208,9 @@ test.describe('#153-A1 libass families', () => {
             ).toBeVisible({ timeout: 30_000 });
             await subtitleControl.click();
 
-            const items = page.locator('.actionSheetMenuItem');
+            const items = page.locator(
+                '[data-rf-slot="track-menu"] [data-track]'
+            );
             await expect(
                 items.first(),
                 'the subtitle control must open a track menu'
@@ -217,7 +219,7 @@ test.describe('#153-A1 libass families', () => {
             for (let index = 0; index < count; index++) {
                 const item = items.nth(index);
                 menuItems.push(
-                    `${await item.getAttribute('data-id')} :: ${(
+                    `${await item.getAttribute('data-track')} :: ${(
                         (await item.textContent()) ?? ''
                     )
                         .trim()
@@ -227,8 +229,8 @@ test.describe('#153-A1 libass families', () => {
             // Anything that is not "Off" (-1) and not the secondary-subtitle entry.
             for (let index = 0; index < count; index++) {
                 const item = items.nth(index);
-                const id = await item.getAttribute('data-id');
-                if (id && id !== '-1' && id !== 'secondarysubtitle') {
+                const id = await item.getAttribute('data-track');
+                if (id && id !== '-1' && id !== 'secondary') {
                     chosen = menuItems[index];
                     await item.click();
                     break;
