@@ -28,7 +28,6 @@ import 'elements/emby-button/paper-icon-button-light';
 import 'elements/emby-ratingbutton/emby-ratingbutton';
 import 'styles/videoosd.scss';
 import shell from 'scripts/shell';
-import SubtitleSync from 'components/subtitlesync/subtitlesync';
 import { appRouter } from 'components/router/appRouter';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import LibraryMenu from 'scripts/libraryMenu';
@@ -37,6 +36,8 @@ import {
     TRANSPARENCY_LEVEL
 } from 'components/backdrop/backdrop';
 import { pluginManager } from 'components/pluginManager';
+import { toggleStats } from 'apps/modern/features/playerPanels/playerStats';
+import { nudgeSubtitleOffset } from 'apps/modern/features/playerPanels/subtitleOffset';
 import { setTrackMenuHost } from 'apps/modern/features/playerTracks/playerTracks';
 
 function getOpenedDialog() {
@@ -243,12 +244,6 @@ export default function (view) {
         btnFastForward.disabled = false;
         btnRewind.disabled = false;
 
-        if (playbackManager.subtitleTracks(player).length) {
-            toggleSubtitleSync();
-        } else {
-            toggleSubtitleSync('forceToHide');
-        }
-
         if (currentItem.Chapters?.length > 1) {
             view.querySelector('.btnPreviousChapter').classList.remove('hide');
             view.querySelector('.btnNextChapter').classList.remove('hide');
@@ -298,8 +293,8 @@ export default function (view) {
 
     let mouseIsDown = false;
 
-    // A track menu, or a legacy dialog (the settings menu), is open: the player keeps its keys
-    // and its controls up.
+    // A React player menu, or a legacy dialog, is open: the player keeps its keys and its
+    // controls up.
     function isMenuOpen() {
         return isTrackMenuOpen || !!getOpenedDialog();
     }
@@ -404,7 +399,6 @@ export default function (view) {
             if (!layoutManager.mobile) {
                 _focus(focusElement);
             }
-            toggleSubtitleSync();
         } else if (currentVisibleMenu === 'osd' && !layoutManager.mobile) {
             _focus(focusElement);
         }
@@ -421,7 +415,6 @@ export default function (view) {
                 onHideAnimationComplete
             );
             currentVisibleMenu = null;
-            toggleSubtitleSync('hide');
             setSubtitleClearance(false);
 
             // Firefox does not blur by itself
@@ -699,8 +692,6 @@ export default function (view) {
     }
 
     function releaseCurrentPlayer() {
-        destroyStats();
-        destroySubtitleSync();
         resetUpNextDialog();
         const player = currentPlayer;
 
@@ -1175,47 +1166,6 @@ export default function (view) {
         );
     }
 
-    function toggleStats(stillCurrent = () => true) {
-        import('components/playerstats/playerstats').then(
-            ({ default: PlayerStats }) => {
-                const player = currentPlayer;
-
-                if (player && stillCurrent()) {
-                    if (statsOverlay) {
-                        statsOverlay.toggle();
-                    } else {
-                        statsOverlay = new PlayerStats({
-                            player: player
-                        });
-                    }
-                }
-            }
-        );
-    }
-
-    function destroyStats() {
-        if (statsOverlay) {
-            statsOverlay.destroy();
-            statsOverlay = null;
-        }
-    }
-
-    function toggleSubtitleSync(action) {
-        const player = currentPlayer;
-        if (subtitleSyncOverlay) {
-            subtitleSyncOverlay.toggle(action);
-        } else if (player) {
-            subtitleSyncOverlay = new SubtitleSync(player);
-        }
-    }
-
-    function destroySubtitleSync() {
-        if (subtitleSyncOverlay) {
-            subtitleSyncOverlay.destroy();
-            subtitleSyncOverlay = null;
-        }
-    }
-
     /**
      * Clicked element.
      * To skip 'click' handling on Firefox/Edge.
@@ -1437,13 +1387,13 @@ export default function (view) {
             case 'KeyG':
                 if (!e.shiftKey) {
                     e.preventDefault();
-                    subtitleSyncOverlay?.decrementOffset();
+                    nudgeSubtitleOffset(-1);
                 }
                 break;
             case 'KeyH':
                 if (!e.shiftKey) {
                     e.preventDefault();
-                    subtitleSyncOverlay?.incrementOffset();
+                    nudgeSubtitleOffset(1);
                 }
                 break;
         }
@@ -1705,7 +1655,6 @@ export default function (view) {
     let recordingButtonManager;
     let enableProgressByTimeOfDay;
     let currentVisibleMenu;
-    let statsOverlay;
     let osdHideTimeout;
     let lastPointerMoveData;
     const self = this;
@@ -1715,7 +1664,6 @@ export default function (view) {
     let programStartDateMs = 0;
     let programEndDateMs = 0;
     let playbackStartTimeTicks = 0;
-    let subtitleSyncOverlay;
     let isTrackMenuOpen = false;
     let trickplayResolution = null;
     const nowPlayingVolumeSlider = view.querySelector('.osdVolumeSlider');
@@ -1763,14 +1711,11 @@ export default function (view) {
                 }
             );
             showOsd();
-            // The audio, subtitle and settings menus are React (DEBT-WEB-2, DEBT-WEB-3); they
-            // borrow two slots in the button row and open the overlays still kept here.
+            // The audio, subtitle and settings menus are React (DEBT-WEB-2, DEBT-WEB-3), and so are
+            // the panels they open (DEBT-WEB-4); the menus borrow two slots in the button row.
             setTrackMenuHost({
                 slot: view.querySelector('.osdTrackMenus'),
                 settingsSlot: view.querySelector('.osdSettingsMenu'),
-                onSubtitlesChanged: () => toggleSubtitleSync(),
-                onToggleStats: toggleStats,
-                onShowSubtitleOffset: () => toggleSubtitleSync(),
                 onMenuOpenChange: (open) => {
                     isTrackMenuOpen = open;
                     resetIdle();
@@ -1829,9 +1774,6 @@ export default function (view) {
         setTrackMenuHost(null);
         isTrackMenuOpen = false;
         setSubtitleClearance(false);
-        if (statsOverlay) {
-            statsOverlay.enabled(false);
-        }
 
         document.removeEventListener('keydown', onKeyDown);
         dom.removeEventListener(document, 'keydown', onKeyDownCapture, {
@@ -1914,9 +1856,6 @@ export default function (view) {
             recordingButtonManager.destroy();
             recordingButtonManager = null;
         }
-
-        destroyStats();
-        destroySubtitleSync();
     });
     let lastPointerDown = 0;
     dom.addEventListener(

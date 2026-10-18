@@ -7,17 +7,19 @@ import { describe, expect, it } from 'vitest';
 /**
  * DEBT-WEB-2 moved the player's audio and subtitle menus out of the legacy video controller into
  * `apps/modern/features/playerTracks` (React, behind a typed adapter), and DEBT-WEB-3 its settings
- * menu. This keeps them out.
+ * menu, and DEBT-WEB-4 the stats and subtitle-offset panels it opens (`features/playerPanels`).
+ * This keeps them out.
  *
- * The controller may still READ subtitle tracks and still owns the stats and subtitle-sync
- * overlays, but it must not offer a choice, change a track or a setting, or build a menu: one path
- * per menu, or the next fix lands on the wrong one. Comments are stripped, so prose explaining the
+ * The controller may still READ subtitle tracks and forward the G/H keys and the `togglestats`
+ * command to the panels, but it must not offer a choice, change a track, a setting or the offset,
+ * or build a menu or a panel: one path per control, or the next fix lands on the wrong one. Comments are stripped, so prose explaining the
  * move does not trip it.
  */
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = resolve(HERE, '../../src');
 const CONTROLLER = join(SRC, 'apps/legacy/controllers/playback/video');
 const FEATURE = join(SRC, 'apps/modern/features/playerTracks');
+const PANELS = join(SRC, 'apps/modern/features/playerPanels');
 
 const code = (file: string) =>
     readFileSync(file, 'utf8')
@@ -42,6 +44,14 @@ describe('the player track menus stay migrated', () => {
             /playersettingsmenu|onSettingsButtonClick|onSettingsOption/
         ],
         [
+            'the old panels',
+            /SubtitleSync|subtitlesync|PlayerStats|playerstats|statsOverlay|destroyStats|function toggleStats/
+        ],
+        [
+            'an offset command',
+            /playbackManager\.(setSubtitleOffset|(en|dis)ableShowingSubtitleOffset|getPlayerSubtitleOffset)\b/
+        ],
+        [
             'a settings command',
             /playbackManager\.(set(AspectRatio|PlaybackRate|MaxStreamingBitrate|RepeatMode)|enableShowingSubtitleOffset)\b/
         ]
@@ -54,18 +64,24 @@ describe('the player track menus stay migrated', () => {
         }
     });
 
-    it('the action-sheet settings menu is gone, not merely unused', () => {
-        expect(
-            existsSync(join(SRC, 'components/playback/playersettingsmenu.js'))
-        ).toBe(false);
+    it.each([
+        'components/playback/playersettingsmenu.js',
+        'components/playerstats',
+        'components/subtitlesync'
+    ])('%s is gone, not merely unused', (path) => {
+        expect(existsSync(join(SRC, path))).toBe(false);
     });
 
-    it('the React menus do not fall back on the legacy dialogs', () => {
-        for (const file of readdirSync(FEATURE)) {
-            if (!/\.(ts|tsx)$/.test(file) || file.includes('.test.')) continue;
-            expect(code(join(FEATURE, file)), file).not.toMatch(
-                /actionSheet|dialogHelper|renderComponent/
-            );
+    it.each([FEATURE, PANELS])(
+        'the React menus and panels in %s do not fall back on the legacy dialogs or markup',
+        (dir) => {
+            for (const file of readdirSync(dir)) {
+                if (!/\.(ts|tsx)$/.test(file) || file.includes('.test.'))
+                    continue;
+                expect(code(join(dir, file)), file).not.toMatch(
+                    /actionSheet|dialogHelper|renderComponent|innerHTML|dangerouslySetInnerHTML/
+                );
+            }
         }
-    });
+    );
 });

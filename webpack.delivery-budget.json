@@ -73,8 +73,8 @@
         },
         {
             "id": "video-player",
-            "pattern": "^\\./apps/modern/(features/playerTracks|routes/video)/",
-            "reason": "DEBT-WEB-2. The player page and its React track menus are reached by starting playback, never at boot. /video is one lazy route in both families; before it was, the modern family imported VideoPage (and its MUI top bar) statically from routes.tsx, which put it in the start-up graph. Making it lazy took startup.rawBytes 3234656 -> 3164342 (-70314) and startup.assetCount 45 -> 43 on a local build. A static import of TrackMenus or VideoPage into routes.tsx fails this rule."
+            "pattern": "^\\./apps/modern/(features/(playerTracks|playerPanels)|routes/video)/",
+            "reason": "DEBT-WEB-2. The player page and its React track menus are reached by starting playback, never at boot. /video is one lazy route in both families; before it was, the modern family imported VideoPage (and its MUI top bar) statically from routes.tsx, which put it in the start-up graph. Making it lazy took startup.rawBytes 3234656 -> 3164342 (-70314) and startup.assetCount 45 -> 43 on a local build. A static import of TrackMenus or VideoPage into routes.tsx fails this rule. DEBT-WEB-4 adds features/playerPanels (the stats and subtitle-offset panels, which replaced components/playerstats and components/subtitlesync): it is reached the same way and held to the same rule."
         }
     ],
     "acceptanceRuleForItemDetails": "tesserafin-web #129 Step 1b, SATISFIED: the modern Item Details route is registered through ASYNC_USER_ROUTES / toAsyncPageRoute in both route families, and the `item-details` protectedModulePatterns entry above enforces its absence from the initial and start-up graphs. No ceiling was raised for it."

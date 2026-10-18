@@ -175,10 +175,3 @@ export function setRepeatMode(ref: PlaybackRef, mode: RepeatMode): boolean {
     playbackManager.setRepeatMode(mode, ref.player);
     return true;
 }
-
-/** Tells the engine to offer the subtitle offset; the controller then shows its overlay. */
-export function enableSubtitleOffset(ref: PlaybackRef): boolean {
-    if (!isCurrent(ref)) return false;
-    playbackManager.enableShowingSubtitleOffset(ref.player);
-    return true;
-}

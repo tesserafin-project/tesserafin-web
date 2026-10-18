@@ -3,6 +3,7 @@ import Fade from '@mui/material/Fade/Fade';
 import React, { useRef, type FC, useEffect, useState } from 'react';
 
 import RemotePlayButton from 'apps/modern/components/AppToolbar/RemotePlayButton';
+import PlayerPanels from 'apps/modern/features/playerPanels/PlayerPanels';
 import TrackMenus from 'apps/modern/features/playerTracks/TrackMenus';
 import layoutManager from 'components/layoutManager';
 import SyncPlayButton from 'apps/modern/components/AppToolbar/SyncPlayButton';
@@ -81,6 +82,7 @@ const VideoPage: FC = () => {
             )}
 
             <TrackMenus />
+            <PlayerPanels />
 
             <ViewManagerPage
                 controller='playback/video/index'

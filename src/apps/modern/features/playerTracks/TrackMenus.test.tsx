@@ -154,6 +154,19 @@ const server = vi.hoisted(() => {
     return s;
 });
 
+const panels = vi.hoisted(() => ({
+    toggleStats: vi.fn(),
+    showSubtitleOffset: vi.fn((_ref: unknown) => true),
+    syncSubtitleOffset: vi.fn((_switched?: boolean) => undefined)
+}));
+vi.mock('apps/modern/features/playerPanels/playerStats', () => ({
+    toggleStats: panels.toggleStats
+}));
+vi.mock('apps/modern/features/playerPanels/subtitleOffset', () => ({
+    showSubtitleOffset: panels.showSubtitleOffset,
+    syncSubtitleOffset: panels.syncSubtitleOffset
+}));
+
 vi.mock('lib/jellyfin-apiclient', () => ({
     ServerConnections: {
         getApiClient: () => ({ getCurrentUser: server.getCurrentUser })
@@ -187,7 +200,6 @@ const {
     setTrackMenuHost
 } = await import('./playerTracks');
 const {
-    enableSubtitleOffset,
     readSettings,
     setAspectRatio,
     setMaxBitrate,
@@ -219,6 +231,7 @@ const flush = () =>
     });
 
 beforeEach(() => {
+    vi.clearAllMocks();
     server.hold = false;
     server.pending = [];
     server.transcoding = true;
@@ -360,13 +373,11 @@ describe('the settings adapter', () => {
         expect(setPlaybackRate(ref, 2)).toBe(true);
         expect(setMaxBitrate(ref, 0)).toBe(true);
         expect(setRepeatMode(ref, RepeatMode.RepeatOne)).toBe(true);
-        expect(enableSubtitleOffset(ref)).toBe(true);
         expect(state.calls).toEqual([
             'aspect fill on A',
             'rate 2 on A',
             'bitrate 0 auto=true on A',
-            'repeat RepeatOne on A',
-            'suboffset on A'
+            'repeat RepeatOne on A'
         ]);
 
         state.calls = [];
@@ -375,7 +386,6 @@ describe('the settings adapter', () => {
         expect(setPlaybackRate(ref, 2)).toBe(false);
         expect(setMaxBitrate(ref, 0)).toBe(false);
         expect(setRepeatMode(ref, RepeatMode.RepeatOne)).toBe(false);
-        expect(enableSubtitleOffset(ref)).toBe(false);
         expect(state.calls).toEqual([]);
     });
 
@@ -397,9 +407,6 @@ describe('the track menus', () => {
     let host: {
         slot: HTMLElement;
         settingsSlot: HTMLElement;
-        onSubtitlesChanged: Mock<() => void>;
-        onToggleStats: Mock<(stillCurrent: () => boolean) => void>;
-        onShowSubtitleOffset: Mock<() => void>;
         onMenuOpenChange: Mock<(open: boolean) => void>;
     };
     const button = (kind: string) =>
@@ -433,9 +440,6 @@ describe('the track menus', () => {
         host = {
             slot,
             settingsSlot,
-            onSubtitlesChanged: vi.fn<() => void>(),
-            onToggleStats: vi.fn<(stillCurrent: () => boolean) => void>(),
-            onShowSubtitleOffset: vi.fn<() => void>(),
             onMenuOpenChange: vi.fn<(open: boolean) => void>()
         };
         act(() => {
@@ -516,7 +520,8 @@ describe('the track menus', () => {
         expect(row('Off').getAttribute('aria-checked')).toBe('true');
         act(() => row('Allemand').click());
         expect(state.calls).toEqual(['audio 2 on A', 'subtitles 3 on A']);
-        expect(host.onSubtitlesChanged).toHaveBeenCalledTimes(1);
+        expect(panels.syncSubtitleOffset).toHaveBeenCalledWith(true);
+        expect(panels.syncSubtitleOffset).toHaveBeenCalledTimes(1);
     });
 
     it('shows the track chosen since the last stream event', () => {
@@ -543,7 +548,8 @@ describe('the track menus', () => {
         ]);
         act(() => row('Anglais').click());
         expect(state.calls).toEqual(['secondary 4 on A']);
-        expect(host.onSubtitlesChanged).toHaveBeenCalledTimes(1);
+        expect(panels.syncSubtitleOffset).toHaveBeenCalledWith(true);
+        expect(panels.syncSubtitleOffset).toHaveBeenCalledTimes(1);
     });
 
     it('Escape in the secondary subtitles goes back to the subtitles, on the row it came from', () => {
@@ -683,29 +689,22 @@ describe('the track menus', () => {
             ]);
         });
 
-        it('opens the subtitle offset and the stats through the player', async () => {
+        it('opens the subtitle offset and the stats panels for the playback it was opened for', async () => {
             state.subOffset = true;
             act(() => setTrackMenuHost(host));
             await openSettings();
             act(() => row('SubtitleOffset').click());
-            expect(state.calls).toEqual(['suboffset on A']);
-            expect(host.onShowSubtitleOffset).toHaveBeenCalledTimes(1);
+            expect(panels.showSubtitleOffset).toHaveBeenCalledTimes(1);
+            expect(panels.showSubtitleOffset.mock.calls[0][0]).toMatchObject({
+                player,
+                itemId: 'film-a'
+            });
             expect(menu()).toBeNull();
 
             await openSettings();
             act(() => row('PlaybackData').click());
-            expect(host.onToggleStats).toHaveBeenCalledTimes(1);
+            expect(panels.toggleStats).toHaveBeenCalledTimes(1);
             expect(menu()).toBeNull();
-        });
-
-        it('a stats overlay still loading when the film is replaced is not shown over the new one', async () => {
-            act(() => setTrackMenuHost(host));
-            await openSettings();
-            act(() => row('PlaybackData').click());
-            const stillCurrent = host.onToggleStats.mock.calls[0][0];
-            expect(stillCurrent()).toBe(true);
-            replaceFilm(); // while the controller loads the overlay
-            expect(stillCurrent()).toBe(false);
         });
 
         it('does not open for film A once film B replaced it while the server answered', async () => {

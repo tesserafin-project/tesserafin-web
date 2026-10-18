@@ -25,7 +25,6 @@ import {
     type Choice,
     type PlayerSettings,
     REPEAT_MODES,
-    enableSubtitleOffset,
     readSettings,
     setAspectRatio,
     setMaxBitrate,
@@ -44,6 +43,11 @@ import {
     subscribeTrackMenuHost,
     subscribeTracks
 } from './playerTracks';
+import { toggleStats } from 'apps/modern/features/playerPanels/playerStats';
+import {
+    showSubtitleOffset,
+    syncSubtitleOffset
+} from 'apps/modern/features/playerPanels/subtitleOffset';
 import './trackMenus.scss';
 
 type SettingKind = 'aspectratio' | 'playbackrate' | 'quality' | 'repeatmode';
@@ -550,7 +554,7 @@ const TrackMenus: FC = () => {
                     value !== tracks.subtitleIndex &&
                     setSubtitles(ref, value as number)
                 ) {
-                    host.onSubtitlesChanged();
+                    syncSubtitleOffset(true);
                 }
                 break;
             case 'secondary':
@@ -558,7 +562,7 @@ const TrackMenus: FC = () => {
                     value !== tracks.secondary?.index &&
                     setSecondarySubtitles(ref, value as number)
                 ) {
-                    host.onSubtitlesChanged();
+                    syncSubtitleOffset(true);
                 }
                 break;
             case 'settings':
@@ -574,9 +578,9 @@ const TrackMenus: FC = () => {
         const { ref } = menu;
         close(true);
         if (action === 'stats') {
-            if (isCurrent(ref)) host.onToggleStats(() => isCurrent(ref));
-        } else if (enableSubtitleOffset(ref)) {
-            host.onShowSubtitleOffset();
+            if (isCurrent(ref)) toggleStats();
+        } else {
+            showSubtitleOffset(ref);
         }
     };
 
