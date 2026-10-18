@@ -69,6 +69,11 @@
             "id": "playback-credentials",
             "pattern": "^\\./lib/playbackCredentials/(PlaybackCredentialBroker|install|identity)",
             "reason": "#153-A1-R2. The media capability broker is wanted only once playback begins, and it is the single largest thing the credential work adds (~9.8 KB raw across broker, install and identity). It must stay behind the import() issued by lib/playbackCredentials/broker.ts and must never be reachable from the initial or start-up graph: a static import of any of these three into an eagerly reached module is what the first revision did by accident, and it cost four start-up metrics. Note this rule is only HALF the guarantee - webpack's module concatenation can hide a member's identifier from the chunk module list, so ci/verify-credential-startup-boundary.mjs asserts the same boundary at source level, where concatenation cannot reach."
+        },
+        {
+            "id": "video-player",
+            "pattern": "^\\./apps/modern/(features/playerTracks|routes/video)/",
+            "reason": "DEBT-WEB-2. The player page and its React track menus are reached by starting playback, never at boot. /video is one lazy route in both families; before it was, the modern family imported VideoPage (and its MUI top bar) statically from routes.tsx, which put it in the start-up graph. Making it lazy took startup.rawBytes 3234656 -> 3164342 (-70314) and startup.assetCount 45 -> 43 on a local build. A static import of TrackMenus or VideoPage into routes.tsx fails this rule."
         }
     ],
     "acceptanceRuleForItemDetails": "tesserafin-web #129 Step 1b, SATISFIED: the modern Item Details route is registered through ASYNC_USER_ROUTES / toAsyncPageRoute in both route families, and the `item-details` protectedModulePatterns entry above enforces its absence from the initial and start-up graphs. No ceiling was raised for it."

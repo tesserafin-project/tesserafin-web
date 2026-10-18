@@ -166,6 +166,7 @@ a chunk that the counted delivery set is made of?"
 | --- | --- | --- |
 | `theme-studio` | `^\./apps/modern/(features/themeStudio\|routes/user/themeStudio)/` | Theme Studio is an authoring tool reached from Display preferences (#119), not a viewer destination. A viewer who never opens it must never download it. |
 | `theme-authoring-validation` | `^\./themes/platform/(validateManifest\|validateTokens)` | Manifest and token validation is authoring/compiler work (#115, #117). The viewer resolves an already-valid presentation; it does not validate one at boot. |
+| `video-player` | `^\./apps/modern/(features/playerTracks\|routes/video)/` | The player page and its track menus (DEBT-WEB-2) are reached by starting playback. `/video` is a lazy route in both families; a static import into `routes.tsx` puts the page and its MUI top bar back into the start-up graph. |
 
 The boundaries track **delivered** modules, not source imports. Adding
 `import './apps/modern/features/themeStudio/tokenModel'` to `src/index.jsx` does *not* trip them,
