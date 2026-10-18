@@ -20,8 +20,7 @@ const FEATURE = join(SRC, 'apps/modern/features/playerTracks');
 const code = (file: string) =>
     readFileSync(file, 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '')
-        .replace(/<!--[\s\S]*?-->/g, '');
+        .replace(/^\s*\/\/.*$/gm, '');
 
 describe('the player track menus stay migrated', () => {
     it.each([
