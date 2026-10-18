@@ -935,4 +935,58 @@ describe('software recovery attempt isolation', { timeout: 60000 }, () => {
             expect(rig.manager.currentItem(rig.player).Id).toBe(SECOND_ITEM_ID);
         });
     });
+
+    // DEBT-WEB-3: the settings menu's quality choice reaches the engine at once, but the engine
+    // first asks for the endpoint (and, for Auto, measures the bitrate) before it restarts the
+    // stream. That wait is where another device's "play now" can land.
+    describe('a bitrate choice belongs to the playback it was made for', () => {
+        const getEndpointInfo = apiClient.getEndpointInfo;
+
+        /** Chooses 4 Mbps with the endpoint lookup held; returns what answers it. */
+        function chooseBitrate(rig: Rig) {
+            let answer: () => void = () => undefined;
+            apiClient.getEndpointInfo = () =>
+                new Promise((resolve) => {
+                    answer = () => resolve({ IsInNetwork: true });
+                });
+            rig.manager.setMaxStreamingBitrate(
+                { enableAutomaticBitrateDetection: false, maxBitrate: 4000000 },
+                rig.player
+            );
+            apiClient.getEndpointInfo = getEndpointInfo;
+            return answer;
+        }
+
+        afterEach(() => {
+            apiClient.getEndpointInfo = getEndpointInfo;
+        });
+
+        it('restarts that playback at the chosen bitrate once the endpoint answers', async () => {
+            const rig = mount();
+            await startPlayback(rig);
+            chooseBitrate(rig)();
+            await until(() => expect(held).toHaveLength(1));
+            expect(held[0].request.itemId).toBe(VIDEO_ITEM_ID);
+            expect(held[0].request.playbackInfoDto.MaxStreamingBitrate).toBe(
+                4000000
+            );
+        });
+
+        it('changes nothing when another playback replaced it while the endpoint answered', async () => {
+            const rig = mount();
+            await startPlayback(rig);
+            const chosenFor = chooseBitrate(rig);
+            await startPlayback(rig, secondItem());
+            const requests = postedPlaybackInfo.mock.calls.length;
+            const plays = rig.player.played.length;
+
+            chosenFor();
+            await settle();
+
+            expect(postedPlaybackInfo).toHaveBeenCalledTimes(requests);
+            expect(held).toEqual([]);
+            expect(rig.player.played).toHaveLength(plays);
+            expect(rig.manager.currentItem(rig.player).Id).toBe(SECOND_ITEM_ID);
+        });
+    });
 });

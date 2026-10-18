@@ -12,6 +12,8 @@ import {
     vi
 } from 'vitest';
 
+import { RepeatMode } from '@jellyfin/sdk/lib/generated-client/models/repeat-mode';
+
 import Events from 'utils/events';
 
 /*
@@ -27,7 +29,7 @@ const engine = vi.hoisted(() => {
     });
     const state = {
         player: null as { name: string; playback?: object | null } | null,
-        item: null as { Id: string } | null,
+        item: null as { Id: string; ServerId?: string } | null,
         audio: [
             { Index: 1, Language: 'fra', Codec: 'aac', Channels: 2 },
             { Index: 2, Language: 'eng', Codec: 'aac', Channels: 2 }
@@ -40,6 +42,23 @@ const engine = vi.hoisted(() => {
         audioIndex: 1 as number | null,
         subIndex: -1 as number | null,
         secIndex: -1,
+        commands: [
+            'SetAspectRatio',
+            'PlaybackRate',
+            'SetMaxStreamingBitrate',
+            'SetRepeatMode'
+        ],
+        aspect: 'auto',
+        rate: 1,
+        maxBitrate: 8000000,
+        autoBitrate: false,
+        repeat: 'RepeatNone',
+        source: {
+            SupportsTranscoding: true,
+            RunTimeTicks: 60_000_000_000,
+            MediaStreams: [{ Type: 'Video', Codec: 'h264', BitRate: 9000000 }]
+        } as Record<string, unknown>,
+        subOffset: false,
         calls: [] as string[]
     };
     const pm = {
@@ -65,10 +84,81 @@ const engine = vi.hoisted(() => {
         },
         setSecondarySubtitleStreamIndex: (i: number, p: { name: string }) => {
             state.calls.push(`secondary ${i} on ${p.name}`);
+        },
+        getSupportedCommands: () => state.commands.slice(),
+        getSupportedAspectRatios: () => [
+            { id: 'auto', name: 'Auto' },
+            { id: 'cover', name: 'Cover' },
+            { id: 'fill', name: 'Fill' }
+        ],
+        getAspectRatio: () => state.aspect,
+        setAspectRatio: (id: string, p: { name: string }) => {
+            state.calls.push(`aspect ${id} on ${p.name}`);
+        },
+        getSupportedPlaybackRates: () =>
+            [0.5, 1, 1.5, 2].map((id) => ({ id, name: `${id}x` })),
+        getPlaybackRate: () => state.rate,
+        setPlaybackRate: (rate: number, p: { name: string }) => {
+            state.calls.push(`rate ${rate} on ${p.name}`);
+        },
+        getMaxStreamingBitrate: () => state.maxBitrate,
+        enableAutomaticBitrateDetection: () => state.autoBitrate,
+        setMaxStreamingBitrate: (
+            o: { enableAutomaticBitrateDetection: boolean; maxBitrate: number },
+            p: { name: string }
+        ) => {
+            state.calls.push(
+                `bitrate ${o.maxBitrate} auto=${o.enableAutomaticBitrateDetection} on ${p.name}`
+            );
+        },
+        getRepeatMode: () => state.repeat,
+        setRepeatMode: (mode: string, p: { name: string }) => {
+            state.calls.push(`repeat ${mode} on ${p.name}`);
+        },
+        currentMediaSource: () => state.source,
+        getPlayerState: () => ({
+            MediaSource: state.source,
+            PlayState: { PlayMethod: 'Transcode' }
+        }),
+        supportSubtitleOffset: () => state.subOffset,
+        canHandleOffsetOnCurrentSubtitle: () => state.subOffset,
+        enableShowingSubtitleOffset: (p: { name: string }) => {
+            state.calls.push(`suboffset on ${p.name}`);
         }
     };
     return { state, pm };
 });
+
+/** The server's answer to "who is the user": the test settles it when it chooses. */
+const server = vi.hoisted(() => {
+    const s = {
+        transcoding: true,
+        pending: [] as (() => void)[],
+        /** When false, getCurrentUser answers at once. */
+        hold: false,
+        getCurrentUser: () =>
+            new Promise((resolve) => {
+                const answer = () =>
+                    resolve({
+                        Policy: {
+                            EnableVideoPlaybackTranscoding: s.transcoding
+                        }
+                    });
+                if (s.hold) s.pending.push(answer);
+                else answer();
+            }),
+        release() {
+            for (const answer of s.pending.splice(0)) answer();
+        }
+    };
+    return s;
+});
+
+vi.mock('lib/jellyfin-apiclient', () => ({
+    ServerConnections: {
+        getApiClient: () => ({ getCurrentUser: server.getCurrentUser })
+    }
+}));
 
 vi.mock('components/playback/playbackmanager', () => ({
     playbackManager: engine.pm
@@ -96,6 +186,14 @@ const {
     subscribeTracks,
     setTrackMenuHost
 } = await import('./playerTracks');
+const {
+    enableSubtitleOffset,
+    readSettings,
+    setAspectRatio,
+    setMaxBitrate,
+    setPlaybackRate,
+    setRepeatMode
+} = await import('./playerSettings');
 const { default: TrackMenus } = await import('./TrackMenus');
 
 const { state } = engine;
@@ -104,10 +202,29 @@ let player: { name: string; playback?: object | null };
 function startPlayback(name: string, itemId: string) {
     player = { name, playback: { stopped: false } };
     state.player = player;
-    state.item = { Id: itemId };
+    state.item = { Id: itemId, ServerId: 'server' };
 }
 
+/** What another device's "play now" does: same player object, a new playback, a new film. */
+function replaceFilm() {
+    player.playback = { stopped: false };
+    state.item = { Id: 'film-b', ServerId: 'server' };
+    act(() => Events.trigger(player, 'playbackstart'));
+}
+
+/** Lets settled promises run, inside act so React applies what they set. */
+const flush = () =>
+    act(async () => {
+        for (let i = 0; i < 5; i++) await Promise.resolve();
+    });
+
 beforeEach(() => {
+    server.hold = false;
+    server.pending = [];
+    server.transcoding = true;
+    state.subOffset = false;
+    state.source.SupportsTranscoding = true;
+    state.source.RunTimeTicks = 60_000_000_000;
     state.calls = [];
     state.audioIndex = 1;
     state.subIndex = -1;
@@ -197,17 +314,100 @@ describe('the track adapter', () => {
     });
 });
 
+describe('the settings adapter', () => {
+    it('offers each setting only where the player, the item and the user allow it', async () => {
+        let s = await readSettings();
+        expect(s?.aspectRatio?.find((c) => c.selected)?.id).toBe('auto');
+        expect(s?.playbackRate?.find((c) => c.selected)?.id).toBe(1);
+        expect(s?.quality?.summary).toBe('8 Mbps');
+        expect(s?.repeatMode).toBe('RepeatNone');
+        expect(s?.subtitleOffset).toBe(false);
+
+        server.transcoding = false; // the user may not transcode
+        expect((await readSettings())?.quality).toBeNull();
+        server.transcoding = true;
+        state.source.SupportsTranscoding = false; // the source cannot be transcoded
+        expect((await readSettings())?.quality).toBeNull();
+        state.source.SupportsTranscoding = true;
+        state.source.RunTimeTicks = undefined; // a live stream has no end to repeat at
+        expect((await readSettings())?.repeatMode).toBeNull();
+        state.commands = ['PlaybackRate']; // a player that only changes speed
+        state.subOffset = true;
+        s = await readSettings();
+        expect(s?.aspectRatio).toBeNull();
+        expect(s?.quality).toBeNull();
+        expect(s?.repeatMode).toBeNull();
+        expect(s?.subtitleOffset).toBe(true);
+        state.commands = [
+            'SetAspectRatio',
+            'PlaybackRate',
+            'SetMaxStreamingBitrate',
+            'SetRepeatMode'
+        ];
+    });
+
+    it('says Auto and what Auto chose', async () => {
+        state.autoBitrate = true;
+        const s = await readSettings();
+        expect(s?.quality?.choices.find((c) => c.selected)?.id).toBe(0);
+        expect(s?.quality?.summary).toBe('Auto 8 Mbps');
+        state.autoBitrate = false;
+    });
+
+    it('sends each command to the playback it was read for, and drops it once that is replaced', async () => {
+        const { ref } = (await readSettings())!;
+        expect(setAspectRatio(ref, 'fill')).toBe(true);
+        expect(setPlaybackRate(ref, 2)).toBe(true);
+        expect(setMaxBitrate(ref, 0)).toBe(true);
+        expect(setRepeatMode(ref, RepeatMode.RepeatOne)).toBe(true);
+        expect(enableSubtitleOffset(ref)).toBe(true);
+        expect(state.calls).toEqual([
+            'aspect fill on A',
+            'rate 2 on A',
+            'bitrate 0 auto=true on A',
+            'repeat RepeatOne on A',
+            'suboffset on A'
+        ]);
+
+        state.calls = [];
+        player.playback = { stopped: false };
+        expect(setAspectRatio(ref, 'fill')).toBe(false);
+        expect(setPlaybackRate(ref, 2)).toBe(false);
+        expect(setMaxBitrate(ref, 0)).toBe(false);
+        expect(setRepeatMode(ref, RepeatMode.RepeatOne)).toBe(false);
+        expect(enableSubtitleOffset(ref)).toBe(false);
+        expect(state.calls).toEqual([]);
+    });
+
+    it('reads nothing when the playback is replaced while the server answers', async () => {
+        server.hold = true;
+        const reading = readSettings();
+        player.playback = { stopped: false };
+        state.item = { Id: 'film-b', ServerId: 'server' };
+        server.release();
+        expect(await reading).toBeNull();
+    });
+});
+
 describe('the track menus', () => {
     let container: HTMLDivElement;
     let slot: HTMLDivElement;
+    let settingsSlot: HTMLDivElement;
     let root: Root;
     let host: {
         slot: HTMLElement;
+        settingsSlot: HTMLElement;
         onSubtitlesChanged: Mock<() => void>;
+        onToggleStats: Mock<(stillCurrent: () => boolean) => void>;
+        onShowSubtitleOffset: Mock<() => void>;
         onMenuOpenChange: Mock<(open: boolean) => void>;
     };
     const button = (kind: string) =>
-        slot.querySelector<HTMLButtonElement>(`[data-track-menu="${kind}"]`);
+        document.querySelector<HTMLButtonElement>(
+            `[data-track-menu="${kind}"]`
+        );
+    const title = () =>
+        document.querySelector('.rf-track-menu__title')?.textContent;
     const menu = () => document.querySelector('[data-rf-slot="track-menu"]');
     const rows = () => [
         ...document.querySelectorAll<HTMLElement>('[role^="menuitem"]')
@@ -228,10 +428,14 @@ describe('the track menus', () => {
     beforeEach(() => {
         container = document.createElement('div');
         slot = document.createElement('div');
-        document.body.append(container, slot);
+        settingsSlot = document.createElement('div');
+        document.body.append(container, slot, settingsSlot);
         host = {
             slot,
+            settingsSlot,
             onSubtitlesChanged: vi.fn<() => void>(),
+            onToggleStats: vi.fn<(stillCurrent: () => boolean) => void>(),
+            onShowSubtitleOffset: vi.fn<() => void>(),
             onMenuOpenChange: vi.fn<(open: boolean) => void>()
         };
         act(() => {
@@ -244,12 +448,15 @@ describe('the track menus', () => {
         act(() => root.unmount());
         container.remove();
         slot.remove();
+        settingsSlot.remove();
     });
 
     it('renders its triggers only once the player lends a slot', () => {
         expect(slot.children).toHaveLength(0);
+        expect(settingsSlot.children).toHaveLength(0);
         act(() => setTrackMenuHost(host));
-        expect(button('subtitles')).not.toBeNull();
+        expect(settingsSlot.contains(button('settings'))).toBe(true);
+        expect(slot.contains(button('subtitles'))).toBe(true);
         expect(button('audio')).not.toBeNull();
         state.audio = state.audio.slice(0, 1);
         act(() => Events.trigger(player, 'mediastreamschange'));
@@ -339,6 +546,19 @@ describe('the track menus', () => {
         expect(host.onSubtitlesChanged).toHaveBeenCalledTimes(1);
     });
 
+    it('Escape in the secondary subtitles goes back to the subtitles, on the row it came from', () => {
+        state.subIndex = 3;
+        act(() => setTrackMenuHost(host));
+        act(() => button('subtitles')!.click());
+        act(() => row('SecondarySubtitles').click());
+        key('Escape');
+        expect(title()).toBe('Subtitles');
+        expect(document.activeElement).toBe(row('SecondarySubtitles'));
+        key('Escape');
+        expect(menu()).toBeNull();
+        expect(document.activeElement).toBe(button('subtitles'));
+    });
+
     it('closes when another device replaces the film, and changes nothing on the new one', () => {
         act(() => setTrackMenuHost(host));
         act(() => button('audio')!.click());
@@ -361,5 +581,183 @@ describe('the track menus', () => {
         act(() => setTrackMenuHost(null));
         expect(menu()).toBeNull();
         expect(host.onMenuOpenChange).toHaveBeenLastCalledWith(false);
+    });
+
+    describe('the settings menu', () => {
+        async function openSettings() {
+            act(() => button('settings')!.click());
+            await flush();
+            expect(title()).toBe('Settings');
+        }
+
+        it('lists what the snapshot offers, each submenu with what is in effect', async () => {
+            state.subOffset = true;
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            expect(
+                rows().map((r) => [
+                    r.dataset.track,
+                    r.getAttribute('aria-haspopup')
+                ])
+            ).toEqual([
+                ['aspectratio', 'menu'],
+                ['playbackrate', 'menu'],
+                ['quality', 'menu'],
+                ['repeatmode', 'menu'],
+                ['suboffset', null],
+                ['stats', null]
+            ]);
+            expect(row('PlaybackRate').textContent).toContain('1x');
+            expect(row('Quality').textContent).toContain('8 Mbps');
+            expect(row('RepeatMode').textContent).toContain('None');
+            expect(host.onMenuOpenChange).toHaveBeenLastCalledWith(true);
+        });
+
+        it('Escape closes the submenu, then the menu, each time focusing where it came from', async () => {
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('PlaybackRate').click());
+            expect(title()).toBe('PlaybackRate');
+            expect(document.activeElement).toBe(row('1x'));
+
+            const playerKeys = vi.fn();
+            document.addEventListener('keydown', playerKeys);
+            key('Escape');
+            expect(title()).toBe('Settings');
+            expect(document.activeElement?.getAttribute('data-track')).toBe(
+                'playbackrate'
+            );
+            expect(host.onMenuOpenChange).toHaveBeenLastCalledWith(true);
+            key('Escape');
+            document.removeEventListener('keydown', playerKeys);
+
+            expect(playerKeys).not.toHaveBeenCalled();
+            expect(menu()).toBeNull();
+            expect(document.activeElement).toBe(button('settings'));
+            expect(host.onMenuOpenChange).toHaveBeenLastCalledWith(false);
+            expect(state.calls).toEqual([]);
+        });
+
+        it("a remote's back command goes up one level too", async () => {
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('RepeatMode').click());
+            const back = () =>
+                act(() => {
+                    document.activeElement!.dispatchEvent(
+                        new CustomEvent('command', {
+                            detail: { command: 'back' },
+                            bubbles: true,
+                            cancelable: true
+                        })
+                    );
+                });
+            back();
+            expect(title()).toBe('Settings');
+            back();
+            expect(menu()).toBeNull();
+            expect(document.activeElement).toBe(button('settings'));
+        });
+
+        it('sends each choice to the playback it was made for, and nothing for the one in effect', async () => {
+            act(() => setTrackMenuHost(host));
+            const pick = async (submenu: string, choice: string) => {
+                await openSettings();
+                act(() => row(submenu).click());
+                act(() => row(choice).click());
+                expect(menu()).toBeNull();
+                expect(document.activeElement).toBe(button('settings'));
+            };
+            await pick('AspectRatio', 'Cover');
+            await pick('PlaybackRate', '1.5x');
+            await pick('PlaybackRate', '1x'); // already in effect
+            await pick('Quality', 'Auto');
+            await pick('Quality', '4 Mbps');
+            await pick('RepeatMode', 'RepeatAll');
+            expect(state.calls).toEqual([
+                'aspect cover on A',
+                'rate 1.5 on A',
+                'bitrate 0 auto=true on A',
+                'bitrate 4000000 auto=false on A',
+                'repeat RepeatAll on A'
+            ]);
+        });
+
+        it('opens the subtitle offset and the stats through the player', async () => {
+            state.subOffset = true;
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('SubtitleOffset').click());
+            expect(state.calls).toEqual(['suboffset on A']);
+            expect(host.onShowSubtitleOffset).toHaveBeenCalledTimes(1);
+            expect(menu()).toBeNull();
+
+            await openSettings();
+            act(() => row('PlaybackData').click());
+            expect(host.onToggleStats).toHaveBeenCalledTimes(1);
+            expect(menu()).toBeNull();
+        });
+
+        it('a stats overlay still loading when the film is replaced is not shown over the new one', async () => {
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('PlaybackData').click());
+            const stillCurrent = host.onToggleStats.mock.calls[0][0];
+            expect(stillCurrent()).toBe(true);
+            replaceFilm(); // while the controller loads the overlay
+            expect(stillCurrent()).toBe(false);
+        });
+
+        it('does not open for film A once film B replaced it while the server answered', async () => {
+            server.hold = true;
+            act(() => setTrackMenuHost(host));
+            act(() => button('settings')!.click());
+            replaceFilm();
+            server.release();
+            await flush();
+            expect(menu()).toBeNull();
+            expect(host.onMenuOpenChange).not.toHaveBeenCalledWith(true);
+        });
+
+        it('a late answer does not replace a menu opened since', async () => {
+            server.hold = true;
+            act(() => setTrackMenuHost(host));
+            act(() => button('settings')!.click());
+            act(() => button('audio')!.click());
+            server.release();
+            await flush();
+            expect(title()).toBe('Audio');
+        });
+
+        it('does not open once the player view has hidden', async () => {
+            server.hold = true;
+            act(() => setTrackMenuHost(host));
+            act(() => button('settings')!.click());
+            act(() => setTrackMenuHost(null));
+            server.release();
+            await flush();
+            expect(menu()).toBeNull();
+        });
+
+        it('a submenu open on film A closes when B replaces it, and its choices change nothing', async () => {
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('Quality').click());
+            const stale = row('4 Mbps');
+            replaceFilm();
+            expect(menu()).toBeNull();
+            expect(host.onMenuOpenChange).toHaveBeenLastCalledWith(false);
+            act(() => stale.click());
+            expect(state.calls).toEqual([]);
+        });
+
+        it('closes when the playback stops', async () => {
+            act(() => setTrackMenuHost(host));
+            await openSettings();
+            act(() => row('AspectRatio').click());
+            (player.playback as { stopped: boolean }).stopped = true;
+            act(() => Events.trigger(player, 'playbackstop'));
+            expect(menu()).toBeNull();
+        });
     });
 });

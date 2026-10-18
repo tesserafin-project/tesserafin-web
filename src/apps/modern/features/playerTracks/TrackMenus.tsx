@@ -10,6 +10,7 @@ import React, {
     useSyncExternalStore
 } from 'react';
 import { createPortal } from 'react-dom';
+import type { RepeatMode } from '@jellyfin/sdk/lib/generated-client/models/repeat-mode';
 
 import focusManager from 'components/focusManager';
 import layoutManager from 'components/layoutManager';
@@ -20,6 +21,17 @@ import {
 import globalize from 'lib/globalize';
 import { getKeyName } from 'scripts/keyboardNavigation';
 
+import {
+    type Choice,
+    type PlayerSettings,
+    REPEAT_MODES,
+    enableSubtitleOffset,
+    readSettings,
+    setAspectRatio,
+    setMaxBitrate,
+    setPlaybackRate,
+    setRepeatMode
+} from './playerSettings';
 import {
     type PlaybackRef,
     type PlayerTracks,
@@ -34,7 +46,17 @@ import {
 } from './playerTracks';
 import './trackMenus.scss';
 
-type MenuKind = 'audio' | 'subtitles' | 'secondary';
+type SettingKind = 'aspectratio' | 'playbackrate' | 'quality' | 'repeatmode';
+type MenuKind = 'audio' | 'subtitles' | 'secondary' | 'settings' | SettingKind;
+
+/** A submenu's parent, which Escape or Back returns to; the parent's row for it is keyed by the submenu's kind. */
+const PARENT: Partial<Record<MenuKind, MenuKind>> = {
+    secondary: 'subtitles',
+    aspectratio: 'settings',
+    playbackrate: 'settings',
+    quality: 'settings',
+    repeatmode: 'settings'
+};
 
 interface OpenMenu {
     kind: MenuKind;
@@ -42,15 +64,21 @@ interface OpenMenu {
     opener: HTMLButtonElement;
     /** The playback the menu was opened for. Its commands act on that one or on nothing. */
     ref: PlaybackRef;
+    /** The settings menu's snapshot, read for `ref`. */
+    settings?: PlayerSettings;
+    /** The row to focus on showing, when coming back from its submenu. */
+    focus?: string;
 }
 
 interface Row {
-    /** A track index, -1 for Off, or `secondary`; also the row's `data-track`. */
+    /** A track index, -1 for Off, a setting's value, or a submenu or action; also the row's `data-track`. */
     key: string;
     name: string;
     secondaryText?: string;
     asideText?: string;
+    /** Set on a choice; a row without it is a submenu or an action. */
     checked?: boolean;
+    submenu?: boolean;
     onSelect: () => void;
 }
 
@@ -82,15 +110,37 @@ function offRow(current: number, onSelect: (index: number) => void): Row {
     };
 }
 
+function choiceRow<T extends string | number>(
+    choice: Choice<T>,
+    onSelect: (value: T) => void
+): Row {
+    return {
+        key: String(choice.id),
+        name: choice.name,
+        checked: choice.selected,
+        onSelect: () => onSelect(choice.id)
+    };
+}
+
 interface MenuProps {
     title: string;
     rows: Row[];
     opener: HTMLElement;
+    focus?: string;
+    /** Escape, a remote's Back: to the parent menu, or closed. */
+    onBack: () => void;
     onClose: (restoreFocus: boolean) => void;
 }
 
 /** One open menu: a list of choices over a backdrop, anchored to its trigger outside the TV layout. */
-const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
+const TrackMenu: FC<MenuProps> = ({
+    title,
+    rows,
+    opener,
+    focus,
+    onBack,
+    onClose
+}) => {
     const panelRef = useRef<HTMLDivElement>(null);
     const titleId = useId();
     const tv = layoutManager.tv;
@@ -117,9 +167,11 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
             ...panel.querySelectorAll<HTMLElement>('[role^="menuitem"]')
         ];
         focusManager.focus(
-            items.find(
-                (item) => item.getAttribute('aria-checked') === 'true'
-            ) ?? items[0]
+            items.find((item) => item.dataset.track === focus) ??
+                items.find(
+                    (item) => item.getAttribute('aria-checked') === 'true'
+                ) ??
+                items[0]
         );
 
         // A remote's Back, or Backspace on a VIDAA TV, arrives as a `back` command.
@@ -127,12 +179,12 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
             if ((e as CustomEvent).detail?.command === 'back') {
                 e.preventDefault();
                 e.stopPropagation();
-                onClose(true);
+                onBack();
             }
         };
         panel.addEventListener('command', onCommand);
         return () => panel.removeEventListener('command', onCommand);
-    }, [title, onClose]);
+    }, [title, focus, onBack]);
 
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
         const key = getKeyName(e.nativeEvent);
@@ -147,7 +199,7 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
         switch (key) {
             case 'Escape':
             case 'Back':
-                onClose(true);
+                onBack();
                 break;
             case 'ArrowDown':
             case 'Down':
@@ -210,7 +262,12 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
                             type='button'
                             className='rf-track-menu__item'
                             {...(row.checked == null
-                                ? { role: 'menuitem', 'aria-haspopup': 'menu' }
+                                ? {
+                                      role: 'menuitem',
+                                      'aria-haspopup': row.submenu
+                                          ? 'menu'
+                                          : undefined
+                                  }
                                 : {
                                       role: 'menuitemradio',
                                       'aria-checked': row.checked
@@ -244,11 +301,109 @@ const TrackMenu: FC<MenuProps> = ({ title, rows, opener, onClose }) => {
     );
 };
 
+function settingsRows(
+    s: PlayerSettings,
+    open: (kind: SettingKind) => void,
+    act: (action: 'suboffset' | 'stats') => void
+): Row[] {
+    const submenu = (
+        kind: SettingKind,
+        name: string,
+        asideText: string | null | undefined
+    ): Row => ({
+        key: kind,
+        name: globalize.translate(name),
+        asideText: asideText ?? undefined,
+        submenu: true,
+        onSelect: () => open(kind)
+    });
+    const selectedName = (c: Choice<string | number>[]) =>
+        c.find((x) => x.selected)?.name;
+    const rows: Row[] = [];
+    if (s.aspectRatio) {
+        rows.push(
+            submenu('aspectratio', 'AspectRatio', selectedName(s.aspectRatio))
+        );
+    }
+    if (s.playbackRate) {
+        rows.push(
+            submenu(
+                'playbackrate',
+                'PlaybackRate',
+                selectedName(s.playbackRate)
+            )
+        );
+    }
+    if (s.quality) {
+        rows.push(submenu('quality', 'Quality', s.quality.summary));
+    }
+    if (s.repeatMode) {
+        rows.push(
+            submenu('repeatmode', 'RepeatMode', repeatName(s.repeatMode))
+        );
+    }
+    if (s.subtitleOffset) {
+        rows.push({
+            key: 'suboffset',
+            name: globalize.translate('SubtitleOffset'),
+            onSelect: () => act('suboffset')
+        });
+    }
+    rows.push({
+        key: 'stats',
+        name: globalize.translate('PlaybackData'),
+        onSelect: () => act('stats')
+    });
+    return rows;
+}
+
+function repeatName(mode: string): string {
+    return globalize.translate(mode === 'RepeatNone' ? 'None' : mode);
+}
+
+/** The choices of a setting submenu, from the snapshot the settings menu read. */
+function settingChoices(
+    kind: SettingKind,
+    s: PlayerSettings
+): Choice<string | number>[] {
+    switch (kind) {
+        case 'aspectratio':
+            return s.aspectRatio ?? [];
+        case 'playbackrate':
+            return s.playbackRate ?? [];
+        case 'quality':
+            return s.quality?.choices ?? [];
+        case 'repeatmode':
+            return REPEAT_MODES.map((mode) => ({
+                id: mode,
+                name: repeatName(mode),
+                selected: mode === s.repeatMode
+            }));
+    }
+}
+
+/** Sends a setting submenu's choice, unless it is the one already in effect. */
+function applySetting(
+    kind: SettingKind,
+    settings: PlayerSettings,
+    value: number | string
+): void {
+    const { ref } = settings;
+    if (value === settingChoices(kind, settings).find((c) => c.selected)?.id) {
+        return;
+    }
+    if (kind === 'aspectratio') setAspectRatio(ref, value as string);
+    else if (kind === 'playbackrate') setPlaybackRate(ref, value as number);
+    else if (kind === 'quality') setMaxBitrate(ref, value as number);
+    else setRepeatMode(ref, value as RepeatMode);
+}
+
 function rowsFor(
     menu: OpenMenu,
     tracks: PlayerTracks,
-    choose: (index: number) => void,
-    showSecondary: () => void
+    choose: (value: number | string) => void,
+    open: (kind: MenuKind) => void,
+    act: (action: 'suboffset' | 'stats') => void
 ): Row[] {
     switch (menu.kind) {
         case 'audio':
@@ -262,7 +417,8 @@ function rowsFor(
                           {
                               key: 'secondary',
                               name: globalize.translate('SecondarySubtitles'),
-                              onSelect: showSecondary
+                              submenu: true,
+                              onSelect: () => open('secondary')
                           }
                       ]
                     : []),
@@ -280,20 +436,33 @@ function rowsFor(
                 )
             ];
         }
+        case 'settings':
+            return menu.settings ? settingsRows(menu.settings, open, act) : [];
+        default:
+            return menu.settings
+                ? settingChoices(menu.kind, menu.settings).map((c) =>
+                      choiceRow(c, choose)
+                  )
+                : [];
     }
 }
 
 const TITLES: Record<MenuKind, string> = {
     audio: 'Audio',
     subtitles: 'Subtitles',
-    secondary: 'SecondarySubtitles'
+    secondary: 'SecondarySubtitles',
+    settings: 'Settings',
+    aspectratio: 'AspectRatio',
+    playbackrate: 'PlaybackRate',
+    quality: 'Quality',
+    repeatmode: 'RepeatMode'
 };
 
 /**
- * The player's audio and subtitle buttons and their menus (DEBT-WEB-2).
+ * The player's audio, subtitle and settings buttons and their menus (DEBT-WEB-2, DEBT-WEB-3).
  *
  * Rendered by the video route, so it is part of that route's React tree; the buttons are portalled
- * into the slot the legacy controller lends (`TrackMenuHost`) so they sit in its button row, and an
+ * into the slots the legacy controller lends (`TrackMenuHost`) so they sit in its button row, and an
  * open menu is portalled to the body, above the OSD and outside its backdrop-filter, which would
  * otherwise become the containing block of a fixed panel.
  */
@@ -303,6 +472,9 @@ const TrackMenus: FC = () => {
     const [menu, setMenu] = useState<OpenMenu | null>(null);
     const menuRef = useRef(menu);
     menuRef.current = menu;
+    // Bumped by every open: a settings snapshot that arrives after another menu was opened, or
+    // after a second click, is not shown.
+    const openCount = useRef(0);
 
     useEffect(() => {
         setTracks(readTracks());
@@ -314,6 +486,13 @@ const TrackMenus: FC = () => {
         setMenu(null);
         if (restoreFocus && opener?.isConnected) focusManager.focus(opener);
     }, []);
+
+    const back = useCallback(() => {
+        const current = menuRef.current;
+        const parent = current && PARENT[current.kind];
+        if (parent) setMenu({ ...current, kind: parent, focus: current.kind });
+        else close(true);
+    }, [close]);
 
     // The playback it was opened for is gone (stopped, or replaced from here or another device),
     // or the player view is hiding: the menu goes with it.
@@ -332,32 +511,81 @@ const TrackMenus: FC = () => {
 
     // Read again on open: the engine announces a new stream but not a track switch on the same one.
     const open =
-        (kind: MenuKind) => (e: React.MouseEvent<HTMLButtonElement>) => {
+        (kind: 'audio' | 'subtitles') =>
+        (e: React.MouseEvent<HTMLButtonElement>) => {
+            openCount.current += 1;
             const fresh = readTracks();
             if (!fresh) return;
             setTracks(fresh);
             setMenu({ kind, opener: e.currentTarget, ref: fresh.ref });
         };
 
-    const choose = (index: number) => {
-        if (!menu) return;
-        const { kind, ref } = menu;
-        if (kind === 'audio') {
-            if (index !== tracks.audioIndex) setAudio(ref, index);
-        } else if (kind === 'subtitles') {
-            if (index !== tracks.subtitleIndex && setSubtitles(ref, index)) {
-                host.onSubtitlesChanged();
+    // The snapshot waits on the server (the user's transcoding permission). readSettings drops it
+    // if the playback changed meanwhile; this drops it if another menu was opened since.
+    const openSettings = (e: React.MouseEvent<HTMLButtonElement>) => {
+        const opener = e.currentTarget;
+        openCount.current += 1;
+        const request = openCount.current;
+        void readSettings().then((settings) => {
+            if (settings && request === openCount.current) {
+                setMenu({
+                    kind: 'settings',
+                    opener,
+                    ref: settings.ref,
+                    settings
+                });
             }
-        } else if (
-            index !== tracks.secondary?.index &&
-            setSecondarySubtitles(ref, index)
-        ) {
-            host.onSubtitlesChanged();
+        });
+    };
+
+    const choose = (value: number | string) => {
+        if (!menu) return;
+        const { kind, ref, settings } = menu;
+        switch (kind) {
+            case 'audio':
+                if (value !== tracks.audioIndex) setAudio(ref, value as number);
+                break;
+            case 'subtitles':
+                if (
+                    value !== tracks.subtitleIndex &&
+                    setSubtitles(ref, value as number)
+                ) {
+                    host.onSubtitlesChanged();
+                }
+                break;
+            case 'secondary':
+                if (
+                    value !== tracks.secondary?.index &&
+                    setSecondarySubtitles(ref, value as number)
+                ) {
+                    host.onSubtitlesChanged();
+                }
+                break;
+            case 'settings':
+                break;
+            default:
+                if (settings) applySetting(kind, settings, value);
         }
         close(true);
     };
 
-    const trigger = (kind: 'audio' | 'subtitles', icon: string) => {
+    const act = (action: 'suboffset' | 'stats') => {
+        if (!menu) return;
+        const { ref } = menu;
+        close(true);
+        if (action === 'stats') {
+            if (isCurrent(ref)) host.onToggleStats(() => isCurrent(ref));
+        } else if (enableSubtitleOffset(ref)) {
+            host.onShowSubtitleOffset();
+        }
+    };
+
+    const trigger = (
+        kind: 'audio' | 'subtitles' | 'settings',
+        icon: string,
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => void,
+        size = 'xlargePaperIconButton'
+    ) => {
         const label = globalize.translate(TITLES[kind]);
         return (
             <button
@@ -368,10 +596,10 @@ const TrackMenus: FC = () => {
                 aria-haspopup='menu'
                 aria-expanded={menu?.opener.dataset.trackMenu === kind}
                 data-track-menu={kind}
-                onClick={open(kind)}
+                onClick={onClick}
             >
                 <span
-                    className={`xlargePaperIconButton material-icons ${icon}`}
+                    className={`${size} material-icons ${icon}`}
                     aria-hidden='true'
                 />
             </button>
@@ -383,19 +611,40 @@ const TrackMenus: FC = () => {
             {createPortal(
                 <>
                     {tracks.subtitles.length > 0 &&
-                        trigger('subtitles', 'closed_caption')}
-                    {tracks.audio.length > 1 && trigger('audio', 'audiotrack')}
+                        trigger(
+                            'subtitles',
+                            'closed_caption',
+                            open('subtitles')
+                        )}
+                    {tracks.audio.length > 1 &&
+                        trigger('audio', 'audiotrack', open('audio'))}
                 </>,
                 host.slot
+            )}
+            {createPortal(
+                trigger(
+                    'settings',
+                    'settings',
+                    openSettings,
+                    'largePaperIconButton'
+                ),
+                host.settingsSlot
             )}
             {menu &&
                 createPortal(
                     <TrackMenu
                         title={globalize.translate(TITLES[menu.kind])}
-                        rows={rowsFor(menu, tracks, choose, () =>
-                            setMenu({ ...menu, kind: 'secondary' })
+                        rows={rowsFor(
+                            menu,
+                            tracks,
+                            choose,
+                            (kind) =>
+                                setMenu({ ...menu, kind, focus: undefined }),
+                            act
                         )}
                         opener={menu.opener}
+                        focus={menu.focus}
+                        onBack={back}
                         onClose={close}
                     />,
                     document.body

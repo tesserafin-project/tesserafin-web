@@ -41,10 +41,18 @@ function currentItemId(player: Player): string | undefined {
     return playbackManager.currentItem(player)?.Id;
 }
 
-/** The tracks of what is playing now, or null when nothing is. */
-export function readTracks(): PlayerTracks | null {
+/** What is playing now, as a command target, or null when nothing is. */
+export function currentRef(): PlaybackRef | null {
     const player: Player | undefined = playbackManager.getCurrentPlayer();
     if (!player || !playbackManager.currentItem(player)) return null;
+    return { player, playback: player.playback, itemId: currentItemId(player) };
+}
+
+/** The tracks of what is playing now, or null when nothing is. */
+export function readTracks(): PlayerTracks | null {
+    const ref = currentRef();
+    if (!ref) return null;
+    const { player } = ref;
 
     const subtitles: TrackStream[] = playbackManager.subtitleTracks(player);
     const subtitleIndex: number =
@@ -64,11 +72,7 @@ export function readTracks(): PlayerTracks | null {
         );
 
     return {
-        ref: {
-            player,
-            playback: player.playback,
-            itemId: currentItemId(player)
-        },
+        ref,
         audio: playbackManager.audioTracks(player),
         audioIndex: playbackManager.getAudioStreamIndex(player) ?? null,
         subtitles,
@@ -167,12 +171,20 @@ export function setSecondarySubtitles(
 
 /**
  * What the legacy controller lends the menus: where the triggers go in its button row, what to
- * refresh after a subtitle change (the subtitle-sync overlay is still its own), and a way to hold
- * its shortcuts and its auto-hide while a menu is open.
+ * refresh after a subtitle change, the two overlays the settings menu opens (stats and subtitle
+ * sync are still its own), and a way to hold its shortcuts and its auto-hide while a menu is open.
  */
 export interface TrackMenuHost {
     slot: HTMLElement;
+    settingsSlot: HTMLElement;
     onSubtitlesChanged: () => void;
+    /**
+     * Opens or closes the stats overlay. The controller loads it first, so it asks `stillCurrent`
+     * once loaded: the playback the viewer chose it for may have been replaced by then.
+     */
+    onToggleStats: (stillCurrent: () => boolean) => void;
+    /** Shows the subtitle-sync overlay, the engine having been told to offer the offset. */
+    onShowSubtitleOffset: () => void;
     onMenuOpenChange: (open: boolean) => void;
 }
 
