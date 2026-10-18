@@ -328,8 +328,14 @@ const TrackMenus: FC = () => {
 
     if (!host || !tracks) return null;
 
-    const open = (kind: MenuKind) => (e: React.MouseEvent<HTMLButtonElement>) =>
-        setMenu({ kind, opener: e.currentTarget, ref: tracks.ref });
+    // Read again on open: the engine announces a new stream but not a track switch on the same one.
+    const open =
+        (kind: MenuKind) => (e: React.MouseEvent<HTMLButtonElement>) => {
+            const fresh = readTracks();
+            if (!fresh) return;
+            setTracks(fresh);
+            setMenu({ kind, opener: e.currentTarget, ref: fresh.ref });
+        };
 
     const choose = (index: number) => {
         if (!menu) return;

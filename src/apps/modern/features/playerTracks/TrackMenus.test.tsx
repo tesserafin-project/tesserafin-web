@@ -312,6 +312,15 @@ describe('the track menus', () => {
         expect(host.onSubtitlesChanged).toHaveBeenCalledTimes(1);
     });
 
+    it('shows the track chosen since the last stream event', () => {
+        act(() => setTrackMenuHost(host));
+        // A switch the engine makes on the same stream fires no event.
+        state.audioIndex = 2;
+        act(() => button('audio')!.click());
+        expect(row('Anglais').getAttribute('aria-checked')).toBe('true');
+        expect(row('Français').getAttribute('aria-checked')).toBe('false');
+    });
+
     it('offers secondary subtitles under an external primary', () => {
         state.subIndex = 3;
         act(() => setTrackMenuHost(host));
