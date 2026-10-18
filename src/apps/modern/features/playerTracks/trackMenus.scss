@@ -11,6 +11,12 @@
 .rf-track-menu__backdrop {
     position: absolute;
     inset: 0;
+    padding: 0;
+    border: 0;
+    // The dim the old dialog backdrop gave: the menu reads over any frame, the video stays visible.
+    background: rgba(0, 0, 0, 0.45);
+    cursor: default;
+    appearance: none;
 }
 
 .rf-track-menu__panel {
@@ -59,7 +65,7 @@
     }
 
     &:focus-visible {
-        outline: 2px solid var(--rf-color-primary, #00a4dc);
+        outline: 2px solid var(--rf-color-focus, #00a4dc);
         outline-offset: -2px;
     }
 }
@@ -70,10 +76,6 @@
 
     [aria-checked='true'] > & {
         visibility: visible;
-    }
-
-    [role='menuitem'] > & {
-        display: none;
     }
 }
 
@@ -106,10 +108,9 @@
     font-size: 112%;
 }
 
-// TV: the whole screen, the list centred, the focused row unmistakable from the sofa.
+// TV: the whole screen on the theme's background, the list centred, the focused row filled with
+// the primary colour as the old TV menu did - unmistakable from the sofa.
 .rf-track-menu--tv {
-    background: rgba(0, 0, 0, 0.6);
-
     .rf-track-menu__panel {
         inset: 0;
         align-items: center;
@@ -117,6 +118,9 @@
         max-width: none;
         max-height: none;
         border-radius: 0;
+        background: var(--rf-color-background, #101010);
+        color: var(--rf-color-text, #fff);
+        box-shadow: none;
     }
 
     .rf-track-menu__list {
@@ -125,10 +129,14 @@
         max-height: 64%;
     }
 
+    .rf-track-menu__item:hover {
+        background: transparent;
+    }
+
     .rf-track-menu__item:focus {
-        background: rgba(255, 255, 255, 0.2);
-        outline: 2px solid var(--rf-color-primary, #00a4dc);
-        outline-offset: -2px;
+        outline: none;
+        background: var(--rf-color-primary, #00a4dc);
+        color: var(--rf-color-on-primary, #000);
     }
 }
 
