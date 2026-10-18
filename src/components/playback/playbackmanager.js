@@ -1847,8 +1847,16 @@ export class PlaybackManager {
             const apiClient = ServerConnections.getApiClient(
                 self.currentItem(player).ServerId
             );
+            // DEBT-WEB-3: the endpoint lookup and, for Auto, the bitrate test take a while. A
+            // choice made for one playback is dropped if another has replaced it by then.
+            const playback = getPlayerData(player).playback;
+            const stillCurrent = () =>
+                playback &&
+                !playback.stopped &&
+                getPlayerData(player).playback === playback;
 
             apiClient.getEndpointInfo().then(function (endpointInfo) {
+                if (!stillCurrent()) return;
                 const playerData = getPlayerData(player);
                 const mediaType = playerData.streamInfo
                     ? playerData.streamInfo.mediaType
@@ -1872,6 +1880,7 @@ export class PlaybackManager {
                 }
 
                 promise.then(function (bitrate) {
+                    if (!stillCurrent()) return;
                     appSettings.maxStreamingBitrate(
                         endpointInfo.IsInNetwork,
                         mediaType,

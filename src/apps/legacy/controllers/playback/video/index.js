@@ -1175,61 +1175,12 @@ export default function (view) {
         );
     }
 
-    function onSettingsButtonClick() {
-        const btn = this;
-
-        import('components/playback/playersettingsmenu').then(
-            (playerSettingsMenu) => {
-                const player = currentPlayer;
-
-                if (player) {
-                    const state = playbackManager.getPlayerState(player);
-
-                    // show subtitle offset feature only if player and media support it
-                    const showSubOffset =
-                        playbackManager.supportSubtitleOffset(player) &&
-                        playbackManager.canHandleOffsetOnCurrentSubtitle(
-                            player
-                        );
-
-                    playerSettingsMenu
-                        .show({
-                            mediaType: 'Video',
-                            player: player,
-                            positionTo: btn,
-                            quality: state.MediaSource?.SupportsTranscoding,
-                            stats: true,
-                            suboffset: showSubOffset,
-                            onOption: onSettingsOption
-                        })
-                        .finally(() => {
-                            resetIdle();
-                        });
-
-                    setTimeout(resetIdle, 0);
-                }
-            }
-        );
-    }
-
-    function onSettingsOption(selectedOption) {
-        if (selectedOption === 'stats') {
-            toggleStats();
-        } else if (selectedOption === 'suboffset') {
-            const player = currentPlayer;
-            if (player) {
-                playbackManager.enableShowingSubtitleOffset(player);
-                toggleSubtitleSync();
-            }
-        }
-    }
-
-    function toggleStats() {
+    function toggleStats(stillCurrent = () => true) {
         import('components/playerstats/playerstats').then(
             ({ default: PlayerStats }) => {
                 const player = currentPlayer;
 
-                if (player) {
+                if (player && stillCurrent()) {
                     if (statsOverlay) {
                         statsOverlay.toggle();
                     } else {
@@ -1812,10 +1763,14 @@ export default function (view) {
                 }
             );
             showOsd();
-            // The audio and subtitle menus are React (DEBT-WEB-2); they borrow a slot in the button row.
+            // The audio, subtitle and settings menus are React (DEBT-WEB-2, DEBT-WEB-3); they
+            // borrow two slots in the button row and open the overlays still kept here.
             setTrackMenuHost({
                 slot: view.querySelector('.osdTrackMenus'),
+                settingsSlot: view.querySelector('.osdSettingsMenu'),
                 onSubtitlesChanged: () => toggleSubtitleSync(),
+                onToggleStats: toggleStats,
+                onShowSubtitleOffset: () => toggleSubtitleSync(),
                 onMenuOpenChange: (open) => {
                     isTrackMenuOpen = open;
                     resetIdle();
@@ -1945,10 +1900,6 @@ export default function (view) {
     view.querySelector('.btnAirPlay').addEventListener('click', function () {
         playbackManager.toggleAirPlay(currentPlayer);
     });
-    view.querySelector('.btnVideoOsdSettings').addEventListener(
-        'click',
-        onSettingsButtonClick
-    );
     view.addEventListener('viewhide', function () {
         clearHideAnimationEventListeners(headerElement);
         headerElement.classList.remove('hide');

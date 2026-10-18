@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,11 +6,13 @@ import { describe, expect, it } from 'vitest';
 
 /**
  * DEBT-WEB-2 moved the player's audio and subtitle menus out of the legacy video controller into
- * `apps/modern/features/playerTracks` (React, behind a typed adapter). This keeps them out.
+ * `apps/modern/features/playerTracks` (React, behind a typed adapter), and DEBT-WEB-3 its settings
+ * menu. This keeps them out.
  *
- * The controller may still READ subtitle tracks - the subtitle-sync overlay is still its own - but
- * it must not offer a track choice, change a track, or build a menu: one path per menu, or the next
- * fix lands on the wrong one. Comments are stripped, so prose explaining the move does not trip it.
+ * The controller may still READ subtitle tracks and still owns the stats and subtitle-sync
+ * overlays, but it must not offer a choice, change a track or a setting, or build a menu: one path
+ * per menu, or the next fix lands on the wrong one. Comments are stripped, so prose explaining the
+ * move does not trip it.
  */
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = resolve(HERE, '../../src');
@@ -31,7 +33,18 @@ describe('the player track menus stay migrated', () => {
             'the old menu functions',
             /show(AudioTrack|SubtitleTrack)Selection|showSecondarySubtitlesMenu/
         ],
-        ['the old trigger buttons', /btnAudio|btnSubtitles/]
+        [
+            'the old trigger buttons',
+            /btnAudio|btnSubtitles|btnVideoOsdSettings/
+        ],
+        [
+            'the old settings menu',
+            /playersettingsmenu|onSettingsButtonClick|onSettingsOption/
+        ],
+        [
+            'a settings command',
+            /playbackManager\.(set(AspectRatio|PlaybackRate|MaxStreamingBitrate|RepeatMode)|enableShowingSubtitleOffset)\b/
+        ]
     ])('the legacy video controller has no %s', (_what, pattern) => {
         for (const file of ['index.js', 'index.html']) {
             expect(
@@ -39,6 +52,12 @@ describe('the player track menus stay migrated', () => {
                 `${file} reintroduces what playerTracks now owns`
             ).not.toMatch(pattern);
         }
+    });
+
+    it('the action-sheet settings menu is gone, not merely unused', () => {
+        expect(
+            existsSync(join(SRC, 'components/playback/playersettingsmenu.js'))
+        ).toBe(false);
     });
 
     it('the React menus do not fall back on the legacy dialogs', () => {
