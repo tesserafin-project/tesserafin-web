@@ -170,21 +170,13 @@ export function setSecondarySubtitles(
 }
 
 /**
- * What the legacy controller lends the menus: where the triggers go in its button row, what to
- * refresh after a subtitle change, the two overlays the settings menu opens (stats and subtitle
- * sync are still its own), and a way to hold its shortcuts and its auto-hide while a menu is open.
+ * What the legacy controller lends the menus: where the triggers go in its button row, and a way
+ * to hold its shortcuts and its auto-hide while a menu is open. The stats and subtitle-offset
+ * panels the settings menu opens are React too (`features/playerPanels`, DEBT-WEB-4).
  */
 export interface TrackMenuHost {
     slot: HTMLElement;
     settingsSlot: HTMLElement;
-    onSubtitlesChanged: () => void;
-    /**
-     * Opens or closes the stats overlay. The controller loads it first, so it asks `stillCurrent`
-     * once loaded: the playback the viewer chose it for may have been replaced by then.
-     */
-    onToggleStats: (stillCurrent: () => boolean) => void;
-    /** Shows the subtitle-sync overlay, the engine having been told to offer the offset. */
-    onShowSubtitleOffset: () => void;
     onMenuOpenChange: (open: boolean) => void;
 }
 

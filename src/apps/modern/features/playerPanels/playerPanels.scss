@@ -1,0 +1,119 @@
+// DEBT-WEB-4: the player's playback data and subtitle offset panels. They float over the video
+// beside the controls, so they read the same surface recipe as the track menus
+// (`data-rf-surface-variant` on <html>), never a theme id.
+
+.rf-player-panel {
+    position: fixed;
+    z-index: 99999;
+    border-radius: var(--rf-shape-radius-md, 0.3em);
+    background: rgba(28, 28, 28, 0.82);
+    color: #fff;
+}
+
+.rf-player-panel__close {
+    position: absolute;
+    top: 0.25em;
+    inset-inline-end: 0.25em;
+    color: #ccc;
+}
+
+// Playback data: top left (top right in RTL), under the top bar, as the old panel sat.
+.rf-player-stats {
+    top: 5em;
+    inset-inline-start: 1.5em;
+    max-width: min(50em, calc(100vw - 3em));
+    max-height: calc(100vh - 12em);
+    overflow-y: auto;
+    padding: 0 3em 1em 1em;
+    font-size: 84%;
+    overscroll-behavior: contain;
+}
+
+.rf-player-stats--tv {
+    top: 4em;
+    font-size: 60%;
+}
+
+.rf-player-stats__category {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+
+.rf-player-stats__header,
+.rf-player-stats__row {
+    display: flex;
+    gap: 0.5em;
+
+    dt {
+        font-weight: 500;
+    }
+
+    dd {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+        color: #ddd;
+    }
+}
+
+.rf-player-stats__header {
+    margin-block-start: 1em;
+}
+
+.rf-player-stats__row {
+    margin-inline-start: 1em;
+}
+
+// Subtitle offset: centred near the top, over the subtitles' own area.
+.rf-subtitle-offset {
+    top: 10%;
+    left: 50%;
+    display: grid;
+    gap: 0.4em;
+    width: 40%;
+    min-width: 18em;
+    padding: 0.4em 2.75em 0.6em;
+    transform: translateX(-50%);
+}
+
+.rf-subtitle-offset__field {
+    justify-self: center;
+    width: 6em;
+    padding: 0.1em 0.3em;
+    border: 0;
+    border-radius: 0.2em;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 20px;
+    text-align: center;
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-primary, #00a4dc);
+        background: rgba(255, 255, 255, 0.08);
+    }
+}
+
+.rf-subtitle-offset__slider {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--rf-color-primary, #00a4dc);
+
+    &:focus-visible {
+        outline: 2px solid var(--rf-color-primary, #00a4dc);
+        outline-offset: 4px;
+    }
+}
+
+:root[data-rf-surface-variant='glass'] .rf-player-panel {
+    border-radius: calc(var(--rf-shape-radius-lg, 0.4em) * 2);
+    background: rgba(12, 14, 20, 0.72);
+    backdrop-filter: var(--rf-backdrop-filter-md, none);
+    outline: 1px solid rgba(255, 255, 255, 0.12);
+    outline-offset: -1px;
+
+    @media (prefers-reduced-transparency: reduce) {
+        background: rgba(12, 14, 20, 0.95);
+    }
+}

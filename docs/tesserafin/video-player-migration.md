@@ -13,6 +13,7 @@ layout (the remote) is the legacy family. The route renders the legacy view
 | Top bar (modern layout only; legacy layouts keep the app header) | `routes/video/index.tsx` | before Tesserafin |
 | Audio and subtitle menus, their two buttons, secondary subtitles | `apps/modern/features/playerTracks` | DEBT-WEB-2 |
 | Settings menu, its button and submenus (aspect ratio, speed, quality, repeat), and the commands that open the stats and subtitle-offset overlays | `apps/modern/features/playerTracks` | DEBT-WEB-3 |
+| Playback data and subtitle offset panels, the `G`/`H` keys' effect, the `togglestats` command's target | `apps/modern/features/playerPanels` | DEBT-WEB-4 |
 
 ### Audio and subtitle menus (DEBT-WEB-2)
 
@@ -24,8 +25,7 @@ layout (the remote) is the legacy family. The route renders the legacy view
   current player's. A menu left open on film A therefore cannot change film B, including film A
   played again.
 - **Host contract** `TrackMenuHost`: the controller lends the slot `.osdTrackMenus` in its button
-  row, a `onSubtitlesChanged` callback (the subtitle-sync overlay is still the controller's), and
-  `onMenuOpenChange`, which suspends its shortcuts, input commands, wheel volume and OSD auto-hide
+  row and `onMenuOpenChange`, which suspends its shortcuts, input commands, wheel volume and OSD auto-hide
   while a menu is open. Set on `viewshow`, cleared on `viewbeforehide` (which closes an open menu).
 - **Menus** `TrackMenus.tsx`: `role="menu"` with `menuitemradio` rows. Escape, a remote's Back or the
   `back` command close the menu and **return the focus to the button that opened it**; so does a
@@ -45,11 +45,9 @@ layout (the remote) is the legacy family. The route renders the legacy view
   offered (the player can shift subtitles and the track on is external). It waits on
   `getCurrentUser()` for the permission and returns `null` if the playback changed meanwhile.
   Five commands (`setAspectRatio`, `setPlaybackRate`, `setMaxBitrate` — 0 is Auto —,
-  `setRepeatMode`, `enableSubtitleOffset`) carry the playback the way the track commands do.
-- **Host contract** grows: `settingsSlot` (`.osdSettingsMenu`, where the old button stood),
-  `onToggleStats(stillCurrent)` and `onShowSubtitleOffset()`. The controller loads the stats overlay
-  before showing it and asks `stillCurrent()` once loaded, so an overlay chosen for film A is not
-  shown over film B.
+  `setRepeatMode`) carry the playback the way the track commands do (the offset's own command
+  moved to `playerPanels` in DEBT-WEB-4).
+- **Host contract** grows: `settingsSlot` (`.osdSettingsMenu`, where the old button stood).
 - **Menus**: the same component and the same open-menu state as the track menus, so the shortcut and
   auto-hide suspension, the close on stop or replacement and the close on view hide are shared.
   A submenu row has `aria-haspopup="menu"`; Escape, Back or the `back` command in a submenu return
@@ -63,6 +61,48 @@ layout (the remote) is the legacy family. The route renders the legacy view
 - `components/playback/playersettingsmenu.js` is deleted; the video controller was its only user.
   The guard also rejects the old button, the old functions and the settings commands in the
   controller.
+
+### Playback data and subtitle offset panels (DEBT-WEB-4)
+
+Characterized on the rig against main `e8bb6bf14b` before the move, and kept:
+
+- **Playback data**: categories *Playback info* (player name and play method), the player's own
+  `getStats()` rows (stream type, player and video sizes, dropped frames; unnamed, so no heading),
+  *Transcoding / Remuxing / Direct streaming info* when the session has `TranscodingInfo` (target
+  codecs, progress and speed, reasons), *Original media info* (container, video codec and
+  attributes, bit depth, colours, audio codec and attributes, from the media source and the audio
+  track in use) and *SyncPlay* (time-sync device and offset, playback difference, method) while a
+  group is active. Sources: the player, `GET /Sessions?deviceId=` (this device's session — what
+  the server shows a non-admin user is the server's to decide), the engine's media source and
+  tracks, the SyncPlay manager. It refreshes on the player's `timeupdate`, at most every 700 ms,
+  and asks the server at most every 10 s. Top left; on TV smaller and without a close button
+  (closed from the settings menu, as before). It survives a film change and follows the new film.
+- **Subtitle offset**: seconds, slider −30…+30 in steps of 0.1, a field that takes the first number
+  typed on Enter (clamped and rounded to the slider; anything else leaves the offset as it was),
+  `G`/`H` one step down/up. Offered only when the player can shift subtitles and the track on is
+  external. Shown while the controls are, while it has the focus, or after a `G`/`H` press; the
+  engine resets it to 0 on a new play request or a subtitle switch.
+
+What changed:
+
+- **Adapters** `playerStats.ts` (a reader per playback, its own 10 s session cache, `null` once the
+  playback is gone — so a late answer for film A is never drawn over film B) and
+  `subtitleOffset.ts` (state naming the playback; every command checks it; the offset shown is the
+  one set, not read back from the player, which applies it 100 ms late — three quick `H` presses
+  moved it by one step on main).
+- **Panels** `PlayerPanels.tsx`, rendered by the video route beside the menus, portalled to the
+  body, only while the player view lends its host. Each listens to the player and the page only
+  while open. Escape (and a remote's `back`) closes a panel onto the settings button; the offset
+  panel takes the focus on opening, so the arrows adjust it at once; the field keeps every key from
+  the player's shortcuts. A subtitle switch keeps the offset panel at 0 on a track it can shift and
+  closes it otherwise; a replaced film closes it. Values are text: the transcode reasons were HTML
+  joined with `<br/>`.
+- Deleted: `components/playerstats`, `components/subtitlesync` (template and styles included), and
+  in the controller `toggleStats`, `destroyStats`, `toggleSubtitleSync`, `destroySubtitleSync` and
+  the host callbacks `onSubtitlesChanged`, `onToggleStats`, `onShowSubtitleOffset`. The controller
+  forwards `G`/`H` (`nudgeSubtitleOffset`) and `togglestats` (`toggleStats`). The guard rejects the
+  old modules and names, and offset commands, in the controller; the `video-player` delivery
+  boundary covers `features/playerPanels`.
 
 Not changed by DEBT-WEB-2: the engine. `playbackManager.setAudioStreamIndex` on a direct-played
 item still resolves a device profile asynchronously before acting; a replacement landing inside
@@ -78,8 +118,6 @@ that window is the engine's to guard, not the menu's.
 | Transport | play/pause, rewind/fast-forward, previous/next chapter and track, `updatePlaylist`, `updatePlayPauseState` | |
 | Volume | `updatePlayerVolumeState`, mute, slider, `onWheel` | |
 | Window | fullscreen, PiP, AirPlay buttons, `onFullscreenChanged` | |
-| Subtitle sync overlay | `toggleSubtitleSync`, `destroySubtitleSync`, `G`/`H` keys | Fed by the menus through `onSubtitlesChanged` and `onShowSubtitleOffset` |
-| Stats overlay | `toggleStats`, `destroyStats` | Opened by the settings menu through `onToggleStats`, and by the `togglestats` command |
 | Up next | `showComingUpNextIfNeeded`, `showComingUpNext`, `onPromptSkip`, `resetUpNextDialog` | |
 | Recording and rating buttons | `updateRecordingButton`, `btnUserRating` | Legacy custom elements |
 | Keyboard and remote | `onKeyDown`, `onInputCommand`, `onClickCapture` | Suspended while a menu is open |
