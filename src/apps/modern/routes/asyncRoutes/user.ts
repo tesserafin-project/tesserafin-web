@@ -5,6 +5,9 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
     // Item Details (#129 Step 1b). Also registered in the legacy family, for the reason recorded
     // there: both families must expose the same modern route or the cutover is only half done.
     { path: 'details', type: AppType.Modern },
+    // The player (DEBT-WEB-2): its route renders the legacy view and the React track menus. Lazy,
+    // like every route, and registered in the legacy family too, for the reason `details` is.
+    { path: 'video', type: AppType.Modern },
     /*
      * Content packs (#138). Two entries, both `AppType.Modern`, both resolved by
      * `toAsyncPageRoute` — so the whole slice (its queries, its generated `ContentPacksApi` and

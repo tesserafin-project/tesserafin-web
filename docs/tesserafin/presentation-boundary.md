@@ -84,6 +84,7 @@ Three outcomes:
 | Libraries (`movies`, `music`, `tv`, `books`, `boxsets`, `playlists`, `musicvideos`, `mixed`, `livetv`, `homevideos`) | 10 paths | no | no | no | `cardbuilder` (5 files), `legacy-scroller` (2 files), `mui-internals` (1 file) | **2 — hybrid** |
 | Item Details | `/details` | yes | yes | yes | `html-injection` (2 files: the DOMPurify-sanitised overview, and `RecordingFields` clearing its legacy host) | 1 — ready |
 | **Search** (one route, both families) | `/search[?query&parentId&collectionType]` | yes (`MediaShelf`, `MediaCard`, states) | via `MediaCard` | yes | none | **1 — ready** (DEBT-WEB-1) |
+| Player track menus (in the `/video` route, both families) | `/video` | no | no | yes (surface variant only) | none | **2 — hybrid** (DEBT-WEB-2: React menus in the route's tree; the rest of the player is still the legacy view) |
 | Details drawer / preferences / syncPlay | in-route components | no | no | no | none *(MUI components, not MUI internals)* | 2 — hybrid |
 
 `ui/` and `themes/platform/` are themselves clean (baseline `[]`), which is what lets the Home and

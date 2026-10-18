@@ -17,6 +17,12 @@ export const ASYNC_USER_ROUTES: AsyncRoute[] = [
      * saw before this entry existed.
      */
     { path: 'contentpacks', type: AppType.Modern },
+    /*
+     * The player (DEBT-WEB-2), by the rule `details` follows: its audio and subtitle menus are React
+     * and live in this route's tree, so a family that kept the bare view-manager page would have
+     * no menus at all. The TV layout - the remote - is this family.
+     */
+    { path: 'video', type: AppType.Modern },
     {
         path: 'contentpacks/:packId',
         page: 'contentpacks',

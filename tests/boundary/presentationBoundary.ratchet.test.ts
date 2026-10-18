@@ -225,7 +225,10 @@ const BASELINE: Readonly<Record<string, readonly string[]>> = {
     // Search (DEBT-WEB-1): its rows were `cardBuilder` HTML injected into `emby-scroller`; they are
     // `MediaShelf`/`MediaCard` now, for global and library search alike (one route, both families).
     'apps/legacy/features/search': [],
-    'apps/legacy/routes/search.tsx': []
+    'apps/legacy/routes/search.tsx': [],
+    // The player's audio and subtitle menus (DEBT-WEB-2): React in the video route's own tree, not
+    // an action sheet in a second root. `routes/video` itself still hosts the legacy view.
+    'apps/modern/features/playerTracks': []
 };
 
 describe('the modern/legacy presentation boundary — ratchet', () => {
