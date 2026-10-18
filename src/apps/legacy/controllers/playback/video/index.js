@@ -37,21 +37,10 @@ import {
     TRANSPARENCY_LEVEL
 } from 'components/backdrop/backdrop';
 import { pluginManager } from 'components/pluginManager';
-import { trackMenuItem } from 'components/playback/trackMenuItem';
+import { setTrackMenuHost } from 'apps/modern/features/playerTracks/playerTracks';
 
 function getOpenedDialog() {
     return document.querySelector('.dialogContainer .dialog.opened');
-}
-
-// The Off row is a synthetic stream with no language, so it keeps its own name.
-function trackItem(stream) {
-    return stream.Index === -1
-        ? { name: stream.DisplayTitle }
-        : trackMenuItem(
-              stream,
-              globalize.getCurrentLocale(),
-              globalize.translate
-          );
 }
 
 export default function (view) {
@@ -242,8 +231,6 @@ export default function (view) {
             nowPlayingPositionSlider.disabled = true;
             btnFastForward.disabled = true;
             btnRewind.disabled = true;
-            view.querySelector('.btnSubtitles').classList.add('hide');
-            view.querySelector('.btnAudio').classList.add('hide');
             view.querySelector('.osdTitle').innerHTML = '';
             view.querySelector('.osdMediaInfo').innerHTML = '';
             return;
@@ -257,17 +244,9 @@ export default function (view) {
         btnRewind.disabled = false;
 
         if (playbackManager.subtitleTracks(player).length) {
-            view.querySelector('.btnSubtitles').classList.remove('hide');
             toggleSubtitleSync();
         } else {
-            view.querySelector('.btnSubtitles').classList.add('hide');
             toggleSubtitleSync('forceToHide');
-        }
-
-        if (playbackManager.audioTracks(player).length > 1) {
-            view.querySelector('.btnAudio').classList.remove('hide');
-        } else {
-            view.querySelector('.btnAudio').classList.add('hide');
         }
 
         if (currentItem.Chapters?.length > 1) {
@@ -318,6 +297,12 @@ export default function (view) {
     }
 
     let mouseIsDown = false;
+
+    // A track menu, or a legacy dialog (the settings menu), is open: the player keeps its keys
+    // and its controls up.
+    function isMenuOpen() {
+        return isTrackMenuOpen || !!getOpenedDialog();
+    }
 
     function showOsd(focusElement) {
         Events.trigger(document, EventType.SHOW_VIDEO_OSD, [true]);
@@ -453,7 +438,7 @@ export default function (view) {
 
     function resetIdle() {
         // Restart hide timer if OSD is currently visible and there is no opened dialog
-        if (currentVisibleMenu && !mouseIsDown && !getOpenedDialog()) {
+        if (currentVisibleMenu && !mouseIsDown && !isMenuOpen()) {
             startOsdHideTimer();
         } else {
             stopOsdHideTimer();
@@ -491,6 +476,9 @@ export default function (view) {
     }
 
     function onInputCommand(e) {
+        // The track menus handle their own commands; the player behind them acts on none.
+        if (isTrackMenuOpen) return;
+
         const player = currentPlayer;
 
         switch (e.detail.command) {
@@ -548,7 +536,7 @@ export default function (view) {
 
             case 'back':
                 // Ignore command when some dialog is opened
-                if (currentVisibleMenu === 'osd' && !getOpenedDialog()) {
+                if (currentVisibleMenu === 'osd' && !isMenuOpen()) {
                     hideOsd();
                     e.preventDefault();
                 }
@@ -1261,197 +1249,6 @@ export default function (view) {
         }
     }
 
-    function showAudioTrackSelection() {
-        const player = currentPlayer;
-        const audioTracks = playbackManager.audioTracks(player);
-        const currentIndex = playbackManager.getAudioStreamIndex(player);
-        const menuItems = audioTracks.map(function (stream) {
-            const opt = {
-                ...trackItem(stream),
-                id: stream.Index
-            };
-
-            if (stream.Index === currentIndex) {
-                opt.selected = true;
-            }
-
-            return opt;
-        });
-        const positionTo = this;
-
-        import('components/actionSheet/actionSheet').then(
-            ({ default: actionsheet }) => {
-                actionsheet
-                    .show({
-                        items: menuItems,
-                        title: globalize.translate('Audio'),
-                        positionTo: positionTo
-                    })
-                    .then(function (id) {
-                        const index = parseInt(id, 10);
-
-                        if (index !== currentIndex) {
-                            playbackManager.setAudioStreamIndex(index, player);
-                        }
-                    })
-                    .finally(() => {
-                        resetIdle();
-                    });
-
-                setTimeout(resetIdle, 0);
-            }
-        );
-    }
-
-    function showSecondarySubtitlesMenu(actionsheet, positionTo) {
-        const player = currentPlayer;
-        if (!playbackManager.playerHasSecondarySubtitleSupport(player)) return;
-        let currentIndex =
-            playbackManager.getSecondarySubtitleStreamIndex(player);
-        const streams = playbackManager.secondarySubtitleTracks(player);
-
-        if (currentIndex == null) {
-            currentIndex = -1;
-        }
-
-        streams.unshift({
-            Index: -1,
-            DisplayTitle: globalize.translate('Off')
-        });
-
-        const menuItems = streams.map(function (stream) {
-            const opt = {
-                ...trackItem(stream),
-                id: stream.Index
-            };
-
-            if (stream.Index === currentIndex) {
-                opt.selected = true;
-            }
-
-            return opt;
-        });
-
-        actionsheet
-            .show({
-                title: globalize.translate('SecondarySubtitles'),
-                items: menuItems,
-                positionTo
-            })
-            .then(function (id) {
-                if (id) {
-                    const index = parseInt(id, 10);
-                    if (index !== currentIndex) {
-                        playbackManager.setSecondarySubtitleStreamIndex(
-                            index,
-                            player
-                        );
-                    }
-                }
-            })
-            .finally(() => {
-                resetIdle();
-            });
-
-        setTimeout(resetIdle, 0);
-    }
-
-    function showSubtitleTrackSelection() {
-        const player = currentPlayer;
-        const streams = playbackManager.subtitleTracks(player);
-        const secondaryStreams =
-            playbackManager.secondarySubtitleTracks(player);
-        let currentIndex = playbackManager.getSubtitleStreamIndex(player);
-
-        if (currentIndex == null) {
-            currentIndex = -1;
-        }
-
-        streams.unshift({
-            Index: -1,
-            DisplayTitle: globalize.translate('Off')
-        });
-        const menuItems = streams.map(function (stream) {
-            const opt = {
-                ...trackItem(stream),
-                id: stream.Index
-            };
-
-            if (stream.Index === currentIndex) {
-                opt.selected = true;
-            }
-
-            return opt;
-        });
-
-        /**
-         * Only show option if:
-         * - player has support
-         * - has more than 1 subtitle track
-         * - has valid secondary tracks
-         * - primary subtitle is not off
-         * - primary subtitle has support
-         */
-        const currentTrackCanAddSecondarySubtitle =
-            playbackManager.playerHasSecondarySubtitleSupport(player) &&
-            streams.length > 1 &&
-            secondaryStreams.length > 0 &&
-            currentIndex !== -1 &&
-            playbackManager.trackHasSecondarySubtitleSupport(
-                playbackManager.getSubtitleStream(player, currentIndex),
-                player
-            );
-
-        if (currentTrackCanAddSecondarySubtitle) {
-            const secondarySubtitleMenuItem = {
-                name: globalize.translate('SecondarySubtitles'),
-                id: 'secondarysubtitle'
-            };
-            menuItems.unshift(secondarySubtitleMenuItem);
-        }
-
-        const positionTo = this;
-
-        import('components/actionSheet/actionSheet').then(
-            ({ default: actionsheet }) => {
-                actionsheet
-                    .show({
-                        title: globalize.translate('Subtitles'),
-                        items: menuItems,
-                        positionTo: positionTo
-                    })
-                    .then(function (id) {
-                        if (id === 'secondarysubtitle') {
-                            try {
-                                showSecondarySubtitlesMenu(
-                                    actionsheet,
-                                    positionTo
-                                );
-                            } catch (e) {
-                                console.error(e);
-                            }
-                        } else {
-                            const index = parseInt(id, 10);
-
-                            if (index !== currentIndex) {
-                                playbackManager.setSubtitleStreamIndex(
-                                    index,
-                                    player
-                                );
-                            }
-                        }
-
-                        toggleSubtitleSync();
-                    })
-                    .finally(() => {
-                        resetIdle();
-                    });
-
-                setTimeout(resetIdle, 0);
-            }
-        );
-    }
-
     function toggleSubtitleSync(action) {
         const player = currentPlayer;
         if (subtitleSyncOverlay) {
@@ -1494,7 +1291,7 @@ export default function (view) {
 
         // A menu is open: its keys are its own. Space pausing the video behind an audio menu,
         // and preventing the menu's own button from activating, was the old behaviour.
-        if (getOpenedDialog()) return;
+        if (isMenuOpen()) return;
 
         const key = keyboardnavigation.getKeyName(e);
 
@@ -1560,7 +1357,7 @@ export default function (view) {
             case 'Escape':
             case 'Back':
                 // Ignore key when some dialog is opened
-                if (currentVisibleMenu === 'osd' && !getOpenedDialog()) {
+                if (currentVisibleMenu === 'osd' && !isMenuOpen()) {
                     hideOsd();
                     e.stopPropagation();
                 }
@@ -1706,7 +1503,7 @@ export default function (view) {
     }
 
     function onWheel(e) {
-        if (getOpenedDialog()) return;
+        if (isMenuOpen()) return;
         if (e.deltaY < 0) {
             playbackManager.volumeUp(currentPlayer);
         }
@@ -1968,6 +1765,7 @@ export default function (view) {
     let programEndDateMs = 0;
     let playbackStartTimeTicks = 0;
     let subtitleSyncOverlay;
+    let isTrackMenuOpen = false;
     let trickplayResolution = null;
     const nowPlayingVolumeSlider = view.querySelector('.osdVolumeSlider');
     const nowPlayingVolumeSliderContainer = view.querySelector(
@@ -2014,6 +1812,15 @@ export default function (view) {
                 }
             );
             showOsd();
+            // The audio and subtitle menus are React (DEBT-WEB-2); they borrow a slot in the button row.
+            setTrackMenuHost({
+                slot: view.querySelector('.osdTrackMenus'),
+                onSubtitlesChanged: () => toggleSubtitleSync(),
+                onMenuOpenChange: (open) => {
+                    isTrackMenuOpen = open;
+                    resetIdle();
+                }
+            });
             inputManager.on(window, onInputCommand);
             document.addEventListener('keydown', onKeyDown);
             dom.addEventListener(document, 'keydown', onKeyDownCapture, {
@@ -2064,6 +1871,8 @@ export default function (view) {
         }
     });
     view.addEventListener('viewbeforehide', function () {
+        setTrackMenuHost(null);
+        isTrackMenuOpen = false;
         setSubtitleClearance(false);
         if (statsOverlay) {
             statsOverlay.enabled(false);
@@ -2365,14 +2174,6 @@ export default function (view) {
     btnFastForward.addEventListener('click', function () {
         playbackManager.fastForward(currentPlayer);
     });
-    view.querySelector('.btnAudio').addEventListener(
-        'click',
-        showAudioTrackSelection
-    );
-    view.querySelector('.btnSubtitles').addEventListener(
-        'click',
-        showSubtitleTrackSelection
-    );
 
     // HACK: Remove `emby-button` from the rating button to make it look like the other buttons
     view.querySelector('.btnUserRating').classList.remove('emby-button');

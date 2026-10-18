@@ -423,6 +423,11 @@
     }
 }
 
+// The React track menus' triggers sit in the button row as if they were its own children.
+.osdTrackMenus {
+    display: contents;
+}
+
 // Subtitles rise above the controls while they show (`--rf-osd-clearance` is set by the player).
 .htmlvideoplayer::-webkit-media-text-track-container,
 .videoSubtitles {

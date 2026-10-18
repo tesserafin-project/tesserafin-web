@@ -3,6 +3,8 @@ import Fade from '@mui/material/Fade/Fade';
 import React, { useRef, type FC, useEffect, useState } from 'react';
 
 import RemotePlayButton from 'apps/modern/components/AppToolbar/RemotePlayButton';
+import TrackMenus from 'apps/modern/features/playerTracks/TrackMenus';
+import layoutManager from 'components/layoutManager';
 import SyncPlayButton from 'apps/modern/components/AppToolbar/SyncPlayButton';
 import AppToolbar from 'components/toolbar/AppToolbar';
 import ViewManagerPage from 'components/viewManager/ViewManagerPage';
@@ -11,7 +13,9 @@ import Events, { type Event } from 'utils/events';
 import Typography from '@mui/material/Typography';
 
 /**
- * Video player page component that renders mui controls for the top controls and the legacy view for everything else.
+ * Video player page component that renders mui controls for the top controls, the React track
+ * menus, and the legacy view for everything else. The legacy layouts (TV among them) keep their
+ * own app header, so only the modern one gets this one.
  */
 const VideoPage: FC = () => {
     const documentRef = useRef<Document>(document);
@@ -44,35 +48,39 @@ const VideoPage: FC = () => {
 
     return (
         <>
-            <Fade in={isVisible} easing='fade-out'>
-                <Box
-                    className='skinHeader skinHeader-withBackground skinHeader-blurred osdHeader'
-                    sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        color: 'white',
-                        pointerEvents: 'unset !important'
-                    }}
-                >
-                    <AppToolbar
-                        isDrawerAvailable={false}
-                        isDrawerOpen={false}
-                        isBackButtonAvailable
-                        isUserMenuAvailable={false}
-                        buttons={
-                            <>
-                                <SyncPlayButton />
-                                <RemotePlayButton />
-                            </>
-                        }
-                        className='padded-left padded-right'
+            {layoutManager.modern && (
+                <Fade in={isVisible} easing='fade-out'>
+                    <Box
+                        className='skinHeader skinHeader-withBackground skinHeader-blurred osdHeader'
+                        sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            color: 'white',
+                            pointerEvents: 'unset !important'
+                        }}
                     >
-                        <Typography>{videoTitle}</Typography>
-                    </AppToolbar>
-                </Box>
-            </Fade>
+                        <AppToolbar
+                            isDrawerAvailable={false}
+                            isDrawerOpen={false}
+                            isBackButtonAvailable
+                            isUserMenuAvailable={false}
+                            buttons={
+                                <>
+                                    <SyncPlayButton />
+                                    <RemotePlayButton />
+                                </>
+                            }
+                            className='padded-left padded-right'
+                        >
+                            <Typography>{videoTitle}</Typography>
+                        </AppToolbar>
+                    </Box>
+                </Fade>
+            )}
+
+            <TrackMenus />
 
             <ViewManagerPage
                 controller='playback/video/index'
