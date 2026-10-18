@@ -144,6 +144,12 @@ and `__JF_BUILD_VERSION__` is `'Release'` locally but the full commit SHA in
 `.github/workflows/__package.yml`. Without the margin the gate would fail for reasons that have
 nothing to do with delivery.
 
+Brotli is the exception that needs more than the rounding: the commit id embedded in
+`main.tesserafin.bundle.js` moves that one file's brotli size by up to ~140 B (raw not at all,
+gzip by a few bytes), so a ceiling rounded on one id can fail on the next merge commit. A brotli
+ceiling is therefore rounded on the measurement plus the largest delta seen when the id is
+substituted - `debtWeb3Lowering` in the budget file records how that was measured.
+
 One asymmetry worth knowing before a future bump: `initial.assetCount` covers a small, stable set,
 so any movement in it is a real change. `startup.assetCount` counts whole chunk *groups*, and
 `splitChunks` will extract a newly shared module out of one of them into two files - a count bump
