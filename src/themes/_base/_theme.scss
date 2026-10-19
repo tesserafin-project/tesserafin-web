@@ -89,13 +89,13 @@ html {
         if(
             /* NOTE: Stylelint seems to lack support for if() syntax currently */
             /* stylelint-disable-next-line @stylistic/function-whitespace-after */
-            sass($dark): url(@jellyfin/ux-web/banner-light.png);
+            sass($dark): url(assets/branding/logo-light.svg);
             /* stylelint-disable-next-line @stylistic/function-whitespace-after */
-            else: url(@jellyfin/ux-web/banner-dark.png);
+            else: url(assets/branding/logo-dark.svg);
         );
 
     .layout-tv & {
-        background-image: url(@jellyfin/ux-web/icon-transparent.png);
+        background-image: url(assets/branding/mark.svg);
     }
 }
 

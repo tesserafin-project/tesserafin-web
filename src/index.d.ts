@@ -3,6 +3,11 @@ declare module '*.png' {
     export = value;
 }
 
+declare module '*.svg' {
+    const url: string;
+    export default url;
+}
+
 declare module '*.scss' {
     // style imports are handled by the bundler
     const value: string;

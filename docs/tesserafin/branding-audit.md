@@ -2,6 +2,11 @@
 
 Date : 2026-07-16 · État : après rebranding de surface (package.json, README, manifest, index.html)
 
+> Asset update, 2026-10-19: category 5 below is a historical inventory. The built-in logo,
+> banners, favicons, notifications and screensaver now use the local open-mosaic Tesserafin
+> brand. `@jellyfin/ux-web` has been removed, and the PWA manifest is named Tesserafin.
+> See `tesserafin-design/branding/README.md` for sources and regeneration.
+
 Inventaire des occurrences `jellyfin` hors `node_modules`, `package-lock.json`, `src/strings/`, `.git`. Sert de backlog pour les vagues de renommage suivantes.
 
 ## Volumes

@@ -7,7 +7,7 @@ import { useSystemInfo } from 'hooks/useSystemInfo';
 import ListItemLink from 'components/ListItemLink';
 import { getDisplayVersion } from 'utils/versions';
 
-import appIcon from '@jellyfin/ux-web/icon-transparent.png';
+import appIcon from 'assets/branding/mark.svg';
 
 const DrawerHeaderLink = () => {
     const { data: systemInfo } = useSystemInfo();
@@ -15,7 +15,13 @@ const DrawerHeaderLink = () => {
     return (
         <ListItemLink to='/'>
             <ListItemIcon sx={{ minWidth: 56 }}>
-                <Box component='img' src={appIcon} sx={{ height: '2.5rem' }} />
+                <Box
+                    component='img'
+                    src={appIcon}
+                    alt=''
+                    aria-hidden
+                    sx={{ height: '2.5rem', width: '2.5rem' }}
+                />
             </ListItemIcon>
             <ListItemText
                 primary={systemInfo?.ServerName || 'Tesserafin'}
