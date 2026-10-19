@@ -6,7 +6,10 @@ on:
       commit:
         required: true
         type: string
-  workflow_dispatch:
+  # No `workflow_dispatch` here. Dispatched directly, `inputs.commit` is empty and the checkout
+  # falls back to the dispatched ref, which CodeQL reads as an untrusted checkout feeding the npm
+  # cache (actions/cache-poisoning, #29/#30). It added nothing: `pull_request.yml` and `push.yml`
+  # are both dispatchable and call this workflow.
 
 jobs:
   dependency-review:

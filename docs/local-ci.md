@@ -98,7 +98,7 @@ to work around it — the triggers are simply disarmed to stop the permanent red
 | `__deploy.yml` | `workflow_call` only | Idem. |
 | `__job_messages.yml` | `workflow_call` only | Idem. |
 | `__package.yml` | `workflow_call` only | Idem. |
-| `__quality_checks.yml` | `workflow_call` + `workflow_dispatch` | No automatic trigger; already manual-only. Nothing to disarm. |
+| `__quality_checks.yml` | `workflow_call` | No automatic trigger; runs only when `pull_request.yml` or `push.yml` calls it. Nothing to disarm. |
 | `schedule.yml` | `schedule` (cron) + `workflow_dispatch` | Its single job is guarded by `if: contains(github.repository, 'jellyfin/')`, which is **false** here. Verified: run 29673840647 concluded `skipped`. Burns no minutes and produces no red. |
 
 ---
