@@ -13,6 +13,7 @@ import loading from '../../loading/loading';
 import toast from '../../toast/toast';
 import Button from '../../../elements/emby-button/Button';
 import Input from '../../../elements/emby-input/Input';
+import { canOfferPasswordReset } from './canOfferPasswordReset';
 
 type IProps = {
     user: UserDto;
@@ -41,23 +42,12 @@ const UserPasswordForm: FunctionComponent<IProps> = ({ user }: IProps) => {
 
         (await libraryMenu).setTitle(user.Name);
 
-        if (user.HasConfiguredPassword) {
-            if (!user.Policy?.IsAdministrator) {
-                (
-                    page.querySelector('#btnResetPassword') as HTMLDivElement
-                ).classList.remove('hide');
-            }
-            (
-                page.querySelector('#fldCurrentPassword') as HTMLDivElement
-            ).classList.remove('hide');
-        } else {
-            (
-                page.querySelector('#btnResetPassword') as HTMLDivElement
-            ).classList.add('hide');
-            (
-                page.querySelector('#fldCurrentPassword') as HTMLDivElement
-            ).classList.add('hide');
-        }
+        (
+            page.querySelector('#btnResetPassword') as HTMLDivElement
+        ).classList.toggle('hide', !canOfferPasswordReset(loggedInUser, user));
+        (
+            page.querySelector('#fldCurrentPassword') as HTMLDivElement
+        ).classList.toggle('hide', !user.HasConfiguredPassword);
 
         const canChangePassword =
             loggedInUser?.Policy?.IsAdministrator ||
