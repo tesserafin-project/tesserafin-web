@@ -5,7 +5,7 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { getItems } from '../../utils/jellyfin-apiclient/getItems.ts';
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
 
-import NotificationIcon from './notificationicon.png';
+import NotificationIcon from 'assets/branding/notification.png';
 
 function onOneDocumentClick() {
     document.removeEventListener('click', onOneDocumentClick);

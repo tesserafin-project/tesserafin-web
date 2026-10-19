@@ -11,6 +11,7 @@
         "@fontsource/figtree": "5.3.0",
         "@openapitools/openapi-generator-cli": "2.40.1",
         "@playwright/test": "1.61.1",
+        "@resvg/resvg-js": "2.6.2",
         "@stylistic/stylelint-plugin": "3.1.3",
         "@types/escape-html": "1.0.4",
         "@types/loadable__component": "5.13.10",
@@ -71,7 +72,6 @@
         "@fontsource/noto-sans-tc": "5.3.0",
         "@jellyfin/libass-wasm": "4.2.4",
         "@jellyfin/sdk": "0.0.0-unstable.202607090422",
-        "@jellyfin/ux-web": "1.0.0",
         "@mui/icons-material": "6.5.0",
         "@mui/material": "6.5.0",
         "@mui/x-date-pickers": "7.29.4",
@@ -179,7 +179,7 @@
         "test:watch": "vitest --config vite.config.ts",
         "stylelint": "stylelint \"src/**/*.{css,scss}\"",
         "validate": "npm run typecheck && npm run lint && npm run stylelint && npm run test && npm run test:epub-xmldom-fallback && npm run verify:console-url-hygiene && npm run test:console-url-hygiene && npm run verify:jellyfin-apiclient-patch && npm run test:jellyfin-apiclient-patch && npm run verify:websocket-ticket-contract && npm run verify:credential-startup-boundary && npm run verify:jellyfin-sdk-patch && npm run test:jellyfin-sdk-patch && npm run test:jellyfin-sdk-socket",
-        "validate:full": "npm run validate && npm run test:delivery-budget && npm run build:production && npm run verify:a1-acceptance-roster && npm run verify:credential-transport-inventory && npm run verify:console-url-hygiene:bundle && npm run verify:bundle-budget && npm run verify:delivery-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source",
+        "validate:full": "npm run validate && npm run verify:brand-assets && npm run test:delivery-budget && npm run build:production && npm run verify:a1-acceptance-roster && npm run verify:credential-transport-inventory && npm run verify:console-url-hygiene:bundle && npm run verify:bundle-budget && npm run verify:delivery-budget && npm run verify:tesserafin-sdk-fresh && npm run verify:tokens-fresh && npm run verify:no-new-reefin && npm run verify:no-runtime-jellyfin && npm run verify:version-single-source",
         "secret-scan:controls": "./ci/tests/secret-scan.test.sh",
         "secret-scan:tree": "./ci/secret-scan.sh --mode tree --repo-name tesserafin-web",
         "secret-scan:history": "./ci/secret-scan.sh --mode history --repo-name tesserafin-web --default-branch main --min-commits 25000 --min-refs 10",
@@ -200,7 +200,9 @@
         "verify:a1-acceptance-roster": "node ci/verify-a1-acceptance-roster.mjs",
         "verify:websocket-ticket-contract": "node ci/verify-websocket-ticket-contract.mjs",
         "verify:credential-startup-boundary": "node ci/verify-credential-startup-boundary.mjs",
-        "test:jellyfin-sdk-socket": "node scripts/jellyfin-sdk-socket.test.mjs"
+        "test:jellyfin-sdk-socket": "node scripts/jellyfin-sdk-socket.test.mjs",
+        "generate:brand-assets": "node scripts/generate-brand-assets.mts",
+        "verify:brand-assets": "node scripts/generate-brand-assets.mts --check"
     },
     "engines": {
         "node": ">=24.0.0",

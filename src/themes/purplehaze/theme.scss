@@ -31,11 +31,11 @@ html {
 }
 
 .pageTitleWithDefaultLogo {
-    background-image: url(@jellyfin/ux-web/banner-light.png);
+    background-image: url(assets/branding/logo-light.svg);
 }
 
 .layout-tv .pageTitleWithDefaultLogo {
-    background-image: url(@jellyfin/ux-web/icon-transparent.png);
+    background-image: url(assets/branding/mark.svg);
 }
 
 .dialog,

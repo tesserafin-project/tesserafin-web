@@ -132,16 +132,15 @@ and stay there. A theme may not control playback behaviour or account/security U
 
 ---
 
-## 4. Where `@jellyfin/ux-web` still is
+## 4. Built-in brand assets
 
-Not in any route. Three call sites, all inherited:
+`@jellyfin/ux-web` is no longer a dependency. Both app shells, legacy header presets, the startup
+splash, notifications, the logo screensaver and browser/PWA icons use local Tesserafin exports.
+Their editable sources and regeneration instructions live in `tesserafin-design/branding/`.
 
-- `src/themes/_base/_theme.scss` and `src/themes/purplehaze/theme.scss` — banner/icon art in
-  **legacy colour presets**, which declare no manifest at all;
-- `src/components/toolbar/ServerButton.tsx` — one icon import.
-
-Neither official theme references it. Replacing it is the `assets.roles` work in **#117**, which
-needs a package format and an integrity model first — see §5.
+This replaces the application's built-in artwork only. Theme-package `assets.roles` loading in
+**#117** still needs a package format and an integrity model — see §5. The prohibited-dependency
+rule remains in the boundary ratchet to prevent inherited third-party artwork from returning.
 
 ---
 

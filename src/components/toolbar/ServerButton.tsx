@@ -1,4 +1,4 @@
-import icon from '@jellyfin/ux-web/icon-transparent.png';
+import icon from 'assets/branding/mark.svg';
 import Button from '@mui/material/Button/Button';
 import React, { FC } from 'react';
 import { Link } from 'react-router-dom';
@@ -19,8 +19,8 @@ const ServerButton: FC = () => {
                     alt=''
                     aria-hidden
                     style={{
-                        maxHeight: '1.25em',
-                        maxWidth: '1.25em'
+                        height: '1.25em',
+                        width: '1.25em'
                     }}
                 />
             }
