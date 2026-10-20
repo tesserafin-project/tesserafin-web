@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { MediaType } from '@jellyfin/sdk/lib/generated-client/models/media-type';
 
 import { getImageUrl } from 'apps/legacy/features/playback/utils/image';
@@ -117,7 +119,7 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
         stateOverride?: PlayerState
     ) {
         if (!this.player) {
-            console.debug(
+            debug(
                 '[MediaSessionSubscriber] no active player; resetting media session'
             );
             return resetMediaSession();
@@ -128,9 +130,8 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
         const item = state.NowPlayingItem;
 
         if (!item) {
-            console.debug(
-                '[MediaSessionSubscriber] no now playing item; resetting media session',
-                state
+            debug(
+                '[MediaSessionSubscriber] no now playing item; resetting media session'
             );
             return resetMediaSession();
         }
@@ -140,9 +141,7 @@ class MediaSessionSubscriber extends PlaybackSubscriber {
 
         // Local players do their own notifications
         if (isLocalPlayer && isVideo) {
-            console.debug(
-                '[MediaSessionSubscriber] ignoring local player update'
-            );
+            debug('[MediaSessionSubscriber] ignoring local player update');
             return;
         }
 

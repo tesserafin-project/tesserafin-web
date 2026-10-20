@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import isEqual from 'lodash-es/isEqual';
 
 import browser from '../../scripts/browser';
@@ -38,7 +40,7 @@ let supportsValueAutoSnap = false;
     supportsValueAutoSnap = slider.value === '0.3';
 
     if (!supportsValueAutoSnap) {
-        console.debug(
+        debug(
             "[EmbySlider] HTMLInputElement doesn't snap value - use workaround."
         );
     }

@@ -96,6 +96,21 @@ const accept = (label, files, allowlist) =>
     check(label, 'accept', files, allowlist);
 
 // ── The disclosure itself, and the shapes it could come back in ──────────────────────────────
+refuse('opt-in diagnostics remain a URL sink', {
+    'src/utils/probe.js':
+        "import { debug } from 'utils/debug';\ndebug(streamUrl);\n"
+});
+
+refuse('renaming the diagnostic import does not bypass the URL gate', {
+    'src/utils/probe.js':
+        "import { debug as trace } from 'utils/debug';\ntrace('playing url: ' + val);\n"
+});
+
+accept('opt-in endpoint-category diagnostics', {
+    'src/utils/probe.js':
+        "import { debug } from 'utils/debug';\ndebug('requesting endpoint', endpoint);\n"
+});
+
 refuse('the #75 line, reintroduced verbatim', {
     'src/plugins/htmlVideoPlayer/plugin.js':
         'export function setCurrentSrc(elem, options) {\n' +

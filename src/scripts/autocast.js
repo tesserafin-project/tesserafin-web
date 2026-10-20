@@ -1,12 +1,11 @@
+import { debug } from 'utils/debug';
+
 import { playbackManager } from 'components/playback/playbackmanager';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from 'utils/events.ts';
 
 export function enable(enabled) {
-    console.debug(
-        '[autocast] %s cast player',
-        enabled ? 'enabling' : 'disabling'
-    );
+    debug('[autocast] %s cast player', enabled ? 'enabling' : 'disabling');
     if (enabled) {
         const currentPlayerInfo = playbackManager.getPlayerInfo();
 
@@ -28,29 +27,29 @@ export function isEnabled() {
 function onOpen() {
     const playerId = localStorage.getItem('autocastPlayerId');
     if (!playerId) {
-        console.debug('[autocast] no active cast player');
+        debug('[autocast] no active cast player');
         return;
     }
 
-    console.debug('[autocast] initializing cast player', playerId);
+    debug('[autocast] initializing cast player', playerId);
 
     playbackManager
         .getTargets({ enableDiscovery: playerId === 'Google Cast' })
         .then(function (targets) {
-            console.debug('[autocast] playback targets', targets);
+            debug('[autocast] playback target count', targets.length);
 
             const player = targets.find((target) => target.id === playerId);
             if (player) {
-                console.debug('[autocast] found target player', player);
+                debug('[autocast] found target player');
                 playbackManager.trySetActivePlayer(player.playerName, player);
             } else {
-                console.debug('[autocast] selected cast player not found');
+                debug('[autocast] selected cast player not found');
             }
         });
 }
 
 export function initialize() {
-    console.debug('[autoCast] initializing connection listener');
+    debug('[autoCast] initializing connection listener');
 
     // Restore cast player if already signed in (e.g. on page reload)
     if (ServerConnections.getApiClients().some((c) => c.accessToken())) {

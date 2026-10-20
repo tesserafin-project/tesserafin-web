@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
 
 import alert from 'components/alert';
@@ -41,7 +43,7 @@ function playTrailers(apiClient, itemId) {
 }
 
 function processGeneralCommand(cmd, apiClient) {
-    console.debug('Received command: ' + cmd.Name);
+    debug('Received command: ' + cmd.Name);
     switch (cmd.Name) {
         case 'Select':
             inputManager.handleCommand('select');
@@ -140,9 +142,7 @@ function processGeneralCommand(cmd, apiClient) {
             focusManager.sendText(cmd.Arguments.String);
             break;
         default:
-            console.debug(
-                'processGeneralCommand does not recognize: ' + cmd.Name
-            );
+            debug('processGeneralCommand does not recognize: ' + cmd.Name);
             break;
     }
 

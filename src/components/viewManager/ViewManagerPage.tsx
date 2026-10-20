@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { Action } from 'history';
 import { FunctionComponent, useEffect } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
@@ -121,16 +123,16 @@ const ViewManagerPage: FunctionComponent<ViewManagerPageProps> = ({
                 };
 
                 if (navigationType !== Action.Pop) {
-                    console.debug('[ViewManagerPage] loading view [%s]', view);
+                    debug('[ViewManagerPage] loading view [%s]', view);
                     return loadView(appType, controller, view, viewOptions);
                 }
 
-                console.debug('[ViewManagerPage] restoring view [%s]', view);
+                debug('[ViewManagerPage] restoring view [%s]', view);
                 return viewManager
                     .tryRestoreView(viewOptions)
                     .catch(async (result?: RestoreViewFailResponse) => {
                         if (!result?.cancelled) {
-                            console.debug(
+                            debug(
                                 '[ViewManagerPage] restore failed; loading view [%s]',
                                 view
                             );

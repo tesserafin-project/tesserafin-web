@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { importModule } from '@uupaa/dynamic-import-polyfill';
 // Used below for $(view).appendTo(...) - no longer implicitly loaded via lib/legacy.
 import 'jquery';
@@ -194,7 +196,7 @@ export function setOnBeforeChange(fn) {
 }
 
 export function tryRestoreView(options) {
-    console.debug('[viewContainer] tryRestoreView', options);
+    debug('[viewContainer] tryRestoreView');
     const url = options.url;
     const index = currentUrls.indexOf(url);
 
@@ -241,7 +243,7 @@ function triggerDestroy(view) {
 }
 
 export function reset() {
-    console.debug('[viewContainer] resetting view cache');
+    debug('[viewContainer] resetting view cache');
     allPages = [];
     currentUrls = [];
     const mainAnimatedPages = getMainAnimatedPages();

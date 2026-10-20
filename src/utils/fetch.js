@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { endpointCategory } from './urlCategory';
 
 /**
@@ -56,9 +58,7 @@ export function getFetchPromise(request) {
 
 function fetchWithTimeout(url, options, timeoutMs) {
     const endpoint = endpointCategory(url);
-    console.debug(
-        `fetchWithTimeout: timeoutMs: ${timeoutMs}, endpoint: ${endpoint}`
-    );
+    debug(`fetchWithTimeout: timeoutMs: ${timeoutMs}, endpoint: ${endpoint}`);
 
     return new Promise(function (resolve, reject) {
         const timeout = setTimeout(reject, timeoutMs);
@@ -70,7 +70,7 @@ function fetchWithTimeout(url, options, timeoutMs) {
             function (response) {
                 clearTimeout(timeout);
 
-                console.debug(
+                debug(
                     `fetchWithTimeout: succeeded connecting to endpoint: ${endpoint}`
                 );
 
@@ -79,7 +79,7 @@ function fetchWithTimeout(url, options, timeoutMs) {
             function (error) {
                 clearTimeout(timeout);
 
-                console.debug(
+                debug(
                     `fetchWithTimeout: timed out connecting to endpoint: ${endpoint}`
                 );
 
@@ -109,11 +109,11 @@ export function ajax(request) {
 
     const method = request.type || 'GET';
     const endpoint = endpointCategory(request.url);
-    console.debug(`requesting ${method} endpoint: ${endpoint}`);
+    debug(`requesting ${method} endpoint: ${endpoint}`);
 
     return getFetchPromise(request).then(
         function (response) {
-            console.debug(
+            debug(
                 `response status: ${response.status}, ${method} endpoint: ${endpoint}`
             );
             if (response.status < 400) {

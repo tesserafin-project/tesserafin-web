@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import React, {
     FunctionComponent,
     useCallback,
@@ -84,7 +86,7 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
             switch (connectionResponse.State) {
                 case ConnectionState.SignedIn:
                     // Already logged in, bounce to the home page
-                    console.debug(
+                    debug(
                         '[ConnectionRequired] already logged in, redirecting to home'
                     );
                     navigate(BounceRoutes.Home);
@@ -94,9 +96,8 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
                     if (location.pathname === BounceRoutes.Login) {
                         setIsLoading(false);
                     } else {
-                        console.debug(
-                            '[ConnectionRequired] not logged in, redirecting to login page',
-                            location
+                        debug(
+                            '[ConnectionRequired] not logged in, redirecting to login page'
                         );
                         const url = encodeURIComponent(
                             location.pathname + location.search
@@ -108,7 +109,7 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
                     return;
                 case ConnectionState.ServerSelection:
                     // Bounce to select server page
-                    console.debug(
+                    debug(
                         '[ConnectionRequired] redirecting to select server page'
                     );
                     navigateIfNotThere(BounceRoutes.SelectServer);
@@ -134,7 +135,7 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
 
             const systemInfo = await fetchPublicSystemInfo(apiClient);
             if (systemInfo?.StartupWizardCompleted) {
-                console.info(
+                debug(
                     '[ConnectionRequired] startup wizard is complete, redirecting home'
                 );
                 navigate(BounceRoutes.Home);
@@ -163,7 +164,7 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
                             firstConnection.ApiClient
                         );
                         // Bounce to the wizard
-                        console.info(
+                        debug(
                             '[ConnectionRequired] startup wizard is not complete, redirecting there'
                         );
                         navigate(BounceRoutes.StartWizard);
@@ -248,9 +249,11 @@ const ConnectionRequired: FunctionComponent<ConnectionRequiredProps> = ({
         );
         connection
             .then((firstConnection) => {
-                console.debug(
-                    '[ConnectionRequired] connection state',
-                    firstConnection?.State
+                debug(
+                    firstConnection
+                        ? '[ConnectionRequired] connection state'
+                        : '[ConnectionRequired] reusing established connection',
+                    firstConnection?.State ?? 'reused'
                 );
                 ServerConnections.firstConnection = true;
 

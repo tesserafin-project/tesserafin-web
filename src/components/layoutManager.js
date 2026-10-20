@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { LayoutMode, LegacyLayoutModes } from 'constants/layoutMode';
 
 import { appHost } from './apphost';
@@ -37,16 +39,13 @@ class LayoutManager {
             setLayout(this, LayoutMode.Desktop, normalizedLayout);
         }
 
-        console.debug('[LayoutManager] using layout mode', normalizedLayout);
+        debug('[LayoutManager] using layout mode', normalizedLayout);
         this.modern = !isLegacyLayout;
         if (layoutValue === LayoutMode.Modern) {
             const legacyLayoutMode = browser.mobile
                 ? LayoutMode.Mobile
                 : LayoutMode.Desktop;
-            console.debug(
-                '[LayoutManager] using legacy layout mode',
-                legacyLayoutMode
-            );
+            debug('[LayoutManager] using legacy layout mode', legacyLayoutMode);
             setLayout(this, legacyLayoutMode, legacyLayoutMode);
         }
 

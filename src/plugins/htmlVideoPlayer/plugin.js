@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import DOMPurify from 'dompurify';
 import debounce from 'lodash-es/debounce';
 import Screenfull from 'screenfull';
@@ -399,7 +401,7 @@ export class HtmlVideoPlayer {
 
             // The url is deliberately absent: a transcoding playlist url carries the session's
             // access token in its query string.
-            console.debug('prefetching hls playlist');
+            debug('prefetching hls playlist');
 
             return ServerConnections.getApiClient(item.ServerId)
                 .ajax({
@@ -408,7 +410,7 @@ export class HtmlVideoPlayer {
                 })
                 .then(
                     function () {
-                        console.debug('completed prefetching hls playlist');
+                        debug('completed prefetching hls playlist');
 
                         loading.hide();
                         streamInfo.url = hlsPlaylistUrl;
@@ -736,10 +738,7 @@ export class HtmlVideoPlayer {
                         SECONDARY_TEXT_TRACK_INDEX
                     );
             } else {
-                console.debug(
-                    'No available track, cannot apply offset: ',
-                    offsetValue
-                );
+                debug('No available track, cannot apply offset: ', offsetValue);
             }
         }
     }
@@ -941,14 +940,14 @@ export class HtmlVideoPlayer {
          * @type {ArrayLike<any>|any[]}
          */
         const elemAudioTracks = elem.audioTracks || [];
-        console.debug(`found ${elemAudioTracks.length} audio tracks`);
+        debug(`found ${elemAudioTracks.length} audio tracks`);
 
         for (const [i, audioTrack] of Array.from(elemAudioTracks).entries()) {
             if (audioIndex === i) {
-                console.debug(`setting audio track ${i} to enabled`);
+                debug(`setting audio track ${i} to enabled`);
                 audioTrack.enabled = true;
             } else {
-                console.debug(`setting audio track ${i} to disabled`);
+                debug(`setting audio track ${i} to disabled`);
                 audioTrack.enabled = false;
             }
         }
@@ -1780,7 +1779,7 @@ export class HtmlVideoPlayer {
             // Exit if the video element was destroyed while fetching subtitles
             if (!this.#mediaElement) return;
 
-            console.debug(`downloaded ${data.TrackEvents.length} track events`);
+            debug(`downloaded ${data.TrackEvents.length} track events`);
 
             const subtitleAppearance =
                 userSettings.getSubtitleAppearanceSettings();
@@ -1859,7 +1858,7 @@ export class HtmlVideoPlayer {
      * @private
      */
     setCurrentTrackElement(streamIndex, targetTextTrackIndex) {
-        console.debug(`setting new text track index to: ${streamIndex}`);
+        debug(`setting new text track index to: ${streamIndex}`);
 
         const mediaStreamTextTracks = getMediaStreamTextTracks(
             this._currentPlayOptions.mediaSource

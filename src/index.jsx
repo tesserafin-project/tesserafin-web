@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -128,13 +130,13 @@ build: ${__JF_BUILD_VERSION__}`
 
 function loadFonts() {
     if (browser.tv && !browser.android) {
-        console.debug('using system fonts with explicit sizes');
+        debug('using system fonts with explicit sizes');
         import('./styles/fonts.sized.scss');
     } else if (__USE_SYSTEM_FONTS__) {
-        console.debug('using system fonts');
+        debug('using system fonts');
         import('./styles/fonts.scss');
     } else {
-        console.debug('using default fonts');
+        debug('using default fonts');
         import('./styles/fonts.scss');
         import('./styles/fonts.noto.scss');
         // Figtree, Tesserafin Classic's body face (#114). Loaded beside Noto rather than instead
@@ -171,7 +173,7 @@ async function loadPlugins() {
         await Promise.all(
             list.map((plugin) => pluginManager.loadPlugin(plugin))
         );
-        console.debug('finished loading plugins');
+        debug('finished loading plugins');
     } catch (e) {
         console.warn('failed loading plugins', e);
     }
@@ -211,9 +213,9 @@ function registerServiceWorker() {
     ) {
         navigator.serviceWorker
             .register('serviceworker.js')
-            .then(() => console.log('serviceWorker registered'))
+            .then(() => debug('serviceWorker registered'))
             .catch((error) =>
-                console.log('error registering serviceWorker: ' + error)
+                console.warn('error registering serviceWorker: ' + error)
             );
     } else {
         console.warn('serviceWorker unsupported');

@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 /**
  * NOTE: This file should not be modified.
  * It is a legacy library that should be replaced at some point.
@@ -434,7 +436,7 @@ const scrollerFactory = function (frame, options) {
             currentEnd = currentStart - frameSize;
         }
 
-        console.debug(
+        debug(
             'offset:' +
                 offset +
                 ' currentStart:' +

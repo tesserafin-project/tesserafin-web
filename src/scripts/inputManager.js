@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { appHost } from 'components/apphost';
 import focusManager from 'components/focusManager';
 import { playbackManager } from 'components/playback/playbackmanager';
@@ -247,7 +249,7 @@ export function handleCommand(commandName, options) {
     if (action !== undefined) {
         action.call();
     } else {
-        console.debug(
+        debug(
             `inputManager: tried to process command with no action assigned: ${commandName}`
         );
     }

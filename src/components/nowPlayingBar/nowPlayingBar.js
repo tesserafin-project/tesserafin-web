@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { getImageUrl } from 'apps/legacy/features/playback/utils/image';
 import { getItemTextLines } from 'apps/legacy/features/playback/utils/itemText';
 import { appRouter, isLyricsPage } from 'components/router/appRouter';
@@ -646,7 +648,7 @@ function updateNowPlayingInfo(state) {
 }
 
 function onPlaybackStart(e, state) {
-    console.debug('nowplaying event: ' + e.type);
+    debug('nowplaying event: ' + e.type);
     const player = this;
 
     onStateChanged.call(player, e, state);
@@ -703,7 +705,7 @@ function hideNowPlayingBar() {
 }
 
 function onPlaybackStopped(e, state) {
-    console.debug('[nowPlayingBar:onPlaybackStopped] event: ' + e.type);
+    debug('[nowPlayingBar:onPlaybackStopped] event: ' + e.type);
 
     const player = this;
 
@@ -731,7 +733,7 @@ function onStateChanged(event, state) {
         return;
     }
 
-    console.debug('[nowPlayingBar:onStateChanged] event: ' + event.type);
+    debug('[nowPlayingBar:onStateChanged] event: ' + event.type);
     const player = this;
 
     if (

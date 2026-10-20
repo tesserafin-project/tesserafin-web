@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 /**
  * Module for performing auto-focus.
  * @module components/autoFocuser
@@ -30,7 +32,7 @@ export function enable() {
         activeElement = e.target;
     });
 
-    console.debug('AutoFocuser enabled');
+    debug('AutoFocuser enabled');
 }
 
 /**

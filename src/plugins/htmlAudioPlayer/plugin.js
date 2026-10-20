@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { AppFeature } from 'constants/appFeature';
 import { PluginType } from 'constants/pluginType';
 import { MediaError } from 'types/mediaError';
@@ -20,7 +22,7 @@ function fade(instance, elem, startingVolume) {
     // Need to record the starting volume on each pass rather than querying elem.volume
     // This is due to iOS safari not allowing volume changes and always returning the system volume value
     const newVolume = Math.max(0, startingVolume - 0.15);
-    console.debug('fading volume to ' + newVolume);
+    debug('fading volume to ' + newVolume);
     elem.volume = newVolume;
 
     if (newVolume <= 0) {
@@ -140,7 +142,7 @@ class HtmlAudioPlayer {
                             options.mediaSource.albumNormalizationGain ??
                             options.item.NormalizationGain;
                     } else {
-                        console.debug('normalization disabled');
+                        debug('normalization disabled');
                         return;
                     }
 
@@ -163,7 +165,7 @@ class HtmlAudioPlayer {
                         // Gain value is absolute in Safari. Add volume from the slider
                         self.gainNode.gain.value *= elem.volume;
                     }
-                    console.debug('gain: ' + self.normalizationGain);
+                    debug('gain: ' + self.normalizationGain);
                 })
                 .catch((err) => {
                     console.error('Failed to add/change gainNode', err);

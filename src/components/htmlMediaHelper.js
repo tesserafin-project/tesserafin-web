@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import appSettings from '../scripts/settings/appSettings';
 import browser from '../scripts/browser';
 import Events from '../utils/events.ts';
@@ -95,14 +97,14 @@ export function handleHlsJsMediaError(instance, reject) {
 
     if (!recoverDecodingErrorDate || now - recoverDecodingErrorDate > 3000) {
         recoverDecodingErrorDate = now;
-        console.debug('try to recover media Error ...');
+        debug('try to recover media Error ...');
         hlsPlayer.recoverMediaError();
     } else if (
         !recoverSwapAudioCodecDate ||
         now - recoverSwapAudioCodecDate > 3000
     ) {
         recoverSwapAudioCodecDate = now;
-        console.debug('try to swap Audio Codec and recover media Error ...');
+        debug('try to swap Audio Codec and recover media Error ...');
         hlsPlayer.swapAudioCodec();
         hlsPlayer.recoverMediaError();
     } else {
@@ -190,7 +192,7 @@ export function seekOnPlaybackStart(instance, element, ticks, onMediaReady) {
                     // as this is true only if video hasn't started yet or
                     // user rewound to the very beginning
                     // (but rewinding cannot happen as the first event with media of non-empty duration)
-                    console.debug(`seeking to ${seconds} on ${e.type} event`);
+                    debug(`seeking to ${seconds} on ${e.type} event`);
                     setCurrentTimeIfNeeded(element, seconds);
                     events.forEach((name) => {
                         element.removeEventListener(name, onMediaChange);
@@ -330,7 +332,7 @@ export function bindEventsToHlsPlayer(
             data.response?.code &&
             data.response.code >= 400
         ) {
-            console.debug('hls.js response error code: ' + data.response.code);
+            debug('hls.js response error code: ' + data.response.code);
 
             // Read BEFORE the player is torn down: destroying hls.js detaches the element and
             // its position goes back to zero. The header is the server saying that the transcode
@@ -359,7 +361,7 @@ export function bindEventsToHlsPlayer(
                     if (data.response && data.response.code === 0) {
                         // This could be a CORS error related to access control response headers
 
-                        console.debug(
+                        debug(
                             'hls.js response error code: ' + data.response.code
                         );
 
@@ -373,7 +375,7 @@ export function bindEventsToHlsPlayer(
                             onErrorInternal(instance, MediaError.NETWORK_ERROR);
                         }
                     } else {
-                        console.debug(
+                        debug(
                             'fatal network error encountered, try to recover'
                         );
                         hls.startLoad();
@@ -381,14 +383,12 @@ export function bindEventsToHlsPlayer(
 
                     break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
-                    console.debug(
-                        'fatal media error encountered, try to recover'
-                    );
+                    debug('fatal media error encountered, try to recover');
                     handleHlsJsMediaError(instance, reject);
                     reject = null;
                     break;
                 default:
-                    console.debug(
+                    debug(
                         'Cannot recover from hls error - destroy and trigger error'
                     );
                     // cannot recover

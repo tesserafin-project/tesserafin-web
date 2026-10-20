@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import escapeHtml from 'escape-html';
 
 import { PlayerEvent } from 'apps/legacy/features/playback/constants/playerEvent';
@@ -612,7 +614,7 @@ export default function (view) {
     }
 
     function onPlaybackStart(e, state) {
-        console.debug('nowplaying event: ' + e.type);
+        debug('nowplaying event: ' + e.type);
         const player = this;
         onStateChanged.call(player, e, state);
         resetUpNextDialog();
@@ -631,7 +633,7 @@ export default function (view) {
     function onPlaybackStopped(e, state) {
         currentRuntimeTicks = null;
         resetUpNextDialog();
-        console.debug('nowplaying event: ' + e.type);
+        debug('nowplaying event: ' + e.type);
 
         if (state.NextMediaType !== 'Video') {
             view.removeEventListener('viewbeforehide', onViewHideStopPlayback);
@@ -820,7 +822,7 @@ export default function (view) {
                     const endDate = datetime.parseISO8601Date(program.EndDate);
 
                     if (new Date().getTime() >= endDate.getTime()) {
-                        console.debug('program info needs to be refreshed');
+                        debug('program info needs to be refreshed');
                         const state = playbackManager.getPlayerState(player);
                         onStateChanged.call(
                             player,
