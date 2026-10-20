@@ -134,7 +134,11 @@ for (const theme of ['official.classic', 'official.glass']) {
                 .poll(() =>
                     shelf
                         .locator(SCROLLER)
-                        .evaluate((el) => Math.abs(el.scrollLeft - before.x))
+                        .evaluate(
+                            (el, expected) =>
+                                Math.abs(el.scrollLeft - expected),
+                            before.x
+                        )
                 )
                 .toBeLessThan(3);
             await expect
