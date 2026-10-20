@@ -7,7 +7,11 @@ import {
     QueryClientProvider,
     useQuery
 } from '@tanstack/react-query';
-import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import {
+    createMemoryRouter,
+    RouterProvider,
+    useSearchParams
+} from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 (
@@ -41,17 +45,6 @@ vi.mock('lib/globalize', () => ({
 }));
 vi.mock('components/playback/playbackmanager', () => ({
     playbackManager: { play: vi.fn() }
-}));
-vi.mock('components/backdrop/backdrop', () => ({ clearBackdrop: vi.fn() }));
-vi.mock('scripts/libraryMenu', () => ({ default: { setTitle: vi.fn() } }));
-// Reproduce Page/libraryMenu's mount-time page reset; the hook must restore AFTER it.
-vi.mock('components/Page', () => ({
-    default: ({ children }: { children: React.ReactNode }) => {
-        useEffect(() => {
-            window.scrollTo(0, 0);
-        }, []);
-        return <div>{children}</div>;
-    }
 }));
 vi.mock('../api/useUserViews', () => ({
     useUserViews: () => ({
@@ -91,7 +84,44 @@ vi.mock('../api/useLatestMedia', () => ({
         })
 }));
 
-const { default: Home } = await import('../../../routes/home');
+vi.mock('../api/useFavoriteItems', () => ({
+    useFavoriteItems: (kinds: string[]) =>
+        useQuery({
+            queryKey: ['Home', state.user.Id, 'FavoriteReturnFixture', kinds],
+            queryFn: async () => {
+                await state.wait;
+                return { Items: kinds[0] === 'Movie' ? [...state.items] : [] };
+            },
+            retry: false
+        })
+}));
+
+const { default: HomeTab } = await import('./HomeTab');
+const { default: FavoritesTab } = await import('./FavoritesTab');
+const { useHomeReturnPosition } = await import(
+    '../hooks/useHomeReturnPosition'
+);
+// Exercise the real shelves and recovery hook in a MemoryRouter; the browser suite covers
+// the actual route shell. Reproduce that shell's mount-time vertical reset explicitly.
+function Home() {
+    const [params] = useSearchParams();
+    const tab = params.get('tab') === '1' ? 1 : 0;
+    const ref = useHomeReturnPosition(tab);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+    return (
+        <div ref={ref}>
+            <button role='tab' aria-selected={tab === 0}>
+                Home
+            </button>
+            <button role='tab' aria-selected={tab === 1}>
+                Favorites
+            </button>
+            {tab === 0 ? <HomeTab /> : <FavoritesTab />}
+        </div>
+    );
+}
 const { forgetHomePosition, homeReturnKey } = await import(
     '../utils/homeReturnPosition'
 );
@@ -119,7 +149,7 @@ async function flush() {
         });
     }
 }
-async function mount() {
+async function mount(initial = '/home') {
     client = new QueryClient({
         defaultOptions: { queries: { retry: false, gcTime: 0 } }
     });
@@ -128,7 +158,7 @@ async function mount() {
             { path: '/home', element: <Home /> },
             { path: '/details', element: <button id='details'>Details</button> }
         ],
-        { initialEntries: ['/home'] }
+        { initialEntries: [initial] }
     );
     root = createRoot(container);
     await act(async () => {
@@ -216,7 +246,7 @@ afterEach(async () => {
     vi.unstubAllGlobals();
 });
 
-describe('Home return on the actual route, with browser geometry mocked', () => {
+describe('Home shelves and recovery hook in a memory router, with geometry mocked', () => {
     it('restores page, all rows and the exact card in its own shelf; refresh does not replay it', async () => {
         await mount();
         await open();
@@ -274,6 +304,20 @@ describe('Home return on the actual route, with browser geometry mocked', () => 
         expect(y).toBe(75);
         expect(document.activeElement).not.toBe(cards()[10]);
     });
+    it('recovers when a persistent header Back button was focused before the return', async () => {
+        await mount();
+        await open();
+        const header = document.createElement('button');
+        document.body.append(header);
+        header.focus();
+        Object.defineProperty(header, 'getClientRects', {
+            value: () => [new DOMRect(0, 0, 40, 40)]
+        });
+        await back();
+        expect(document.activeElement).toBe(cards()[10]);
+        expect(y).toBe(500);
+        header.remove();
+    });
     it('fresh Home navigation starts fresh rather than reusing an earlier entry', async () => {
         await mount();
         await open();
@@ -299,6 +343,41 @@ describe('Home return on the actual route, with browser geometry mocked', () => 
             expect(scroller().scrollLeft).toBe(0);
         }
     );
+    it('restores Favorites independently of the Home tab', async () => {
+        await mount('/home?tab=1');
+        const row = container.querySelector<HTMLElement>(
+            '#home-favorites-movies'
+        )!;
+        const card = row.querySelectorAll<HTMLAnchorElement>(
+            'a[data-rf-slot="media-card"]'
+        )[10];
+        const strip = row.querySelector<HTMLElement>(
+            '.rf-media-shelf__scroller'
+        )!;
+        strip.scrollLeft = 700;
+        y = 400;
+        await act(async () => {
+            card.dispatchEvent(
+                new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    button: 0
+                })
+            );
+        });
+        await back();
+        const returned = container.querySelector<HTMLElement>(
+            '#home-favorites-movies'
+        )!;
+        expect(document.activeElement).toBe(
+            returned.querySelectorAll('a[data-rf-slot="media-card"]')[10]
+        );
+        expect(
+            returned.querySelector<HTMLElement>('.rf-media-shelf__scroller')!
+                .scrollLeft
+        ).toBe(700);
+        expect(y).toBe(400);
+    });
     it('does not hijack modified or new-tab activation', async () => {
         await mount();
         const card = cards()[10];

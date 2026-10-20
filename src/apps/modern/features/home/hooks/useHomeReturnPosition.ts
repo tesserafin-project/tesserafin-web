@@ -78,7 +78,13 @@ export function useHomeReturnPosition(tab: number) {
             forgetHomePosition(key);
         };
         // If the viewer starts doing something while data arrives, recovery loses ownership.
-        for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart'])
+        for (const type of [
+            'pointerdown',
+            'keydown',
+            'wheel',
+            'touchstart',
+            'focusin'
+        ])
             window.addEventListener(type, cancel, {
                 capture: true,
                 passive: true
@@ -88,7 +94,8 @@ export function useHomeReturnPosition(tab: number) {
                 'pointerdown',
                 'keydown',
                 'wheel',
-                'touchstart'
+                'touchstart',
+                'focusin'
             ])
                 window.removeEventListener(type, cancel, true);
         };
@@ -107,14 +114,6 @@ export function useHomeReturnPosition(tab: number) {
                 return;
             pending.current!.saved = undefined;
             forgetHomePosition(key);
-            const active = document.activeElement;
-            if (
-                active instanceof HTMLElement &&
-                active !== document.body &&
-                !container.contains(active) &&
-                active.getClientRects().length
-            )
-                return;
             restoreHomePosition(container, saved);
         });
         return () => cancelAnimationFrame(frame);

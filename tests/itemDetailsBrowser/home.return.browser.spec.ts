@@ -46,6 +46,22 @@ async function install(
     }));
     await page.route('**/*', async (route) => {
         const path = new URL(route.request().url()).pathname.toLowerCase();
+        // This server-free fixture has no WebSocket transport. Declare its unavailable ticket
+        // endpoint explicitly; do not hide unexpected requests by filtering the ledger.
+        if (
+            path === '/websocket/tickets' &&
+            route.request().method() === 'POST'
+        ) {
+            ledger.requests.push('POST /WebSocket/Tickets');
+            return route.fulfill({
+                status: 503,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    error: 'WebSocket transport unavailable in this fixture'
+                })
+            });
+        }
+
         const json = (body: unknown) =>
             route.fulfill({
                 status: 200,
@@ -109,10 +125,13 @@ for (const theme of ['official.classic', 'official.glass']) {
             expect(before.y).toBeGreaterThan(100);
             await page.keyboard.press('Enter');
             await expect(page.locator('#itemDetailPage')).toBeVisible();
-            await page.goBack();
+            if (layout === 'desktop')
+                await page
+                    .getByRole('button', { name: 'Back', exact: true })
+                    .click();
+            else await page.goBack();
             await expect(shelf.locator(CARD)).toHaveCount(16);
             await expect(card).toBeFocused();
-            expect(fixture.ledger.undeclared).toEqual([]);
             await expect
                 .poll(() =>
                     shelf
@@ -125,6 +144,7 @@ for (const theme of ['official.classic', 'official.glass']) {
                     page.evaluate((y) => Math.abs(window.scrollY - y), before.y)
                 )
                 .toBeLessThan(3);
+            expect(fixture.ledger.undeclared).toEqual([]);
         });
     }
 }

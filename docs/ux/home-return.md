@@ -18,15 +18,16 @@ is revealed with nearest scrolling. Stable section ids do not depend on translat
 order.
 
 Each return is consumed once. A later server refresh must not replay old scroll/focus. Pointer,
-keyboard, wheel or touch activity while waiting cancels recovery. A visible focused control
-outside Home also keeps ownership. The bounded memory holds at most 20 entries in this running
+keyboard, wheel or touch activity while waiting cancels recovery. A new focus change while waiting also keeps ownership; focus left on the navigation Back
+button does not suppress recovery. The bounded memory holds at most 20 entries in this running
 page; it is not persisted to storage and a reload starts fresh. No new API request, theme rule,
 content ranking or dependency is introduced.
 
 ## Verification
 
 - `npm test -- src/apps/modern/features/home src/ui/components/MediaShelf`
-  includes the real Home route with stubbed API responses and browser geometry: both axes,
+  includes the real Home/Favorites shelves and recovery hook with a memory router, stubbed API
+  responses and browser geometry: both axes,
   duplicate cards across rows, data arriving after Back, missing item, user cancellation,
   fresh navigation, server/user isolation, and refetch ownership. Utility controls cover
   section removal/reordering, empty fallback, cache bound, tab/history identity and signed RTL.
