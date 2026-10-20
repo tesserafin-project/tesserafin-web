@@ -47,6 +47,7 @@ export default defineConfig({
         exclude: [
             ...configDefaults.exclude,
             'tests/e2e/**',
+            'tests/playerMenusBrowser/**',
             'tests/reader/**',
             // Server-free delivery-ledger suite (`npm run test:delivery-ledger`): Playwright,
             // like the others here, and it reads dist/ + delivery-stats/ rather than src.

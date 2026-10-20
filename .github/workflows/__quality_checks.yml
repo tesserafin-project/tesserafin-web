@@ -70,6 +70,7 @@ jobs:
           - stylelint
           - build:check
           - test
+          - test:player-menu-browser
           # Guards the epubjs-scoped `@xmldom/xmldom` override: the pin sits
           # above the range EPUB.js declares, so the compatibility it depends on
           # has to be re-proven on every change rather than once, at the moment
@@ -114,6 +115,10 @@ jobs:
 
       - name: Install dependencies 📦
         run: npm ci --no-audit
+
+      - name: Install Chromium for menu focus checks
+        if: matrix.command == 'test:player-menu-browser'
+        run: npx playwright install --with-deps chromium
 
       - name: Run ${{ matrix.command }} ⚙️
         run: npm run ${{ matrix.command }}

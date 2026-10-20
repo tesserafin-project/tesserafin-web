@@ -146,6 +146,7 @@ const TrackMenu: FC<MenuProps> = ({
     onClose
 }) => {
     const panelRef = useRef<HTMLDivElement>(null);
+    const selectionRef = useRef<{ title: string; focus?: string }>();
     const titleId = useId();
     const tv = layoutManager.tv;
 
@@ -164,9 +165,19 @@ const TrackMenu: FC<MenuProps> = ({
         panel.style.top = `${Math.max(anchor.top - height - 8, 10)}px`;
     }, [opener, rows.length, title, tv]);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const panel = panelRef.current;
         if (!panel) return;
+        const previous = selectionRef.current;
+        selectionRef.current = { title, focus };
+        // A stream update can remove the focused row. Recover before the next
+        // key, but preserve a live row or focus deliberately moved elsewhere.
+        if (
+            previous?.title === title &&
+            previous?.focus === focus &&
+            document.activeElement !== document.body
+        )
+            return;
         const items = [
             ...panel.querySelectorAll<HTMLElement>('[role^="menuitem"]')
         ];
@@ -175,9 +186,14 @@ const TrackMenu: FC<MenuProps> = ({
                 items.find(
                     (item) => item.getAttribute('aria-checked') === 'true'
                 ) ??
-                items[0]
+                items[0] ??
+                panel
         );
+    }, [title, focus, rows]);
 
+    useEffect(() => {
+        const panel = panelRef.current;
+        if (!panel) return;
         // A remote's Back, or Backspace on a VIDAA TV, arrives as a `back` command.
         const onCommand = (e: Event) => {
             if ((e as CustomEvent).detail?.command === 'back') {
@@ -188,7 +204,7 @@ const TrackMenu: FC<MenuProps> = ({
         };
         panel.addEventListener('command', onCommand);
         return () => panel.removeEventListener('command', onCommand);
-    }, [title, focus, onBack]);
+    }, [onBack]);
 
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
         const key = getKeyName(e.nativeEvent);
@@ -252,6 +268,7 @@ const TrackMenu: FC<MenuProps> = ({
                 className='rf-track-menu__panel'
                 data-rf-slot='track-menu'
                 role='menu'
+                tabIndex={-1}
                 aria-labelledby={titleId}
                 onKeyDown={onKeyDown}
             >
@@ -485,11 +502,19 @@ const TrackMenus: FC = () => {
         return subscribeTracks(() => setTracks(readTracks()));
     }, [host]);
 
-    const close = useCallback((restoreFocus: boolean) => {
-        const opener = menuRef.current?.opener;
-        setMenu(null);
-        if (restoreFocus && opener?.isConnected) focusManager.focus(opener);
-    }, []);
+    const close = useCallback(
+        (restoreFocus: boolean) => {
+            const opener = menuRef.current?.opener;
+            setMenu(null);
+            const target = opener?.isConnected
+                ? opener
+                : host?.settingsSlot.querySelector<HTMLElement>(
+                      '[data-track-menu="settings"]'
+                  );
+            if (restoreFocus && target?.isConnected) focusManager.focus(target);
+        },
+        [host]
+    );
 
     const back = useCallback(() => {
         const current = menuRef.current;

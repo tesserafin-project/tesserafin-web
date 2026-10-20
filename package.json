@@ -202,7 +202,8 @@
         "verify:credential-startup-boundary": "node ci/verify-credential-startup-boundary.mjs",
         "test:jellyfin-sdk-socket": "node scripts/jellyfin-sdk-socket.test.mjs",
         "generate:brand-assets": "node scripts/generate-brand-assets.mts",
-        "verify:brand-assets": "node scripts/generate-brand-assets.mts --check"
+        "verify:brand-assets": "node scripts/generate-brand-assets.mts --check",
+        "test:player-menu-browser": "webpack --config webpack.playerMenus.js && playwright test --config playwright.playerMenus.config.ts"
     },
     "engines": {
         "node": ">=24.0.0",

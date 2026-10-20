@@ -471,6 +471,45 @@ describe('the track menus', () => {
         ];
     });
 
+    it.each([
+        ['audio', 1],
+        ['audio', 0],
+        ['subtitles', 0]
+    ] as const)(
+        'Escape returns to settings if the %s trigger disappears (%i tracks remaining)',
+        (kind, remaining) => {
+            const audio = state.audio;
+            const subs = state.subs;
+            try {
+                if (kind === 'subtitles') state.subIndex = 3;
+                act(() => setTrackMenuHost(host));
+                act(() => button(kind)!.click());
+                if (kind === 'audio')
+                    state.audio = state.audio.slice(0, remaining);
+                else state.subs = [];
+                act(() => Events.trigger(player, 'mediastreamschange'));
+                expect(button(kind)).toBeNull();
+                expect(menu()).not.toBeNull();
+                expect(menu()!.contains(document.activeElement)).toBe(true);
+                key('Escape');
+                expect(menu()).toBeNull();
+                expect(document.activeElement).toBe(button('settings'));
+            } finally {
+                state.audio = audio;
+                state.subs = subs;
+            }
+        }
+    );
+
+    it('a stream update preserves a focused row that still exists', () => {
+        act(() => setTrackMenuHost(host));
+        act(() => button('audio')!.click());
+        key('ArrowDown');
+        const focused = document.activeElement;
+        act(() => Events.trigger(player, 'mediastreamschange'));
+        expect(document.activeElement).toBe(focused);
+    });
+
     it('Escape closes the menu and gives the focus back to its button', () => {
         act(() => setTrackMenuHost(host));
         act(() => button('audio')!.click());

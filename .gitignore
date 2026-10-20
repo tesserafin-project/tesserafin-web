@@ -67,3 +67,6 @@ id_ed25519
 # rather than committed, so a design iteration does not put binaries in the history.
 tests/captures/dist/
 tests/captures/out/
+
+# Server-free player-menu focus browser rig
+tests/playerMenusBrowser/dist/

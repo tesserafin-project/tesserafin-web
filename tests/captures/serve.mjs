@@ -16,7 +16,9 @@ import { dirname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(HERE, 'dist');
+const ROOT = process.env.CAPTURE_SUITE_ROOT
+    ? resolve(process.env.CAPTURE_SUITE_ROOT)
+    : join(HERE, 'dist');
 const PORT = Number(process.env.CAPTURE_SUITE_PORT || 4321);
 
 const MIME = {
