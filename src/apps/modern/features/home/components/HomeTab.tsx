@@ -89,7 +89,11 @@ const LatestMediaSection: FC<LatestMediaSectionProps> = ({
             onRetry={() => void query.refetch()}
             isEmpty={!query.data?.length}
         >
-            <MediaShelf title={title} density={density}>
+            <MediaShelf
+                id={`home-latest-${view.Id}`}
+                title={title}
+                density={density}
+            >
                 {toMediaCardPropsArray(
                     query.data,
                     __legacyApiClient__,
@@ -202,7 +206,11 @@ const HomeTab: FC = () => {
                         }
                         onEmptyAction={openLibrarySettings}
                     >
-                        <MediaShelf title={myMediaTitle} density={density}>
+                        <MediaShelf
+                            id='home-libraries'
+                            title={myMediaTitle}
+                            density={density}
+                        >
                             {(userViews ?? []).map((view) => {
                                 const cardProps = toMediaCardProps(
                                     view,
@@ -238,6 +246,7 @@ const HomeTab: FC = () => {
                         isEmpty={!resumeQuery.data?.Items?.length}
                     >
                         <MediaShelf
+                            id='home-continueWatching'
                             title={continueWatchingTitle}
                             density={density}
                         >
@@ -265,7 +274,11 @@ const HomeTab: FC = () => {
                         onRetry={() => void nextUpQuery.refetch()}
                         isEmpty={!nextUpQuery.data?.Items?.length}
                     >
-                        <MediaShelf title={nextUpTitle} density={density}>
+                        <MediaShelf
+                            id='home-nextUp'
+                            title={nextUpTitle}
+                            density={density}
+                        >
                             {toMediaCardPropsArray(
                                 nextUpQuery.data?.Items,
                                 __legacyApiClient__,

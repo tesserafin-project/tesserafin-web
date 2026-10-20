@@ -54,7 +54,7 @@ const FavoritesTab: FC = () => {
                 onRetry={() => void moviesQuery.refetch()}
                 isEmpty={isMoviesEmpty}
             >
-                <MediaShelf title={moviesTitle}>
+                <MediaShelf id='home-favorites-movies' title={moviesTitle}>
                     {toMediaCardPropsArray(
                         moviesQuery.data?.Items,
                         __legacyApiClient__,
@@ -72,7 +72,7 @@ const FavoritesTab: FC = () => {
                 onRetry={() => void seriesQuery.refetch()}
                 isEmpty={isSeriesEmpty}
             >
-                <MediaShelf title={showsTitle}>
+                <MediaShelf id='home-favorites-shows' title={showsTitle}>
                     {toMediaCardPropsArray(
                         seriesQuery.data?.Items,
                         __legacyApiClient__,
@@ -90,7 +90,7 @@ const FavoritesTab: FC = () => {
                 onRetry={() => void episodesQuery.refetch()}
                 isEmpty={isEpisodesEmpty}
             >
-                <MediaShelf title={episodesTitle}>
+                <MediaShelf id='home-favorites-episodes' title={episodesTitle}>
                     {toMediaCardPropsArray(
                         episodesQuery.data?.Items,
                         __legacyApiClient__,

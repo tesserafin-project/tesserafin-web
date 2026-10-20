@@ -9,6 +9,7 @@ import { Tabs, type TabItem } from 'ui';
 
 import FavoritesTab from '../features/home/components/FavoritesTab';
 import HomeTab from '../features/home/components/HomeTab';
+import { useHomeReturnPosition } from '../features/home/hooks/useHomeReturnPosition';
 import {
     homeTabIndexToParam,
     parseHomeTabIndex
@@ -20,6 +21,7 @@ const tabPanelId = (index: number) => `home-tabpanel-${index}`;
 const Home = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = parseHomeTabIndex(searchParams.get('tab'));
+    const returnRoot = useHomeReturnPosition(activeTab);
 
     // Mirrors the previous controller-based `home.tsx`'s `onResume`: reset the title and any
     // leftover backdrop image once when the page mounts.
@@ -73,23 +75,29 @@ const Home = () => {
                 BaseItemKind.Book
             ]}
         >
-            <Tabs items={tabItems} value={activeTab} onChange={onTabChange} />
+            <div ref={returnRoot}>
+                <Tabs
+                    items={tabItems}
+                    value={activeTab}
+                    onChange={onTabChange}
+                />
 
-            <div
-                role='tabpanel'
-                id={tabPanelId(0)}
-                aria-labelledby={tabId(0)}
-                hidden={activeTab !== 0}
-            >
-                {activeTab === 0 && <HomeTab />}
-            </div>
-            <div
-                role='tabpanel'
-                id={tabPanelId(1)}
-                aria-labelledby={tabId(1)}
-                hidden={activeTab !== 1}
-            >
-                {activeTab === 1 && <FavoritesTab />}
+                <div
+                    role='tabpanel'
+                    id={tabPanelId(0)}
+                    aria-labelledby={tabId(0)}
+                    hidden={activeTab !== 0}
+                >
+                    {activeTab === 0 && <HomeTab />}
+                </div>
+                <div
+                    role='tabpanel'
+                    id={tabPanelId(1)}
+                    aria-labelledby={tabId(1)}
+                    hidden={activeTab !== 1}
+                >
+                    {activeTab === 1 && <FavoritesTab />}
+                </div>
             </div>
         </Page>
     );
