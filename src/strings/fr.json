@@ -1945,5 +1945,12 @@
     "Creators": "Créateurs",
     "HeaderSplitMedia": "Séparer les supports",
     "IndexNumber": "Numéro d'index",
-    "NoCastTargets": "Aucune cible de casting disponible"
+    "NoCastTargets": "Aucune cible de casting disponible",
+    "HeaderActiveFilters": "Filtres actifs",
+    "RemoveLibraryFilter": "Retirer le filtre : {0}",
+    "ActiveLibraryFilterValue": "{0} : {1}",
+    "LabelInitialLetter": "Initiale",
+    "SelectedLibraryStudio": "Studio sélectionné {0}",
+    "MessageNoMatchingLibraryItems": "Aucun média ne correspond à ces filtres.",
+    "MessageTryResetLibraryFilters": "Retirez un filtre ou réinitialisez-les tous."
 }

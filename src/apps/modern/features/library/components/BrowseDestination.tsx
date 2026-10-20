@@ -4,7 +4,14 @@ import {
     ItemSortBy,
     SortOrder
 } from 'lib/tesserafin-sdk';
-import React, { type FC, useCallback, useMemo, useState } from 'react';
+import React, {
+    type FC,
+    useCallback,
+    useMemo,
+    useState,
+    useRef,
+    useLayoutEffect
+} from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
 
@@ -45,6 +52,13 @@ import {
     withLibraryQueryState
 } from '../utils/queryParams';
 
+import {
+    clearedLibraryFilters,
+    getActiveLibraryFilters,
+    withoutLibraryFilter,
+    type ActiveLibraryFilter
+} from '../utils/activeFilters';
+import { ActiveLibraryFilters } from './ActiveLibraryFilters';
 import LibraryAlphaPicker from './LibraryAlphaPicker';
 import LibraryItemsGrid from './LibraryItemsGrid';
 
@@ -113,6 +127,27 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         [searchParams]
     );
 
+    const activeFilters = useMemo(
+        () => getActiveLibraryFilters(queryState),
+        [queryState]
+    );
+    const controls = useRef<HTMLDivElement>(null);
+    const filterSummary = useRef<HTMLElement>(null);
+    const nextFilterFocus = useRef<number | null>(null);
+    useLayoutEffect(() => {
+        const index = nextFilterFocus.current;
+        if (index === null) return;
+        nextFilterFocus.current = null;
+        const buttons =
+            filterSummary.current?.querySelectorAll<HTMLButtonElement>(
+                'button[data-filter-key]'
+            );
+        const target =
+            buttons?.[Math.min(index, buttons.length - 1)] ??
+            controls.current?.querySelector<HTMLElement>('select,button');
+        target?.focus();
+    }, [activeFilters]);
+
     const isTvshows = collectionType === CollectionType.Tvshows;
     const granularity: LibraryGranularity = resolveGranularity(
         queryState.granularity,
@@ -176,6 +211,20 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         },
         [searchParams, setSearchParams]
     );
+
+    const onRemoveFilter = useCallback(
+        (filter: ActiveLibraryFilter) => {
+            nextFilterFocus.current = activeFilters.findIndex(
+                (item) => item.id === filter.id
+            );
+            updateQueryState(withoutLibraryFilter(queryState, filter));
+        },
+        [activeFilters, queryState, updateQueryState]
+    );
+    const onResetFilters = useCallback(() => {
+        nextFilterFocus.current = 0;
+        updateQueryState(clearedLibraryFilters);
+    }, [updateQueryState]);
 
     const onSortByChange = useCallback(
         (value: string) =>
@@ -392,7 +441,7 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
     return (
         <>
-            <div className='rf-library-view__controls'>
+            <div ref={controls} className='rf-library-view__controls'>
                 {recipe.filters === 'drawer' ? (
                     <FilterDrawer
                         triggerLabel={globalize.translate('Filters')}
@@ -429,6 +478,14 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                 )}
             </div>
 
+            <ActiveLibraryFilters
+                filters={activeFilters}
+                studios={studiosQuery.data?.Items ?? []}
+                elementRef={filterSummary}
+                onRemove={onRemoveFilter}
+                onReset={onResetFilters}
+            />
+
             <LibraryAlphaPicker
                 value={queryState.letter}
                 sortBy={queryState.sortBy}
@@ -438,6 +495,9 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
             <LibraryItemsGrid
                 itemsQuery={itemsQuery}
+                onResetFilters={
+                    activeFilters.length ? onResetFilters : undefined
+                }
                 density={density}
                 viewMode={viewMode}
                 layout={recipe.layout}

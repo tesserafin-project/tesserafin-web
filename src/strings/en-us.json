@@ -2093,5 +2093,12 @@
     "LabelProgressAndSpeed": "Progress / speed",
     "LabelReasons": "Reasons",
     "LabelPlayerSizes": "Player sizes",
-    "LabelPlaybackQuality": "Frame dropped / corrupted"
+    "LabelPlaybackQuality": "Frame dropped / corrupted",
+    "HeaderActiveFilters": "Active filters",
+    "RemoveLibraryFilter": "Remove filter: {0}",
+    "ActiveLibraryFilterValue": "{0}: {1}",
+    "LabelInitialLetter": "Initial",
+    "SelectedLibraryStudio": "Selected studio {0}",
+    "MessageNoMatchingLibraryItems": "No items match these filters.",
+    "MessageTryResetLibraryFilters": "Try removing a filter, or reset all filters."
 }

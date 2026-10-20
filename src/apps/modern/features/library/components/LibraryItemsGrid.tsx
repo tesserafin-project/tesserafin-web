@@ -62,6 +62,7 @@ export interface LibraryItemsGridProps {
     onPreviousPage: () => void;
     onNextPage: () => void;
     emptyMessage?: string;
+    onResetFilters?: () => void;
 }
 
 export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
@@ -76,7 +77,8 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     totalPages,
     onPreviousPage,
     onNextPage,
-    emptyMessage
+    emptyMessage,
+    onResetFilters
 }) => {
     const onRetry = useCallback(() => void itemsQuery.refetch(), [itemsQuery]);
     const pageLabel = useCallback(
@@ -132,9 +134,22 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     if (!itemsQuery.data?.Items?.length) {
         return (
             <EmptyState
+                description={
+                    onResetFilters
+                        ? globalize.translate('MessageTryResetLibraryFilters')
+                        : undefined
+                }
+                actionLabel={
+                    onResetFilters
+                        ? globalize.translate('ResetFilters')
+                        : undefined
+                }
+                onAction={onResetFilters}
                 title={
-                    emptyMessage ??
-                    globalize.translate('MessageNoItemsAvailable')
+                    onResetFilters
+                        ? globalize.translate('MessageNoMatchingLibraryItems')
+                        : (emptyMessage ??
+                          globalize.translate('MessageNoItemsAvailable'))
                 }
             />
         );
