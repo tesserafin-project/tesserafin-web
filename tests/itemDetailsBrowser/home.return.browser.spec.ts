@@ -125,11 +125,9 @@ for (const theme of ['official.classic', 'official.glass']) {
             expect(before.y).toBeGreaterThan(100);
             await page.keyboard.press('Enter');
             await expect(page.locator('#itemDetailPage')).toBeVisible();
-            if (layout === 'desktop')
-                await page
-                    .getByRole('button', { name: 'Back', exact: true })
-                    .click();
-            else await page.goBack();
+            // The browser toolbar owns Back on the Web. The in-app Back button is only
+            // rendered by the native wrapper and is not part of this browser fixture.
+            await page.goBack();
             await expect(shelf.locator(CARD)).toHaveCount(16);
             await expect(card).toBeFocused();
             await expect
