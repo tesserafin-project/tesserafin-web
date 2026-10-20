@@ -10,7 +10,7 @@ export default defineConfig({
     retries: 0,
     reporter: [['list']],
     use: {
-        baseURL: process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://127.0.0.1:8096',
+        baseURL: process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096',
         // A trace/HAR may record credentials. Counts-only attachments are enough here.
         trace: 'off',
         screenshot: 'off',
