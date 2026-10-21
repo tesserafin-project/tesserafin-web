@@ -1952,5 +1952,6 @@
     "LabelInitialLetter": "Initiale",
     "SelectedLibraryStudio": "Studio sélectionné {0}",
     "MessageNoMatchingLibraryItems": "Aucun média ne correspond à ces filtres.",
-    "MessageTryResetLibraryFilters": "Retirez un filtre ou réinitialisez-les tous."
+    "MessageTryResetLibraryFilters": "Retirez un filtre ou réinitialisez-les tous.",
+    "LabelStudio": "Studio"
 }
