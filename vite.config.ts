@@ -74,7 +74,9 @@ export default defineConfig({
             // Playwright spec like the rest, and vitest must not collect it either.
             'tests/playbackCredentialBaseline/**/*.spec.ts',
             '**/.claude/**',
-            'scripts/**'
+            'scripts/**',
+            // Standalone node:test suite; CI first builds its pinned WASM fixture.
+            'tools/oneamp/**'
         ],
         restoreMocks: true
     }
