@@ -4,7 +4,6 @@ import appSettings from '../../scripts/settings/appSettings';
 import * as userSettings from '../../scripts/settings/userSettings';
 import { playbackManager } from '../../components/playback/playbackmanager';
 import globalize from '../../lib/globalize';
-import CastSenderApi from './castSenderApi';
 import alert from '../../components/alert';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from '../../utils/events.ts';
@@ -96,55 +95,67 @@ class CastPlayer {
      */
     initializeCastPlayer() {
         const chrome = window.chrome;
-        if (!chrome) {
-            console.warn(
-                'Not initializing chromecast: chrome object is missing'
-            );
-            return;
-        }
-
-        if (!chrome.cast?.isAvailable) {
-            setTimeout(this.initializeCastPlayer.bind(this), 1000);
+        if (!chrome?.cast?.isAvailable) {
+            this.initializationFailed = true;
             return;
         }
 
         const apiClient = ServerConnections.currentApiClient();
         const userId = apiClient.getCurrentUserId();
 
-        apiClient.getUser(userId).then((user) => {
-            const applicationID = user.Configuration.CastReceiverId;
-            if (!applicationID) {
-                console.warn(
-                    `Not initializing chromecast: CastReceiverId is ${applicationID}`
+        apiClient
+            .getUser(userId)
+            .then((user) => {
+                if (this._disposed) return;
+                const applicationID = user.Configuration.CastReceiverId;
+                if (!applicationID) {
+                    this.initializationFailed = true;
+                    return;
+                }
+
+                // request session
+                const sessionRequest = new chrome.cast.SessionRequest(
+                    applicationID
                 );
-                return;
-            }
+                const apiConfig = new chrome.cast.ApiConfig(
+                    sessionRequest,
+                    this.sessionListener.bind(this),
+                    this.receiverListener.bind(this)
+                );
 
-            // request session
-            const sessionRequest = new chrome.cast.SessionRequest(
-                applicationID
-            );
-            const apiConfig = new chrome.cast.ApiConfig(
-                sessionRequest,
-                this.sessionListener.bind(this),
-                this.receiverListener.bind(this)
-            );
+                console.debug(
+                    `chromecast.initialize (applicationId=${applicationID})`
+                );
+                chrome.cast.initialize(
+                    apiConfig,
+                    this.onInitSuccess.bind(this),
+                    this.errorHandler
+                );
+            })
+            .catch(() => {
+                this.initializationFailed = true;
+            });
+    }
 
-            console.debug(
-                `chromecast.initialize (applicationId=${applicationID})`
-            );
-            chrome.cast.initialize(
-                apiConfig,
-                this.onInitSuccess.bind(this),
-                this.errorHandler
-            );
-        });
+    dispose() {
+        this._disposed = true;
+        document.removeEventListener(
+            'volumeupbutton',
+            onVolumeUpKeyDown,
+            false
+        );
+        document.removeEventListener(
+            'volumedownbutton',
+            onVolumeDownKeyDown,
+            false
+        );
     }
 
     /**
      * Callback function for init success
      */
     onInitSuccess() {
+        if (this._disposed) return;
         this.isInitialized = true;
         console.debug('[chromecastPlayer] init success');
     }
@@ -153,6 +164,7 @@ class CastPlayer {
      * Generic error callback function
      */
     onError() {
+        if (!this.isInitialized) this.initializationFailed = true;
         console.debug('[chromecastPlayer] error');
     }
 
@@ -164,6 +176,7 @@ class CastPlayer {
      * status gets synced up with current media of the session
      */
     sessionListener(e) {
+        if (this._disposed) return;
         this.session = e;
         if (this.session) {
             if (this.session.media[0]) {
@@ -176,6 +189,7 @@ class CastPlayer {
 
     // messageListener - receive callback messages from the Cast receiver
     messageListener(namespace, message) {
+        if (this._disposed) return;
         if (typeof message === 'string') {
             message = JSON.parse(message);
         }
@@ -206,6 +220,8 @@ class CastPlayer {
      * does not provide a list of device IDs
      */
     receiverListener(e) {
+        if (this._disposed) return;
+        this.receiverAvailabilityKnown = true;
         if (e === 'available') {
             console.debug('[chromecastPlayer] receiver found');
             this.hasReceivers = true;
@@ -219,6 +235,7 @@ class CastPlayer {
      * session update listener
      */
     sessionUpdateListener(isAlive) {
+        if (this._disposed) return;
         if (isAlive) {
             console.debug(
                 '[chromecastPlayer] sessionUpdateListener: already alive'
@@ -270,6 +287,7 @@ class CastPlayer {
     }
 
     onSessionConnected(session) {
+        if (this._disposed) return;
         this.session = session;
         this.deviceState = DEVICE_STATE.ACTIVE;
 
@@ -298,6 +316,7 @@ class CastPlayer {
      * session update listener
      */
     sessionMediaListener(e) {
+        if (this._disposed) return;
         this.currentMediaSession = e;
         this.currentMediaSession.addUpdateListener(
             this.mediaStatusUpdateHandler
@@ -468,6 +487,7 @@ class CastPlayer {
      * @param {Object} media A new media object.
      */
     onMediaDiscovered(how, media) {
+        if (this._disposed) return;
         console.debug(
             '[chromecastPlayer] new media session ID:' +
                 media.mediaSessionId +
@@ -495,6 +515,7 @@ class CastPlayer {
      * @param {!Boolean} e true/false
      */
     onMediaStatusUpdate(e) {
+        if (this._disposed) return;
         console.debug('[chromecastPlayer] updating media: ' + e);
         if (e === false) {
             this.castPlayerState = PLAYER_STATE.IDLE;
@@ -706,15 +727,56 @@ class ChromecastPlayer {
         this.isLocalPlayer = false;
         this.lastPlayerData = {};
 
-        new CastSenderApi().load().then(() => {
-            Events.on(ServerConnections, 'localusersignedin', () => {
-                initializeChromecast.call(this);
-            });
+        this._castEpoch = 0;
+        Events.on(ServerConnections, 'localusersignedin', () =>
+            this.syncCastIdentity()
+        );
+        Events.on(ServerConnections, 'localusersignedout', () =>
+            this.resetCast()
+        );
+    }
 
-            if (ServerConnections.currentUserId) {
-                initializeChromecast.call(this);
-            }
-        });
+    resetCast() {
+        this._castEpoch++;
+        this._castPlayer?.dispose();
+        this._castPlayer = undefined;
+        this._castInitialization = undefined;
+        this._castUser = undefined;
+        this._castApi = undefined;
+    }
+
+    syncCastIdentity() {
+        const api = ServerConnections.currentApiClient();
+        const user = api?.getCurrentUserId();
+        if (user !== this._castUser || api !== this._castApi) {
+            this.resetCast();
+            this._castUser = user;
+            this._castApi = api;
+        }
+    }
+
+    prepareCast() {
+        this.syncCastIdentity();
+        if (!this._castUser) return Promise.resolve();
+        if (!this._castInitialization) {
+            const epoch = this._castEpoch;
+            this._castInitialization = import('./castSenderApi')
+                .then(async ({ default: Sender, waitForCastPlayer }) => {
+                    await new Sender().load();
+                    if (epoch !== this._castEpoch) return;
+                    initializeChromecast.call(this);
+                    await waitForCastPlayer(this._castPlayer);
+                })
+                .catch(() => {
+                    // Cast failure must not reject the other players' target list.
+                    if (epoch === this._castEpoch) {
+                        this._castPlayer?.dispose();
+                        this._castPlayer = undefined;
+                        this._castInitialization = undefined;
+                    }
+                });
+        }
+        return this._castInitialization;
     }
 
     /*
@@ -724,6 +786,7 @@ class ChromecastPlayer {
         const castPlayer = this._castPlayer;
 
         if (
+            castPlayer &&
             castPlayer.deviceState !== DEVICE_STATE.ACTIVE &&
             castPlayer.isInitialized
         ) {
@@ -739,14 +802,15 @@ class ChromecastPlayer {
         }
     }
 
-    getTargets() {
+    async getTargets({ enableDiscovery = false } = {}) {
+        if (enableDiscovery) await this.prepareCast();
         const targets = [];
 
         if (this._castPlayer?.hasReceivers) {
             targets.push(this.getCurrentTargetInfo());
         }
 
-        return Promise.resolve(targets);
+        return targets;
     }
 
     // This is a privately used method

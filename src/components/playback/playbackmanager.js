@@ -1049,9 +1049,9 @@ function createTarget(instance, player) {
     };
 }
 
-function getPlayerTargets(player) {
+function getPlayerTargets(player, options) {
     if (player.getTargets) {
-        return player.getTargets();
+        return player.getTargets(options);
     }
 
     return Promise.resolve([createTarget(player)]);
@@ -1217,10 +1217,10 @@ export class PlaybackManager {
             );
         };
 
-        self.getTargets = function () {
+        self.getTargets = function (options) {
             const promises = players
                 .filter(displayPlayerIndividually)
-                .map(getPlayerTargets);
+                .map((player) => getPlayerTargets(player, options));
 
             return Promise.all(promises).then((responses) =>
                 responses.flat().sort(sortPlayerTargets)

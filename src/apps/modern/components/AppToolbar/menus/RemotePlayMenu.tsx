@@ -38,7 +38,9 @@ const RemotePlayMenu: FC<RemotePlayMenuProps> = ({
 
     useEffect(() => {
         const fetchPlaybackTargets = async () => {
-            setPlaybackTargets(await playbackManager.getTargets());
+            setPlaybackTargets(
+                await playbackManager.getTargets({ enableDiscovery: true })
+            );
         };
 
         if (open) {

@@ -34,17 +34,19 @@ function onOpen() {
 
     console.debug('[autocast] initializing cast player', playerId);
 
-    playbackManager.getTargets().then(function (targets) {
-        console.debug('[autocast] playback targets', targets);
+    playbackManager
+        .getTargets({ enableDiscovery: playerId === 'Google Cast' })
+        .then(function (targets) {
+            console.debug('[autocast] playback targets', targets);
 
-        const player = targets.find((target) => target.id === playerId);
-        if (player) {
-            console.debug('[autocast] found target player', player);
-            playbackManager.trySetActivePlayer(player.playerName, player);
-        } else {
-            console.debug('[autocast] selected cast player not found');
-        }
-    });
+            const player = targets.find((target) => target.id === playerId);
+            if (player) {
+                console.debug('[autocast] found target player', player);
+                playbackManager.trySetActivePlayer(player.playerName, player);
+            } else {
+                console.debug('[autocast] selected cast player not found');
+            }
+        });
 }
 
 export function initialize() {
