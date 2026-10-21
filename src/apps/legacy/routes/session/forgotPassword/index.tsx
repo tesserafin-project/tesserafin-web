@@ -55,7 +55,7 @@ export const ForgotPasswordPage = () => {
                     msg += '<br/><br/>';
                     msg += result.PinFile;
                     msg += '<br/>';
-                    callback = () => navigate('/forgotpasswordpin');
+                    callback = () => void navigate('/forgotpasswordpin');
                     break;
                 default:
                     return;

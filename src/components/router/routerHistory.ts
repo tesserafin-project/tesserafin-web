@@ -1,4 +1,4 @@
-import type { Router, RouterState } from '@remix-run/router';
+import type { DataRouter as Router, RouterState } from 'react-router-dom';
 import type { History, Listener, To } from 'history';
 
 import Events, { type Event } from 'utils/events';
