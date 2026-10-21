@@ -67,7 +67,7 @@ export function show(button) {
     loading.show();
 
     playbackManager
-        .getTargets()
+        .getTargets({ enableDiscovery: true })
         .then(function (targets) {
             const menuItems = targets.map(function (t) {
                 let name = t.name;
