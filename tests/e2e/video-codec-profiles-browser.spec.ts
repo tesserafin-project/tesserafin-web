@@ -1,3 +1,5 @@
+import { appendFileSync } from 'node:fs';
+
 import { expect, test } from './support/origin-inventory';
 
 import {
@@ -11,7 +13,7 @@ import {
  * The vitest sibling (`src/scripts/videoCodecProfiles.test.ts`) proves the MAPPING - probe table in,
  * profile list out - with every answer hand-written. It cannot prove the strings themselves are the
  * ones a browser recognizes: jsdom's `canPlayType` returns `''` for everything, so a table full of
- * typos would pass it perfectly. This file closes that gap by asking a real Chromium the exact
+ * typos would pass it perfectly. This file closes that gap by asking a real browser the exact
  * strings in `VIDEO_CODEC_PROFILE_PROBES`, printing every raw answer, and deriving from those real
  * answers rather than from fixtures.
  *
@@ -67,7 +69,7 @@ test.describe('videoCodecProfiles against a REAL canPlayType', () => {
     test('records the raw per-string answers and the profiles they derive', async ({
         page,
         browserName
-    }) => {
+    }, testInfo) => {
         const mimeTypes = [
             ...allTableMimeTypes(),
             ...Object.values(NEGATIVE_CONTROLS)
@@ -93,6 +95,33 @@ test.describe('videoCodecProfiles against a REAL canPlayType', () => {
             );
         }
         console.log(`[probe] derived=${JSON.stringify(derived)}`);
+        const evidence = JSON.stringify(
+            {
+                browser: browserName,
+                version,
+                userAgent,
+                platform: process.platform,
+                architecture: process.arch,
+                scope: 'canPlayType observations, not decoded-frame/HDR/DirectPlay acceptance',
+                answers,
+                derived
+            },
+            null,
+            2
+        );
+        await testInfo.attach('codec-profile-observations.json', {
+            body: evidence,
+            contentType: 'application/json'
+        });
+        // Keep bounded public observations durable without consuming artifact storage.
+        // No server, media URL, account, credential or household data is involved.
+        if (process.env.GITHUB_STEP_SUMMARY) {
+            appendFileSync(
+                process.env.GITHUB_STEP_SUMMARY,
+                `## Codec probes: ${browserName} ${version}\n\n` +
+                    `\`\`\`json\n${evidence}\n\`\`\`\n\n`
+            );
+        }
 
         // Anti-vacuity: every table string must have been asked and answered with one of the three
         // specified values. A typo'd MIME string would still return '' here, so the checks below
@@ -156,18 +185,16 @@ test.describe('videoCodecProfiles against a REAL canPlayType', () => {
         );
         expect(allTableMimeTypes()).not.toContain(NEGATIVE_CONTROLS.high444);
 
-        // Feed the real inconclusive/negative answers to the mapper as if they were a row's
-        // evidence: nothing may come out.
-        expect(
-            deriveCodecProfiles(
-                'h264',
-                (type) =>
-                    answers[NEGATIVE_CONTROLS.high444] ?? answers[type] ?? '',
-                {}
-            ),
-            `high 4:4:4 answered ${JSON.stringify(answers[NEGATIVE_CONTROLS.high444])}; ` +
-                'if that is "probably" this browser genuinely decodes it and this expectation needs revisiting'
-        ).toEqual([]);
+        // The high-4:4:4 answer is browser/build-specific. A positive API answer is
+        // confidence, not a decoded-frame proof; never turn Chromium's old answer
+        // into a universal Firefox/hardware expectation.
+        const inconclusive = Object.values(answers).filter(
+            (answer) => answer !== 'probably'
+        );
+        expect(inconclusive.length).toBeGreaterThan(0);
+        for (const answer of inconclusive) {
+            expect(deriveCodecProfiles('h264', () => answer, {})).toEqual([]);
+        }
 
         expect(answers[NEGATIVE_CONTROLS.nonsense]).toBe('');
     });
