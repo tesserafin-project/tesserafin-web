@@ -1,0 +1,20 @@
+body {
+    margin: 32px;
+    background: var(--rf-color-bg, #151515);
+    color: var(--rf-color-text, white);
+}
+button {
+    padding: 16px;
+    margin: 8px;
+}
+.dialog {
+    background: var(--rf-color-bg, #222);
+    padding: 24px;
+    max-width: calc(100vw - 48px);
+}
+.dialog button {
+    display: block;
+}
+.hide {
+    display: none !important;
+}
