@@ -70,3 +70,7 @@ tests/captures/out/
 
 # Server-free player-menu focus browser rig
 tests/playerMenusBrowser/dist/
+
+# Offline OneAmp experiment outputs (never part of the production bundle).
+/oneamp-dsp-out/
+/oneamp-dsp-repeat/

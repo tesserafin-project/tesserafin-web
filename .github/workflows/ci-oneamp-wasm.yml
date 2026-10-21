@@ -1,0 +1,32 @@
+name: OneAmp WASM foundation
+on:
+  pull_request:
+    paths:
+      - 'tools/oneamp/**'
+      - 'docs/audio/oneamp-wasm-foundation.md'
+      - '.github/workflows/ci-oneamp-wasm.yml'
+permissions:
+  contents: read
+jobs:
+  wasm-pcm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+      - run: rustup toolchain install 1.94.0 --profile minimal --target wasm32-unknown-unknown
+      - run: node tools/oneamp/build.mjs --output oneamp-dsp-out
+      - run: node --test tools/oneamp/pcm.test.mjs
+      - run: node tools/oneamp/build.mjs --output oneamp-dsp-repeat
+      - run: node tools/oneamp/compare-builds.mjs oneamp-dsp-out oneamp-dsp-repeat
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: experimental-oneamp-wasm-${{ github.event.pull_request.head.sha || github.sha }}
+          path: oneamp-dsp-out/
+          if-no-files-found: error
+          retention-days: 14
