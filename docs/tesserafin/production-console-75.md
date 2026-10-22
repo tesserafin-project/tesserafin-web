@@ -1,6 +1,6 @@
 # Production console hygiene (#75)
 
-Status: implementation and regression controls prepared; release-image acceptance pending.
+Status: five flows pass at their ceilings on a locally built release-shaped image; a published release image run remains.
 This change does not close #75 or change the server's DS5/BoxSet behavior.
 
 ## Findings and disposition
@@ -87,10 +87,28 @@ the container daemon. Keep the container launch/inspection evidence with the
 counts. No image, tag, release, registry permission or server change is produced
 by this Web test.
 
+## Acceptance run (2026-10-22)
+
+Image: the server `Dockerfile` built from tesserafin `master` `8f6ce4e601`, with
+`/opt/tesserafin-web` replaced by this branch's `npm run build:production` output
+(local image `sha256:affcafa72c95…`). Fixtures were seeded with the
+`ci/verify-release-pair.sh` seeder (`smokeadmin`, Movies with `Smoke Test Movie` and
+`Transcode Probe`, Codec Probes with `Remux Probe`, the restricted user).
+
+The first run failed three flows. Each emission was traced and fixed at its source:
+
+| Emission | Flows | Fix |
+|---|---|---|
+| SyncPlay `PlayerFactory` `console.debug` | sign-in, Direct Play, transcode | `utils/debug` |
+| hls.js inline worker `ReferenceError` (minified `toString()` rebuild), reported as non-fatal `internalException` | transcode | published `hls.worker.js` copied to `libraries/`, set as `workerPath` |
+| non-fatal `bufferStalledError` | transcode | non-fatal HLS errors via `utils/debug`; fatal stays `console.error` |
+
+After the fixes all five flows passed at ceiling 0, twice in a row, with the
+preflight matching every served bundle/chunk/service-worker hash to the local `dist/`.
+
 ## Remaining acceptance
 
-The five real release-image measurements and their per-flow counts have not been
-run in this workspace. No green production-flow result is claimed. Keep the PR
-draft and #75 open until these pass on the actual candidate image; investigate
-any warning/error or remaining trace individually. The ordinary quality/build
-checks and unit/negative controls cannot stand in for that evidence.
+The run above used a locally built image, not a published release image. Repeat
+it on the published release image that ships this bundle before closing #75;
+investigate any warning/error or remaining trace individually. The ordinary
+quality/build checks and unit/negative controls cannot stand in for that evidence.
