@@ -20,6 +20,7 @@
     "debtWeb3Lowering": "Every initial and start-up ceiling except initial.rawCssBytes moves DOWN, locking in DEBT-WEB-2 (tesserafin-web #200), which made /video one lazy route in both families and took VideoPage, its MUI top bar and the React track menus out of the start-up graph. No ceiling had moved for it, so ~70 KB of headroom would have let that code (or anything else that size) come back silently. CI-shaped build (40-character JELLYFIN_VERSION, 7-character `git describe`) of main 2d53ad747c, clean tree, the worktree that owns node_modules: initial.rawJsBytes 1898530, initial.rawCssBytes 171812 (UNCHANGED, ceiling stays 172032), initial.rawBytes 2070342, initial.gzipBytes 527365, initial.brotliBytes 444338, initial.assetCount 23 (was 25); startup.rawBytes 3164405, startup.gzipBytes 887491, startup.brotliBytes 557125, startup.assetCount 43 (was 45). Raw and gzip ceilings follow the rounding rule on these figures. The two brotli ceilings follow it on the figure PLUS the measured commit-id noise: main.tesserafin.bundle.js, the only counted asset that embeds the id, re-compressed with 40 random ids in place of this one moves brotli by -62..+139 B (gzip -1..+4, raw 0). Rounded on the bare measurement, initial.brotliBytes would have been 444416 - 78 B of room, which a different merge commit id overruns. So: ceil((444338 + 139) / 1024) * 1024 = 445440 and ceil((557125 + 139) / 1024) * 1024 = 558080 (the latter equal to the bare rounding). The asset counts take no margin, per the rule, and record the two chunks #200 removed from both tiers. The video-player boundary in protectedModulePatterns guards WHICH code stays out; these ceilings guard how much may come in instead.",
     "dialogFocusReturn": "initial.rawBytes moves UP one KiB for tesserafin-web #223, which restores legacy dialog opener focus on every layout instead of TV only (dialogHelper.js, +6/-1). CI-shaped build, same worktree, same node_modules: main f6e575c8b8 initial.rawJsBytes 1898669, initial.rawBytes 2070457, initial.gzipBytes 527390, startup.rawBytes 3164510, startup.gzipBytes 887507; #223 rebased on it 1898755 / 2070543 / 527418 / 3164596 / 887535, i.e. +86 B raw and +28 B gzip, all in the initial tier. Only initial.rawBytes crossed its ceiling (+15 B); it follows the rounding rule on the new figure: ceil(2070543 / 1024) * 1024 = 2071552. Every other ceiling already covers the measurement and stays put.",
     "assetCountNote": "initial.assetCount is a stable, small set - treat any movement as a real change. startup.assetCount is the metric most likely to need a mechanical bump: the tier counts whole chunk GROUPS, and splitChunks will happily extract a newly shared module out of one of them into two files. A count bump whose byte totals are unchanged is a chunk split, not growth; say so in the pull request and move on.",
+    "dompurify3417": "DOMPurify 3.4.16 -> 3.4.17 (tesserafin-web #206, upstream sanitizer hardening: IN_PLACE + shadow roots, SMIL attributeName in XHTML, namespace and literal-text edge cases) adds 974 B raw / 353 B gzip to both the initial and start-up tiers. CI-shaped build, same worktree, each commit with its own npm ci: main f6e575c8b8 initial.rawJsBytes 1898669, initial.rawBytes 2070457, startup.rawBytes 3164510, startup.gzipBytes 887507; #206 1899643 / 2071431 / 3165484 / 887860. Those four crossed their ceilings and follow the rounding rule on the new figures: initial.rawJsBytes 1900544, initial.rawBytes 2071552, startup.rawBytes 3166208, startup.gzipBytes 888832. Every other ceiling already covers the measurement and stays put.",
     "rounding": "Every byte ceiling is the measurement rounded UP to the next whole KiB (1024 B). Asset counts take no margin: the measured count is the ceiling. The KiB margin exists only to absorb the handful of bytes that move when __COMMIT_SHA__ / __JF_BUILD_VERSION__ differ between a local build and a CI build (webpack.common.js, .github/workflows/__package.yml) - it is not headroom for features.",
     "baseline": {
         "commit": "1cb72daa15ccbddaf8e095c0d541e04911cc17d8",
@@ -32,7 +33,7 @@
     },
     "budgets": {
         "initial": {
-            "rawJsBytes": 1899520,
+            "rawJsBytes": 1900544,
             "rawCssBytes": 172032,
             "rawBytes": 2071552,
             "gzipBytes": 528384,
@@ -40,8 +41,8 @@
             "assetCount": 23
         },
         "startup": {
-            "rawBytes": 3165184,
-            "gzipBytes": 887808,
+            "rawBytes": 3166208,
+            "gzipBytes": 888832,
             "brotliBytes": 558080,
             "assetCount": 43
         }
