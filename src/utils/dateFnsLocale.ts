@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import enUS from 'date-fns/locale/en-US';
 
 const LOCALE_MAP: Record<string, string> = {
@@ -80,9 +82,9 @@ export function normalizeLocale(localeName: string) {
 }
 
 export async function updateLocale(newLocale: string) {
-    console.debug('[dateFnsLocale] updating date-fns locale', newLocale);
+    debug('[dateFnsLocale] updating date-fns locale', newLocale);
     localeString = normalizeLocale(newLocale);
-    console.debug('[dateFnsLocale] mapped to date-fns locale', localeString);
+    debug('[dateFnsLocale] mapped to date-fns locale', localeString);
     locale = await fetchLocale(localeString);
 }
 

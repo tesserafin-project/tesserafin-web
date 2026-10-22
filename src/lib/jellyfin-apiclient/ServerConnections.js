@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { Credentials } from 'jellyfin-apiclient';
 
 import { appHost } from 'components/apphost';
@@ -89,7 +91,7 @@ class ServerConnections extends ConnectionManager {
     }
 
     initApiClient(server) {
-        console.debug('creating ApiClient singleton');
+        debug('creating ApiClient singleton');
 
         const apiClient = createApiClient(
             server,
@@ -106,7 +108,7 @@ class ServerConnections extends ConnectionManager {
 
         this.setLocalApiClient(apiClient);
 
-        console.debug('loaded ApiClient singleton');
+        debug('loaded ApiClient singleton');
     }
 
     /**

@@ -32,7 +32,7 @@ export function getIncludeCorsCredentials() {
     return getConfig()
         .then((config) => !!config.includeCorsCredentials)
         .catch((error) => {
-            console.log('cannot get web config:', error);
+            console.warn('cannot get web config:', error);
             return false;
         });
 }
@@ -48,7 +48,7 @@ export function getMultiServer() {
             return !!config.multiserver;
         })
         .catch((error) => {
-            console.log('cannot get web config:', error);
+            console.warn('cannot get web config:', error);
             return false;
         });
 }
@@ -59,7 +59,7 @@ export function getServers() {
             return config.servers || [];
         })
         .catch((error) => {
-            console.log('cannot get web config:', error);
+            console.warn('cannot get web config:', error);
             return [];
         });
 }
@@ -117,7 +117,7 @@ export function getMenuLinks() {
             return config.menuLinks || [];
         })
         .catch((error) => {
-            console.log('cannot get web config:', error);
+            console.warn('cannot get web config:', error);
             return [];
         });
 }
@@ -134,7 +134,7 @@ export function getPlugins() {
             return config.plugins || DefaultConfig.plugins;
         })
         .catch((error) => {
-            console.log('cannot get web config:', error);
+            console.warn('cannot get web config:', error);
             return DefaultConfig.plugins;
         });
 }

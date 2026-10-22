@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { playbackManager } from '../playback/playbackmanager';
 import Events from '../../utils/events.ts';
 
@@ -38,14 +40,14 @@ Events.on(
         }
 
         if (!oldPlayer.isLocalPlayer) {
-            console.debug(
+            debug(
                 'Skipping remote control autoplay because oldPlayer is not a local player'
             );
             return;
         }
 
         if (newPlayer.isLocalPlayer) {
-            console.debug(
+            debug(
                 'Skipping remote control autoplay because newPlayer is a local player'
             );
             return;

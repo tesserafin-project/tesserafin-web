@@ -36,6 +36,10 @@
  *   above turns it red. Source gate and runtime suite are complementary, and neither on its own is
  *   the containment guarantee.
  *
+ *   The same argument rules cover named `debug` imports from `utils/debug`, including a renamed
+ *   import. Production opt-in does not make a URL safe to log. Computed/indirect calls retain the
+ *   same runtime-backstop boundary described above.
+ *
  * WHAT COUNTS AS A VIOLATION
  *
  *   An argument to a direct `console.<method>(…)` call that either
@@ -297,7 +301,8 @@ function findViolations(root) {
     for (const file of sourceFiles(root)) {
         const absolute = join(root, file);
         const text = readFileSync(absolute, 'utf8');
-        if (!text.includes('console.')) continue;
+        if (!text.includes('console.') && !text.includes('utils/debug'))
+            continue;
         const sourceFile = ts.createSourceFile(
             file,
             text,
@@ -305,14 +310,39 @@ function findViolations(root) {
             true,
             scriptKind(file)
         );
-        const walk = (node) => {
+        // The opt-in diagnostic helper is a console sink too. Track its local import
+        // name (including `debug as trace`) so moving a call cannot bypass this gate.
+        const diagnosticNames = new Set();
+        for (const statement of sourceFile.statements) {
             if (
+                ts.isImportDeclaration(statement) &&
+                statement.moduleSpecifier.text === 'utils/debug'
+            ) {
+                const bindings = statement.importClause?.namedBindings;
+                if (bindings && ts.isNamedImports(bindings)) {
+                    for (const binding of bindings.elements) {
+                        if (
+                            (binding.propertyName ?? binding.name).text ===
+                            'debug'
+                        ) {
+                            diagnosticNames.add(binding.name.text);
+                        }
+                    }
+                }
+            }
+        }
+        const walk = (node) => {
+            const directConsole =
                 ts.isCallExpression(node) &&
                 ts.isPropertyAccessExpression(node.expression) &&
                 ts.isIdentifier(node.expression.expression) &&
                 node.expression.expression.text === 'console' &&
-                CONSOLE_METHODS.has(node.expression.name.text)
-            ) {
+                CONSOLE_METHODS.has(node.expression.name.text);
+            const diagnostic =
+                ts.isCallExpression(node) &&
+                ts.isIdentifier(node.expression) &&
+                diagnosticNames.has(node.expression.text);
+            if (directConsole || diagnostic) {
                 for (const argument of node.arguments) {
                     if (!readsUrlValue(argument)) continue;
                     const { line } = sourceFile.getLineAndCharacterOfPosition(
@@ -321,7 +351,9 @@ function findViolations(root) {
                     violations.push({
                         file,
                         line: line + 1,
-                        method: node.expression.name.text,
+                        method: diagnostic
+                            ? 'debug'
+                            : node.expression.name.text,
                         expression: normalize(argument.getText(sourceFile))
                     });
                 }

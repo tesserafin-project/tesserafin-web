@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
 import { ItemFilter } from '@jellyfin/sdk/lib/generated-client/models/item-filter';
 import { ItemSortBy } from '@jellyfin/sdk/lib/generated-client/models/item-sort-by';
@@ -1330,7 +1332,7 @@ export class PlaybackManager {
             currentTargetInfo = targetInfo;
 
             if (targetInfo) {
-                console.debug('Active player: ' + JSON.stringify(targetInfo));
+                debug('[playbackmanager] active player selected');
             }
 
             if (previousPlayer) {
@@ -3607,7 +3609,7 @@ export class PlaybackManager {
             isSecondarySubtitle
         ) {
             if (prevIndex == -1) {
-                console.debug(`AutoSet ${streamType} - No Stream Set`);
+                debug(`AutoSet ${streamType} - No Stream Set`);
                 if (streamType == 'Subtitle') {
                     if (isSecondarySubtitle) {
                         trackOptions.DefaultSecondarySubtitleStreamIndex = -1;
@@ -3619,7 +3621,7 @@ export class PlaybackManager {
             }
 
             if (!prevSource.MediaStreams || !mediaStreams) {
-                console.debug(`AutoSet ${streamType} - No MediaStreams`);
+                debug(`AutoSet ${streamType} - No MediaStreams`);
                 return;
             }
 
@@ -3628,11 +3630,11 @@ export class PlaybackManager {
             const prevStream = prevSource.MediaStreams[prevIndex];
 
             if (!prevStream) {
-                console.debug(`AutoSet ${streamType} - No prevStream`);
+                debug(`AutoSet ${streamType} - No prevStream`);
                 return;
             }
 
-            console.debug(
+            debug(
                 `AutoSet ${streamType} - Previous was ${prevStream.Index} - ${prevStream.DisplayTitle}`
             );
 
@@ -3665,7 +3667,7 @@ export class PlaybackManager {
                 )
                     score += 2;
 
-                console.debug(
+                debug(
                     `AutoSet ${streamType} - Score ${score} for ${stream.Index} - ${stream.DisplayTitle}`
                 );
                 if (score > bestStreamScore && score >= 3) {
@@ -3677,7 +3679,7 @@ export class PlaybackManager {
             }
 
             if (bestStreamIndex != null) {
-                console.debug(
+                debug(
                     `AutoSet ${streamType} - Using ${bestStreamIndex} score ${bestStreamScore}.`
                 );
                 if (streamType == 'Subtitle') {
@@ -3693,7 +3695,7 @@ export class PlaybackManager {
                     trackOptions.DefaultAudioStreamIndex = bestStreamIndex;
                 }
             } else {
-                console.debug(
+                debug(
                     `AutoSet ${streamType} - Threshold not met. Using default.`
                 );
             }
@@ -4715,7 +4717,7 @@ export class PlaybackManager {
             const newItemInfo = self._playQueueManager.getNextItemInfo();
 
             if (newItemInfo) {
-                console.debug('playing next track');
+                debug('playing next track');
 
                 const newItemPlayOptions =
                     newItemInfo.item.playOptions || getDefaultPlayOptions();
@@ -5652,7 +5654,7 @@ export class PlaybackManager {
             liveStreamId,
             serverId
         ) {
-            console.debug('getLiveStreamMediaInfo');
+            debug('getLiveStreamMediaInfo');
 
             streamInfo.lastMediaInfoQuery = new Date().getTime();
 
@@ -6293,7 +6295,7 @@ export class PlaybackManager {
     }
 
     sendCommand(cmd, player) {
-        console.debug('MediaController received command: ' + cmd.Name);
+        debug('MediaController received command: ' + cmd.Name);
         switch (cmd.Name) {
             case 'SetRepeatMode':
                 this.setRepeatMode(cmd.Arguments.RepeatMode, player);

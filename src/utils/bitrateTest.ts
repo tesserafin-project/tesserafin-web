@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { Api } from '@jellyfin/sdk';
 import type { EndPointInfo } from '@jellyfin/sdk/lib/generated-client/models/end-point-info';
 import { getSystemApi } from '@jellyfin/sdk/lib/utils/api/system-api';
@@ -85,7 +87,7 @@ const getDownloadSpeed = (api: Api, bytes: number) => {
                 const bytesPerSecond = bytesLoaded / responseTimeSeconds;
                 const bitrate = Math.round(bytesPerSecond * 8);
 
-                console.debug(
+                debug(
                     `[bitratetest] ${bytesLoaded} bytes loaded (${bytes} requested) in ${responseTimeSeconds} seconds -> ${bitrate} bps`
                 );
 
@@ -201,9 +203,7 @@ const detectBitrateWithEndpointInfo = (
         undefined
     ).then((result) => {
         const bitrateInMbps = (result / 1048576).toFixed(2);
-        console.debug(
-            `[bitratetest] bitrate detected as ${bitrateInMbps} Mbps`
-        );
+        debug(`[bitratetest] bitrate detected as ${bitrateInMbps} Mbps`);
         if (endpointInfo.IsInNetwork) {
             result = Math.max(result || 0, LAN_BITRATE);
 

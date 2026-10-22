@@ -71,6 +71,7 @@ jobs:
           - build:check
           - test
           - test:player-menu-browser
+          - test:console-controls
           # Guards the epubjs-scoped `@xmldom/xmldom` override: the pin sits
           # above the range EPUB.js declares, so the compatibility it depends on
           # has to be re-proven on every change rather than once, at the moment

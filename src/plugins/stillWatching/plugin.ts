@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models/base-item-kind';
 
 import confirm from 'components/confirm/confirm';
@@ -39,7 +41,7 @@ class StillWatchingPlugin extends PreplayInterceptPlugin {
         const option =
             userSettings.stillWatchingPrompt() as StillWatchingOptions;
 
-        console.debug(
+        debug(
             `[StillWatchingPlugin] User setting: ${option}; Session start: ${this.sessionStartTime}; Idle time: ${inputManager.idleTime() / 1000}s; Played items: ${this.playedItems.size}`
         );
 

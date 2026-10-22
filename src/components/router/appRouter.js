@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { CollectionType } from '@jellyfin/sdk/lib/generated-client/models/collection-type';
 
 import { setBackdropTransparency } from '../backdrop/backdrop';
@@ -118,9 +120,7 @@ class AppRouter {
             const fullPath = normalizedPath + location.search;
 
             if (fullPath === this.lastPath) {
-                console.debug(
-                    '[appRouter] path did not change, resolving promise'
-                );
+                debug('[appRouter] path did not change, resolving promise');
                 this.onViewShow();
             }
 

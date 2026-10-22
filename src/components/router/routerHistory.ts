@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import type { DataRouter as Router, RouterState } from 'react-router-dom';
 import type { History, Listener, To } from 'history';
 
@@ -13,7 +15,7 @@ export class RouterHistory implements History {
         this._router = router;
 
         this._router.subscribe((state) => {
-            console.debug('[RouterHistory] history update', state);
+            debug('[RouterHistory] history update');
             Events.trigger(document, HISTORY_UPDATE_EVENT, [state]);
         });
 

@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import dom from '../../utils/dom';
 import { playbackManager } from '../playback/playbackmanager';
 import Events from '../../utils/events.ts';
@@ -59,7 +61,7 @@ function setNextVideoText() {
         0
     );
 
-    console.debug('up next seconds remaining: ' + secondsRemaining);
+    debug('up next seconds remaining: ' + secondsRemaining);
 
     const timeText =
         '<span class="upNextDialog-countdownText">' +

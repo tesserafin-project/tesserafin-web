@@ -1,3 +1,5 @@
+import { debug } from 'utils/debug';
+
 import { appHost } from 'components/apphost';
 import viewContainer from 'components/viewContainer';
 import { AppFeature } from 'constants/appFeature';
@@ -52,7 +54,7 @@ export async function serverAddress() {
         urls.push(url);
     }
 
-    console.debug('URL candidates:', urls);
+    debug('URL candidates:', urls);
 
     const promises = urls.map((url) => {
         return fetch(`${url}/System/Info/Public`, { cache: 'no-cache' })

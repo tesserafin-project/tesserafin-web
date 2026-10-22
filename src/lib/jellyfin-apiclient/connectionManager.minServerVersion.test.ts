@@ -48,13 +48,18 @@ const createApiClientStub = () =>
         }
     );
 
+const createApiClient = vi.fn(() => createApiClientStub());
+
 vi.mock('utils/jellyfin-apiclient/createApiClient', () => ({
-    createApiClient: () => createApiClientStub()
+    createApiClient: () => createApiClient()
 }));
 
+const toApi = vi.fn(() => ({ update: vi.fn() }));
+const toTesserafinApi = vi.fn(() => ({ update: vi.fn() }));
+
 vi.mock('utils/jellyfin-apiclient/compat', () => ({
-    toApi: () => ({ update: vi.fn() }),
-    toTesserafinApi: () => ({ update: vi.fn() })
+    toApi: () => toApi(),
+    toTesserafinApi: () => toTesserafinApi()
 }));
 
 const SERVER_ID = 'server-under-test';
@@ -109,6 +114,29 @@ const respondWithVersion = (version: string) => {
 describe('ConnectionManager minimum server version', () => {
     beforeEach(() => {
         ajax.mockReset();
+        createApiClient.mockClear();
+        toApi.mockClear();
+        toTesserafinApi.mockClear();
+    });
+
+    it('reuses one API client and both SDK wrappers across repeated lookups', async () => {
+        const connectionManager = await createConnectionManager();
+        const server = manualServer();
+        const first = connectionManager._getOrAddApiClient(
+            server,
+            server.ManualAddress
+        );
+        for (let i = 0; i < 16; i++) {
+            const next = connectionManager._getOrAddApiClient(
+                server,
+                server.ManualAddress
+            );
+            expect(next).toBe(first);
+        }
+        expect(createApiClient).toHaveBeenCalledTimes(1);
+        expect(toApi).toHaveBeenCalledTimes(1);
+        expect(toTesserafinApi).toHaveBeenCalledTimes(1);
+        expect(ajax).not.toHaveBeenCalled();
     });
 
     it('defaults to the Tesserafin-owned minimum, not the Jellyfin SDK one', async () => {
