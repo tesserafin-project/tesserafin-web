@@ -140,7 +140,12 @@ function DialogHashHandler(dlg, hash, resolve) {
             }
         }
 
-        if (layoutManager.tv) {
+        // Restore the opener unless another control has already received focus.
+        if (
+            activeElement?.isConnected &&
+            (dlg.contains(document.activeElement) ||
+                document.activeElement === document.body)
+        ) {
             focusManager.focus(activeElement);
         }
 

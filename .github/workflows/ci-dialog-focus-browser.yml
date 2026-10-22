@@ -1,0 +1,65 @@
+name: Legacy dialog focus browser
+
+on:
+  pull_request:
+    paths:
+      - 'src/components/dialogHelper/**'
+      - 'src/components/focusManager.js'
+      - 'src/components/scrollManager.js'
+      - 'src/scripts/keyboardNavigation.js'
+      - 'src/scripts/inputManager.js'
+      - 'src/components/actionSheet/**'
+      - 'tests/dialogFocusBrowser/**'
+      - 'tests/itemDetailsBrowser/support/fixtureApi.ts'
+      - 'tests/reader/serve.mjs'
+      - 'tests/captures/serve.mjs'
+      - 'webpack.dialogFocus.js'
+      - 'playwright.dialogFocus.config.ts'
+      - '.github/workflows/ci-dialog-focus-browser.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.nvmrc'
+
+permissions: {}
+concurrency:
+  group: dialog-focus-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    name: Legacy dialogs on Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          show-progress: false
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --no-audit
+      - run: npx playwright install --with-deps chromium
+      - name: Build unmodified production application
+        run: npm run build:production
+        env:
+          JELLYFIN_VERSION: ${{ github.event.pull_request.head.sha }}
+      - name: Preserve delivery budgets
+        run: npm run verify:bundle-budget && npm run verify:delivery-budget
+      - name: Build isolated real-module component fixture
+        run: npx webpack --config webpack.dialogFocus.js
+      - name: Exercise full application and component focus journeys
+        run: npx playwright test --config playwright.dialogFocus.config.ts
+      - name: Retain failed browser evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dialog-focus-failures
+          path: test-results
+          if-no-files-found: ignore
+          retention-days: 7
