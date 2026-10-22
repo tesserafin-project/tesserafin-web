@@ -123,6 +123,8 @@ function requireHlsPlayer(callback) {
         hls.DefaultConfig.lowLatencyMode = false;
         hls.DefaultConfig.backBufferLength = Infinity;
         hls.DefaultConfig.liveBackBufferLength = 90;
+        // The inline worker is rebuilt from minified source and fails; load the published one.
+        hls.DefaultConfig.workerPath = `${appRouter.baseUrl()}/libraries/hls.worker.js`;
         window.Hls = hls;
         callback();
     });

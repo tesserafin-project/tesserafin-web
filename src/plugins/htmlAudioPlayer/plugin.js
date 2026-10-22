@@ -6,6 +6,7 @@ import { MediaError } from 'types/mediaError';
 
 import browser from '../../scripts/browser';
 import { appHost } from '../../components/apphost';
+import { appRouter } from '../../components/router/appRouter';
 import * as htmlMediaHelper from '../../components/htmlMediaHelper';
 import profileBuilder from '../../scripts/browserDeviceProfile';
 import { getIncludeCorsCredentials } from '../../scripts/settings/webSettings';
@@ -57,6 +58,8 @@ function requireHlsPlayer(callback) {
         hls.DefaultConfig.lowLatencyMode = false;
         hls.DefaultConfig.backBufferLength = Infinity;
         hls.DefaultConfig.liveBackBufferLength = 90;
+        // The inline worker is rebuilt from minified source and fails; load the published one.
+        hls.DefaultConfig.workerPath = `${appRouter.baseUrl()}/libraries/hls.worker.js`;
         window.Hls = hls;
         callback();
     });

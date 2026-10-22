@@ -16,7 +16,8 @@ const Assets = [
     // pdfjs-dist 4+ ships the worker as an ES module only; it is loaded from
     // this origin as `libraries/pdf.worker.mjs` (see src/plugins/pdfPlayer).
     'pdfjs-dist/build/pdf.worker.mjs',
-    'libpgs/dist/libpgs.worker.js'
+    'libpgs/dist/libpgs.worker.js',
+    'hls.js/dist/hls.worker.js'
 ];
 
 const DEV_MODE = process.env.NODE_ENV !== 'production';

@@ -317,7 +317,8 @@ export function bindEventsToHlsPlayer(
     });
 
     hls.on(Hls.Events.ERROR, function (event, data) {
-        console.error(
+        // hls.js recovers from non-fatal errors itself (stalls, worker fallback); they are diagnostics.
+        (data.fatal ? console.error : debug)(
             'HLS Error: Type: ' +
                 data.type +
                 ' Details: ' +
