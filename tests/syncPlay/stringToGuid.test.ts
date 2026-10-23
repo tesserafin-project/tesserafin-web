@@ -1,6 +1,9 @@
+// Lives outside src/plugins on purpose: the plugin loader's webpack context
+// (import(`../plugins/${spec}`)) would otherwise bundle this file and vitest.
+
 import { describe, expect, it } from 'vitest';
 
-import { stringToGuid } from './Helper';
+import { stringToGuid } from '../../src/plugins/syncPlay/core/Helper';
 
 describe('stringToGuid', () => {
     it('formats a 32-character hex id as a dashed GUID', () => {
