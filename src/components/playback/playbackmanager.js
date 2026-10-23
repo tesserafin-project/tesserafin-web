@@ -39,6 +39,7 @@ import { OutboundWebSocketMessageType } from '@jellyfin/sdk/lib/websocket';
 import { MediaError } from 'types/mediaError';
 import { getMediaError } from 'utils/mediaError';
 import { bindSkipSegment } from './skipsegment.ts';
+import { getParam } from './getUrlParam.ts';
 import * as bitrateTest from 'utils/bitrateTest';
 // Static import is safe for the bundle budget: `playbackAttemptId.ts` has zero imports of its own
 // (see its file-level comment), so it pulls no `lib/tesserafin-sdk` scope into the main chunk and the
@@ -294,19 +295,6 @@ function getMimeType(type, container) {
     }
 
     return type + '/' + container;
-}
-
-function getParam(name, url) {
-    name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
-    const regexS = '[\\?&]' + name + '=([^&#]*)';
-    const regex = new RegExp(regexS, 'i');
-
-    const results = regex.exec(url);
-    if (results == null) {
-        return '';
-    } else {
-        return decodeURIComponent(results[1].replace(/\+/g, ' '));
-    }
 }
 
 function isAutomaticPlayer(player) {

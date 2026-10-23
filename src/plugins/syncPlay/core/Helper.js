@@ -76,7 +76,7 @@ export function waitForEventOnce(
  */
 export function stringToGuid(input) {
     return input.replace(
-        /([0-z]{8})([0-z]{4})([0-z]{4})([0-z]{4})([0-z]{12})/,
+        /([0-9A-Za-z]{8})([0-9A-Za-z]{4})([0-9A-Za-z]{4})([0-9A-Za-z]{4})([0-9A-Za-z]{12})/,
         '$1-$2-$3-$4-$5'
     );
 }
