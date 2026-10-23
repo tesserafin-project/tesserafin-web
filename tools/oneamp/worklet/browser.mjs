@@ -89,6 +89,22 @@ try {
                 const errors = [];
                 page.on('pageerror', (error) => errors.push(error.message));
                 await page.evaluate(async (rate) => {
+                    // Bound each wait so a stalled audio device fails fast and names the stage.
+                    const within = (promise, ms, stage) =>
+                        Promise.race([
+                            promise,
+                            new Promise((_, reject) =>
+                                setTimeout(
+                                    () =>
+                                        reject(
+                                            new Error(
+                                                `${stage} did not settle within ${ms} ms`
+                                            )
+                                        ),
+                                    ms
+                                )
+                            )
+                        ]);
                     window.run = async () => {
                         const { OneAmpGraph } = await import(
                             '/tools/oneamp/worklet/graph.mjs'
@@ -102,7 +118,11 @@ try {
                         gain.gain.value = 0.5;
                         source.connect(gain);
                         gain.connect(context.destination);
-                        await context.resume();
+                        await within(
+                            context.resume(),
+                            15000,
+                            'AudioContext.resume() (is an audio output device available?)'
+                        );
                         const module = await WebAssembly.compile(
                             await (await fetch('/oneamp.wasm')).arrayBuffer()
                         );
@@ -161,8 +181,8 @@ try {
                             };
                         });
                         element.src = `/fixture.wav?rate=${rate}`;
-                        await element.play();
-                        await done;
+                        await within(element.play(), 15000, 'media play()');
+                        await within(done, 15000, "media 'ended'");
                         await new Promise((resolve) =>
                             setTimeout(resolve, 100)
                         );
@@ -221,7 +241,21 @@ try {
                     };
                 }, rate);
                 await page.click('button');
-                const result = await page.evaluate(() => window.result);
+                let timer;
+                const result = await Promise.race([
+                    page.evaluate(() => window.result),
+                    new Promise((_, reject) => {
+                        timer = setTimeout(
+                            () =>
+                                reject(
+                                    new Error(
+                                        `${name}/${rate}: no result within 60 s`
+                                    )
+                                ),
+                            60000
+                        );
+                    })
+                ]).finally(() => clearTimeout(timer));
                 assert.deepEqual(errors, []);
                 assert.equal(result.rate, rate);
                 assert.equal(result.state, 'disposed');
@@ -247,7 +281,8 @@ try {
                 );
                 assert.equal(
                     result.impulses[1].frame - result.impulses[0].frame,
-                    rate / 2 + 18 - 500
+                    rate / 2 + 18 - 500,
+                    `${name}/${rate}: impulse spacing must be sample-exact`
                 );
                 console.log(
                     JSON.stringify({
