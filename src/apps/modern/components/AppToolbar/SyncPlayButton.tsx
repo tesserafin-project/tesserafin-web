@@ -53,7 +53,10 @@ const SyncPlayButton = () => {
 
     return (
         <>
-            <Tooltip title={globalize.translate('ButtonSyncPlay')}>
+            <Tooltip
+                slotProps={{ popper: { disablePortal: true } }}
+                title={globalize.translate('ButtonSyncPlay')}
+            >
                 <IconButton
                     size='large'
                     aria-label={globalize.translate('ButtonSyncPlay')}

@@ -1953,6 +1953,12 @@ export class HtmlVideoPlayer {
                 const playerDlg = document.createElement('div');
                 playerDlg.setAttribute('dir', 'ltr');
                 playerDlg.classList.add('videoPlayerContainer');
+                // The container is a child of <body>, outside the page's landmarks (axe `region`).
+                playerDlg.setAttribute('role', 'region');
+                playerDlg.setAttribute(
+                    'aria-label',
+                    globalize.translate('LabelPlayer')
+                );
                 if (options.fullscreen) {
                     playerDlg.classList.add('videoPlayerContainer-onTop');
                 }

@@ -28,7 +28,10 @@ const UserMenuButton = () => {
 
     return (
         <>
-            <Tooltip title={globalize.translate('UserMenu')}>
+            <Tooltip
+                slotProps={{ popper: { disablePortal: true } }}
+                title={globalize.translate('UserMenu')}
+            >
                 <IconButton
                     size='large'
                     aria-label={globalize.translate('UserMenu')}

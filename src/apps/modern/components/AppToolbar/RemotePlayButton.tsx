@@ -71,7 +71,10 @@ const RemotePlayButton = () => {
                         alignSelf: 'center'
                     }}
                 >
-                    <Tooltip title={globalize.translate('ButtonCast')}>
+                    <Tooltip
+                        slotProps={{ popper: { disablePortal: true } }}
+                        title={globalize.translate('ButtonCast')}
+                    >
                         <Button
                             variant='text'
                             size='large'
@@ -90,7 +93,10 @@ const RemotePlayButton = () => {
                     </Tooltip>
                 </Box>
             ) : (
-                <Tooltip title={globalize.translate('ButtonCast')}>
+                <Tooltip
+                    slotProps={{ popper: { disablePortal: true } }}
+                    title={globalize.translate('ButtonCast')}
+                >
                     <IconButton
                         size='large'
                         aria-label={globalize.translate('ButtonCast')}

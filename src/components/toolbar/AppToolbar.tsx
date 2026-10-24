@@ -54,8 +54,10 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
                 }
             }}
         >
+            {/* Toolbar tooltips render inside the banner landmark, not in a <body> portal (axe `region`). */}
             {isUserLoggedIn && isDrawerAvailable && (
                 <Tooltip
+                    slotProps={{ popper: { disablePortal: true } }}
                     title={globalize.translate(
                         isDrawerOpen ? 'MenuClose' : 'MenuOpen'
                     )}
@@ -74,7 +76,10 @@ const AppToolbar: FC<PropsWithChildren<AppToolbarProps>> = ({
             )}
 
             {isBackButtonAvailable && (
-                <Tooltip title={globalize.translate('ButtonBack')}>
+                <Tooltip
+                    slotProps={{ popper: { disablePortal: true } }}
+                    title={globalize.translate('ButtonBack')}
+                >
                     <IconButton
                         size='large'
                         color='inherit'

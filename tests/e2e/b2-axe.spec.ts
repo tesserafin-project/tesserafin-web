@@ -32,11 +32,12 @@ import {
 const CRITICAL = 'critical';
 
 /**
- * Non-critical rules this suite once reported and #306 fixed: zoom blocked by the viewport meta, and
- * the player's never-filled `.osdTitle` heading. They fail by id so a regression is not just a
- * number creeping back into the summary below.
+ * Non-critical rules this suite once reported and #306 fixed: zoom blocked by the viewport meta, the
+ * player's never-filled `.osdTitle` heading, and content outside landmarks (a toolbar tooltip portaled
+ * to `<body>` on detail, the player's `<body>`-level container). They fail by id so a regression is
+ * not just a number creeping back into the summary below.
  */
-const FIXED_RULES = ['meta-viewport', 'empty-heading'];
+const FIXED_RULES = ['meta-viewport', 'empty-heading', 'region'];
 
 interface Scanned {
     label: string;

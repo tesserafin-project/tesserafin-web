@@ -59,7 +59,10 @@ const SearchButton: FC = () => {
     };
 
     return (
-        <Tooltip title={globalize.translate('Search')}>
+        <Tooltip
+            slotProps={{ popper: { disablePortal: true } }}
+            title={globalize.translate('Search')}
+        >
             <IconButton
                 size='large'
                 aria-label={globalize.translate('Search')}
