@@ -234,8 +234,6 @@ export default function (view) {
             nowPlayingPositionSlider.disabled = true;
             btnFastForward.disabled = true;
             btnRewind.disabled = true;
-            view.querySelector('.osdTitle').innerHTML = '';
-            view.querySelector('.osdMediaInfo').innerHTML = '';
             return;
         }
 

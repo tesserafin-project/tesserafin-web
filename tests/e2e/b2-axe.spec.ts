@@ -31,6 +31,13 @@ import {
 
 const CRITICAL = 'critical';
 
+/**
+ * Non-critical rules this suite once reported and #306 fixed: zoom blocked by the viewport meta, and
+ * the player's never-filled `.osdTitle` heading. They fail by id so a regression is not just a
+ * number creeping back into the summary below.
+ */
+const FIXED_RULES = ['meta-viewport', 'empty-heading'];
+
 interface Scanned {
     label: string;
     theme: ThemeName;
@@ -93,6 +100,12 @@ async function scanAndRecord(
     expect(
         criticals.map((v) => `${v.id}: ${v.help} (${v.nodes.join(', ')})`),
         `${label} in ${theme} must have no critical accessibility violations`
+    ).toEqual([]);
+    expect(
+        result.violations
+            .filter((v) => FIXED_RULES.includes(v.id))
+            .map((v) => `${v.id}: ${v.help} (${v.nodes.join(', ')})`),
+        `${label} in ${theme} must not reintroduce a fixed rule`
     ).toEqual([]);
 
     return result;

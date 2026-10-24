@@ -391,16 +391,6 @@ export const appHost = {
     getPushTokenInfo: function () {
         return {};
     },
-    setUserScalable: function (scalable) {
-        if (!browser.tv) {
-            const att = scalable
-                ? 'width=device-width, initial-scale=1, minimum-scale=1, user-scalable=yes'
-                : 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no';
-            document
-                .querySelector('meta[name=viewport]')
-                .setAttribute('content', att);
-        }
-    },
     screen: () => {
         let hostScreen = null;
 
