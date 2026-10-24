@@ -144,18 +144,6 @@ function getIcon(icon, cssClass, canFocus, autoFocus) {
     );
 }
 
-/**
- * Sets the viewport meta tag to enable or disable scaling by the user.
- * @param {boolean} scalable - Flag to set the scalability of the viewport.
- */
-function setUserScalable(scalable) {
-    try {
-        appHost.setUserScalable(scalable);
-    } catch (err) {
-        console.error('error in appHost.setUserScalable: ' + err);
-    }
-}
-
 export default function (options) {
     const self = this;
     /** Initialized instance of Swiper. */
@@ -339,11 +327,7 @@ export default function (options) {
             }
         }
 
-        setUserScalable(true);
-
-        dialogHelper.open(dialog).then(function () {
-            setUserScalable(false);
-        });
+        dialogHelper.open(dialog);
 
         inputManager.on(window, onInputCommand);
         document.addEventListener(
