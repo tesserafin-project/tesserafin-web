@@ -32,8 +32,8 @@ TV layout 1920×1080 (the product's `layout=tv` setting, asserted live).
 | Connect / sign-in | `b2-keyboard-a11y` shell tab order, roles and names | sign-in helper | — | — | onboarding: server-free `m3.axe` (not re-run here) |
 | Browse (home, library) | tab order, visible focus; Home composition keyboard/remote + reduced motion | library nav | arrows move focus, Enter activates | no overflow, no unreachable control, no clipped dialog | 0 critical, 0 serious |
 | Search | card opened by focus + Enter | — | — | — | 0 critical, 0 serious |
-| Details | Item Details More menu focus return (web#223) | — | web#223 TV-layout cases | `b2-responsive` | 0 critical; 1 moderate `region` (see below) |
-| Play | Tab focus on a player control is recorded, not asserted; modern track/settings menus: `TrackMenus` suite | play control | `b2-player-surfaces` TV | controls inside the viewport, terminal error dialog fits | 0 critical, 0 serious; 1 moderate `region` |
+| Details | Item Details More menu focus return (web#223) | — | web#223 TV-layout cases | `b2-responsive` | 0 critical; `region` fixed (see below) |
+| Play | Tab focus on a player control is recorded, not asserted; modern track/settings menus: `TrackMenus` suite | play control | `b2-player-surfaces` TV | controls inside the viewport, terminal error dialog fits | 0 critical, 0 serious; `region` fixed |
 | Resume | **new** `b2-resume-journey`: Resume focused with visible focus, Enter starts at the stored position | — | Enter under TV layout | all three | covered by detail/player scans |
 
 ## Fixed in this slice
@@ -57,13 +57,19 @@ fails with `Received: 0`, so the measurement distinguishes resume from restart.
 Not claimed: a position written at stop. The rig's fixtures are 2 s, and the server marks items
 under `MinResumeDurationSeconds` (300 s) as played on stop.
 
+## `region` landmarks
+
+The open tooltip of a toolbar button (here Search, still under the pointer after navigating to an item)
+rendered in a `<body>` portal outside the `banner`; toolbar tooltips now render in place
+(`disablePortal`). The player's `.videoPlayerContainer`, a child of `<body>`, is now a named `region`
+landmark ("Player") instead of moving in the DOM. `b2-axe` fails on `region` by id. Tooltips elsewhere
+(dashboard) still portal; only the scanned flows are covered.
+
 ## Remaining, not done here
 
-- `region` (moderate): the details route's MUI tooltip portal (`#:r…:`) and the player's
-  `.videoPlayerContainer` sit outside landmarks. Changing the player's DOM placement is broader than
-  this slice.
 - One glass/detail scan out of eleven reported one serious violation; it did not recur in ten
-  further scans and its rule id was not captured. Treat as intermittent until seen again.
+  further scans and its rule id was not captured. Seen once more (1 of 5 glass/detail scans) during
+  the `region` slice, again without a rule id. Treat as intermittent until captured.
 - Screen readers (NVDA, VoiceOver, TalkBack), touch input, physical TV remotes and real devices:
   none exercised. Accessible names and roles are checked by axe and `b2-keyboard-a11y` only.
 - Mobile Safari: zoom now allowed means iOS may zoom into inputs whose font is under 16 px. Not
