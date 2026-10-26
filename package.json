@@ -29,7 +29,7 @@
         "caniuse-lite": "1.0.30001810",
         "copy-webpack-plugin": "14.0.0",
         "cross-env": "10.1.0",
-        "css-loader": "7.1.4",
+        "css-loader": "7.1.5",
         "cssnano": "7.1.9",
         "esbuild-loader": "4.5.0",
         "expose-loader": "5.0.1",
