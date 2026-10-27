@@ -71,6 +71,20 @@ asserts `origin` really is `tesserafin-project/tesserafin-web` and that any
 Jellyfin-pointing remote is named in this document; it does not require the
 remote to be deleted.
 
+The origin check matches the complete GitHub repository clone URL. It accepts
+HTTPS, `git@github.com:` and `ssh://git@github.com/` forms, with an optional
+`.git` suffix and trailing slash; matching is case-insensitive. Fetch and push
+URLs are checked independently. Other hosts, repository prefixes/suffixes,
+extra path components, query strings and fragments do not qualify merely by
+containing `tesserafin-project/tesserafin-web`. Plain HTTP and local filesystem
+origins are outside this check's accepted clone forms.
+
+`npm run test:no-runtime-jellyfin-origin` executes the actual verifier in
+temporary Git repositories, including a documented developer-only `upstream`
+remote. The controls run in `validate:full` and the hosted quality matrix.
+This verifies a development/automation guard, not runtime network behavior or
+closure of a CodeQL alert; the latter requires a default-branch analysis.
+
 ### Class 4 — inert documentation hyperlinks
 
 Twenty-six occurrences across eight files, every one an `href` on a help
