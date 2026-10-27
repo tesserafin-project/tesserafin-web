@@ -72,6 +72,9 @@ jobs:
           - test
           - test:player-menu-browser
           - test:console-controls
+          # #185 Group C: exercise the real boundary gate against exact and
+          # misleading clone URLs, including distinct fetch/push URLs.
+          - test:no-runtime-jellyfin-origin
           # Guards the epubjs-scoped `@xmldom/xmldom` override: the pin sits
           # above the range EPUB.js declares, so the compatibility it depends on
           # has to be re-proven on every change rather than once, at the moment
