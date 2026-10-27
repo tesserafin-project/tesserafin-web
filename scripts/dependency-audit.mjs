@@ -54,7 +54,15 @@
  * separate steps.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+    closeSync,
+    constants,
+    fstatSync,
+    mkdirSync,
+    openSync,
+    readFileSync,
+    writeFileSync
+} from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -134,22 +142,30 @@ function parseArgs(argv) {
 function readExactFile(label, path) {
     if (!path) indeterminate(`no ${label} path was given`);
 
-    let stats;
+    let fd;
     try {
-        stats = statSync(path);
+        // Nonblocking open avoids waiting for a FIFO writer before we can
+        // reject the input as non-regular on platforms providing O_NONBLOCK.
+        fd = openSync(path, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
     } catch {
         indeterminate(`missing ${label}: ${path}`);
     }
-    // An exact file, never a directory or a dangling symlink: a report that is
-    // not a readable regular file cannot be evidence of anything.
-    if (!stats.isFile())
-        indeterminate(`${label} is not a regular file: ${path}`);
-    if (stats.size === 0) indeterminate(`${label} is empty: ${path}`);
 
     try {
-        return readFileSync(path, 'utf8');
+        // Validate and read the SAME opened file. Reopening the pathname after
+        // stat allowed a replacement report, lockfile or waiver set to be read
+        // instead of the file whose metadata was checked. Live file symlinks
+        // retain their existing semantics: the opened target is validated.
+        const stats = fstatSync(fd);
+        if (!stats.isFile())
+            indeterminate(`${label} is not a regular file: ${path}`);
+        if (stats.size === 0) indeterminate(`${label} is empty: ${path}`);
+        return readFileSync(fd, 'utf8');
     } catch (err) {
+        if (err instanceof Indeterminate) throw err;
         indeterminate(`${label} is not readable: ${path} (${err.message})`);
+    } finally {
+        closeSync(fd);
     }
     return '';
 }
