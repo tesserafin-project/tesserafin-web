@@ -164,7 +164,7 @@
         "verify:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-json delivery-stats/report.json",
         "report:delivery-budget": "node scripts/verify-delivery-budget.mjs --report-only --report-json delivery-stats/report-preview.json",
         "audit:dependencies": "node scripts/dependency-audit.mjs --scan --work dependency-audit-out --waivers ci/dependency-audit-waivers.json --summary dependency-audit-out/summary.md",
-        "test:dependency-audit": "node scripts/dependency-audit.test.mjs",
+        "test:dependency-audit": "node --test scripts/dependency-audit-file.test.mjs && node scripts/dependency-audit.test.mjs",
         "test:delivery-budget": "node scripts/delivery-budget.test.mjs",
         "test:epub-xmldom-fallback": "node scripts/epub-xmldom-fallback.test.mjs",
         "test:console-url-hygiene": "node scripts/console-url-hygiene.test.mjs",
