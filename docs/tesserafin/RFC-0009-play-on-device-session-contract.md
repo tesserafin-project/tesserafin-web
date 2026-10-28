@@ -1,7 +1,9 @@
 # RFC-0009 — "Play on": device, capability and remote-session contract (P0)
 
-- **Status**: Proposed (draft, 2026-10-24) — not accepted; selects nothing until the maintainer rules
-- **Date**: 2026-10-24
+- **Status**: Proposed (draft, 2026-10-24; revised 2026-10-28) — not accepted; selects nothing until
+  the maintainer rules. Accepting this document would accept a P0 framing only; it would not authorise
+  any implementation.
+- **Date**: 2026-10-24 (revised 2026-10-28)
 - **Author**: Tesserafin Project
 - **Repository**: `tesserafin-web`
 - **Issue**: [`tesserafin#141`](https://github.com/tesserafin-project/tesserafin/issues/141), P0
@@ -43,9 +45,12 @@ Consequences:
 
 ## 3. Identity
 
-- A device is identified by the **server-scoped device identity issued with its authenticated
-  session** (the `DeviceId` the server already keys sessions and devices on). It is meaningful only
-  within one household server; two servers never compare device identities.
+- A device is identified by its **authenticated session on the household server**: the credential the
+  server issued binds one user and one device. That identity is meaningful only within one household
+  server; two servers never compare device identities.
+- **`DeviceId` alone is not a trusted identity.** It is a value the client declares, which the server
+  keys sessions and devices on. A rule in this contract that names "the device" means the device bound
+  to an authenticated session, never a bare `DeviceId` presented on its own.
 - **Names and network addresses are not identity.** They are display and reachability hints, and
   may change (the M3-A2 rule — "deduplication is by server `Id`" — applied one level down).
 - A **remote session** is identified by the receiver's play session (`PlaySessionId`), not by the
@@ -69,25 +74,39 @@ platform.
 
 1. **One authoritative session.** The receiver's server play session is the source of truth for
    position, state and selected streams. Controllers display it; they do not keep a competing copy.
-2. **The receiver owns the job.** Playback started on a receiver runs under the receiver's own
-   (user, device). This is the "capability user *and* device" reading of
-   [`tesserafin#301`](https://github.com/tesserafin-project/tesserafin/issues/301); the contract
-   needs #301 settled in that direction (or an equivalent that names one owner) before P1.
-3. **Authorization is checked when a command is dispatched**, on every command, against the
-   receiver session's user and the controller's user — not only when sessions are listed. Same user:
-   allowed. Different user: allowed only if the controller's user may control others **and** the
-   receiver's user permits it. A refused command fails with a typed error; it is never dropped
-   silently. P1 acceptance must prove a refused cross-user command with a real server.
-4. **Stale commands are rejected.** Each session carries a monotonically increasing revision; a
-   command names the revision it was issued against, and a mismatch is refused with a typed error so
-   the controller re-reads state instead of seeking to a position that no longer exists.
-5. **Concurrent controllers** are allowed; the revision rule serialises them. **Takeover** (moving
-   the session to another receiver) is handoff and is out of P1.
+2. **The receiver owns the job** — a target invariant. Remote playback runs under the receiver's own
+   authenticated context: the receiver requests its own playback plan, and the job has one coherent
+   (user, device) owner whose stop ends it. The controller never transfers its credential (§6).
+   This invariant gives a direction; it does **not** by itself settle
+   [`tesserafin#301`](https://github.com/tesserafin-project/tesserafin/issues/301). Where the
+   (user, device) pair of the owner comes from, and what happens when a playback capability arrives
+   with another user's token, remain explicit #301 decisions.
+3. **Authorization is checked when a command is dispatched**, on every command, by the server, against
+   the controller's authenticated user and the receiver session's user — not only when sessions are
+   listed. For P1:
+   - control is allowed only between sessions of the **same user**, and only when the receiver
+     declares itself controllable;
+   - a **cross-user command is refused** explicitly, with a typed error, and has no effect on the
+     receiver's session or job. It is never dropped silently;
+   - the check uses the rights in force at dispatch, so a command issued after a rights change is
+     judged by the new rights.
+
+   Positive cross-user control (delegation agreed by both users) is **not** part of P1. It needs its
+   own decision and its own evidence.
+4. **Stale commands are rejected.** Each receiver play session carries a monotonically increasing
+   revision; a command names the revision it was issued against, and a mismatch is refused with a
+   typed error so the controller re-reads state instead of seeking to a position that no longer exists.
+   The revision serialises commands only if checking it and admitting the command are **one atomic
+   step** on the server; a check followed by a separate admission does not satisfy this rule.
+5. **Concurrent controllers** are allowed; the atomic revision rule (§5.4) serialises them.
+   **Takeover** (moving the session to another receiver) is handoff and is out of P1.
 6. **Stop and loss.**
    - Stop from any authorised controller ends the receiver's play session *and* its server job.
    - Controller loss (app killed, network gone) does not stop playback; a controller that returns
      re-attaches by session reference and reads current state.
-   - Receiver loss ends the session; controllers observe it as ended, not as an error loop.
+   - Receiver loss ends the session once the server detects it. Detection and cleanup of the session
+     and its job are **bounded** (a stated timeout), not instantaneous; until then controllers may see
+     the last known state. Once ended, controllers observe it as ended, not as an error loop.
    - An unrelated user's session survives all of the above.
 
 ## 6. Credentials and the media path
@@ -106,6 +125,7 @@ platform.
 
 - **P1 is server-mediated.** A receiver is a signed-in client session that declares itself
   controllable; a controller lists receivers through the household server, filtered by §5.3's rule.
+  Listing is a convenience, never the authorization: §5.3 is enforced again at every dispatch.
 - No new local-network discovery, multicast, mDNS or Android permission is introduced for P1. The
   only network precondition is the one M3-A3 already handles: the controller and receiver each reach
   the household server.
@@ -115,7 +135,8 @@ platform.
 ## 8. Recommended first topology
 
 **Android phone (controller) → first-party Android TV app (receiver) → household server**, local
-network, receiver-fetched media, same server account on both devices.
+network, receiver-fetched media, the **same user of the same household server** on both devices,
+server-mediated discovery (§7).
 
 Why this one:
 
@@ -133,7 +154,7 @@ Compared and not selected first:
 | Bluetooth | not a receiver (§2). |
 
 The selection is a **recommendation for the maintainer to rule on** in #141; nothing here records it
-as decided.
+as decided. Selecting it would attest no delivery and would start neither M4 nor P1.
 
 ## 9. Layer placement
 
@@ -149,11 +170,15 @@ as decided.
 
 Recorded so P1 is not scoped against assumptions:
 
-1. **#301 ownership** settled so a receiver-started job has one owner whose stop ends it.
-2. **Dispatch-time command authorization** (§5.3) with a real-server test of a refused cross-user
-   command. The inherited `Sessions/{id}/Playing|Command|System` endpoints are not adopted as the
-   contract until that test exists.
-3. **Session revision** (§5.4) exposed to controllers, or an equivalent stale-command guard.
+1. **#301 ownership decided and proven**: stopping the effective owner ends the job, and other users'
+   sessions are preserved.
+2. **Dispatch-time command authorization** (§5.3) proven on a real server: a refused command has no
+   effect, including after a rights change. The inherited `Sessions/{id}/Playing|Command|System`
+   endpoints are not adopted as the contract until that proof exists.
+3. **Stale-command guard** (§5.4) bound to the receiver play session and checked atomically, with a
+   concurrency proof (two controllers, one admitted) and a proof that reconnection is safe.
+
+These are P1 prerequisites only. They are **not** new M3 gates.
 
 ## 11. Proposed P1 issues (not opened by this document)
 
@@ -164,17 +189,26 @@ Recorded so P1 is not scoped against assumptions:
 
 P1 acceptance follows #141's plan: real sender, real receiver, disposable server and media;
 discover → start → pause/seek → stop with one visible state; controller restart and network loss
-observed; refused user and stale command fail safely; no credential in logs or receiver URLs; no
-emulator-only receiver claim.
+observed; a cross-user command and a stale command are refused without effect; no credential in logs
+or receiver URLs; no emulator-only receiver claim.
 
 ## 12. Explicitly later
 
 Cast, AirPlay, handoff/takeover, queues on receivers, DLNA/UPnP, vendor connectors, multiroom,
-Fire OS / Vega OS clients, Web as receiver.
+Fire OS / Vega OS clients, Web as receiver, positive cross-user control (§5.3).
 
 ## 13. Decisions requested from the maintainer
 
-1. Accept the role split and the "receiver owns the job" rule (§§2, 5.2) — this also answers #301's
-   question 1 in one direction.
-2. Select the §8 topology for P1, or name another.
-3. Confirm the cross-user control rule (§5.3).
+1. Accept the controller / receiver / output-route split, one authoritative play session, no
+   credential transfer from controller to receiver, and the direct receiver ↔ household-server media
+   path (§§2, 5.1, 6). Adapters stay below the semantic boundary; no plugin framework is required.
+2. Accept "the receiver owns the job" as a target invariant (§5.2), leaving ownership provenance and
+   contradictory identities to an explicit #301 decision.
+3. Select the §8 topology for P1, or name another.
+4. Restrict P1 to same-user control with an explicit, effect-free refusal of cross-user commands
+   (§5.3); defer positive cross-user control to a later decision.
+5. Keep the three P1 server prerequisites of §10.
+
+Whatever is accepted, no #141 criterion is checked as implemented on the basis of this document, and
+M3 keeps its current vertical and criteria. Remote implementation needs a separate authorisation, the
+required local baseline and the M4 receiver.
