@@ -318,6 +318,10 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             rowHeight = Math.max(rowHeight, node.offsetHeight);
         });
         if (!rowHeight) return;
+        // Only the first measure of a return: from then on this viewport's own rows decide.
+        if (!previousGeometry.current && saved?.rowHeight) {
+            rowHeight = Math.max(rowHeight, saved.rowHeight);
+        }
         element.style.setProperty('--rf-library-row-height', `${rowHeight}px`);
         const known = previousGeometry.current;
         if (
@@ -329,7 +333,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
         captureViewAnchor();
         setGeometry({ columns, rowHeight, rowGap });
-    }, [captureViewAnchor]);
+    }, [captureViewAnchor, saved?.rowHeight]);
 
     const hasResults = !!total && items.size > 0;
     useLayoutEffect(() => {
@@ -518,7 +522,8 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                     index,
                     href: target.href,
                     offset: target.card.getBoundingClientRect().top,
-                    total
+                    total,
+                    rowHeight: previousGeometry.current?.rowHeight
                 });
             }
             // Native hash changes have no unique history key and look like POP.

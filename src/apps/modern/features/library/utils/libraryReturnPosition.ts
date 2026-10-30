@@ -5,6 +5,8 @@ export interface LibraryReturnPosition {
     /** Distance from the top of the viewport to the card when it was opened. */
     offset: number;
     total: number;
+    /** Tallest row seen: the rows mounted on return may be shorter, which would move the end. */
+    rowHeight?: number;
 }
 
 // Session-local and bounded, like Home's. One owner at a time: an account switch keeps nothing.
