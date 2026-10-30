@@ -6,6 +6,8 @@ import {
 } from 'lib/tesserafin-sdk';
 import React, {
     type FC,
+    lazy,
+    Suspense,
     useCallback,
     useMemo,
     useEffect,
@@ -19,7 +21,12 @@ import { useLocalStorage } from 'usehooks-ts';
 import { useApi } from 'hooks/useApi';
 import { useUserSettings } from 'hooks/useUserSettings';
 import globalize from 'lib/globalize';
-import { FilterDrawer, SortSelect, type SortSelectOption } from 'ui';
+import {
+    FilterDrawer,
+    LoadingState,
+    SortSelect,
+    type SortSelectOption
+} from 'ui';
 
 import { useLibraryFilters } from '../api/useLibraryFilters';
 import { useLibraryStudios } from '../api/useLibraryDestinations';
@@ -62,10 +69,12 @@ import {
 } from '../utils/activeFilters';
 import { ActiveLibraryFilters } from './ActiveLibraryFilters';
 import LibraryAlphaPicker from './LibraryAlphaPicker';
-import { ContinuousLibraryGrid } from './ContinuousLibraryGrid';
 import LibraryItemsGrid, {
     type LibraryItemsGridProps
 } from './LibraryItemsGrid';
+
+// Lazy: only this route's Films grid needs it, and it would otherwise land in the initial bundle.
+const ContinuousLibraryGrid = lazy(() => import('./ContinuousLibraryGrid'));
 
 const SORT_OPTIONS: SortSelectOption[] = [
     { value: ItemSortBy.SortName, label: globalize.translate('Name') },
@@ -591,20 +600,24 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
             <div ref={results} className='rf-library-view__results'>
                 {isContinuous ? (
-                    <ContinuousLibraryGrid
-                        key={resultSet}
-                        params={baseParams}
-                        context={resultSet}
-                        pageSize={pageSize}
-                        legacyStartIndex={legacyStartIndex.current}
-                        density={density}
-                        cardAspect={recipe.cardAspect}
-                        apiClient={apiClient}
-                        label={libraryName}
-                        onResetFilters={
-                            activeFilters.length ? onResetFilters : undefined
-                        }
-                    />
+                    <Suspense fallback={<LoadingState variant='grid' />}>
+                        <ContinuousLibraryGrid
+                            key={resultSet}
+                            params={baseParams}
+                            context={resultSet}
+                            pageSize={pageSize}
+                            legacyStartIndex={legacyStartIndex.current}
+                            density={density}
+                            cardAspect={recipe.cardAspect}
+                            apiClient={apiClient}
+                            label={libraryName}
+                            onResetFilters={
+                                activeFilters.length
+                                    ? onResetFilters
+                                    : undefined
+                            }
+                        />
+                    </Suspense>
                 ) : (
                     <PagedBrowseResults
                         params={baseParams}

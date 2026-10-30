@@ -8,7 +8,7 @@ import React, { type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react-dom/test-utils';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
  * The Library page-composition vertical, asserted on the REAL route component.
@@ -345,6 +345,11 @@ const PRE_BINDING_COMPOSITION = {
     cardAspect: 'poster',
     filters: 'inline'
 };
+
+// The grid is a lazy chunk; loading it up front keeps the first test's render as quick as the rest.
+beforeAll(async () => {
+    await import('./ContinuousLibraryGrid');
+});
 
 describe('Library composition — the platform default', () => {
     it('reproduces the composition Library had before the binding', async () => {

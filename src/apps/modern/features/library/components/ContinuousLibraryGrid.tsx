@@ -18,10 +18,8 @@ import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
 import { LoadingState, MediaCard, MediaGrid } from 'ui';
 
-import {
-    type LibraryItemsParams,
-    useLibraryItemPages
-} from '../api/useLibraryItems';
+import { useLibraryItemPages } from '../api/useLibraryItemPages';
+import type { LibraryItemsParams } from '../api/useLibraryItems';
 import type { LibraryDensity } from '../utils/density';
 import type { LibraryCardAspect } from '../utils/libraryRecipe';
 import {
