@@ -69,9 +69,9 @@ export interface LibraryItemsParams {
 }
 
 /**
- * The server's `ApplyOrder` ends on the requested fields (plus `Name` after `SortName`) with no
- * unique key, so equal values may fall on either side of a page boundary. The API offers no sort by
- * id: these narrow the ties but cannot remove them, and the continuous grid still drops repeats.
+ * A current server ends every deterministic order on the item's Id (`ApplyOrder`). An older one ends
+ * on the requested fields with no unique key, so equal values may fall on either side of a page
+ * boundary: for it these narrow the ties without removing them, and the continuous grid drops repeats.
  */
 const TIE_BREAKERS: readonly ItemSortBy[] = [
     ItemSortField.SortName,

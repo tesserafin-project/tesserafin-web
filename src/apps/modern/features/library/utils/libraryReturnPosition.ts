@@ -2,8 +2,13 @@ export interface LibraryReturnPosition {
     /** The opened item's index in the server's result set. */
     index: number;
     href: string;
-    /** Distance from the top of the viewport to the card when it was opened. */
+    /**
+     * Distance along the scrolling axis from the card to the start of the viewport when it was
+     * opened: from the top of the window, or from the shelf scroller's start edge.
+     */
     offset: number;
+    /** A shelf only: the card's distance from the top of the window, the axis it does not scroll. */
+    top?: number;
     total: number;
     /** Tallest row seen: the rows mounted on return may be shorter, which would move the end. */
     rowHeight?: number;

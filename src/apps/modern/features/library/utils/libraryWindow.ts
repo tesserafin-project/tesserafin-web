@@ -5,7 +5,7 @@
 
 export interface LibraryGeometry {
     columns: number;
-    /** Height of one card row. */
+    /** Height of one card row. On a shelf, where each card is a row, its width. */
     rowHeight: number;
     /** Vertical gap between two rows. */
     rowGap: number;

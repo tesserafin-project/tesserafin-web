@@ -2,6 +2,7 @@ import React, {
     type CSSProperties,
     type FC,
     type FocusEvent,
+    type KeyboardEvent,
     type ReactNode,
     useCallback,
     useEffect,
@@ -80,6 +81,13 @@ const PAGE_AXIS: ScrollAxis = {
 
 const shelfScroller = (root: HTMLElement) =>
     root.querySelector<HTMLElement>(SHELF_SCROLLER);
+
+/**
+ * Where a saved offset puts a card now: unchanged, unless the viewport has shrunk so far that the card
+ * would start beyond it. It then comes fully into view.
+ */
+const keepInView = (offset: number, size: number, extent: number) =>
+    offset >= extent ? Math.max(0, extent - size) : offset;
 
 const isRtl = (element: HTMLElement) =>
     getComputedStyle(element).direction === 'rtl';
@@ -160,7 +168,10 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
     const root = useRef<HTMLDivElement>(null);
     const [saved] = useState(() =>
-        navigation === 'POP' ? readLibraryPosition(owner, returnKey) : undefined
+        // No user yet is not another account: reading would clear everyone's positions.
+        navigation === 'POP' && user?.Id
+            ? readLibraryPosition(owner, returnKey)
+            : undefined
     );
     /** While set, the window follows this target instead of a scroll position not yet restored. */
     const pendingTarget = useRef<
@@ -173,7 +184,8 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
           }
         | undefined
     >(
-        saved ??
+        // A copy: settling moves it, and the remembered position is not this mount's to change.
+        (saved && { ...saved }) ??
             (legacyStart
                 ? { index: legacyStart.index, offset: legacyOffset }
                 : undefined)
@@ -291,7 +303,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         });
         return { items: byIndex, repeatedRows: repeated, shortPages: short };
         // `useQueries` returns a new array each render; these two say when its content changed.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // biome-ignore lint/correctness/useExhaustiveDependencies: see above
     }, [
         apiClient,
         cardAspect,
@@ -518,24 +530,40 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                 updateWindow();
             });
         };
+        // Old TV browsers have no ResizeObserver, so the columns are measured here as well.
+        const onResize = () => {
+            measure();
+            onScroll();
+        };
         // Capture: a shelf's scroller does not bubble its scroll up to the window.
         window.addEventListener('scroll', onScroll, {
             capture: true,
             passive: true
         });
-        window.addEventListener('resize', onScroll);
+        window.addEventListener('resize', onResize);
         return () => {
             cancelAnimationFrame(frame);
             window.removeEventListener('scroll', onScroll, true);
-            window.removeEventListener('resize', onScroll);
+            window.removeEventListener('resize', onResize);
         };
-    }, [updateWindow]);
+    }, [measure, updateWindow]);
 
+    const refused = pages.find(
+        (page) =>
+            page?.isError &&
+            classifyLibraryFailure(page.error) === 'access-denied'
+    );
+    const isRefused = !!refused;
     const lastWidth = useRef<number>();
     useEffect(() => {
         const element = root.current;
         // Old TV browsers lack it; the window's resize event still covers them.
-        if (!element || !hasResults || typeof ResizeObserver === 'undefined') {
+        if (
+            !element ||
+            !hasResults ||
+            isRefused ||
+            typeof ResizeObserver === 'undefined'
+        ) {
             return;
         }
         const observer = new ResizeObserver(() => {
@@ -547,7 +575,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         });
         observer.observe(element);
         return () => observer.disconnect();
-    }, [hasResults, measure, updateWindow]);
+    }, [hasResults, isRefused, measure, updateWindow]);
 
     // Restore once the target's row is really there: the scroll first, then the focus.
     const targetIndex = pendingTarget.current?.index;
@@ -562,26 +590,40 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         if (row < windowRows.first || row > windowRows.last) return;
         pendingTarget.current = undefined;
         forgetLibraryPosition(returnKey);
-        axis.moveTo(element, row * rowPitch(geometry) - target.offset);
+        axis.moveTo(
+            element,
+            row * rowPitch(geometry) -
+                keepInView(
+                    target.offset,
+                    geometry.rowHeight,
+                    axis.extent(element)
+                )
+        );
         if (target.top !== undefined) {
-            const place = cardAtIndex(element, items.get(target.index)?.href);
+            const place = cardWithHref(element, items.get(target.index)?.href);
             if (place) {
                 window.scrollBy({
-                    top: place.getBoundingClientRect().top - target.top,
+                    top:
+                        place.getBoundingClientRect().top -
+                        keepInView(
+                            target.top,
+                            place.offsetHeight,
+                            window.innerHeight
+                        ),
                     behavior: 'instant'
                 });
             }
         }
         if (target.takeFocus) {
-            cardAtIndex(element, items.get(target.index)?.href)?.focus({
+            cardWithHref(element, items.get(target.index)?.href)?.focus({
                 preventScroll: true
             });
         } else if (target.href) {
-            const opened = cardAtIndex(element, target.href);
+            const opened = cardWithHref(element, target.href);
             // Removed, or no longer the viewer's to see: the item now at that place takes the focus.
             if (!opened) setReturnMissing(true);
             (
-                opened ?? cardAtIndex(element, items.get(target.index)?.href)
+                opened ?? cardWithHref(element, items.get(target.index)?.href)
             )?.focus({
                 preventScroll: true
             });
@@ -693,7 +735,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
         setReturnMissing(true);
         const index = Math.min(pinnedIndex, total - 1);
-        const card = cardAtIndex(root.current, items.get(index)?.href);
+        const card = cardWithHref(root.current, items.get(index)?.href);
         if (card) {
             card.focus({ preventScroll: true });
             return;
@@ -730,7 +772,9 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         ) {
             return;
         }
-        cardAtIndex(root.current, items.get(slot)?.href)?.focus();
+        cardWithHref(root.current, items.get(slot)?.href)?.focus({
+            preventScroll: true
+        });
     }, [items]);
 
     const onFocus = useCallback(
@@ -757,37 +801,36 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
     /**
      * After scrolling away, the focused row is all that is mounted of its neighbourhood. Bring it
-     * back before the key acts, as the browser would for a fully rendered list, so that Tab reaches
+     * back before Tab acts, as the browser would for a fully rendered list, so that Tab reaches
      * the real next card rather than the first card of the distant window.
      */
-    const onKeyDownCapture = useCallback(() => {
-        const element = root.current;
-        if (
-            !element ||
-            !geometry ||
-            pinnedRow === undefined ||
-            !windowRows ||
-            (pinnedRow >= windowRows.first && pinnedRow <= windowRows.last)
-        ) {
-            return;
-        }
-        axis.moveTo(
-            element,
-            pinnedRow * rowPitch(geometry) -
-                (axis.extent(element) - geometry.rowHeight) / 2
-        );
-        flushSync(updateWindow);
-    }, [axis, geometry, pinnedRow, updateWindow, windowRows]);
+    const onKeyDownCapture = useCallback(
+        (event: KeyboardEvent<HTMLDivElement>) => {
+            const element = root.current;
+            if (
+                event.key !== 'Tab' ||
+                !element ||
+                !geometry ||
+                pinnedRow === undefined ||
+                !windowRows ||
+                (pinnedRow >= windowRows.first && pinnedRow <= windowRows.last)
+            ) {
+                return;
+            }
+            axis.moveTo(
+                element,
+                pinnedRow * rowPitch(geometry) -
+                    (axis.extent(element) - geometry.rowHeight) / 2
+            );
+            flushSync(updateWindow);
+        },
+        [axis, geometry, pinnedRow, updateWindow, windowRows]
+    );
 
     const loadedAt = (start: number) => pageAt(start)?.isSuccess;
 
     // Refused: what was cached belongs to access this viewer no longer has, so none of it stays on
     // screen, and a return in progress ends here.
-    const refused = pages.find(
-        (page) =>
-            page?.isError &&
-            classifyLibraryFailure(page.error) === 'access-denied'
-    );
     if (refused) {
         if (pendingTarget.current) {
             pendingTarget.current = undefined;
@@ -1046,7 +1089,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
 type MediaCardProps = ReturnType<typeof toMediaCardProps>;
 
-const cardAtIndex = (root: HTMLElement | null, href: string | undefined) =>
+const cardWithHref = (root: HTMLElement | null, href: string | undefined) =>
     href
         ? [...(root?.querySelectorAll<HTMLElement>(CARD) ?? [])].find(
               (node) => node.getAttribute('href') === href
