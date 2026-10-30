@@ -329,6 +329,16 @@ export async function installFixtureApi(
             return json({ IsLocal: true, IsInNetwork: true });
         if (path === `/Users/${USER_ID}` || path === '/Users/Me')
             return json(USER);
+        // This fixture has no WebSocket transport, so it declares what a server without one answers:
+        // the contract's 503. The client asks once and carries on without a socket.
+        if (path === '/WebSocket/Tickets' && method === 'POST')
+            return route.fulfill({
+                status: 503,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    error: 'WebSocket transport unavailable in this fixture'
+                })
+            });
         if (path.startsWith('/Sessions'))
             return route.fulfill({ status: 204, body: '' });
         if (path.startsWith('/DisplayPreferences'))

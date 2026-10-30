@@ -235,8 +235,11 @@ test.describe('migrated Item Details ledger, in a real browser', () => {
         });
         await page.waitForTimeout(1000);
 
+        // The socket retries its declared ticket on its own timer, whatever the page is doing.
         expect(
-            ledger.requests.slice(before),
+            ledger.requests
+                .slice(before)
+                .filter((request) => request !== 'POST /WebSocket/Tickets'),
             'the media-source selector is LOCAL_ONLY and must issue no request'
         ).toEqual([]);
     });

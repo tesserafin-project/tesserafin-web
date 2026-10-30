@@ -6,6 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { type Page, expect, test } from '@playwright/test';
+import { formatViolations, scanPage } from '../e2e/support/axe';
 import {
     EPISODE,
     MOVIE,
@@ -353,7 +354,9 @@ for (const presentation of PRESENTATIONS) {
         });
         await expect(action).toBeVisible({ timeout: 15_000 });
         await expect(cardNamed(page, name(kind, 99))).toHaveCount(1);
-        await expect(page.locator(`${ROOT} [role="alert"]`)).toHaveCount(1);
+        // Announced once, by the status line: never a live region per failed page.
+        await expect(page.locator(`${ROOT} [role="alert"]`)).toHaveCount(0);
+        await expect(page.getByRole('status')).toContainText(/\S/);
         fixture.failStart = undefined;
         await action.focus();
         await page.keyboard.press('Enter');
@@ -361,6 +364,76 @@ for (const presentation of PRESENTATIONS) {
         await expect(action).toHaveCount(0);
     });
 }
+
+test('a grid states each position and the total; a density change keeps the same film in view', async ({
+    page,
+    baseURL
+}) => {
+    await install(page, baseURL!);
+    await page.goto(`/#/library/${MOVIES}`);
+    await expect(page.locator(CARD).first()).toContainText(name('Movie', 0));
+    await scrollToIndex(page, 5_000, KINDS.Movie.total);
+    await expect
+        .poll(async () => indexOf(await firstVisibleName(page)))
+        .toBeGreaterThan(4_900);
+    const facts = await page
+        .getByRole('list', { name: 'Movies' })
+        .getByRole('listitem')
+        .evaluateAll((nodes) =>
+            nodes.map((node) => ({
+                at: Number(node.getAttribute('aria-posinset')),
+                of: Number(node.getAttribute('aria-setsize')),
+                text: node.textContent ?? ''
+            }))
+        );
+    expect(facts.length).toBeGreaterThan(0);
+    for (const fact of facts) {
+        expect(fact.of).toBe(KINDS.Movie.total);
+        expect(fact.text).toContain(name('Movie', fact.at - 1));
+    }
+    expect(
+        await page
+            .locator(
+                `${ROOT} [data-rf-slot="media-grid"] > :not([role="listitem"])`
+            )
+            .evaluateAll((nodes) =>
+                nodes.every(
+                    (node) => node.getAttribute('aria-hidden') === 'true'
+                )
+            )
+    ).toBe(true);
+
+    const axe = await scanPage(page, [ROOT]);
+    expect(
+        axe.violations.filter(
+            (v) => v.impact === 'critical' || v.impact === 'serious'
+        ),
+        formatViolations(axe)
+    ).toEqual([]);
+
+    await page.waitForTimeout(150);
+    const before = indexOf(await firstVisibleName(page));
+    const columns = () =>
+        page
+            .locator(`${ROOT} [data-rf-slot="media-grid"]`)
+            .evaluate(
+                (node) =>
+                    getComputedStyle(node).gridTemplateColumns.split(' ').length
+            );
+    const wide = await columns();
+    // Not `click()`: Playwright would scroll the page up to the control first.
+    await page
+        .getByRole('button', { name: /density|compact|comfortable/i })
+        .first()
+        .evaluate((button: HTMLElement) => button.click());
+    await expect.poll(columns).not.toBe(wide);
+    await page.waitForTimeout(150);
+    const after = indexOf(await firstVisibleName(page));
+    // The row holding that film stays first; a new column count may place it a row's width away.
+    expect(Math.abs(after - before)).toBeLessThanOrEqual(
+        Math.max(wide, await columns())
+    );
+});
 
 test('?page=N reached while the grid is mounted moves the view, then leaves the URL', async ({
     page,
