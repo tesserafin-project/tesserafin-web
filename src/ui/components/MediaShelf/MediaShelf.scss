@@ -92,7 +92,8 @@
      * `imageAspect` (backdrop is wider than poster) can size shelves without this file knowing
      * which aspect is active.
      */
-    > .rf-media-card {
+    > .rf-media-card,
+    > .rf-media-shelf__item {
         width: var(--rf-media-shelf-item-width, 260px);
     }
 }
@@ -111,7 +112,8 @@
 .rf-media-shelf__scroller--compact {
     gap: var(--rf-spacing-sm, 8px);
 
-    > .rf-media-card {
+    > .rf-media-card,
+    > .rf-media-shelf__item {
         width: var(--rf-media-shelf-item-width, 168px);
     }
 }

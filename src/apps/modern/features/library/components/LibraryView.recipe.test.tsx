@@ -950,27 +950,33 @@ describe('Library composition — layout never writes user state', () => {
         ).toMatchObject({ limit: 24, startIndex: 0 });
     });
 
-    it('keeps a shelf paged and gives a grid the same result set without page controls', async () => {
-        // A shelf holds page 1 of 5 of the very request the grid's first page makes (the ledger test
-        // above); only how the rest is reached differs, and neither can leave items unreachable.
-        await renderRecipe(RECIPES[3]); // grid
-        expect(container.querySelector('.rf-library-continuous')).toBeTruthy();
-        expect(
-            container.querySelector('.rf-library-view__pagination')
-        ).toBeNull();
+    it('reaches the whole result set without page controls under both layouts', async () => {
+        // The same first request either way (the ledger test above); only the axis differs.
+        for (const recipe of [RECIPES[3], RECIPES[4]]) {
+            await renderRecipe(recipe);
+            expect(
+                container.querySelector('.rf-library-continuous')
+            ).toBeTruthy();
+            expect(
+                container.querySelector('.rf-library-view__pagination')
+            ).toBeNull();
 
-        act(() => root.unmount());
-        container.remove();
-        localStorage.clear();
-        container = document.createElement('div');
-        document.body.appendChild(container);
-        root = createRoot(container);
+            act(() => root.unmount());
+            container.remove();
+            localStorage.clear();
+            container = document.createElement('div');
+            document.body.appendChild(container);
+            root = createRoot(container);
+        }
+    });
 
-        await renderRecipe(RECIPES[4]); // shelf
+    it('keeps a shelf paged where the order is redrawn on each request', async () => {
+        await renderRecipe(RECIPES[4], '/library/lib-movies?sort=Random');
+
         expect(container.querySelector('.rf-library-continuous')).toBeNull();
         expect(
             container.querySelector('.rf-library-view__pagination')?.textContent
-        ).toBeTruthy();
+        ).toContain('PaginationPageLabel');
     });
 });
 

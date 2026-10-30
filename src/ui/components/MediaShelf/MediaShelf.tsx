@@ -23,6 +23,8 @@ export interface MediaShelfProps {
     id?: string;
     /** The horizontal scroll container, for a route that saves and restores a row's offset. */
     scrollerRef?: Ref<HTMLDivElement>;
+    /** `list` when the children are `role=listitem` slots carrying their place in the set. */
+    scrollerRole?: 'group' | 'list';
 }
 
 /**
@@ -39,7 +41,8 @@ export const MediaShelf: FC<MediaShelfProps> = ({
     children,
     className,
     id,
-    scrollerRef
+    scrollerRef,
+    scrollerRole = 'group'
 }) => {
     const classes = ['rf-media-shelf', className].filter(Boolean).join(' ');
     const headingId = id ? `${id}-heading` : undefined;
@@ -59,7 +62,7 @@ export const MediaShelf: FC<MediaShelfProps> = ({
             <div
                 ref={scrollerRef}
                 className={`rf-media-shelf__scroller rf-media-shelf__scroller--${density}`}
-                role='group'
+                role={scrollerRole}
                 aria-labelledby={headingId}
             >
                 {children}

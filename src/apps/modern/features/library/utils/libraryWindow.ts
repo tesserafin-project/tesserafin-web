@@ -21,6 +21,9 @@ export interface RowRange {
 export const OVERSCAN_ROWS = 2;
 /** Rows whose page is requested beyond the viewport on each side. */
 export const PRELOAD_ROWS = 4;
+/** A shelf shows fewer cards at once than a grid's rows hold, and each one is a "row" here. */
+export const SHELF_OVERSCAN_CARDS = 4;
+export const SHELF_PRELOAD_CARDS = 12;
 /** Before the grid can be measured nothing beyond this is mounted. */
 export const UNMEASURED_CARDS = 24;
 

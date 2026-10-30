@@ -260,12 +260,13 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
     // Random is redrawn by the server on every request, so its pages are not parts of one order.
     // Everything not demonstrated yet keeps its pagination: see docs/ux/library-browsing.md.
+    // A shelf has no list view: the stored `viewMode` means nothing to it.
     const isContinuous =
         !!libraryId &&
-        recipe.layout === 'grid' &&
         queryState.sortBy !== ItemSortBy.Random &&
         (primaryItemType === BaseItemKind.Movie ||
-            (primaryItemType === BaseItemKind.Series && viewMode === 'grid'));
+            (primaryItemType === BaseItemKind.Series &&
+                (recipe.layout === 'shelf' || viewMode === 'grid')));
 
     const baseParams = useMemo(
         () => ({
@@ -620,9 +621,10 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                 {isContinuous ? (
                     <Suspense fallback={<LoadingState variant='grid' />}>
                         <ContinuousLibraryGrid
-                            key={resultSet}
+                            key={`${recipe.layout}:${resultSet}`}
                             params={baseParams}
-                            context={resultSet}
+                            context={`${recipe.layout}:${resultSet}`}
+                            layout={recipe.layout}
                             pageSize={pageSize}
                             legacyStart={
                                 legacyStart.current?.resultSet === resultSet

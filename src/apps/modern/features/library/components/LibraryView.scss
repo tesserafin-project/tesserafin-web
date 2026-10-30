@@ -107,6 +107,22 @@
     grid-column: 1 / -1;
 }
 
+.rf-library-continuous__item {
+    display: grid;
+    min-width: 0;
+}
+
+/* Snapping would re-snap each time cards mount, and undo a restored offset. Anchoring would move the
+   scroller as the spacers change. Positions here are arithmetic, so neither has anything to add. */
+.rf-library-continuous--shelf .rf-media-shelf__scroller {
+    scroll-snap-type: none;
+    overflow-anchor: none;
+
+    > * {
+        scroll-snap-align: none;
+    }
+}
+
 .rf-library-view__destinations {
     /* Four destinations fit a 360px viewport without overflow — the counted reason the design
        (§5) stops at four. The wrap is a safety net for very long translations, not the layout. */

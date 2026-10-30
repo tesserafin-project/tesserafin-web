@@ -17,6 +17,8 @@ export interface MediaGridProps {
     id?: string;
     /** Accessible name for the grid region when no visible heading already labels it. */
     'aria-label'?: string;
+    /** `list` when the children are `role=listitem` slots carrying their place in the set. */
+    role?: 'group' | 'list';
 }
 
 /**
@@ -32,7 +34,8 @@ export const MediaGrid: FC<MediaGridProps> = ({
     minItemWidth,
     className,
     id,
-    'aria-label': ariaLabel
+    'aria-label': ariaLabel,
+    role = 'group'
 }) => {
     const classes = ['rf-media-grid', `rf-media-grid--${density}`, className]
         .filter(Boolean)
@@ -48,7 +51,7 @@ export const MediaGrid: FC<MediaGridProps> = ({
         <div
             className={classes}
             data-rf-slot='media-grid'
-            role='group'
+            role={role}
             aria-label={ariaLabel}
             id={id}
             style={style}

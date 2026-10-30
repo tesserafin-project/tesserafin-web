@@ -77,10 +77,15 @@ def query(parent, kind, sort, order, start, limit):
 
 
 def wait_for(parent, kind, wanted):
+    # Reaching `wanted` does not end the scan: a row added after the sequence was read moves every
+    # later one, and reads as a server defect. Wait until the count has stopped changing as well.
     total = 0
+    steady = 0
     for _ in range(240):
+        previous = total
         total = query(parent, kind, ['SortName'], ['Ascending'], 0, 1)['TotalRecordCount']
-        if total >= wanted:
+        steady = steady + 1 if total == previous else 0
+        if total >= wanted and steady >= 3:
             return total
         time.sleep(5)
     raise SystemExit(f'{kind}: only {total} of {wanted} indexed')

@@ -16,13 +16,17 @@ import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 import { plainCardNavigation } from 'apps/modern/utils/mediaCardNavigation';
 import { useApi } from 'hooks/useApi';
 import globalize from 'lib/globalize';
-import { LoadingState, MediaCard, MediaGrid } from 'ui';
+import { LoadingState, MediaCard, MediaGrid, MediaShelf } from 'ui';
 
 import { useLibraryItemPages } from '../api/useLibraryItemPages';
 import type { LibraryItemsParams } from '../api/useLibraryItems';
 import type { LibraryViewMode } from '../constants/librarySections';
 import type { LibraryDensity } from '../utils/density';
-import type { LibraryCardAspect } from '../utils/libraryRecipe';
+import {
+    type LibraryCardAspect,
+    type LibraryLayout,
+    toLibraryShelfDensity
+} from '../utils/libraryRecipe';
 import {
     forgetLibraryPosition,
     libraryOwner,
@@ -42,6 +46,8 @@ import {
     rowPitch,
     type RowRange,
     rowsInView,
+    SHELF_OVERSCAN_CARDS,
+    SHELF_PRELOAD_CARDS,
     UNMEASURED_CARDS
 } from '../utils/libraryWindow';
 import { type ImageApiClient, toMediaCardProps } from '../utils/mediaCardProps';
@@ -49,8 +55,56 @@ import { classifyLibraryFailure } from '../utils/libraryAccess';
 import { LibraryItemsEmpty, LibraryItemsFailure } from './LibraryItemsGrid';
 
 const CARD = 'a[data-rf-slot="media-card"][href]';
+/** Names the shelf: its scroller is labelled by this id's heading. One Browse shelf per page. */
+const LIBRARY_SHELF_ID = 'rf-library-shelf';
 /** Where a `?page=` target lands below the top of the viewport. */
 const LEGACY_LINK_OFFSET = 96;
+const SHELF_SCROLLER = '.rf-media-shelf__scroller';
+
+/** How a presentation reads and moves its position along the axis it scrolls. */
+interface ScrollAxis {
+    position: (root: HTMLElement) => number;
+    extent: (root: HTMLElement) => number;
+    moveTo: (root: HTMLElement, position: number) => void;
+}
+
+const PAGE_AXIS: ScrollAxis = {
+    position: (root) => -root.getBoundingClientRect().top,
+    extent: () => window.innerHeight,
+    moveTo: (root, position) =>
+        window.scrollTo({
+            top: root.getBoundingClientRect().top + window.scrollY + position,
+            behavior: 'instant'
+        })
+};
+
+const shelfScroller = (root: HTMLElement) =>
+    root.querySelector<HTMLElement>(SHELF_SCROLLER);
+
+const isRtl = (element: HTMLElement) =>
+    getComputedStyle(element).direction === 'rtl';
+
+// `scrollLeft` runs negative from the start of a right-to-left scroller.
+const SHELF_AXIS: ScrollAxis = {
+    position: (root) => Math.abs(shelfScroller(root)?.scrollLeft ?? 0),
+    extent: (root) => shelfScroller(root)?.clientWidth ?? 0,
+    moveTo: (root, position) => {
+        const scroller = shelfScroller(root);
+        scroller?.scrollTo({
+            left: isRtl(scroller) ? -position : position,
+            behavior: 'instant'
+        });
+    }
+};
+
+/** How far along the shelf's reading direction a card starts, from its visible edge. */
+const shelfOffset = (root: HTMLElement, card: HTMLElement) => {
+    const scroller = shelfScroller(root);
+    if (!scroller) return 0;
+    const box = card.getBoundingClientRect();
+    const edge = scroller.getBoundingClientRect();
+    return isRtl(scroller) ? edge.right - box.right : box.left - edge.left;
+};
 
 /** Where an old `?page=N` link starts. A new `request` moves a grid already mounted. */
 export interface LegacyStart {
@@ -65,6 +119,8 @@ export interface ContinuousLibraryGridProps {
     pageSize: number;
     /** A remembered return position takes precedence over this when the grid mounts. */
     legacyStart?: LegacyStart;
+    /** `shelf` is the same list on its side: every card is a "row" of one, across a scroller. */
+    layout?: LibraryLayout;
     viewMode: LibraryViewMode;
     density: LibraryDensity;
     cardAspect: LibraryCardAspect;
@@ -83,6 +139,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     context,
     pageSize,
     legacyStart,
+    layout = 'grid',
     viewMode,
     density,
     cardAspect,
@@ -95,6 +152,9 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     const navigate = useNavigate();
     const navigation = useNavigationType();
     const limit = continuousPageSize(pageSize);
+    const isShelf = layout === 'shelf';
+    const axis = isShelf ? SHELF_AXIS : PAGE_AXIS;
+    const legacyOffset = isShelf ? 0 : LEGACY_LINK_OFFSET;
     const owner = libraryOwner(user?.ServerId ?? '', user?.Id ?? '');
     const returnKey = libraryReturnKey(context, location.key);
 
@@ -104,12 +164,18 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     );
     /** While set, the window follows this target instead of a scroll position not yet restored. */
     const pendingTarget = useRef<
-        | { index: number; offset: number; href?: string; takeFocus?: boolean }
+        | {
+              index: number;
+              offset: number;
+              top?: number;
+              href?: string;
+              takeFocus?: boolean;
+          }
         | undefined
     >(
         saved ??
             (legacyStart
-                ? { index: legacyStart.index, offset: LEGACY_LINK_OFFSET }
+                ? { index: legacyStart.index, offset: legacyOffset }
                 : undefined)
     );
     const [anchorIndex, setAnchorIndex] = useState(
@@ -118,6 +184,8 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
     const [geometry, setGeometry] = useState<LibraryGeometry>();
     const [windowRows, setWindowRows] = useState<RowRange>();
+    /** A shelf's geometry runs along its width; this keeps every slot as tall as its tallest card. */
+    const [shelfCardHeight, setShelfCardHeight] = useState(0);
     const [pinnedIndex, setPinnedIndex] = useState<number>();
     const [knownTotal, setKnownTotal] = useState(saved?.total);
     const [, rerunRestore] = useState(0);
@@ -135,7 +203,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         const { columns } = geometry;
         const wanted = expandRows(
             windowRows,
-            PRELOAD_ROWS,
+            isShelf ? SHELF_PRELOAD_CARDS : PRELOAD_ROWS,
             knownTotal,
             columns
         );
@@ -150,7 +218,15 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             if (!all.includes(pinned)) all.push(pinned);
         }
         return all;
-    }, [anchorIndex, geometry, knownTotal, limit, pinnedIndex, windowRows]);
+    }, [
+        anchorIndex,
+        geometry,
+        isShelf,
+        knownTotal,
+        limit,
+        pinnedIndex,
+        windowRows
+    ]);
 
     const { pages, observers, cachedPages } = useLibraryItemPages(
         params,
@@ -258,12 +334,17 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                   return { first: row, last: row };
               })()
             : rowsInView(
-                  -element.getBoundingClientRect().top,
-                  window.innerHeight,
+                  axis.position(element),
+                  axis.extent(element),
                   geometry,
                   total
               );
-        const next = expandRows(rows, OVERSCAN_ROWS, total, geometry.columns);
+        const next = expandRows(
+            rows,
+            isShelf ? SHELF_OVERSCAN_CARDS : OVERSCAN_ROWS,
+            total,
+            geometry.columns
+        );
         setWindowRows((current) =>
             current?.first === next.first && current.last === next.last
                 ? current
@@ -273,7 +354,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         if (!element.contains(document.activeElement)) {
             setPinnedIndex(undefined);
         }
-    }, [geometry, total]);
+    }, [axis, geometry, isShelf, total]);
 
     const previousGeometry = useRef<LibraryGeometry>();
     const returnRowHeight = useRef(saved?.rowHeight);
@@ -289,29 +370,32 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         ) {
             return;
         }
-        const box = element.getBoundingClientRect();
+        const position = axis.position(element);
         const pitch = rowPitch(before);
-        const row = Math.max(0, Math.floor(-box.top / pitch));
+        const row = Math.max(0, Math.floor(position / pitch));
         viewAnchor.current = {
             index: row * before.columns,
-            offset: box.top + row * pitch
+            offset: row * pitch - position
         };
-    }, []);
+    }, [axis]);
 
     // Measuring happens before paint so that an unmeasured grid is never seen.
     const measure = useCallback(() => {
         const element = root.current;
         const grid = element?.querySelector<HTMLElement>(
-            '[data-rf-slot="media-grid"]'
+            isShelf ? SHELF_SCROLLER : '[data-rf-slot="media-grid"]'
         );
         const card = element?.querySelector<HTMLElement>(CARD);
         if (!element || !grid || !card) return;
         const style = getComputedStyle(grid);
-        const columns = Math.max(
-            1,
-            style.gridTemplateColumns.split(' ').filter(Boolean).length
-        );
-        const rowGap = Number.parseFloat(style.rowGap) || 0;
+        const columns = isShelf
+            ? 1
+            : Math.max(
+                  1,
+                  style.gridTemplateColumns.split(' ').filter(Boolean).length
+              );
+        const rowGap =
+            Number.parseFloat(isShelf ? style.columnGap : style.rowGap) || 0;
         element.style.removeProperty('--rf-library-row-height');
         const cards = element.querySelectorAll<HTMLElement>(CARD);
         let rowHeight = 0;
@@ -319,6 +403,15 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             rowHeight = Math.max(rowHeight, node.offsetHeight);
         });
         if (!rowHeight) return;
+        if (isShelf) {
+            element.style.setProperty(
+                '--rf-library-row-height',
+                `${rowHeight}px`
+            );
+            setShelfCardHeight(rowHeight);
+            rowHeight = card.offsetWidth;
+            if (!rowHeight) return;
+        }
         // A return keeps the row height it left with, until a new column count makes it meaningless.
         if (
             previousGeometry.current &&
@@ -326,8 +419,13 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         ) {
             returnRowHeight.current = undefined;
         }
-        rowHeight = Math.max(rowHeight, returnRowHeight.current ?? 0);
-        element.style.setProperty('--rf-library-row-height', `${rowHeight}px`);
+        if (!isShelf) {
+            rowHeight = Math.max(rowHeight, returnRowHeight.current ?? 0);
+            element.style.setProperty(
+                '--rf-library-row-height',
+                `${rowHeight}px`
+            );
+        }
         const known = previousGeometry.current;
         if (
             known?.columns === columns &&
@@ -338,7 +436,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
         captureViewAnchor();
         setGeometry({ columns, rowHeight, rowGap });
-    }, [captureViewAnchor]);
+    }, [captureViewAnchor, isShelf]);
 
     const hasResults = !!total && items.size > 0;
     useLayoutEffect(() => {
@@ -348,15 +446,24 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     // A card taller than the row (a row without a subtitle measured first) grows every row.
     useLayoutEffect(() => {
         if (!geometry) return;
-        let tallest = geometry.rowHeight;
+        let tallest = isShelf ? shelfCardHeight : geometry.rowHeight;
         root.current?.querySelectorAll<HTMLElement>(CARD).forEach((node) => {
             tallest = Math.max(tallest, node.offsetHeight);
         });
-        if (tallest > geometry.rowHeight) {
+        if (isShelf) {
+            if (tallest > shelfCardHeight) setShelfCardHeight(tallest);
+        } else if (tallest > geometry.rowHeight) {
             captureViewAnchor();
             setGeometry({ ...geometry, rowHeight: tallest });
         }
-    }, [captureViewAnchor, geometry, items, windowRows]);
+    }, [
+        captureViewAnchor,
+        geometry,
+        isShelf,
+        items,
+        shelfCardHeight,
+        windowRows
+    ]);
 
     // Keep the same item in view when a resize, a view switch or a new row height moves every row.
     // Read before the new geometry commits: a shorter document clamps the scroll position as it
@@ -368,27 +475,20 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         const anchor = viewAnchor.current;
         viewAnchor.current = undefined;
         if (anchor && !pendingTarget.current) {
-            const box = element.getBoundingClientRect();
             const row = Math.floor(anchor.index / geometry.columns);
-            window.scrollTo({
-                top:
-                    box.top +
-                    window.scrollY +
-                    row * rowPitch(geometry) -
-                    anchor.offset,
-                behavior: 'instant'
-            });
+            axis.moveTo(element, row * rowPitch(geometry) - anchor.offset);
         }
         updateWindow();
-    }, [geometry, updateWindow]);
+    }, [axis, geometry, updateWindow]);
 
     // Same cards, other shape: the same measuring a resize gets, before paint.
-    const measuredViewMode = useRef(viewMode);
+    const shape = `${viewMode}|${density}|${cardAspect}`;
+    const measuredShape = useRef(shape);
     useLayoutEffect(() => {
-        if (measuredViewMode.current === viewMode) return;
-        measuredViewMode.current = viewMode;
+        if (measuredShape.current === shape) return;
+        measuredShape.current = shape;
         measure();
-    }, [measure, viewMode]);
+    }, [measure, shape]);
 
     // A `?page=N` reached while mounted: follow it now, before the parent drops it from the URL.
     const handledLegacyRequest = useRef(legacyStart?.request);
@@ -402,12 +502,12 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         handledLegacyRequest.current = legacyStart.request;
         pendingTarget.current = {
             index: legacyStart.index,
-            offset: LEGACY_LINK_OFFSET
+            offset: legacyOffset
         };
         setAnchorIndex(legacyStart.index);
         rerunRestore((count) => count + 1);
         updateWindow();
-    }, [legacyStart, updateWindow]);
+    }, [legacyOffset, legacyStart, updateWindow]);
 
     useEffect(() => {
         let frame = 0;
@@ -418,11 +518,15 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                 updateWindow();
             });
         };
-        window.addEventListener('scroll', onScroll, { passive: true });
+        // Capture: a shelf's scroller does not bubble its scroll up to the window.
+        window.addEventListener('scroll', onScroll, {
+            capture: true,
+            passive: true
+        });
         window.addEventListener('resize', onScroll);
         return () => {
             cancelAnimationFrame(frame);
-            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('scroll', onScroll, true);
             window.removeEventListener('resize', onScroll);
         };
     }, [updateWindow]);
@@ -439,10 +543,11 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             if (width === lastWidth.current) return;
             lastWidth.current = width;
             measure();
+            updateWindow();
         });
         observer.observe(element);
         return () => observer.disconnect();
-    }, [hasResults, measure]);
+    }, [hasResults, measure, updateWindow]);
 
     // Restore once the target's row is really there: the scroll first, then the focus.
     const targetIndex = pendingTarget.current?.index;
@@ -457,11 +562,16 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         if (row < windowRows.first || row > windowRows.last) return;
         pendingTarget.current = undefined;
         forgetLibraryPosition(returnKey);
-        const top = element.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({
-            top: top + row * rowPitch(geometry) - target.offset,
-            behavior: 'instant'
-        });
+        axis.moveTo(element, row * rowPitch(geometry) - target.offset);
+        if (target.top !== undefined) {
+            const place = cardAtIndex(element, items.get(target.index)?.href);
+            if (place) {
+                window.scrollBy({
+                    top: place.getBoundingClientRect().top - target.top,
+                    behavior: 'instant'
+                });
+            }
+        }
         if (target.takeFocus) {
             cardAtIndex(element, items.get(target.index)?.href)?.focus({
                 preventScroll: true
@@ -477,7 +587,15 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             });
         }
         updateWindow();
-    }, [geometry, items, returnKey, targetLoaded, updateWindow, windowRows]);
+    }, [
+        axis,
+        geometry,
+        items,
+        returnKey,
+        targetLoaded,
+        updateWindow,
+        windowRows
+    ]);
 
     useEffect(() => {
         if (!returnMissing) return;
@@ -523,12 +641,20 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             if (!target) return;
             const index = indexByHref.get(target.href);
             if (index !== undefined && total !== undefined) {
+                const box = target.card.getBoundingClientRect();
                 rememberLibraryPosition(owner, returnKey, {
                     index,
                     href: target.href,
-                    offset: target.card.getBoundingClientRect().top,
                     total,
-                    rowHeight: previousGeometry.current?.rowHeight
+                    ...(isShelf
+                        ? {
+                              offset: shelfOffset(element, target.card),
+                              top: box.top
+                          }
+                        : {
+                              offset: box.top,
+                              rowHeight: previousGeometry.current?.rowHeight
+                          })
                 });
             }
             // Native hash changes have no unique history key and look like POP.
@@ -539,6 +665,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         return () => element.removeEventListener('click', remember);
     }, [
         indexByHref,
+        isShelf,
         navigate,
         owner,
         returnKey,
@@ -573,7 +700,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
         pendingTarget.current = {
             index,
-            offset: LEGACY_LINK_OFFSET,
+            offset: legacyOffset,
             takeFocus: true
         };
         setPinnedIndex(undefined);
@@ -581,13 +708,21 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         rerunRestore((count) => count + 1);
         updateWindow();
         // biome-ignore lint/correctness/useExhaustiveDependencies: `pageAt` reads the pages `items` follows
-    }, [indexByHref, items, limit, pinnedIndex, total, updateWindow]);
+    }, [
+        indexByHref,
+        items,
+        legacyOffset,
+        limit,
+        pinnedIndex,
+        total,
+        updateWindow
+    ]);
 
-    /** A retry or a load-more that had focus hands it to the first card it brought in. */
+    /** A retry or a load-more that had focus hands it to the card that takes its slot. */
     const focusedLoader = useRef<number>();
     useLayoutEffect(() => {
-        const start = focusedLoader.current;
-        if (start === undefined || !items.has(start)) return;
+        const slot = focusedLoader.current;
+        if (slot === undefined || !items.has(slot)) return;
         focusedLoader.current = undefined;
         if (
             document.activeElement &&
@@ -595,14 +730,16 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         ) {
             return;
         }
-        cardAtIndex(root.current, items.get(start)?.href)?.focus();
+        cardAtIndex(root.current, items.get(slot)?.href)?.focus();
     }, [items]);
 
     const onFocus = useCallback(
         (event: FocusEvent<HTMLDivElement>) => {
             const target = event.target as HTMLElement;
-            const loader = target.dataset.rfPageStart;
+            const loader = target.dataset.rfSlotIndex;
             if (loader !== undefined) {
+                // The card that had focus is no longer the one to follow if it leaves the results.
+                focusedHref.current = undefined;
                 focusedLoader.current = Number(loader);
                 setPinnedIndex(Number(loader));
                 return;
@@ -612,8 +749,10 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             const index = href ? indexByHref.get(href) : undefined;
             focusedHref.current = href ?? undefined;
             if (index !== undefined) setPinnedIndex(index);
+            // Tab scrolled to get here; the next Tab must not wait a frame for its neighbour.
+            if (isShelf) updateWindow();
         },
-        [indexByHref]
+        [indexByHref, isShelf, updateWindow]
     );
 
     /**
@@ -632,16 +771,13 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         ) {
             return;
         }
-        const top = element.getBoundingClientRect().top + window.scrollY;
-        window.scrollTo({
-            top:
-                top +
-                pinnedRow * rowPitch(geometry) -
-                (window.innerHeight - geometry.rowHeight) / 2,
-            behavior: 'instant'
-        });
+        axis.moveTo(
+            element,
+            pinnedRow * rowPitch(geometry) -
+                (axis.extent(element) - geometry.rowHeight) / 2
+        );
         flushSync(updateWindow);
-    }, [geometry, pinnedRow, updateWindow, windowRows]);
+    }, [axis, geometry, pinnedRow, updateWindow, windowRows]);
 
     const loadedAt = (start: number) => pageAt(start)?.isSuccess;
 
@@ -704,12 +840,66 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
     // Mounted before it has anything to say, or a screen reader would not announce it. Same position
     // in both returns below, or the grid after it would remount and take the focus with it.
+    // One message however many pages failed, so that a run of failures is announced once.
+    const pageFailed = pages.some((page) => page?.isError);
     const statusLine = (
         <p role='status' className='rf-library-view__order-note'>
-            {returnMissing &&
-                globalize.translate('MessageLibraryReturnItemMissing')}
+            {(returnMissing &&
+                globalize.translate('MessageLibraryReturnItemMissing')) ||
+                (pageFailed && globalize.translate('ErrorDefault'))}
         </p>
     );
+
+    const itemClass = [
+        'rf-library-continuous__item',
+        isShelf && 'rf-media-shelf__item'
+    ]
+        .filter(Boolean)
+        .join(' ');
+    const placeholderClass = [
+        'rf-library-continuous__placeholder',
+        isShelf && 'rf-media-shelf__item'
+    ]
+        .filter(Boolean)
+        .join(' ');
+    /** Links cannot carry a position in a set; a list item can, and virtual slots need one. */
+    const positioned = (index: number, key: string, content: ReactNode) => (
+        <div
+            key={key}
+            role='listitem'
+            aria-posinset={index + 1}
+            aria-setsize={total}
+            className={itemClass}
+        >
+            {content}
+        </div>
+    );
+    const renderCard = (index: number, card: MediaCardProps) =>
+        positioned(index, card.href!, <MediaCard {...card} />);
+    const container = (children: ReactNode) =>
+        isShelf ? (
+            <MediaShelf
+                id={LIBRARY_SHELF_ID}
+                title={label}
+                density={toLibraryShelfDensity(density)}
+                scrollerRole='list'
+            >
+                {children}
+            </MediaShelf>
+        ) : (
+            <MediaGrid
+                density={density}
+                aria-label={label}
+                role='list'
+                className={gridClass}
+                minItemWidth={minItemWidth}
+            >
+                {children}
+            </MediaGrid>
+        );
+    const rootClass = isShelf
+        ? 'rf-library-continuous rf-library-continuous--shelf'
+        : 'rf-library-continuous';
 
     // As on the paged grid: same cards, same DOM, one column in list mode.
     const minItemWidth =
@@ -724,20 +914,13 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         const measuring = [...items.entries()]
             .filter(([index]) => index >= first)
             .slice(0, UNMEASURED_CARDS)
-            .map(([, card]) => <MediaCard key={card.href} {...card} />);
+            .map(([index, card]) => renderCard(index, card));
         return (
             <>
                 {observers}
                 {statusLine}
-                <div ref={root} className='rf-library-continuous'>
-                    <MediaGrid
-                        density={density}
-                        aria-label={label}
-                        className={gridClass}
-                        minItemWidth={minItemWidth}
-                    >
-                        {measuring}
-                    </MediaGrid>
+                <div ref={root} className={rootClass}>
+                    {container(measuring)}
                 </div>
             </>
         );
@@ -747,27 +930,31 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     const pitch = rowPitch(geometry);
     const rows = rowCount(total, columns);
     const segments = mountedSegments(windowRows, pinnedRow);
-    const renderSlot = (index: number): ReactNode => {
+    const renderSlot = (index: number, segmentStart: number): ReactNode => {
         const card = items.get(index);
-        if (card) return <MediaCard key={card.href} {...card} />;
+        if (card) return renderCard(index, card);
         const start = Math.floor(index / limit) * limit;
         const page = pageAt(start);
-        // The first empty slot of an unanswered page holds its action, in reading order.
-        if (index === start && !loadedAt(start)) {
-            return (
-                <div
-                    key={`loader-${start}`}
-                    className='rf-library-continuous__placeholder'
-                >
+        // The first empty slot of an unanswered page holds its action, in reading order. A failed page
+        // scrolled to its middle has its first mounted slot hold it too, or nothing could retry it;
+        // and the focused one stays, wherever the window has moved in the meantime.
+        if (
+            !loadedAt(start) &&
+            (index === start ||
+                (page?.isError && index === segmentStart) ||
+                index === focusedLoader.current)
+        ) {
+            return positioned(
+                index,
+                `loader-${index}`,
+                <div className={placeholderClass}>
                     {page?.isError && (
-                        <p role='alert'>
-                            {globalize.translate('ErrorDefault')}
-                        </p>
+                        <p>{globalize.translate('ErrorDefault')}</p>
                     )}
                     <button
                         type='button'
                         className='rf-library-view__density-toggle'
-                        data-rf-page-start={start}
+                        data-rf-slot-index={index}
                         onClick={() => void page?.refetch()}
                     >
                         {globalize.translate('LoadMoreItems')}
@@ -778,21 +965,35 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         return (
             <div
                 key={`slot-${index}`}
-                className='rf-library-continuous__placeholder'
+                className={placeholderClass}
                 aria-hidden='true'
             />
         );
     };
+    /** Stands for `count` cards along the shelf: the flex gap on its far side is the last of theirs. */
+    const shelfSpacer = (key: string, count: number) =>
+        count > 0 && (
+            <div
+                key={key}
+                aria-hidden='true'
+                className='rf-library-continuous__spacer'
+                style={{ width: `${count * pitch - geometry.rowGap}px` }}
+            />
+        );
 
     // One flat list: a card keeps its identity, and so its focus, as the window moves around it.
     const slots: ReactNode[] = [];
+    if (isShelf) slots.push(shelfSpacer('lead', segments[0].first));
     segments.forEach((segment, position) => {
+        const start = segment.first * columns;
         const end = Math.min(total, (segment.last + 1) * columns);
-        for (let index = segment.first * columns; index < end; index++) {
-            slots.push(renderSlot(index));
+        for (let index = start; index < end; index++) {
+            slots.push(renderSlot(index, start));
         }
         const next = segments[position + 1];
-        if (next) {
+        if (next && isShelf) {
+            slots.push(shelfSpacer('gap', next.first - segment.last - 1));
+        } else if (next) {
             slots.push(
                 <div
                     key='gap'
@@ -810,11 +1011,14 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     });
 
     const lastRow = segments[segments.length - 1].last;
-    const style = {
-        '--rf-library-row-height': `${geometry.rowHeight}px`,
-        paddingTop: `${segments[0].first * pitch}px`,
-        paddingBottom: `${Math.max(0, rows - 1 - lastRow) * pitch}px`
-    } as CSSProperties;
+    if (isShelf) slots.push(shelfSpacer('trail', rows - 1 - lastRow));
+    const style = (isShelf
+        ? { '--rf-library-row-height': `${shelfCardHeight}px` }
+        : {
+              '--rf-library-row-height': `${geometry.rowHeight}px`,
+              paddingTop: `${segments[0].first * pitch}px`,
+              paddingBottom: `${Math.max(0, rows - 1 - lastRow) * pitch}px`
+          }) as unknown as CSSProperties;
 
     return (
         <>
@@ -825,7 +1029,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             {/* biome-ignore lint/a11y/noStaticElementInteractions: delegated focus tracking */}
             <div
                 ref={root}
-                className='rf-library-continuous'
+                className={rootClass}
                 style={style}
                 data-rf-total={total}
                 data-rf-repeated-rows={repeatedRows}
@@ -834,18 +1038,13 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                 onFocus={onFocus}
                 onKeyDownCapture={onKeyDownCapture}
             >
-                <MediaGrid
-                    density={density}
-                    aria-label={label}
-                    className={gridClass}
-                    minItemWidth={minItemWidth}
-                >
-                    {slots}
-                </MediaGrid>
+                {container(slots)}
             </div>
         </>
     );
 };
+
+type MediaCardProps = ReturnType<typeof toMediaCardProps>;
 
 const cardAtIndex = (root: HTMLElement | null, href: string | undefined) =>
     href
