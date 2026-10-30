@@ -330,7 +330,7 @@ export async function installFixtureApi(
         if (path === `/Users/${USER_ID}` || path === '/Users/Me')
             return json(USER);
         // This fixture has no WebSocket transport, so it declares what a server without one answers:
-        // the contract's 503. The client asks once and carries on without a socket.
+        // the contract's 503. The client carries on without a socket, retrying on its own timer.
         if (path === '/WebSocket/Tickets' && method === 'POST')
             return route.fulfill({
                 status: 503,

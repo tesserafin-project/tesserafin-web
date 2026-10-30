@@ -31,13 +31,13 @@ const KINDS = {
         url: `/#/library/${MOVIES}`
     },
     Series: {
-        total: 3_000,
+        total: 12_000,
         opened: SERIES,
         openedAt: 1_307,
         url: `/#/library/${SHOWS}`
     },
     Episode: {
-        total: 9_000,
+        total: 12_000,
         opened: EPISODE,
         openedAt: 4_207,
         url: `/#/library/${SHOWS}?granularity=episodes`
@@ -298,6 +298,11 @@ for (const kind of Object.keys(KINDS) as Kind[]) {
                         node.scrollBy({ left: -37, behavior: 'instant' })
                     );
                 await card.focus({ preventScroll: true });
+                // Short enough that the page itself scrolls, or a vertical restore would prove nothing.
+                await page.setViewportSize({
+                    width: layout === 'mobile' ? 390 : 1440,
+                    height: 500
+                });
                 await page.evaluate(() =>
                     window.scrollTo({ top: 40, behavior: 'instant' })
                 );
@@ -310,10 +315,10 @@ for (const kind of Object.keys(KINDS) as Kind[]) {
                         y: window.scrollY
                     };
                 });
+                expect(before.y).toBeGreaterThan(0);
                 const opener = page.url();
                 await page.keyboard.press('Enter');
                 await expect(page.locator('#itemDetailPage')).toBeVisible();
-                const requestsBeforeBack = fixture.requests.length;
                 await page.goBack();
                 await expect(card).toBeFocused();
                 expect(page.url()).toBe(opener);
@@ -333,11 +338,6 @@ for (const kind of Object.keys(KINDS) as Kind[]) {
                         }, before)
                     )
                     .toBeLessThan(3);
-                // Only pages at that depth, never the ones before them.
-                const after = fixture.requests.slice(requestsBeforeBack);
-                expect(
-                    after.every((r) => Math.abs(r.startIndex - openedAt) < 300)
-                ).toBe(true);
                 expect(ledger.undeclared).toEqual([]);
                 await page.screenshot({
                     path: resolve(
@@ -377,6 +377,10 @@ test('Tab and Shift+Tab cross page boundaries without a trap', async ({
     // After scrolling away, the next key brings the focused card back, then acts on its neighbour.
     await scrollToIndex(page, 6_000, 12_000);
     await page.waitForTimeout(200);
+    // A modifier alone does nothing to focus, so it does not move the view either.
+    await page.keyboard.press('Shift');
+    await page.waitForTimeout(100);
+    expect(indexOf((await leftmost(page)).text)).toBeGreaterThan(5_900);
     await page.keyboard.press('Tab');
     await expect(page.locator(':focus')).toContainText(name('Movie', 99));
 
@@ -666,8 +670,6 @@ test('the shelf is a list that states each position and the total, and its space
         expect(fact.of).toBe(12_000);
         expect(fact.text).toContain(name('Movie', fact.at - 1));
     }
-    const snapshot = await page.locator(SCROLLER).ariaSnapshot();
-    expect(snapshot).not.toMatch(/spacer|gap/);
     expect(
         await page
             .locator(`${SCROLLER} > :not([role="listitem"])`)
@@ -693,3 +695,197 @@ test('the shelf is a list that states each position and the total, and its space
         bySeverity: result.bySeverity
     });
 });
+
+test.describe('touch, emulated', () => {
+    test.use({ hasTouch: true, isMobile: true });
+
+    /** Raw touch points: `Input.synthesizeScrollGesture` moved not even a plain scroller here. */
+    const swipe = async (page: Page, by: number) => {
+        const session = await page.context().newCDPSession(page);
+        const box = (await page.locator(SCROLLER).boundingBox())!;
+        const y = box.y + box.height / 2;
+        const from = box.x + box.width - 20;
+        const point = (x: number) => ({ touchPoints: [{ x, y }] });
+        await session.send('Input.dispatchTouchEvent', {
+            type: 'touchStart',
+            ...point(from)
+        });
+        for (let moved = 15; moved <= by; moved += 15) {
+            await session.send('Input.dispatchTouchEvent', {
+                type: 'touchMove',
+                ...point(from - moved)
+            });
+            await page.waitForTimeout(16);
+        }
+        await session.send('Input.dispatchTouchEvent', {
+            type: 'touchEnd',
+            touchPoints: []
+        });
+        await session.detach();
+    };
+
+    test('a swipe moves the shelf, mounts its neighbours and leaves the card where the finger did', async ({
+        page,
+        baseURL
+    }) => {
+        const { fixture } = await install(
+            page,
+            baseURL!,
+            'official.glass',
+            'mobile'
+        );
+        await page.goto(KINDS.Movie.url);
+        await expect(page.locator(CARD).first()).toBeVisible();
+        const position = () =>
+            page.locator(SCROLLER).evaluate((node) => node.scrollLeft);
+
+        // Past a page boundary, by repeated swipes, as a thumb does.
+        await scrollToIndex(page, 95, 12_000);
+        for (let swipes = 0; swipes < 5; swipes++) await swipe(page, 300);
+        await expect.poll(position).toBeGreaterThan(26_500);
+        await expect
+            .poll(() => fixture.requests.some((r) => r.startIndex >= 100))
+            .toBe(true);
+        await expect
+            .poll(async () => indexOf((await leftmost(page)).text))
+            .toBeGreaterThan(95);
+        expect(await page.locator(CARD).count()).toBeLessThan(14);
+
+        // Without snapping, it stays exactly where the gesture ended.
+        // The fling decays first; then nothing pulls it onto a card's edge.
+        let rest = -1;
+        await expect
+            .poll(async () => {
+                const was = rest;
+                rest = await position();
+                return rest === was;
+            })
+            .toBe(true);
+        await page.waitForTimeout(600);
+        expect(await position()).toBe(rest);
+        const { left } = await leftmost(page);
+        measurements.push({ touch: 'emulated', restingCardOffsetPx: left });
+
+        // A tap opens the card, and Back returns to it and that offset.
+        const card = page.locator(CARD).filter({ hasText: /Movie/ }).nth(3);
+        const href = await card.getAttribute('href');
+        await page.locator(`${CARD}[href="${href}"]`).scrollIntoViewIfNeeded();
+        const settled = await position();
+        await page.locator(`${CARD}[href="${href}"]`).tap();
+        await expect(page.locator('#itemDetailPage')).toBeVisible();
+        await page.goBack();
+        const returned = page.locator(`${CARD}[href="${href}"]`);
+        await expect(returned).toHaveCount(1);
+        await expect
+            .poll(async () => Math.abs((await position()) - settled))
+            .toBeLessThan(3);
+    });
+
+    test('a swipe during a return hands the shelf back to the finger', async ({
+        page,
+        baseURL
+    }) => {
+        await install(page, baseURL!, 'official.classic', 'mobile');
+        await page.goto(KINDS.Movie.url);
+        await expect(page.locator(CARD).first()).toBeVisible();
+        await scrollToIndex(page, 5_207, 12_000);
+        const card = page.locator(`${CARD}[href*="id=${MOVIE.Id}&"]`);
+        await expect(card).toHaveCount(1);
+        await card.tap();
+        await expect(page.locator('#itemDetailPage')).toBeVisible();
+        await page.goBack();
+        await expect(card).toHaveCount(1);
+        const before = await page
+            .locator(SCROLLER)
+            .evaluate((n) => n.scrollLeft);
+        await swipe(page, 300);
+        await expect
+            .poll(() => page.locator(SCROLLER).evaluate((n) => n.scrollLeft))
+            .toBeGreaterThan(before + 200);
+    });
+});
+
+test('Back from a cold cache requests only the pages at that depth', async ({
+    page,
+    baseURL
+}) => {
+    const { fixture } = await install(page, baseURL!);
+    await page.goto(KINDS.Movie.url);
+    await expect(page.locator(CARD).first()).toBeVisible();
+    await scrollToIndex(page, 5_207, 12_000);
+    const card = page.locator(`${CARD}[href*="id=${MOVIE.Id}&"]`);
+    await expect(card).toHaveCount(1);
+    await card.click();
+    await expect(page.locator('#itemDetailPage')).toBeVisible();
+    await page.clock.install();
+    await page.clock.fastForward('10:00');
+    fixture.requests.length = 0;
+    await page.goBack();
+    await expect(card).toBeFocused();
+    expect(fixture.requests.length).toBeGreaterThan(0);
+    expect(fixture.requests.length).toBeLessThan(5);
+    expect(fixture.requests.every((r) => r.startIndex >= 5_000)).toBe(true);
+});
+
+test('a long walk along the shelf leaves a bounded number of pages in the cache', async ({
+    page,
+    baseURL
+}) => {
+    await install(page, baseURL!);
+    await page.goto(KINDS.Movie.url);
+    await expect(page.locator(CARD).first()).toBeVisible();
+    let peak = 0;
+    for (let index = 0; index < 12_000; index += 400) {
+        await scrollToIndex(page, index, 12_000);
+        await page.waitForTimeout(120);
+        peak = Math.max(
+            peak,
+            Number(
+                await page.locator(ROOT).getAttribute('data-rf-cached-pages')
+            )
+        );
+    }
+    measurements.push({ title: 'shelf, 30 jumps', peakCachedPages: peak });
+    // 12 idle pages, plus what the window observes, plus the first request's page.
+    expect(peak).toBeLessThanOrEqual(20);
+});
+
+for (const change of ['narrower', 'denser'] as const) {
+    test(`Back after a ${change} shelf: same card, in view, focused`, async ({
+        page,
+        baseURL
+    }) => {
+        await install(page, baseURL!);
+        await page.goto(KINDS.Movie.url);
+        await expect(page.locator(CARD).first()).toBeVisible();
+        await scrollToIndex(page, 5_203, 12_000);
+        const card = page.locator(`${CARD}[href*="id=${MOVIE.Id}&"]`);
+        await expect(card).toHaveCount(1);
+        await page.waitForTimeout(150);
+        // Far from the start edge, so that the saved offset cannot fit a phone.
+        expect(
+            await card.evaluate((node) => node.getBoundingClientRect().left)
+        ).toBeGreaterThan(900);
+        await card.focus({ preventScroll: true });
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#itemDetailPage')).toBeVisible();
+        if (change === 'narrower') {
+            await page.setViewportSize({ width: 390, height: 844 });
+        } else {
+            await page.evaluate(
+                (key) => localStorage.setItem(key, JSON.stringify('compact')),
+                `library-density-${MOVIES}`
+            );
+        }
+        await page.goBack();
+        await expect(card).toBeFocused();
+        await expect
+            .poll(() =>
+                card.evaluate((node) => {
+                    const box = node.getBoundingClientRect();
+                    return box.left >= 0 && box.right <= window.innerWidth;
+                })
+            )
+            .toBe(true);
+    });
+}

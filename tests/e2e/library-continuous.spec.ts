@@ -568,3 +568,317 @@ test('real sign-out, real sign-in: the restricted account gets nothing of the fi
             .count()
     ).toBe(0);
 });
+
+/**
+ * Two accounts with different rights INSIDE one shared library: the restricted account may not see
+ * the films tagged here, through the server's own `BlockedTags` policy. Unlike the test above, this
+ * can tell content isolation from a fresh start. Set LIBRARY_TWO_ACCOUNTS_CONTROL=1 to leave the
+ * policy off: the test must then fail on the first withheld film it finds.
+ */
+const WITHHELD_TAG = 'lbr3-first-account-only';
+
+const api = <T>(page: Page, path: string, method = 'GET', body?: unknown) =>
+    page.evaluate(
+        async ({ url, verb, payload }) => {
+            const server = JSON.parse(
+                localStorage.getItem('jellyfin_credentials') ?? '{}'
+            ).Servers[0];
+            const response = await fetch(url, {
+                method: verb,
+                headers: {
+                    Authorization: `MediaBrowser Token="${server.AccessToken}"`,
+                    'Content-Type': 'application/json'
+                },
+                body:
+                    payload === undefined ? undefined : JSON.stringify(payload)
+            });
+            const text = await response.text();
+            return {
+                status: response.status,
+                json: text ? JSON.parse(text) : undefined
+            };
+        },
+        { url: path, verb: method, payload: body }
+    ) as Promise<{ status: number; json: T }>;
+
+const moviesInOrder = async (page: Page, parentId: string, userId: string) => {
+    const ids: string[] = [];
+    for (;;) {
+        const query = new URLSearchParams({
+            userId,
+            parentId,
+            recursive: 'true',
+            includeItemTypes: 'Movie',
+            sortBy: 'ProductionYear,SortName,DateCreated',
+            sortOrder: 'Descending,Ascending,Ascending',
+            startIndex: String(ids.length),
+            limit: '100'
+        });
+        const { json } = await api<{
+            Items: { Id: string }[];
+            TotalRecordCount: number;
+        }>(page, `/Items?${query}`);
+        ids.push(...json.Items.map((item) => item.Id));
+        if (!json.Items.length || ids.length >= json.TotalRecordCount) {
+            return ids;
+        }
+    }
+};
+
+const currentUserId = (page: Page) =>
+    page.evaluate(
+        () =>
+            JSON.parse(localStorage.getItem('jellyfin_credentials') ?? '{}')
+                .Servers[0].UserId as string
+    );
+
+for (const layout of ['shelf', 'grid'] as const) {
+    test(`${layout}, two accounts in one library: the withheld films never reach the second`, async ({
+        page
+    }) => {
+        test.setTimeout(300_000);
+        await page.addInitScript(
+            (recipe) => {
+                localStorage.setItem(
+                    'tesserafin.themeStudio.appliedPresentation',
+                    recipe
+                );
+            },
+            JSON.stringify({
+                page: {
+                    library: { layout, cardAspect: 'poster', filters: 'inline' }
+                }
+            })
+        );
+        await signIn(page);
+        const adminId = await currentUserId(page);
+        const { parentId, ids } = await expectedSequence(
+            page,
+            'movies',
+            'Movie'
+        );
+        test.skip(ids.length <= 100, 'library not seeded');
+
+        // Every seventh film, through the real item update and the real policy.
+        const withheld = ids.filter((_, index) => index % 7 === 3);
+        for (const id of withheld) {
+            const { json: item } = await api<{ Tags?: string[] }>(
+                page,
+                `/Users/${adminId}/Items/${id}`
+            );
+            const saved = await api(page, `/Items/${id}`, 'POST', {
+                ...item,
+                Tags: [WITHHELD_TAG]
+            });
+            expect(saved.status).toBeLessThan(300);
+        }
+        const restrictedName =
+            process.env.TESSERAFIN_E2E_RESTRICTED_USER ?? 'smokerestricted';
+        const { json: users } = await api<{ Id: string; Name: string }[]>(
+            page,
+            '/Users'
+        );
+        const restricted = users.find((user) => user.Name === restrictedName)!;
+        const { json: full } = await api<{ Policy: object }>(
+            page,
+            `/Users/${restricted.Id}`
+        );
+        const policy = await api(
+            page,
+            `/Users/${restricted.Id}/Policy`,
+            'POST',
+            {
+                ...full.Policy,
+                BlockedTags: process.env.LIBRARY_TWO_ACCOUNTS_CONTROL
+                    ? []
+                    : [WITHHELD_TAG]
+            }
+        );
+        expect(policy.status).toBeLessThan(300);
+
+        // The first account: deep, on a film the second may not see, and back.
+        await page.goto(
+            `/#/library/${parentId}?sort=ProductionYear&order=Descending`
+        );
+        const root = page.locator('.rf-library-continuous');
+        const cards = root.locator('a[data-rf-slot="media-card"]');
+        await expect(cards.first()).toBeVisible();
+        await expect(root).toHaveAttribute('data-rf-total', String(ids.length));
+        const scrollToFraction = (fraction: number) =>
+            page.evaluate(
+                ([to, shelf]) => {
+                    const element = document.querySelector<HTMLElement>(
+                        '.rf-library-continuous'
+                    )!;
+                    if (shelf) {
+                        const scroller = element.querySelector<HTMLElement>(
+                            '.rf-media-shelf__scroller'
+                        )!;
+                        scroller.scrollTo({
+                            left: scroller.scrollWidth * Number(to),
+                            behavior: 'instant'
+                        });
+                        return;
+                    }
+                    window.scrollTo({
+                        top:
+                            element.getBoundingClientRect().top +
+                            window.scrollY +
+                            element.offsetHeight * Number(to),
+                        behavior: 'instant'
+                    });
+                },
+                [fraction, layout === 'shelf'] as const
+            );
+        const hiddenIndex = ids.indexOf(
+            withheld[Math.floor(withheld.length * 0.6)]
+        );
+        await scrollToFraction(hiddenIndex / ids.length);
+        const opened = root.locator(`a[href*="id=${ids[hiddenIndex]}"]`);
+        await expect(opened).toHaveCount(1);
+        await opened.focus({ preventScroll: true });
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#itemDetailPage')).toBeVisible();
+        await page.goBack();
+        await expect(opened).toBeFocused();
+
+        // A real page of the first account delayed through the transition.
+        let delayed = 0;
+        await page.route(
+            '**/Items?*',
+            async (route) => {
+                delayed += 1;
+                await new Promise((done) => setTimeout(done, 1_500));
+                await route.continue().catch(() => undefined);
+            },
+            { times: 3 }
+        );
+        await scrollToFraction(0.97);
+        await expect.poll(() => delayed).toBeGreaterThan(0);
+        await page.getByRole('button', { name: /user menu/i }).click();
+        await page.getByRole('menuitem', { name: 'Sign Out' }).click();
+
+        await expect(page.locator('.manualLoginForm')).toBeVisible({
+            timeout: 20_000
+        });
+        await page.locator('#txtManualName').fill(restrictedName);
+        await page
+            .locator('#txtManualPassword')
+            .fill(
+                process.env.TESSERAFIN_E2E_RESTRICTED_PASSWORD ??
+                    'restrictedpass123'
+            );
+        await page.locator('.manualLoginForm button[type="submit"]').click();
+        await expect(page.locator('.manualLoginForm')).toBeHidden({
+            timeout: 20_000
+        });
+
+        // What the server itself grants the second account: the reference for all that follows.
+        const secondId = await currentUserId(page);
+        expect(secondId).not.toBe(adminId);
+        const allowed = await moviesInOrder(page, parentId, secondId);
+        const forbidden = new Set(withheld);
+        expect(allowed.filter((id) => forbidden.has(id))).toEqual([]);
+        expect(allowed.length).toBe(ids.length - withheld.length);
+        const byId = await api(
+            page,
+            `/Users/${secondId}/Items/${ids[hiddenIndex]}`
+        );
+        expect(byId.status).toBeGreaterThanOrEqual(400);
+
+        await page.evaluate((id) => {
+            window.location.hash = `#/library/${id}?sort=ProductionYear&order=Descending`;
+        }, parentId);
+        await expect(cards.first()).toBeVisible({ timeout: 20_000 });
+        await expect(root).toHaveAttribute(
+            'data-rf-total',
+            String(allowed.length)
+        );
+        await page.waitForTimeout(2_000);
+        await expect(cards.first()).not.toBeFocused();
+        await expect(page.getByText('no longer here')).toHaveCount(0);
+
+        // Walks the whole result set: every card the second account is ever shown.
+        const seen = new Map<number, string>();
+        const read = async () => {
+            const facts = await root
+                .getByRole('listitem')
+                .evaluateAll((nodes) =>
+                    nodes.map((node) => ({
+                        at: Number(node.getAttribute('aria-posinset')),
+                        href:
+                            node
+                                .querySelector('a[data-rf-slot="media-card"]')
+                                ?.getAttribute('href') ?? ''
+                    }))
+                );
+            for (const fact of facts) {
+                if (fact.href) seen.set(fact.at - 1, fact.href);
+            }
+        };
+        for (let at = 0; at <= 1; at += 1 / 60) {
+            await scrollToFraction(at);
+            await page.waitForTimeout(120);
+            await read();
+        }
+        await scrollToFraction(1);
+        await page.waitForTimeout(400);
+        await read();
+        const shown = [...seen.entries()]
+            .sort(([a], [b]) => a - b)
+            .map(([, href]) => /[?&]id=([^&]+)/.exec(href)?.[1] ?? '');
+        expect(shown.filter((id) => forbidden.has(id))).toEqual([]);
+        expect(shown).toEqual(allowed);
+
+        // Going Back through history, onto the first account's entries, brings none of it back.
+        await page.goBack();
+        await page.waitForTimeout(800);
+        const hrefs = () =>
+            page
+                .locator('a[data-rf-slot="media-card"]')
+                .evaluateAll((nodes) =>
+                    nodes.map((node) => node.getAttribute('href') ?? '')
+                );
+        expect(
+            (await hrefs()).filter((href) =>
+                [...forbidden].some((id) => href.includes(id))
+            )
+        ).toEqual([]);
+
+        // The withheld fiche by its address, and the persisted cache that outlives the page.
+        await page.evaluate((id) => {
+            window.location.hash = `#/details?id=${id}`;
+        }, ids[hiddenIndex]);
+        await page.waitForTimeout(1_500);
+        const persisted = await page.evaluate(
+            () =>
+                new Promise<string>((done) => {
+                    const open = indexedDB.open('keyval-store');
+                    open.onerror = () => done('');
+                    open.onsuccess = () => {
+                        const db = open.result;
+                        if (!db.objectStoreNames.contains('keyval')) {
+                            db.close();
+                            done('');
+                            return;
+                        }
+                        const read = db
+                            .transaction('keyval')
+                            .objectStore('keyval')
+                            .get('tesserafin-query-cache');
+                        read.onsuccess = () => {
+                            db.close();
+                            done(JSON.stringify(read.result ?? ''));
+                        };
+                        read.onerror = () => done('');
+                    };
+                })
+        );
+        expect([...forbidden].filter((id) => persisted.includes(id))).toEqual(
+            []
+        );
+        console.log(
+            `[two accounts ${layout}] first=${ids.length} second=${allowed.length} shown=${shown.length} delayed=${delayed}`
+        );
+    });
+}

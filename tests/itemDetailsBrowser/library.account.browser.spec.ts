@@ -301,7 +301,10 @@ for (const layout of ['grid', 'shelf'] as const) {
         await expect(page.locator(GRID_CARD).first()).toContainText(bName(0));
         for (const held of fixture.held) held.release();
         await page.waitForTimeout(500);
-        expect(fixture.held.every((held) => held.outcome)).toBe(true);
+        // Really delivered: a request aborted on the way would leave the late answer untested.
+        expect(fixture.held.map((held) => held.outcome)).toEqual(
+            fixture.held.map(() => 'delivered')
+        );
 
         const everything = await page.locator('body').innerText();
         expect(everything).not.toContain('A-only');
