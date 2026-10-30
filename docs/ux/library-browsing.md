@@ -256,5 +256,7 @@ The server's nuance stands: the explicit Id guarantees the order; on the grouped
 without that key has been reproduced. `DatePlayed` and `SeriesDatePlayed` remain separate server follow-ups.
 
 Not shown: a human screen-reader pass; touch on a real device or a physical remote; Firefox or Safari; a TV
-layout; 12,000 items on a real server; a library changing during a shelf walk on a real server. Hosted checks
-beyond the stacked PR's own few have not run on this head.
+layout; 12,000 items on a real server; a library changing during a shelf walk on a real server.
+
+Hosted: server #375 out of draft, all gates green on `75bd7e7f88`. Web: a temporary PR to `main`, #246, ran the
+full set on `ca8c197f0d`, 33 success, 3 skipped, no failure, and was closed. This text came after that run.
