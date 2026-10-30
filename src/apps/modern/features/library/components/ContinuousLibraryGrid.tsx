@@ -276,6 +276,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     }, [geometry, total]);
 
     const previousGeometry = useRef<LibraryGeometry>();
+    const returnRowHeight = useRef(saved?.rowHeight);
     const viewAnchor = useRef<{ index: number; offset: number }>();
     const captureViewAnchor = useCallback(() => {
         const element = root.current;
@@ -318,10 +319,14 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             rowHeight = Math.max(rowHeight, node.offsetHeight);
         });
         if (!rowHeight) return;
-        // Only the first measure of a return: from then on this viewport's own rows decide.
-        if (!previousGeometry.current && saved?.rowHeight) {
-            rowHeight = Math.max(rowHeight, saved.rowHeight);
+        // A return keeps the row height it left with, until a new column count makes it meaningless.
+        if (
+            previousGeometry.current &&
+            previousGeometry.current.columns !== columns
+        ) {
+            returnRowHeight.current = undefined;
         }
+        rowHeight = Math.max(rowHeight, returnRowHeight.current ?? 0);
         element.style.setProperty('--rf-library-row-height', `${rowHeight}px`);
         const known = previousGeometry.current;
         if (
@@ -333,7 +338,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
         captureViewAnchor();
         setGeometry({ columns, rowHeight, rowGap });
-    }, [captureViewAnchor, saved?.rowHeight]);
+    }, [captureViewAnchor]);
 
     const hasResults = !!total && items.size > 0;
     useLayoutEffect(() => {
