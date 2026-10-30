@@ -38,7 +38,19 @@ const PageObserver: FC<{
         gcTime: CONTINUOUS_PAGE_GC_TIME,
         notifyOnChangeProps: 'all'
     });
-    useLayoutEffect(() => report(start, result), [report, result, start]);
+    // The result object is rebuilt on each render of this observer; these say when it changed.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+    useLayoutEffect(
+        () => report(start, result),
+        [
+            report,
+            start,
+            result.dataUpdatedAt,
+            result.errorUpdatedAt,
+            result.status,
+            result.fetchStatus
+        ]
+    );
     useLayoutEffect(() => () => report(start, undefined), [report, start]);
     return null;
 };

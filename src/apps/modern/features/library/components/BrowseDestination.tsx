@@ -397,14 +397,20 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
     // A `?page=N` link, or a paged view switched to the grid, opens at that page's first item. The
     // URL then drops `page`: from here on it would only describe where the viewer once was.
-    const legacyStartIndex = useRef<number>();
-    if (isContinuous && queryState.page > FIRST_PAGE) {
-        legacyStartIndex.current = pageToStartIndex(queryState.page, pageSize);
+    // Held until the result set changes: the lazy grid can mount after `page` has left the URL.
+    const legacyStart = useRef<{ resultSet: string; index: number }>();
+    if (!isContinuous) {
+        legacyStart.current = undefined;
+    } else if (queryState.page > FIRST_PAGE) {
+        legacyStart.current = {
+            resultSet,
+            index: pageToStartIndex(queryState.page, pageSize)
+        };
     }
     useEffect(() => {
-        if (!isContinuous) return;
-        legacyStartIndex.current = undefined;
-        if (queryState.page > FIRST_PAGE) onPageChange(FIRST_PAGE);
+        if (isContinuous && queryState.page > FIRST_PAGE) {
+            onPageChange(FIRST_PAGE);
+        }
     }, [isContinuous, onPageChange, queryState.page]);
 
     // A new result set starts at its beginning; the controls above it stay where they were.
@@ -606,7 +612,11 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                             params={baseParams}
                             context={resultSet}
                             pageSize={pageSize}
-                            legacyStartIndex={legacyStartIndex.current}
+                            legacyStartIndex={
+                                legacyStart.current?.resultSet === resultSet
+                                    ? legacyStart.current.index
+                                    : undefined
+                            }
                             density={density}
                             cardAspect={recipe.cardAspect}
                             apiClient={apiClient}
