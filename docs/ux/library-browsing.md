@@ -133,10 +133,14 @@ history entry shows nothing of A; a library only A may see shows no card; the pe
 holds B's data and none of A's. Control: with both the `queryClient.clear()` and the user in the query
 key removed, both tests go red on A's first card.
 
-`tests/e2e/library-continuous.spec.ts`, "real sign-out, real sign-in" (shelf, **real server**, the rig's
-admin then its restricted user): a real page of the admin is delayed through the transition; the
-restricted user opens the same library from its start with no focus taken, and sees no card on the
-library withheld from them. It does not compare the cards themselves: both users may see those films.
+`tests/e2e/library-continuous.spec.ts`, "two accounts in one library" (grid and shelf, **real server**, the
+rig's admin then its restricted user): one film in seven is tagged through the real item API and withheld
+through the server's `BlockedTags` policy, so 57 of 402 films in a library both accounts share belong to
+the admin alone. The admin opens one of them at depth and returns, and a real page of theirs is delayed
+through the sign-out. The second account then walks the whole result set: its 345 cards equal, in order,
+what the server grants it, and none is withheld. No position or focus returns; history and the persisted
+cache hold no withheld item, and the API refuses that item by id. The older "real sign-out, real sign-in"
+test stays: it covers a whole library withheld, not films inside a shared one.
 
 ## Old `?page=N` links
 
@@ -187,10 +191,13 @@ work, and none is claimed.
 
 - Accessibility is checked by automation only: roles, positions, focus order, the status message, Tab
   across boundaries. **No human has tested this with a screen reader**, and none is claimed.
-- No touch, physical remote, TV layout, Firefox or Safari pass.
+- No touch on a real device, physical remote, TV layout, Firefox or Safari pass. Touch is emulated in
+  Chromium, from raw touch points.
 - Evidence at 12,000 items uses simulated transport. The real server ran with 402 films, 150 series and
   450 episodes, on SQLite, on a library that did not change during the reads.
-- No scroll snapping on the Browse shelf: a touch swipe no longer settles on a card's edge.
+- No scroll snapping on the Browse shelf, kept on purpose: emulated swipes and a fling move it, bring in the
+  next pages and stop where the finger left it, which can be mid-card (132 px past a card's edge in the
+  measured run). Whether that feels right needs a real device.
 - `SeriesDatePlayed` on the server ignores any other requested criterion and its own priority, as it
   always has. Browse does not offer this sort.
 - Sorting by `DatePlayed` is slow without any relation to this work: about 35 s per page at 10,000 rows.
@@ -199,22 +206,23 @@ work, and none is claimed.
 
 ## R3 evidence
 
-Executable code tested: web `9ad8c945b3` (stacked on #244 `2345a56c42`, on #243 `122c9f4645`), against a server
-built from #375 `75bd7e7f88`. The commits after it add two lint-suppression comments and this text.
+Executable code tested: web `f20cc452ba` (stacked on #244 `2345a56c42`, on #243 `122c9f4645`), against a server
+built from #375 `75bd7e7f88`. The commit after it adds only this text.
 
 ```bash
 npm run build:production
-npx playwright test --config playwright.itemDetails.config.ts   # 153 passed, one worker, fixture
+npx playwright test --config playwright.itemDetails.config.ts   # 159 passed, one worker, fixture
 npx vitest run                                                  # 3754 passed, 1 skipped
 node scripts/verify-delivery-budget.mjs; node scripts/verify-bundle-budget.mjs   # PASS, no ceiling raised
-# real server, 402 films, 150 series, 450 episodes: 9 passed, script 48 cases, 0 failures
+# real server, 402 films, 150 series, 450 episodes: 11 passed, script 48 cases, 0 failures
 ci/serve-e2e.sh --webdir <dist> --exec "python3 <web>/scripts/library-browse-real-server.py 400 150 && \
   cd <web> && npx playwright test tests/e2e/library-continuous.spec.ts --workers=1"
 ```
 
-Shelf on 12,000 simulated films (`test-results/library-browse/shelf.json`). Requests and cached pages are
-cumulative over the walk, pages of 100. Series (3,000) and Episodes (9,000) stay within the same maxima
-(15 cards, 6 requests, 6 pages).
+Shelf on 12,000 simulated items (`test-results/library-browse/shelf.json`), the table showing Films. Requests
+are cumulative over the walk; cached pages are the count at that moment; pages hold 100. Series and Episodes,
+at the same total, stay within the same maxima (15 cards, 6 requests, 6 pages). These four depths evict
+nothing; thirty jumps along the shelf peaked at 14 cached pages.
 
 | Depth | Desktop, Classic: cards / requests / pages | Desktop, Frosted | Mobile, Classic | Mobile, Frosted |
 | --- | --- | --- | --- | --- |
@@ -236,6 +244,9 @@ Controls, each on a deliberately broken build, each red for its own reason:
 | Saved offset always 0 | Shelf: Back lands 37 px away |
 | No retry in a failed page's first mounted slot | Failed-page test: no action reachable |
 | Fixture without the ticket request | 6 Item Details tests on `ledger.undeclared` |
+| No vertical restore | Shelf: Back lands 40 px away |
+| Real server, `BlockedTags` off | Two accounts: the server grants a withheld film |
+| Real server, user out of the query key, no `queryClient.clear()` | Two accounts: the second sees the first's total |
 
 That last control gave 6 red, not the 7 reported earlier. A seventh, "selecting an alternate version issues
 no request", failed in one full run on the declared ticket request, which the client retries on its own
@@ -244,5 +255,6 @@ timer. It now leaves out that one request, and still fails on any other.
 The server's nuance stands: the explicit Id guarantees the order; on the grouped queries tested, no movement
 without that key has been reproduced. `DatePlayed` and `SeriesDatePlayed` remain separate server follow-ups.
 
-Not shown: a human screen-reader pass; touch or a physical remote; Firefox or Safari; a TV layout; 12,000
-items on a real server; a library changing during a shelf walk on a real server.
+Not shown: a human screen-reader pass; touch on a real device or a physical remote; Firefox or Safari; a TV
+layout; 12,000 items on a real server; a library changing during a shelf walk on a real server. Hosted checks
+beyond the stacked PR's own few have not run on this head.
