@@ -126,6 +126,8 @@ async function install(
                 if (fixture.failStart === startIndex)
                     return json({ error: 'fixture failure' }, 500);
                 const random = query.get('sortBy')?.startsWith('Random');
+                let prefix = random ? `draw${Math.random()}` : 'film';
+                if (genre) prefix = 'drama';
                 const total = genre ? FILTERED_TOTAL : TOTAL;
                 const Items = [];
                 for (
@@ -133,16 +135,7 @@ async function install(
                     i < Math.min(total, startIndex + limit);
                     i++
                 ) {
-                    Items.push(
-                        synthetic(
-                            i,
-                            genre
-                                ? 'drama'
-                                : random
-                                  ? `draw${Math.random()}`
-                                  : 'film'
-                        )
-                    );
+                    Items.push(synthetic(i, prefix));
                 }
                 if (fixture.repeatAt !== undefined) {
                     const at = fixture.repeatAt - startIndex;

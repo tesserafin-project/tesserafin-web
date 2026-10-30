@@ -188,7 +188,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     ]);
     const indexByHref = useMemo(() => {
         const map = new Map<string, number>();
-        items.forEach((card, index) => map.set(card.href!, index));
+        for (const [index, card] of items) map.set(card.href!, index);
         return map;
     }, [items]);
 
@@ -606,6 +606,9 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     return (
         <>
             {observers}
+            {/* Listens for what happens inside; every interactive element in it is a real link or button. */}
+            {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: delegated focus tracking */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: delegated focus tracking */}
             <div
                 ref={root}
                 className='rf-library-continuous'
