@@ -1,4 +1,4 @@
-# Library browsing (LIBRARY-BROWSE-R1, R2)
+# Library browsing (LIBRARY-BROWSE-R1, R2, R3)
 
 Parent: tesserafin-project/tesserafin#306, "incremental library browsing without page controls".
 
@@ -8,12 +8,13 @@ Browse on `/library/:libraryId` is continuous when **all** of these hold (`Brows
 
 | Condition | Otherwise |
 | --- | --- |
-| Recipe `layout` is `grid` | `shelf`: paged, unchanged |
-| Films in a grid or a list; Series or Episodes in a grid | Series or Episodes in a list: paged, unchanged |
-| Sort is not `Random` | Random: paged, with a visible note |
+| Films in a grid, a list or a shelf; Series or Episodes in a grid or a shelf | Series or Episodes in a list: paged, unchanged |
+| Sort is not `Random` | Random: paged, with a visible note, under either layout |
 
-Collections, Genres and Suggestions do not use this grid and are unchanged. Shelf and the TV shell are
-the next slice. Series and Episodes lists are not demonstrated, so they stay paged.
+Collections, Genres and Suggestions do not use this component and are unchanged, and neither are the
+shelves of Home: `MediaShelf` only gained an optional role and an item class. The TV shell is the next
+slice: it still routes through the legacy pages. Series and Episodes lists are not demonstrated, so they
+stay paged.
 
 A theme's recipe still cannot change the catalogue request: the first request is the same under
 `grid` and `shelf` (`LibraryView.recipe.test.tsx`).
@@ -23,9 +24,10 @@ A theme's recipe still cannot change the catalogue request: the first request is
 The grid's height stands for the whole result set (`TotalRecordCount`). An item's place is
 arithmetic on its server index, so nothing before a position has to be fetched to reach it.
 
-- Mounted: the viewport's rows plus 2 rows each side, plus the focused row if scrolled away.
-- Requested: the pages touching the viewport's rows plus 4 rows each side, 24 to 100 items each
-  (`libraryPageSize` is clamped, and its "no limit" value 0 becomes 100).
+- Mounted: the viewport's rows plus 2 rows each side, plus the focused row if scrolled away. On a shelf,
+  the visible cards plus 4 each side, plus the focused card.
+- Requested: the pages touching the viewport's rows plus 4 rows each side (a shelf: 12 cards each side),
+  24 to 100 items each (`libraryPageSize` is clamped, and its "no limit" value 0 becomes 100).
 - A page leaving that range has its request aborted.
 - Cache: a page nobody observes leaves after 5 minutes (against 24 hours for other queries), and at
   most 12 such pages are kept across all result sets (`libraryPageRetention.ts`). A time alone is not a
@@ -35,6 +37,22 @@ arithmetic on its server index, so nothing before a position has to be fetched t
 
 Each page is its own query, keyed by every filter. Identical requests therefore share one fetch, and
 a late response can only land on the filters it was requested for.
+
+## The shelf
+
+A `layout: 'shelf'` recipe composes the same component on its side (`ContinuousLibraryGrid`, `layout`
+prop): every card is a "row" of one, and the scroller stands in for the window. So the shelf has the
+page-keeping, the cache bounds, the returns and the refusals of the grid, not a second copy of them.
+
+- The width stands for the whole result set: spacers before and after the mounted cards, so
+  `scrollWidth` is exactly `total x (card + gap) - gap`. At 12,000 cards of 276 px that is 3.3 million
+  px. Browsers cap an element's size at some tens of millions of px, so a much larger library would hit
+  that cap; none has been tested near it.
+- Scroll snapping is off on this shelf, and so is scroll anchoring: snapping re-snaps each time cards
+  mount and would undo a restored offset. The shelves of Home keep their snap.
+- A change of density re-measures, and the same card stays at the same place. A resize too.
+- Right to left, `scrollLeft` runs negative; position and offset are read from the start edge.
+- A filter or a new sort remounts it at its beginning, and the page's vertical position stays.
 
 ## Order
 
@@ -84,8 +102,9 @@ ci/serve-e2e.sh --webdir ../tesserafin-web/dist --exec \
 
 ## Return from an item
 
-Clicking a card remembers its index, href, viewport offset and row height under the server, user,
-library, filters, sort and history entry. Back to that entry requests only the pages at that depth,
+Clicking a card remembers its index, href, viewport offset and row height (a shelf: its offset from the
+scroller's start edge and its top in the viewport) under the server, user, library, layout, filters, sort
+and history entry. Back to that entry requests only the pages at that depth,
 scrolls, then focuses the card. If the viewer acts first (pointer, key, wheel, touch), restoration is
 dropped.
 
@@ -101,7 +120,23 @@ None of these retries by itself or keeps waiting for the target.
 
 Positions are in memory, at most 20, and any other account clears them all, including a return in
 progress: the grid is keyed by user, so it remounts and reads nothing of the previous one. Query data
-is keyed by user. Reloading the page loses the position, as on Home.
+is keyed by user, and signing out clears the query cache. Reloading the page loses the position, as on
+Home.
+
+## Changing account
+
+`tests/itemDetailsBrowser/library.account.browser.spec.ts` (grid and shelf, **fixture**, token-keyed): A
+goes deep, opens a fiche and returns; a page of A is held on the wire; A signs out through the toolbar's
+menu; B signs in through the login form, with different rights and at the same URL; A's held answer is
+then delivered. B sees only B: no card, total, position, focus or `no longer here`; going Back onto A's
+history entry shows nothing of A; a library only A may see shows no card; the persisted IndexedDB cache
+holds B's data and none of A's. Control: with both the `queryClient.clear()` and the user in the query
+key removed, both tests go red on A's first card.
+
+`tests/e2e/library-continuous.spec.ts`, "real sign-out, real sign-in" (shelf, **real server**, the rig's
+admin then its restricted user): a real page of the admin is delayed through the transition; the
+restricted user opens the same library from its start with no focus taken, and sees no card on the
+library withheld from them. It does not compare the cards themselves: both users may see those films.
 
 ## Old `?page=N` links
 
@@ -124,19 +159,90 @@ the viewport. The paged list gets this too.
 Cards keep their natural tab order. Tab crosses page boundaries because neighbours are mounted before
 they are reached. After scrolling away, the focused row stays mounted, and the next key brings it back
 before acting, as a fully rendered list would. An unanswered page shows a "Load more" button in its
-first slot, reachable by Tab, whose focus passes to the first card it brings in.
+first slot, reachable by Tab, whose focus passes to the card that takes its slot. A failed page scrolled
+to its middle shows it in its first mounted slot as well.
+
+Arrow keys are not handled here, on either presentation: they remain the browser's. On a shelf, a focused
+card's arrow scrolls the scroller and focus stays on the card (tested). Nothing
+listens to keys globally to move focus, and nothing traps Tab: Shift+Tab from the first card leaves the
+list. Tested at the boundary of a page, both ways, and after scrolling away.
+
+## Semantics
+
+The results are `role=list`, and each answered or actionable slot is a `role=listitem` carrying
+`aria-posinset` and `aria-setsize` (the known `TotalRecordCount`). Those attributes are not allowed on a
+link or a `group`, which is why the card sits inside an item; the surface does not become a `grid`, because
+it has no two-dimensional keyboard model. Spacers, the row gap and empty slots are `aria-hidden`.
+
+Announcements: one `role=status` line for the whole result set. A failed page writes one message there
+however many pages failed, and the per-page `role=alert` is gone. The return's message goes through it too.
+Nothing announces loading or each page arriving.
+
+Checked by automation only (Chromium's accessibility tree, axe `AXE_VERSION` on the list scope, no serious
+or critical violation). This shows that the structure is valid. It does not show how a screen reader reads
+a set of 12,000 with few items present: **no human has run one**, on the shelf or anywhere else in this
+work, and none is claimed.
 
 ## Known limits
 
-- Accessibility is checked by automation only: roles, focus order, the status message, Tab across
-  boundaries. **No human has tested this with a screen reader**, and none is claimed. A screen reader is
-  not told the position in the set (`MediaGrid` is a plain `role=group`).
+- Accessibility is checked by automation only: roles, positions, focus order, the status message, Tab
+  across boundaries. **No human has tested this with a screen reader**, and none is claimed.
 - No touch, physical remote, TV layout, Firefox or Safari pass.
-- The account change is tested at the store and the grid's key, not through a real sign-out in a browser.
-- Evidence at 12,000 items uses simulated transport. The real server ran with 402 films, on SQLite, on a
-  library that did not change during the reads.
+- Evidence at 12,000 items uses simulated transport. The real server ran with 402 films, 150 series and
+  450 episodes, on SQLite, on a library that did not change during the reads.
+- No scroll snapping on the Browse shelf: a touch swipe no longer settles on a card's edge.
 - `SeriesDatePlayed` on the server ignores any other requested criterion and its own priority, as it
   always has. Browse does not offer this sort.
 - Sorting by `DatePlayed` is slow without any relation to this work: about 35 s per page at 10,000 rows.
   Browse does not offer it either.
 - Browser scroll position is lost on reload.
+
+## R3 evidence
+
+Executable code tested: web `9ad8c945b3` (stacked on #244 `2345a56c42`, on #243 `122c9f4645`), against a server
+built from #375 `75bd7e7f88`. The commits after it add two lint-suppression comments and this text.
+
+```bash
+npm run build:production
+npx playwright test --config playwright.itemDetails.config.ts   # 153 passed, one worker, fixture
+npx vitest run                                                  # 3754 passed, 1 skipped
+node scripts/verify-delivery-budget.mjs; node scripts/verify-bundle-budget.mjs   # PASS, no ceiling raised
+# real server, 402 films, 150 series, 450 episodes: 9 passed, script 48 cases, 0 failures
+ci/serve-e2e.sh --webdir <dist> --exec "python3 <web>/scripts/library-browse-real-server.py 400 150 && \
+  cd <web> && npx playwright test tests/e2e/library-continuous.spec.ts --workers=1"
+```
+
+Shelf on 12,000 simulated films (`test-results/library-browse/shelf.json`). Requests and cached pages are
+cumulative over the walk, pages of 100. Series (3,000) and Episodes (9,000) stay within the same maxima
+(15 cards, 6 requests, 6 pages).
+
+| Depth | Desktop, Classic: cards / requests / pages | Desktop, Frosted | Mobile, Classic | Mobile, Frosted |
+| --- | --- | --- | --- | --- |
+| 0 | 10 / 1 / 1 | 10 / 1 / 1 | 6 / 1 / 1 | 6 / 1 / 1 |
+| 2,000 | 14 / 3 / 3 | 14 / 3 / 3 | 10 / 3 / 3 | 10 / 3 / 3 |
+| 5,207 | 15 / 5 / 5 | 14 / 5 / 5 | 10 / 5 / 5 | 10 / 5 / 5 |
+| 11,999 | 10 / 6 / 6 | 10 / 6 / 6 | 6 / 6 / 6 | 6 / 6 / 6 |
+
+Real server, shelf: every item in the server's order, once each, read by moving the scroller across every
+page boundary (Films and Episodes 5 pages, Series 2), at most 14 cards mounted, no repeated row or short
+page, then a fiche at 60% and Back to the same card, offset and focus.
+
+Controls, each on a deliberately broken build, each red for its own reason:
+
+| Broken | Red |
+| --- | --- |
+| Query key without the user, and no `queryClient.clear()` | Both account tests: A's card shown to B |
+| Overscan 30 cards | Shelf: 36 cards mounted |
+| Saved offset always 0 | Shelf: Back lands 37 px away |
+| No retry in a failed page's first mounted slot | Failed-page test: no action reachable |
+| Fixture without the ticket request | 6 Item Details tests on `ledger.undeclared` |
+
+That last control gave 6 red, not the 7 reported earlier. A seventh, "selecting an alternate version issues
+no request", failed in one full run on the declared ticket request, which the client retries on its own
+timer. It now leaves out that one request, and still fails on any other.
+
+The server's nuance stands: the explicit Id guarantees the order; on the grouped queries tested, no movement
+without that key has been reproduced. `DatePlayed` and `SeriesDatePlayed` remain separate server follow-ups.
+
+Not shown: a human screen-reader pass; touch or a physical remote; Firefox or Safari; a TV layout; 12,000
+items on a real server; a library changing during a shelf walk on a real server.
