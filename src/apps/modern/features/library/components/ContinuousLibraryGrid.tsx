@@ -139,14 +139,14 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         return all;
     }, [anchorIndex, geometry, knownTotal, limit, pinnedIndex, windowRows]);
 
-    const pages = useLibraryItemPages(params, limit, starts);
+    const { pages, observers } = useLibraryItemPages(params, limit, starts);
     const pageAt = (start: number) => pages[starts.indexOf(start)];
 
     // The newest answer wins: a library can change while it is being browsed.
     let freshest = -1;
     let responseTotal: number | undefined;
     pages.forEach((page) => {
-        if (page.isSuccess && page.dataUpdatedAt > freshest) {
+        if (page?.isSuccess && page.dataUpdatedAt > freshest) {
             freshest = page.dataUpdatedAt;
             responseTotal = page.data?.TotalRecordCount ?? 0;
         }
@@ -167,7 +167,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         const byIndex = new Map<number, ReturnType<typeof toMediaCardProps>>();
         const seen = new Set<string>();
         pages.forEach((page, position) => {
-            page.data?.Items?.forEach((item, offset) => {
+            page?.data?.Items?.forEach((item, offset) => {
                 const card = toMediaCardProps(item, apiClient, cardAspect);
                 // Without a unique server sort key a row can recur across a boundary. The slot
                 // stays empty so that every later item keeps its computed place.
@@ -184,7 +184,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         apiClient,
         cardAspect,
         starts.join(),
-        pages.map((page) => page.dataUpdatedAt).join()
+        pages.map((page) => page?.dataUpdatedAt).join()
     ]);
     const indexByHref = useMemo(() => {
         const map = new Map<string, number>();
@@ -478,19 +478,32 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     const loadedAt = (start: number) => pageAt(start)?.isSuccess;
 
     if (total === 0) {
-        return <LibraryItemsEmpty onResetFilters={onResetFilters} />;
+        return (
+            <>
+                {observers}
+                <LibraryItemsEmpty onResetFilters={onResetFilters} />
+            </>
+        );
     }
     if (total === undefined || (!hasResults && !geometry)) {
-        const failed = pages.find((page) => page.isError);
+        const failed = pages.find((page) => page?.isError);
         if (failed) {
             return (
-                <LibraryItemsFailure
-                    error={failed.error}
-                    onRetry={() => void failed.refetch()}
-                />
+                <>
+                    {observers}
+                    <LibraryItemsFailure
+                        error={failed.error}
+                        onRetry={() => void failed.refetch()}
+                    />
+                </>
             );
         }
-        return <LoadingState variant='grid' />;
+        return (
+            <>
+                {observers}
+                <LoadingState variant='grid' />
+            </>
+        );
     }
 
     const minItemWidth = cardAspect === 'backdrop' ? '16rem' : undefined;
@@ -502,15 +515,18 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             .slice(0, UNMEASURED_CARDS)
             .map(([, card]) => <MediaCard key={card.href} {...card} />);
         return (
-            <div ref={root} className='rf-library-continuous'>
-                <MediaGrid
-                    density={density}
-                    aria-label={label}
-                    minItemWidth={minItemWidth}
-                >
-                    {measuring}
-                </MediaGrid>
-            </div>
+            <>
+                {observers}
+                <div ref={root} className='rf-library-continuous'>
+                    <MediaGrid
+                        density={density}
+                        aria-label={label}
+                        minItemWidth={minItemWidth}
+                    >
+                        {measuring}
+                    </MediaGrid>
+                </div>
+            </>
         );
     }
 
@@ -588,22 +604,25 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     } as CSSProperties;
 
     return (
-        <div
-            ref={root}
-            className='rf-library-continuous'
-            style={style}
-            data-rf-total={total}
-            onFocus={onFocus}
-            onKeyDownCapture={onKeyDownCapture}
-        >
-            <MediaGrid
-                density={density}
-                aria-label={label}
-                minItemWidth={minItemWidth}
+        <>
+            {observers}
+            <div
+                ref={root}
+                className='rf-library-continuous'
+                style={style}
+                data-rf-total={total}
+                onFocus={onFocus}
+                onKeyDownCapture={onKeyDownCapture}
             >
-                {slots}
-            </MediaGrid>
-        </div>
+                <MediaGrid
+                    density={density}
+                    aria-label={label}
+                    minItemWidth={minItemWidth}
+                >
+                    {slots}
+                </MediaGrid>
+            </div>
+        </>
     );
 };
 

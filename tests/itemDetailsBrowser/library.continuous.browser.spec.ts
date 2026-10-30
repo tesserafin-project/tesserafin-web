@@ -467,8 +467,8 @@ test('old ?page= links open at that page and the URL forgets it', async ({
     expect(page.url()).toContain('density=compact');
 
     // A hash-only goto would not reload; a shared link is a fresh page.
+    await page.goto('about:blank');
     await page.goto(`${BASE}?page=9999`);
-    await page.reload();
     await expect(
         page.locator(CARD).filter({ hasText: name(TOTAL - 1) })
     ).toBeInViewport();

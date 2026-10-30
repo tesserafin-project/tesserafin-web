@@ -79,14 +79,20 @@ vi.mock('../api/useLibraryItems', () => ({
     })
 }));
 vi.mock('../api/useLibraryItemPages', () => ({
-    useLibraryItemPages: (_params: unknown, _limit: number, starts: number[]) =>
-        starts.map(() => ({
+    useLibraryItemPages: (
+        _params: unknown,
+        _limit: number,
+        starts: number[]
+    ) => ({
+        observers: null,
+        pages: starts.map(() => ({
             data: emptyResult,
             isSuccess: true,
             isError: false,
             dataUpdatedAt: 1,
             refetch: vi.fn()
         }))
+    })
 }));
 vi.mock('../api/useLibraryFilters', () => ({
     useLibraryFilters: () => ({

@@ -70,7 +70,11 @@ async function install(
             path === '/items' &&
             url.searchParams.get('parentId') === MOVIES_VIEW_ID
         ) {
-            const query = Object.fromEntries(url.searchParams);
+            // The grid sends tie-breakers after the chosen sort; the first is the viewer's.
+            const query = {
+                ...Object.fromEntries(url.searchParams),
+                sortBy: url.searchParams.get('sortBy') ?? ''
+            };
             requests.push(query);
             // An intentionally empty filtered result, and a populated unfiltered result. The
             // fixture does not evaluate authorization, sorting or the server's filter engine.
