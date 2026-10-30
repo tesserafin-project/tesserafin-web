@@ -59,6 +59,7 @@ export const MediaShelf: FC<MediaShelfProps> = ({
                     </a>
                 )}
             </div>
+            {/* biome-ignore lint/a11y/useAriaPropsSupportedByRole: `group` and `list` both take a name */}
             <div
                 ref={scrollerRef}
                 className={`rf-media-shelf__scroller rf-media-shelf__scroller--${density}`}

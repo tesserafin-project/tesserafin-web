@@ -48,6 +48,7 @@ export const MediaGrid: FC<MediaGridProps> = ({
         : undefined;
 
     return (
+        // biome-ignore lint/a11y/useAriaPropsSupportedByRole: `group` and `list` both take a name
         <div
             className={classes}
             data-rf-slot='media-grid'
