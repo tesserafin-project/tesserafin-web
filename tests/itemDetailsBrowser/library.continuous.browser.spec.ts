@@ -40,6 +40,8 @@ interface Fixture {
     requests: { startIndex: number; limit: number; genre?: string }[];
     aborted: string[];
     failStart?: number;
+    /** Answers this index with the previous item again: a tied row recurring across a boundary. */
+    repeatAt?: number;
     hold?: (query: URLSearchParams) => Promise<void> | undefined;
 }
 
@@ -141,6 +143,10 @@ async function install(
                                   : 'film'
                         )
                     );
+                }
+                if (fixture.repeatAt !== undefined) {
+                    const at = fixture.repeatAt - startIndex;
+                    if (Items[at]) Items[at] = synthetic(fixture.repeatAt - 1);
                 }
                 return json({
                     Items,
@@ -452,6 +458,33 @@ test('a failed page keeps the results visible and its action retries', async ({
     await page.keyboard.press('Enter');
     await expect(page.locator(':focus')).toContainText(name(400));
     await expect(action).toHaveCount(0);
+});
+
+test('a row recurring across a page boundary is shown once and moves nothing after it', async ({
+    page,
+    baseURL
+}) => {
+    const { fixture } = await install(
+        page,
+        baseURL!,
+        'official.classic',
+        'desktop'
+    );
+    fixture.repeatAt = 100;
+    await page.goto(BASE);
+    await expect(page.locator(CARD).first()).toContainText(name(0));
+    await scrollToIndex(page, 100);
+    const next = page.locator(CARD).filter({ hasText: name(101) });
+    await expect(next).toHaveCount(1);
+    await expect(page.locator(CARD).filter({ hasText: name(99) })).toHaveCount(
+        1
+    );
+    expect(
+        await page
+            .locator(CARD)
+            .filter({ hasText: name(100) })
+            .count()
+    ).toBe(0);
 });
 
 test('old ?page= links open at that page and the URL forgets it', async ({
