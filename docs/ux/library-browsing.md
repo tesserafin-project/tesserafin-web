@@ -44,6 +44,13 @@ The server's `ApplyOrder` has no unique final key, and `Random` is unseeded and 
   their place. An item skipped by a tie that moved between two requests would not be detected.
 - `Random` is never continuous.
 
+Measured on a real server (`scripts/library-browse-real-server.py`, static library of 230 films on
+SQLite, 200 tied on year and 30 on title too). Reading every page at limits 24, 37 and 100, for
+`ProductionYear`, `CommunityRating`, `DateCreated` and `SortName`, with and without tie-breakers:
+no duplicate and no missing item. Tied items did not keep the order of one unpaged query, so an order
+holds only for a given page size. Two `Random` pages of 100 shared 43 items, and the same page drawn
+twice differed.
+
 ## Return from a film
 
 Clicking a card remembers its index, href and viewport offset under the server, user, library,
@@ -70,6 +77,7 @@ first slot, reachable by Tab, whose focus passes to the first card it brings in.
 
 - No screen reader, touch, physical remote, TV layout, Firefox or Safari pass. A screen reader is not
   told the position in the set (`MediaGrid` is a plain `role=group`).
-- Evidence for scale is a fixture honouring `StartIndex`/`Limit`.
+- Evidence at 12,000 items is a fixture honouring `StartIndex`/`Limit`. The real server was exercised
+  with 230 films, on SQLite, with a library that did not change during the reads.
 - Browser scroll position is lost on reload.
 - Items added or removed while browsing can shift later items by a few places.
