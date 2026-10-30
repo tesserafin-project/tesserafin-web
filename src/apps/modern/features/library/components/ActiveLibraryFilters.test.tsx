@@ -15,6 +15,10 @@ vi.mock('lib/globalize', () => ({
         translate: (key: string, ...args: unknown[]) => [key, ...args].join(' ')
     }
 }));
+// The real hook reaches `playbackmanager`, whose module start-up throws under vitest.
+vi.mock('hooks/useApi', () => ({
+    useApi: () => ({ user: { Id: 'user', ServerId: 'server' } })
+}));
 vi.mock('hooks/useUserSettings', () => ({
     useUserSettings: () => ({ libraryPageSize: 100 })
 }));
