@@ -68,12 +68,13 @@ import {
     type ActiveLibraryFilter
 } from '../utils/activeFilters';
 import { ActiveLibraryFilters } from './ActiveLibraryFilters';
+import type { LegacyStart } from './ContinuousLibraryGrid';
 import LibraryAlphaPicker from './LibraryAlphaPicker';
 import LibraryItemsGrid, {
     type LibraryItemsGridProps
 } from './LibraryItemsGrid';
 
-// Lazy: only this route's Films grid needs it, and it would otherwise land in the initial bundle.
+// Lazy: only this route's continuous presentations need it, and it would otherwise land in the initial bundle.
 const ContinuousLibraryGrid = lazy(() => import('./ContinuousLibraryGrid'));
 
 const SORT_OPTIONS: SortSelectOption[] = [
@@ -258,13 +259,13 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
     );
 
     // Random is redrawn by the server on every request, so its pages are not parts of one order.
-    // Everything outside the first vertical keeps its pagination: see docs/ux/library-browsing.md.
+    // Everything not demonstrated yet keeps its pagination: see docs/ux/library-browsing.md.
     const isContinuous =
         !!libraryId &&
-        primaryItemType === BaseItemKind.Movie &&
         recipe.layout === 'grid' &&
-        viewMode === 'grid' &&
-        queryState.sortBy !== ItemSortBy.Random;
+        queryState.sortBy !== ItemSortBy.Random &&
+        (primaryItemType === BaseItemKind.Movie ||
+            (primaryItemType === BaseItemKind.Series && viewMode === 'grid'));
 
     const baseParams = useMemo(
         () => ({
@@ -397,15 +398,26 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
 
     // A `?page=N` link, or a paged view switched to the grid, opens at that page's first item. The
     // URL then drops `page`: from here on it would only describe where the viewer once was.
-    // Held until the result set changes: the lazy grid can mount after `page` has left the URL.
-    const legacyStart = useRef<{ resultSet: string; index: number }>();
+    // Held until the result set changes: the lazy grid can mount after `page` has left the URL. A
+    // grid already mounted acts on `request` in a layout effect, so before this one removes `page`.
+    const legacyStart = useRef<LegacyStart & { resultSet: string }>();
+    const legacyRequests = useRef(0);
+    const legacyActive = useRef(false);
     if (!isContinuous) {
         legacyStart.current = undefined;
-    } else if (queryState.page > FIRST_PAGE) {
-        legacyStart.current = {
-            resultSet,
-            index: pageToStartIndex(queryState.page, pageSize)
-        };
+    }
+    if (isContinuous && queryState.page > FIRST_PAGE) {
+        if (!legacyActive.current) {
+            legacyActive.current = true;
+            legacyRequests.current += 1;
+            legacyStart.current = {
+                resultSet,
+                index: pageToStartIndex(queryState.page, pageSize),
+                request: legacyRequests.current
+            };
+        }
+    } else {
+        legacyActive.current = false;
     }
     useEffect(() => {
         if (isContinuous && queryState.page > FIRST_PAGE) {
@@ -612,11 +624,12 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                             params={baseParams}
                             context={resultSet}
                             pageSize={pageSize}
-                            legacyStartIndex={
+                            legacyStart={
                                 legacyStart.current?.resultSet === resultSet
-                                    ? legacyStart.current.index
+                                    ? legacyStart.current
                                     : undefined
                             }
+                            viewMode={viewMode}
                             density={density}
                             cardAspect={recipe.cardAspect}
                             apiClient={apiClient}

@@ -83,3 +83,162 @@ test('a large real library scrolls without pages and Back returns to the opened 
         )
         .toBeLessThan(3);
 });
+
+/**
+ * Each presentation against the same real server: every item of the result set, in the server's
+ * order, once, while scrolling the production bundle. Needs the library seeded by
+ * scripts/library-browse-real-server.py, which also checks that order against the rows themselves.
+ */
+const PRESENTATIONS = [
+    {
+        title: 'Films grid',
+        collection: 'movies',
+        kind: 'Movie',
+        suffix: 'sort=ProductionYear&order=Descending'
+    },
+    {
+        title: 'Films list',
+        collection: 'movies',
+        kind: 'Movie',
+        suffix: 'sort=ProductionYear&order=Descending&view=list'
+    },
+    {
+        title: 'Series grid',
+        collection: 'tvshows',
+        kind: 'Series',
+        suffix: 'sort=ProductionYear&order=Descending'
+    },
+    {
+        title: 'Episodes grid',
+        collection: 'tvshows',
+        kind: 'Episode',
+        suffix: 'sort=ProductionYear&order=Descending&granularity=episodes'
+    }
+];
+
+for (const { title, collection, kind, suffix } of PRESENTATIONS) {
+    test(`${title}: the real server's sequence, once each, then Back to the opened item`, async ({
+        page
+    }) => {
+        test.setTimeout(240_000);
+        await signIn(page);
+        const expected = await page.evaluate(
+            async ({ collectionType, itemKind }) => {
+                const stored = JSON.parse(
+                    localStorage.getItem('jellyfin_credentials') ?? '{}'
+                );
+                const server = stored.Servers[0];
+                const headers = {
+                    Authorization: `MediaBrowser Token="${server.AccessToken}"`
+                };
+                const views = await (
+                    await fetch(`/Users/${server.UserId}/Views`, { headers })
+                ).json();
+                const parentId = views.Items.find(
+                    (view: { CollectionType?: string }) =>
+                        view.CollectionType === collectionType
+                ).Id as string;
+                const ids: string[] = [];
+                for (;;) {
+                    const query = new URLSearchParams({
+                        userId: server.UserId,
+                        parentId,
+                        recursive: 'true',
+                        includeItemTypes: itemKind,
+                        sortBy: 'ProductionYear,SortName,DateCreated',
+                        sortOrder: 'Descending,Ascending,Ascending',
+                        startIndex: String(ids.length),
+                        limit: '100'
+                    });
+                    const answer = await (
+                        await fetch(`/Items?${query}`, { headers })
+                    ).json();
+                    ids.push(
+                        ...answer.Items.map((item: { Id: string }) => item.Id)
+                    );
+                    if (
+                        !answer.Items.length ||
+                        ids.length >= answer.TotalRecordCount
+                    ) {
+                        return { parentId, ids };
+                    }
+                }
+            },
+            { collectionType: collection, itemKind: kind }
+        );
+        test.skip(expected.ids.length <= 100, 'library not seeded');
+
+        await page.goto(`/#/library/${expected.parentId}?${suffix}`);
+        const root = page.locator('.rf-library-continuous');
+        await expect(root).toHaveAttribute(
+            'data-rf-total',
+            String(expected.ids.length)
+        );
+        await expect(
+            page.getByRole('navigation', { name: 'Pagination' })
+        ).toHaveCount(0);
+
+        // Reads the grid as a viewer would: scrolling, and only ever what is mounted.
+        const seen: string[] = [];
+        let peak = 0;
+        const height = () => page.evaluate(() => document.body.scrollHeight);
+        for (
+            let y = 0, end = await height();
+            y < end;
+            y += 400, end = await height()
+        ) {
+            await page.evaluate(
+                (top) => window.scrollTo({ top, behavior: 'instant' }),
+                y
+            );
+            await page.waitForTimeout(90);
+            const mounted = await page
+                .locator(CARD)
+                .evaluateAll((cards) =>
+                    cards.map(
+                        (card) =>
+                            /[?&]id=([^&]+)/.exec(
+                                card.getAttribute('href') ?? ''
+                            )?.[1] ?? ''
+                    )
+                );
+            peak = Math.max(peak, mounted.length);
+            for (const id of mounted) {
+                if (!seen.includes(id)) seen.push(id);
+            }
+        }
+        await expect
+            .poll(async () => {
+                const mounted = await page.locator(CARD).count();
+                return mounted > 0;
+            })
+            .toBe(true);
+        expect(seen).toEqual(expected.ids);
+        expect(peak).toBeLessThan(expected.ids.length);
+        await expect(root).toHaveAttribute('data-rf-repeated-rows', '0');
+        await expect(root).toHaveAttribute('data-rf-short-pages', '0');
+
+        const opened = page.locator(CARD).last();
+        const href = await opened.getAttribute('href');
+        await opened.focus();
+        await opened.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(100);
+        const before = await opened.evaluate(
+            (node) => node.getBoundingClientRect().top
+        );
+        await page.keyboard.press('Enter');
+        await expect(page.locator('#itemDetailPage')).toBeVisible();
+        await page.goBack();
+        const card = page.locator(`${CARD}[href="${href}"]`);
+        await expect(card).toBeFocused();
+        await expect
+            .poll(() =>
+                card.evaluate(
+                    (node, top) =>
+                        Math.abs(node.getBoundingClientRect().top - top),
+                    before
+                )
+            )
+            .toBeLessThan(3);
+    });
+}

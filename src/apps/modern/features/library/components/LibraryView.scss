@@ -163,6 +163,14 @@
        column count comes from `minItemWidth: 100%`; this only relaxes the row height so a card can
        lay itself out horizontally. */
     grid-auto-rows: auto;
+
+    /* At the full width of the column a poster would stand taller than the viewport. */
+    [data-rf-slot='media-card'] {
+        display: grid;
+        grid-template-columns: minmax(5rem, 8rem) minmax(0, 1fr);
+        align-items: center;
+        gap: var(--rf-spacing-md, 16px);
+    }
 }
 
 .rf-library-view__shelves {

@@ -105,7 +105,8 @@ async function render(theme = 'official.classic', params = query) {
             { path: '/outside', element: <div>Outside</div> },
             { path: '/library/lib', element: <Harness /> }
         ],
-        { initialEntries: ['/outside', `/library/lib?${params}`] }
+        // A Series list stays paged, which is the path this file's useLibraryItems fixture answers.
+        { initialEntries: ['/outside', `/library/lib?${params}&view=list`] }
     );
     await act(async () => {
         root.render(

@@ -1362,6 +1362,7 @@
     "NewPlaylist": "New Playlist",
     "News": "News",
     "LoadMoreItems": "Load more",
+    "MessageLibraryReturnItemMissing": "The item you opened is no longer here. Showing the nearest one.",
     "MessageRandomOrderIsPaged": "Random order is drawn again for each page, so it stays paged.",
     "Next": "Next",
     "NextChapter": "Next chapter",

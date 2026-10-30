@@ -20,6 +20,7 @@ import { LoadingState, MediaCard, MediaGrid } from 'ui';
 
 import { useLibraryItemPages } from '../api/useLibraryItemPages';
 import type { LibraryItemsParams } from '../api/useLibraryItems';
+import type { LibraryViewMode } from '../constants/librarySections';
 import type { LibraryDensity } from '../utils/density';
 import type { LibraryCardAspect } from '../utils/libraryRecipe';
 import {
@@ -44,19 +45,27 @@ import {
     UNMEASURED_CARDS
 } from '../utils/libraryWindow';
 import { type ImageApiClient, toMediaCardProps } from '../utils/mediaCardProps';
+import { classifyLibraryFailure } from '../utils/libraryAccess';
 import { LibraryItemsEmpty, LibraryItemsFailure } from './LibraryItemsGrid';
 
 const CARD = 'a[data-rf-slot="media-card"][href]';
 /** Where a `?page=` target lands below the top of the viewport. */
 const LEGACY_LINK_OFFSET = 96;
 
+/** Where an old `?page=N` link starts. A new `request` moves a grid already mounted. */
+export interface LegacyStart {
+    index: number;
+    request: number;
+}
+
 export interface ContinuousLibraryGridProps {
     params: Omit<LibraryItemsParams, 'startIndex' | 'limit'>;
     /** Identifies the result set: library and filters. The parent remounts this grid when it changes. */
     context: string;
     pageSize: number;
-    /** Where an old `?page=N` link starts. A remembered return position takes precedence. */
-    legacyStartIndex?: number;
+    /** A remembered return position takes precedence over this when the grid mounts. */
+    legacyStart?: LegacyStart;
+    viewMode: LibraryViewMode;
     density: LibraryDensity;
     cardAspect: LibraryCardAspect;
     apiClient: ImageApiClient | undefined;
@@ -73,7 +82,8 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     params,
     context,
     pageSize,
-    legacyStartIndex,
+    legacyStart,
+    viewMode,
     density,
     cardAspect,
     apiClient,
@@ -94,11 +104,12 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     );
     /** While set, the window follows this target instead of a scroll position not yet restored. */
     const pendingTarget = useRef<
-        { index: number; offset: number; href?: string } | undefined
+        | { index: number; offset: number; href?: string; takeFocus?: boolean }
+        | undefined
     >(
         saved ??
-            (legacyStartIndex
-                ? { index: legacyStartIndex, offset: LEGACY_LINK_OFFSET }
+            (legacyStart
+                ? { index: legacyStart.index, offset: LEGACY_LINK_OFFSET }
                 : undefined)
     );
     const [anchorIndex, setAnchorIndex] = useState(
@@ -109,6 +120,8 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     const [windowRows, setWindowRows] = useState<RowRange>();
     const [pinnedIndex, setPinnedIndex] = useState<number>();
     const [knownTotal, setKnownTotal] = useState(saved?.total);
+    const [, rerunRestore] = useState(0);
+    const [returnMissing, setReturnMissing] = useState(false);
 
     const pinnedRow =
         geometry && pinnedIndex !== undefined
@@ -139,7 +152,11 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         return all;
     }, [anchorIndex, geometry, knownTotal, limit, pinnedIndex, windowRows]);
 
-    const { pages, observers } = useLibraryItemPages(params, limit, starts);
+    const { pages, observers, cachedPages } = useLibraryItemPages(
+        params,
+        limit,
+        starts
+    );
     const pageAt = (start: number) => pages[starts.indexOf(start)];
 
     // The newest answer wins: a library can change while it is being browsed.
@@ -157,35 +174,74 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     const total = responseTotal ?? knownTotal;
 
     // An old link or a shrunken library can point past the end; the last page is the nearest one.
+    if (
+        total &&
+        pendingTarget.current &&
+        pendingTarget.current.index >= total
+    ) {
+        pendingTarget.current.index = total - 1;
+    }
     if (total && anchorIndex >= total) {
-        const last = total - 1;
-        setAnchorIndex(last);
-        if (pendingTarget.current) pendingTarget.current.index = last;
+        setAnchorIndex(total - 1);
     }
 
-    const items = useMemo(() => {
+    const { items, repeatedRows, shortPages } = useMemo(() => {
         const byIndex = new Map<number, ReturnType<typeof toMediaCardProps>>();
         const seen = new Set<string>();
+        let repeated = 0;
+        let short = 0;
         pages.forEach((page, position) => {
-            page?.data?.Items?.forEach((item, offset) => {
+            const answered = page?.data?.Items;
+            if (!answered) return;
+            const expected = Math.min(
+                limit,
+                (page.data?.TotalRecordCount ?? 0) - starts[position]
+            );
+            if (answered.length < expected) short += 1;
+            answered.forEach((item, offset) => {
                 const card = toMediaCardProps(item, apiClient, cardAspect);
-                // Without a unique server sort key a row can recur across a boundary. The slot
-                // stays empty so that every later item keeps its computed place.
-                if (card.href && !seen.has(card.href)) {
-                    seen.add(card.href);
-                    byIndex.set(starts[position] + offset, card);
+                // The server's order is total, so this needs a library that changed between two
+                // requests, or an older server. Each item keeps its server index: the slot stays
+                // empty so that every later item keeps its place, and the count stays readable
+                // on the grid so that no proof can pass with an omission hidden here.
+                if (!card.href) return;
+                if (seen.has(card.href)) {
+                    repeated += 1;
+                    return;
                 }
+                seen.add(card.href);
+                byIndex.set(starts[position] + offset, card);
             });
         });
-        return byIndex;
+        return { items: byIndex, repeatedRows: repeated, shortPages: short };
         // `useQueries` returns a new array each render; these two say when its content changed.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         apiClient,
         cardAspect,
+        limit,
         starts.join(),
         pages.map((page) => page?.dataUpdatedAt).join()
     ]);
+
+    // The target's own page answered without it, as when the item left the end of a shorter page:
+    // settle on the nearest item before it rather than wait for one that is not coming.
+    const settling = pendingTarget.current;
+    if (settling && !items.has(settling.index)) {
+        const page = pageAt(Math.floor(settling.index / limit) * limit);
+        if (page?.isSuccess) {
+            const earlier = [...items.keys()].filter(
+                (index) => index < settling.index
+            );
+            if (earlier.length) {
+                settling.index = Math.max(...earlier);
+            } else {
+                pendingTarget.current = undefined;
+                forgetLibraryPosition(returnKey);
+            }
+        }
+    }
+
     const indexByHref = useMemo(() => {
         const map = new Map<string, number>();
         for (const [index, card] of items) map.set(card.href!, index);
@@ -219,6 +275,28 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         }
     }, [geometry, total]);
 
+    const previousGeometry = useRef<LibraryGeometry>();
+    const viewAnchor = useRef<{ index: number; offset: number }>();
+    const captureViewAnchor = useCallback(() => {
+        const element = root.current;
+        const before = previousGeometry.current;
+        if (
+            !element ||
+            !before ||
+            pendingTarget.current ||
+            viewAnchor.current
+        ) {
+            return;
+        }
+        const box = element.getBoundingClientRect();
+        const pitch = rowPitch(before);
+        const row = Math.max(0, Math.floor(-box.top / pitch));
+        viewAnchor.current = {
+            index: row * before.columns,
+            offset: box.top + row * pitch
+        };
+    }, []);
+
     // Measuring happens before paint so that an unmeasured grid is never seen.
     const measure = useCallback(() => {
         const element = root.current;
@@ -241,14 +319,17 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         });
         if (!rowHeight) return;
         element.style.setProperty('--rf-library-row-height', `${rowHeight}px`);
-        setGeometry((current) =>
-            current?.columns === columns &&
-            current.rowHeight === rowHeight &&
-            current.rowGap === rowGap
-                ? current
-                : { columns, rowHeight, rowGap }
-        );
-    }, []);
+        const known = previousGeometry.current;
+        if (
+            known?.columns === columns &&
+            known.rowHeight === rowHeight &&
+            known.rowGap === rowGap
+        ) {
+            return;
+        }
+        captureViewAnchor();
+        setGeometry({ columns, rowHeight, rowGap });
+    }, [captureViewAnchor]);
 
     const hasResults = !!total && items.size > 0;
     useLayoutEffect(() => {
@@ -263,49 +344,68 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             tallest = Math.max(tallest, node.offsetHeight);
         });
         if (tallest > geometry.rowHeight) {
+            captureViewAnchor();
             setGeometry({ ...geometry, rowHeight: tallest });
         }
-    }, [geometry, items, windowRows]);
+    }, [captureViewAnchor, geometry, items, windowRows]);
 
-    // Keep the same item in view when a resize or a new row height moves every row.
-    const viewAnchor = useRef<{ index: number; offset: number }>();
-    const previousPitch = useRef<string>();
+    // Keep the same item in view when a resize, a view switch or a new row height moves every row.
+    // Read before the new geometry commits: a shorter document clamps the scroll position as it
+    // lays out, and from then on the old position can no longer be read back.
     useLayoutEffect(() => {
         const element = root.current;
         if (!element || !geometry) return;
-        const signature = `${geometry.columns}:${rowPitch(geometry)}`;
-        const moved =
-            previousPitch.current !== undefined &&
-            previousPitch.current !== signature;
-        previousPitch.current = signature;
+        previousGeometry.current = geometry;
         const anchor = viewAnchor.current;
-        if (moved && anchor && !pendingTarget.current) {
-            const top = element.getBoundingClientRect().top + window.scrollY;
+        viewAnchor.current = undefined;
+        if (anchor && !pendingTarget.current) {
+            const box = element.getBoundingClientRect();
             const row = Math.floor(anchor.index / geometry.columns);
             window.scrollTo({
-                top: top + row * rowPitch(geometry) - anchor.offset,
+                top:
+                    box.top +
+                    window.scrollY +
+                    row * rowPitch(geometry) -
+                    anchor.offset,
                 behavior: 'instant'
             });
         }
         updateWindow();
     }, [geometry, updateWindow]);
 
+    // Same cards, other shape: the same measuring a resize gets, before paint.
+    const measuredViewMode = useRef(viewMode);
+    useLayoutEffect(() => {
+        if (measuredViewMode.current === viewMode) return;
+        measuredViewMode.current = viewMode;
+        measure();
+    }, [measure, viewMode]);
+
+    // A `?page=N` reached while mounted: follow it now, before the parent drops it from the URL.
+    const handledLegacyRequest = useRef(legacyStart?.request);
+    useLayoutEffect(() => {
+        if (
+            !legacyStart ||
+            legacyStart.request === handledLegacyRequest.current
+        ) {
+            return;
+        }
+        handledLegacyRequest.current = legacyStart.request;
+        pendingTarget.current = {
+            index: legacyStart.index,
+            offset: LEGACY_LINK_OFFSET
+        };
+        setAnchorIndex(legacyStart.index);
+        rerunRestore((count) => count + 1);
+        updateWindow();
+    }, [legacyStart, updateWindow]);
+
     useEffect(() => {
         let frame = 0;
-        const element = root.current;
         const onScroll = () => {
             if (frame) return;
             frame = requestAnimationFrame(() => {
                 frame = 0;
-                if (element && geometry && !pendingTarget.current) {
-                    const box = element.getBoundingClientRect();
-                    const pitch = rowPitch(geometry);
-                    const row = Math.max(0, Math.floor(-box.top / pitch));
-                    viewAnchor.current = {
-                        index: row * geometry.columns,
-                        offset: box.top + row * pitch
-                    };
-                }
                 updateWindow();
             });
         };
@@ -316,7 +416,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             window.removeEventListener('scroll', onScroll);
             window.removeEventListener('resize', onScroll);
         };
-    }, [geometry, updateWindow]);
+    }, [updateWindow]);
 
     const lastWidth = useRef<number>();
     useEffect(() => {
@@ -353,15 +453,36 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             top: top + row * rowPitch(geometry) - target.offset,
             behavior: 'instant'
         });
-        if (target.href) {
-            const card =
-                [...element.querySelectorAll<HTMLElement>(CARD)].find(
-                    (node) => node.getAttribute('href') === target.href
-                ) ?? cardAtIndex(element, items.get(target.index)?.href);
-            card?.focus({ preventScroll: true });
+        if (target.takeFocus) {
+            cardAtIndex(element, items.get(target.index)?.href)?.focus({
+                preventScroll: true
+            });
+        } else if (target.href) {
+            const opened = cardAtIndex(element, target.href);
+            // Removed, or no longer the viewer's to see: the item now at that place takes the focus.
+            if (!opened) setReturnMissing(true);
+            (
+                opened ?? cardAtIndex(element, items.get(target.index)?.href)
+            )?.focus({
+                preventScroll: true
+            });
         }
         updateWindow();
     }, [geometry, items, returnKey, targetLoaded, updateWindow, windowRows]);
+
+    useEffect(() => {
+        if (!returnMissing) return;
+        const dismiss = () => setReturnMissing(false);
+        const types = ['pointerdown', 'keydown', 'wheel', 'touchstart'];
+        for (const type of types) {
+            window.addEventListener(type, dismiss, { passive: true });
+        }
+        return () => {
+            for (const type of types) {
+                window.removeEventListener(type, dismiss);
+            }
+        };
+    }, [returnMissing]);
 
     // If the viewer starts doing something while data arrives, recovery loses ownership.
     useEffect(() => {
@@ -416,6 +537,42 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         user?.ServerId
     ]);
 
+    // The focused card left the results when its page refreshed (removed, or no longer this viewer's).
+    // Its element is gone and focus with it: the item now at that place takes over.
+    const focusedHref = useRef<string>();
+    useLayoutEffect(() => {
+        const href = focusedHref.current;
+        if (!href || !total || indexByHref.has(href)) return;
+        if (pinnedIndex === undefined) return;
+        const pinnedPage = pageAt(Math.floor(pinnedIndex / limit) * limit);
+        // Absent only because its page is still on its way proves nothing.
+        if (!pinnedPage?.isSuccess || pinnedPage.isFetching) return;
+        focusedHref.current = undefined;
+        if (
+            document.activeElement &&
+            document.activeElement !== document.body
+        ) {
+            return;
+        }
+        setReturnMissing(true);
+        const index = Math.min(pinnedIndex, total - 1);
+        const card = cardAtIndex(root.current, items.get(index)?.href);
+        if (card) {
+            card.focus({ preventScroll: true });
+            return;
+        }
+        pendingTarget.current = {
+            index,
+            offset: LEGACY_LINK_OFFSET,
+            takeFocus: true
+        };
+        setPinnedIndex(undefined);
+        setAnchorIndex(index);
+        rerunRestore((count) => count + 1);
+        updateWindow();
+        // biome-ignore lint/correctness/useExhaustiveDependencies: `pageAt` reads the pages `items` follows
+    }, [indexByHref, items, limit, pinnedIndex, total, updateWindow]);
+
     /** A retry or a load-more that had focus hands it to the first card it brought in. */
     const focusedLoader = useRef<number>();
     useLayoutEffect(() => {
@@ -443,6 +600,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
             focusedLoader.current = undefined;
             const href = target.closest(CARD)?.getAttribute('href');
             const index = href ? indexByHref.get(href) : undefined;
+            focusedHref.current = href ?? undefined;
             if (index !== undefined) setPinnedIndex(index);
         },
         [indexByHref]
@@ -477,7 +635,35 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
 
     const loadedAt = (start: number) => pageAt(start)?.isSuccess;
 
+    // Refused: what was cached belongs to access this viewer no longer has, so none of it stays on
+    // screen, and a return in progress ends here.
+    const refused = pages.find(
+        (page) =>
+            page?.isError &&
+            classifyLibraryFailure(page.error) === 'access-denied'
+    );
+    if (refused) {
+        if (pendingTarget.current) {
+            pendingTarget.current = undefined;
+            forgetLibraryPosition(returnKey);
+        }
+        return (
+            <>
+                {observers}
+                <LibraryItemsFailure
+                    error={refused.error}
+                    onRetry={() => void refused.refetch()}
+                />
+            </>
+        );
+    }
+
     if (total === 0) {
+        // Nothing left to return to, and no item will ever settle the target.
+        if (pendingTarget.current) {
+            pendingTarget.current = undefined;
+            forgetLibraryPosition(returnKey);
+        }
         return (
             <>
                 {observers}
@@ -506,7 +692,22 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         );
     }
 
-    const minItemWidth = cardAspect === 'backdrop' ? '16rem' : undefined;
+    // Mounted before it has anything to say, or a screen reader would not announce it. Same position
+    // in both returns below, or the grid after it would remount and take the focus with it.
+    const statusLine = (
+        <p role='status' className='rf-library-view__order-note'>
+            {returnMissing &&
+                globalize.translate('MessageLibraryReturnItemMissing')}
+        </p>
+    );
+
+    // As on the paged grid: same cards, same DOM, one column in list mode.
+    const minItemWidth =
+        (viewMode === 'list' && '100%') ||
+        (cardAspect === 'backdrop' && '16rem') ||
+        undefined;
+    const gridClass =
+        viewMode === 'list' ? 'rf-library-view__grid--list' : undefined;
     if (!geometry || !windowRows) {
         // One frame's worth of cards to measure. The layout effects replace it before paint.
         const first = Math.floor(anchorIndex / limit) * limit;
@@ -517,10 +718,12 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
         return (
             <>
                 {observers}
+                {statusLine}
                 <div ref={root} className='rf-library-continuous'>
                     <MediaGrid
                         density={density}
                         aria-label={label}
+                        className={gridClass}
                         minItemWidth={minItemWidth}
                     >
                         {measuring}
@@ -606,6 +809,7 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
     return (
         <>
             {observers}
+            {statusLine}
             {/* Listens for what happens inside; every interactive element in it is a real link or button. */}
             {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: delegated focus tracking */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: delegated focus tracking */}
@@ -614,12 +818,16 @@ export const ContinuousLibraryGrid: FC<ContinuousLibraryGridProps> = ({
                 className='rf-library-continuous'
                 style={style}
                 data-rf-total={total}
+                data-rf-repeated-rows={repeatedRows}
+                data-rf-short-pages={shortPages}
+                data-rf-cached-pages={cachedPages}
                 onFocus={onFocus}
                 onKeyDownCapture={onKeyDownCapture}
             >
                 <MediaGrid
                     density={density}
                     aria-label={label}
+                    className={gridClass}
                     minItemWidth={minItemWidth}
                 >
                     {slots}
