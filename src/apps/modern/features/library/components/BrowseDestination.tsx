@@ -8,6 +8,7 @@ import React, {
     type FC,
     useCallback,
     useMemo,
+    useEffect,
     useState,
     useRef,
     useLayoutEffect
@@ -15,6 +16,7 @@ import React, {
 import { useSearchParams } from 'react-router-dom';
 import { useLocalStorage } from 'usehooks-ts';
 
+import { useApi } from 'hooks/useApi';
 import { useUserSettings } from 'hooks/useUserSettings';
 import globalize from 'lib/globalize';
 import { FilterDrawer, SortSelect, type SortSelectOption } from 'ui';
@@ -60,7 +62,10 @@ import {
 } from '../utils/activeFilters';
 import { ActiveLibraryFilters } from './ActiveLibraryFilters';
 import LibraryAlphaPicker from './LibraryAlphaPicker';
-import LibraryItemsGrid from './LibraryItemsGrid';
+import { ContinuousLibraryGrid } from './ContinuousLibraryGrid';
+import LibraryItemsGrid, {
+    type LibraryItemsGridProps
+} from './LibraryItemsGrid';
 
 const SORT_OPTIONS: SortSelectOption[] = [
     { value: ItemSortBy.SortName, label: globalize.translate('Name') },
@@ -99,6 +104,75 @@ export interface BrowseDestinationProps {
     recipe: ResolvedLibraryRecipe;
 }
 
+interface PagedBrowseResultsProps
+    extends Pick<
+        LibraryItemsGridProps,
+        | 'density'
+        | 'viewMode'
+        | 'layout'
+        | 'cardAspect'
+        | 'apiClient'
+        | 'label'
+        | 'onResetFilters'
+    > {
+    params: Omit<LibraryItemsParams, 'startIndex' | 'limit'>;
+    page: number;
+    pageSize: number;
+    isRandom: boolean;
+    onPageChange: (page: number) => void;
+}
+
+/** Every Browse presentation the continuous grid does not cover yet, and Random, which it never can. */
+const PagedBrowseResults: FC<PagedBrowseResultsProps> = ({
+    params,
+    page,
+    pageSize,
+    isRandom,
+    onPageChange,
+    ...gridProps
+}) => {
+    const itemsQuery = useLibraryItems({
+        ...params,
+        stableOrder: true,
+        startIndex: pageToStartIndex(page, pageSize),
+        limit: pageSize
+    });
+    const totalPages = getTotalPages(
+        itemsQuery.data?.TotalRecordCount ?? 0,
+        pageSize
+    );
+    const onPreviousPage = useCallback(
+        () => onPageChange(clampPage(page - 1, totalPages)),
+        [onPageChange, page, totalPages]
+    );
+    const onNextPage = useCallback(
+        () => onPageChange(clampPage(page + 1, totalPages)),
+        [onPageChange, page, totalPages]
+    );
+
+    // Corrects an out-of-range `page` (e.g. a shared `?page=999` link, or a page that outlived a
+    // filter shrinking the result set) once `TotalRecordCount` is known.
+    useCanonicalPage(page, totalPages, itemsQuery.isSuccess, onPageChange);
+
+    return (
+        <>
+            {isRandom && (
+                <p className='rf-library-view__order-note'>
+                    {globalize.translate('MessageRandomOrderIsPaged')}
+                </p>
+            )}
+            <LibraryItemsGrid
+                {...gridProps}
+                itemsQuery={itemsQuery}
+                page={page}
+                totalPages={totalPages}
+                onPreviousPage={onPreviousPage}
+                onNextPage={onNextPage}
+            />
+        </>
+    );
+};
+
 /**
  * Browse — the canonical destination, rendered by `/library/:libraryId` itself (design §5: the
  * short URL is canonical, there is no redirect to `/browse`).
@@ -119,6 +193,7 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
     recipe
 }) => {
     const [searchParams, setSearchParams] = useSearchParams();
+    const { user } = useApi();
     const { libraryPageSize: pageSize } = useUserSettings();
     const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
@@ -173,25 +248,41 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         [granularity, primaryItemType]
     );
 
-    const itemsParams: LibraryItemsParams | undefined = useMemo(() => {
-        if (!libraryId) return undefined;
+    // Random is redrawn by the server on every request, so its pages are not parts of one order.
+    // Everything outside the first vertical keeps its pagination: see docs/ux/library-browsing.md.
+    const isContinuous =
+        !!libraryId &&
+        primaryItemType === BaseItemKind.Movie &&
+        recipe.layout === 'grid' &&
+        viewMode === 'grid' &&
+        queryState.sortBy !== ItemSortBy.Random;
 
-        return {
+    const baseParams = useMemo(
+        () => ({
             parentId: libraryId,
             includeItemTypes,
             sortBy: queryState.sortBy,
             sortOrder: queryState.sortOrder,
-            startIndex: pageToStartIndex(queryState.page, pageSize),
-            limit: pageSize,
             genre: queryState.genre,
             year: queryState.year,
             studioIds: queryState.studioIds,
             isFavorite: queryState.favorite,
             letter: queryState.letter
-        };
-    }, [libraryId, includeItemTypes, queryState, pageSize]);
+        }),
+        [
+            libraryId,
+            includeItemTypes,
+            queryState.sortBy,
+            queryState.sortOrder,
+            queryState.genre,
+            queryState.year,
+            queryState.studioIds,
+            queryState.favorite,
+            queryState.letter
+        ]
+    );
+    const resultSet = JSON.stringify([user?.ServerId, user?.Id, baseParams]);
 
-    const itemsQuery = useLibraryItems(itemsParams);
     // The genre/year facets follow the *primary* kind, not the granularity: switching to Episodes
     // must not silently repopulate the genre list from episode metadata mid-session.
     const filtersQuery = useLibraryFilters(libraryId || undefined, [
@@ -294,27 +385,32 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
         (page: number) => updateQueryState({ page }),
         [updateQueryState]
     );
-    const totalPages = getTotalPages(
-        itemsQuery.data?.TotalRecordCount ?? 0,
-        pageSize
-    );
-    const onPreviousPage = useCallback(
-        () => onPageChange(clampPage(queryState.page - 1, totalPages)),
-        [onPageChange, queryState.page, totalPages]
-    );
-    const onNextPage = useCallback(
-        () => onPageChange(clampPage(queryState.page + 1, totalPages)),
-        [onPageChange, queryState.page, totalPages]
-    );
 
-    // Corrects an out-of-range `page` (e.g. a shared `?page=999` link, or a page that outlived a
-    // filter shrinking the result set) once `TotalRecordCount` is known.
-    useCanonicalPage(
-        queryState.page,
-        totalPages,
-        itemsQuery.isSuccess,
-        onPageChange
-    );
+    // A `?page=N` link, or a paged view switched to the grid, opens at that page's first item. The
+    // URL then drops `page`: from here on it would only describe where the viewer once was.
+    const legacyStartIndex = useRef<number>();
+    if (isContinuous && queryState.page > FIRST_PAGE) {
+        legacyStartIndex.current = pageToStartIndex(queryState.page, pageSize);
+    }
+    useEffect(() => {
+        if (!isContinuous) return;
+        legacyStartIndex.current = undefined;
+        if (queryState.page > FIRST_PAGE) onPageChange(FIRST_PAGE);
+    }, [isContinuous, onPageChange, queryState.page]);
+
+    // A new result set starts at its beginning; the controls above it stay where they were.
+    const results = useRef<HTMLDivElement>(null);
+    const previousResultSet = useRef(resultSet);
+    useLayoutEffect(() => {
+        if (previousResultSet.current === resultSet) return;
+        previousResultSet.current = resultSet;
+        const element = results.current;
+        if (!isContinuous || !element) return;
+        const top = element.getBoundingClientRect().top + window.scrollY;
+        if (window.scrollY > top) {
+            window.scrollTo({ top, behavior: 'instant' });
+        }
+    }, [isContinuous, resultSet]);
 
     const onToggleViewMode = useCallback(() => {
         const next = toggleViewMode(viewMode);
@@ -493,22 +589,41 @@ export const BrowseDestination: FC<BrowseDestinationProps> = ({
                 onSelect={onLetterSelect}
             />
 
-            <LibraryItemsGrid
-                itemsQuery={itemsQuery}
-                onResetFilters={
-                    activeFilters.length ? onResetFilters : undefined
-                }
-                density={density}
-                viewMode={viewMode}
-                layout={recipe.layout}
-                cardAspect={recipe.cardAspect}
-                apiClient={apiClient}
-                label={libraryName}
-                page={queryState.page}
-                totalPages={totalPages}
-                onPreviousPage={onPreviousPage}
-                onNextPage={onNextPage}
-            />
+            <div ref={results} className='rf-library-view__results'>
+                {isContinuous ? (
+                    <ContinuousLibraryGrid
+                        key={resultSet}
+                        params={baseParams}
+                        context={resultSet}
+                        pageSize={pageSize}
+                        legacyStartIndex={legacyStartIndex.current}
+                        density={density}
+                        cardAspect={recipe.cardAspect}
+                        apiClient={apiClient}
+                        label={libraryName}
+                        onResetFilters={
+                            activeFilters.length ? onResetFilters : undefined
+                        }
+                    />
+                ) : (
+                    <PagedBrowseResults
+                        params={baseParams}
+                        page={queryState.page}
+                        pageSize={pageSize}
+                        isRandom={queryState.sortBy === ItemSortBy.Random}
+                        onPageChange={onPageChange}
+                        onResetFilters={
+                            activeFilters.length ? onResetFilters : undefined
+                        }
+                        density={density}
+                        viewMode={viewMode}
+                        layout={recipe.layout}
+                        cardAspect={recipe.cardAspect}
+                        apiClient={apiClient}
+                        label={libraryName}
+                    />
+                )}
+            </div>
         </>
     );
 };

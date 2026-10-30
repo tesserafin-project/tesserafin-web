@@ -65,6 +65,56 @@ export interface LibraryItemsGridProps {
     onResetFilters?: () => void;
 }
 
+export const LibraryItemsFailure: FC<{
+    error: unknown;
+    onRetry: () => void;
+}> = ({ error, onRetry }) => {
+    // `GET /Items` is the request that actually distinguishes a forbidden library: Reefin's
+    // `ItemsController` answers 401 for `!item.IsVisible(user)`, while the item lookup behind
+    // the page shell answers 404 for both "gone" and "forbidden" (see `utils/libraryAccess.ts`).
+    // Classifying here is therefore what makes the access-denied state reachable at all — and it
+    // suppresses a retry button that could not have helped.
+    if (classifyLibraryFailure(error) === 'access-denied') {
+        return (
+            <EmptyState
+                title={globalize.translate('HeaderLibraryAccessDenied')}
+                description={globalize.translate('MessageLibraryAccessDenied')}
+            />
+        );
+    }
+
+    return (
+        <ErrorState
+            message={globalize.translate('ErrorDefault')}
+            retryLabel={globalize.translate('Retry')}
+            onRetry={onRetry}
+        />
+    );
+};
+
+export const LibraryItemsEmpty: FC<{
+    emptyMessage?: string;
+    onResetFilters?: () => void;
+}> = ({ emptyMessage, onResetFilters }) => (
+    <EmptyState
+        description={
+            onResetFilters
+                ? globalize.translate('MessageTryResetLibraryFilters')
+                : undefined
+        }
+        actionLabel={
+            onResetFilters ? globalize.translate('ResetFilters') : undefined
+        }
+        onAction={onResetFilters}
+        title={
+            onResetFilters
+                ? globalize.translate('MessageNoMatchingLibraryItems')
+                : (emptyMessage ??
+                  globalize.translate('MessageNoItemsAvailable'))
+        }
+    />
+);
+
 export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     itemsQuery,
     density,
@@ -92,28 +142,8 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
     }
 
     if (itemsQuery.isError) {
-        // `GET /Items` is the request that actually distinguishes a forbidden library: Reefin's
-        // `ItemsController` answers 401 for `!item.IsVisible(user)`, while the item lookup behind
-        // the page shell answers 404 for both "gone" and "forbidden" (see `utils/libraryAccess.ts`).
-        // Classifying here is therefore what makes the access-denied state reachable at all — and it
-        // suppresses a retry button that could not have helped.
-        if (classifyLibraryFailure(itemsQuery.error) === 'access-denied') {
-            return (
-                <EmptyState
-                    title={globalize.translate('HeaderLibraryAccessDenied')}
-                    description={globalize.translate(
-                        'MessageLibraryAccessDenied'
-                    )}
-                />
-            );
-        }
-
         return (
-            <ErrorState
-                message={globalize.translate('ErrorDefault')}
-                retryLabel={globalize.translate('Retry')}
-                onRetry={onRetry}
-            />
+            <LibraryItemsFailure error={itemsQuery.error} onRetry={onRetry} />
         );
     }
 
@@ -133,24 +163,9 @@ export const LibraryItemsGrid: FC<LibraryItemsGridProps> = ({
 
     if (!itemsQuery.data?.Items?.length) {
         return (
-            <EmptyState
-                description={
-                    onResetFilters
-                        ? globalize.translate('MessageTryResetLibraryFilters')
-                        : undefined
-                }
-                actionLabel={
-                    onResetFilters
-                        ? globalize.translate('ResetFilters')
-                        : undefined
-                }
-                onAction={onResetFilters}
-                title={
-                    onResetFilters
-                        ? globalize.translate('MessageNoMatchingLibraryItems')
-                        : (emptyMessage ??
-                          globalize.translate('MessageNoItemsAvailable'))
-                }
+            <LibraryItemsEmpty
+                emptyMessage={emptyMessage}
+                onResetFilters={onResetFilters}
             />
         );
     }

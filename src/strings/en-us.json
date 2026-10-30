@@ -1361,6 +1361,8 @@
     "NewEpisodesOnly": "New episodes only",
     "NewPlaylist": "New Playlist",
     "News": "News",
+    "LoadMoreItems": "Load more",
+    "MessageRandomOrderIsPaged": "Random order is drawn again for each page, so it stays paged.",
     "Next": "Next",
     "NextChapter": "Next chapter",
     "NextTrack": "Skip to next",

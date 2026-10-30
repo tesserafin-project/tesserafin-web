@@ -68,6 +68,14 @@ vi.mock('components/Page', () => ({
 const emptyResult = { Items: [], TotalRecordCount: 0 };
 
 vi.mock('../api/useLibraryItems', () => ({
+    useLibraryItemPages: (_params: unknown, _limit: number, starts: number[]) =>
+        starts.map(() => ({
+            data: emptyResult,
+            isSuccess: true,
+            isError: false,
+            dataUpdatedAt: 1,
+            refetch: vi.fn()
+        })),
     useLibraryItems: () => ({
         data: emptyResult,
         isPending: false,

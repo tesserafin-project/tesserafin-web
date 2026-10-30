@@ -44,6 +44,41 @@ const baseParams: LibraryItemsParams = {
     limit: 50
 };
 
+describe('fetchLibraryItems() ordering', () => {
+    const sentParams = async (params: LibraryItemsParams) => {
+        const request = vi.fn().mockResolvedValue({ data: { Items: [] } });
+        await fetchLibraryItems(createMockApi(request), 'user-1', params);
+        return new URLSearchParams(request.mock.calls[0][0].url.split('?')[1]);
+    };
+
+    it("narrows ties across pages only when asked, in the viewer's direction first", async () => {
+        const query = await sentParams({
+            ...baseParams,
+            sortBy: ItemSortBy.ProductionYear,
+            sortOrder: SortOrder.Descending,
+            stableOrder: true
+        });
+        expect(query.getAll('sortBy').join()).toBe(
+            'ProductionYear,SortName,DateCreated'
+        );
+        expect(query.getAll('sortOrder').join()).toBe(
+            'Descending,Ascending,Ascending'
+        );
+        expect((await sentParams(baseParams)).getAll('sortBy').join()).toBe(
+            'SortName'
+        );
+    });
+
+    it('sends Random alone: a draw has no ties to break', async () => {
+        const query = await sentParams({
+            ...baseParams,
+            sortBy: ItemSortBy.Random,
+            stableOrder: true
+        });
+        expect(query.getAll('sortBy').join()).toBe('Random');
+    });
+});
+
 describe('fetchLibraryItems()', () => {
     it('requests the library items route with the base movie params, auth header attached', async () => {
         const items = [{ Name: 'The Matrix' }];

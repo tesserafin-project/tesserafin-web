@@ -548,8 +548,8 @@ describe('Library composition — a recipe cannot change the catalogue query', (
             parentId: 'lib-movies',
             includeItemTypes: ['Movie'],
             recursive: true,
-            sortBy: ['SortName'],
-            sortOrder: ['Ascending'],
+            sortBy: ['SortName', 'ProductionYear', 'DateCreated'],
+            sortOrder: ['Ascending', 'Ascending', 'Ascending'],
             startIndex: 0,
             limit: 24
         });
@@ -597,8 +597,8 @@ describe('Library composition — a recipe cannot change the catalogue query', (
         ).toMatchObject({
             startIndex: 24,
             limit: 24,
-            sortBy: ['ProductionYear'],
-            sortOrder: ['Descending'],
+            sortBy: ['ProductionYear', 'SortName', 'DateCreated'],
+            sortOrder: ['Descending', 'Ascending', 'Ascending'],
             genres: ['Drama'],
             studioIds: ['studio-1'],
             isFavorite: true,
@@ -937,14 +937,14 @@ describe('Library composition — layout never writes user state', () => {
         ).toMatchObject({ limit: 24, startIndex: 0 });
     });
 
-    it('shows the same pagination state under a grid and under a shelf', async () => {
-        // The visible half of the same claim: a shelf displays fewer items AT ONCE, and still holds
-        // page 1 of 5. A recipe that changed `limit` would change this label too.
+    it('keeps a shelf paged and gives a grid the same result set without page controls', async () => {
+        // A shelf holds page 1 of 5 of the very request the grid's first page makes (the ledger test
+        // above); only how the rest is reached differs, and neither can leave items unreachable.
         await renderRecipe(RECIPES[3]); // grid
-        const fromGrid = container.querySelector(
-            '.rf-library-view__pagination'
-        )?.textContent;
-        expect(fromGrid).toBeTruthy();
+        expect(container.querySelector('.rf-library-continuous')).toBeTruthy();
+        expect(
+            container.querySelector('.rf-library-view__pagination')
+        ).toBeNull();
 
         act(() => root.unmount());
         container.remove();
@@ -954,9 +954,10 @@ describe('Library composition — layout never writes user state', () => {
         root = createRoot(container);
 
         await renderRecipe(RECIPES[4]); // shelf
+        expect(container.querySelector('.rf-library-continuous')).toBeNull();
         expect(
             container.querySelector('.rf-library-view__pagination')?.textContent
-        ).toBe(fromGrid);
+        ).toBeTruthy();
     });
 });
 

@@ -1,8 +1,14 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query';
 import type { AxiosRequestConfig } from 'axios';
 
 import { useApi } from 'hooks/useApi';
-import { getLibraryApi, ImageType, ItemFields } from 'lib/tesserafin-sdk';
+import {
+    getLibraryApi,
+    ImageType,
+    ItemFields,
+    ItemSortBy as ItemSortField,
+    SortOrder as SortDirection
+} from 'lib/tesserafin-sdk';
 import type {
     BaseItemKind,
     ItemSortBy,
@@ -58,7 +64,35 @@ export interface LibraryItemsParams {
      * already applies for the legacy pages, kept identical so the two produce the same result set.
      */
     letter?: string;
+    /** Add tie-breakers, because pages of one result set must agree across separate requests. */
+    stableOrder?: boolean;
 }
+
+/**
+ * The server's `ApplyOrder` ends on the requested fields (plus `Name` after `SortName`) with no
+ * unique key, so equal values may fall on either side of a page boundary. The API offers no sort by
+ * id: these narrow the ties but cannot remove them, and the continuous grid still drops repeats.
+ */
+const TIE_BREAKERS: readonly ItemSortBy[] = [
+    ItemSortField.SortName,
+    ItemSortField.ProductionYear,
+    ItemSortField.DateCreated
+];
+
+const orderFields = (params: LibraryItemsParams) => {
+    // A random draw has no ties to break.
+    if (!params.stableOrder || params.sortBy === ItemSortField.Random) {
+        return { sortBy: [params.sortBy], sortOrder: [params.sortOrder] };
+    }
+    const ties = TIE_BREAKERS.filter((field) => field !== params.sortBy);
+    return {
+        sortBy: [params.sortBy, ...ties],
+        sortOrder: [
+            params.sortOrder,
+            ...ties.map(() => SortDirection.Ascending)
+        ]
+    };
+};
 
 export const fetchLibraryItems = async (
     api: TesserafinApi,
@@ -72,8 +106,7 @@ export const fetchLibraryItems = async (
             parentId: params.parentId,
             includeItemTypes: params.includeItemTypes,
             recursive: true,
-            sortBy: [params.sortBy],
-            sortOrder: [params.sortOrder],
+            ...orderFields(params),
             startIndex: params.startIndex,
             limit: params.limit,
             genres: params.genre ? [params.genre] : undefined,
@@ -118,5 +151,33 @@ export const useLibraryItems = (params: LibraryItemsParams | undefined) => {
             fetchLibraryItems(reefinApi!, user!.Id!, params!, { signal }),
         enabled: !!reefinApi && !!user?.Id && !!params,
         placeholderData: keepPreviousData
+    });
+};
+
+/** Pages leave memory and the persisted cache soon after scrolling away, unlike the 24 h default. */
+const CONTINUOUS_PAGE_GC_TIME = 5 * 60 * 1000;
+
+/**
+ * One independent query per page of one result set: identical requests share a query, a page that
+ * leaves the window is aborted, and a response can only ever land on the filters it was asked for.
+ */
+export const useLibraryItemPages = (
+    params: Omit<LibraryItemsParams, 'startIndex' | 'limit'>,
+    limit: number,
+    starts: number[]
+) => {
+    const { reefinApi, user } = useApi();
+
+    return useQueries({
+        queries: starts.map((startIndex) => {
+            const page = { ...params, startIndex, limit, stableOrder: true };
+            return {
+                queryKey: getLibraryItemsQueryKey(user?.Id, page),
+                queryFn: ({ signal }: { signal: AbortSignal }) =>
+                    fetchLibraryItems(reefinApi!, user!.Id!, page, { signal }),
+                enabled: !!reefinApi && !!user?.Id,
+                gcTime: CONTINUOUS_PAGE_GC_TIME
+            };
+        })
     });
 };

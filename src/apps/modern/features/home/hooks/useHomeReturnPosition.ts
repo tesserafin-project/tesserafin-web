@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 
 import { useApi } from 'hooks/useApi';
+import { plainCardNavigation } from 'apps/modern/utils/mediaCardNavigation';
 import {
     forgetHomePosition,
     homeReturnKey,
@@ -41,27 +42,9 @@ export function useHomeReturnPosition(tab: number) {
         const container = root.current;
         if (!container || !user?.Id || !user.ServerId) return;
         const remember = (event: MouseEvent) => {
-            if (
-                event.defaultPrevented ||
-                event.button !== 0 ||
-                event.ctrlKey ||
-                event.metaKey ||
-                event.shiftKey ||
-                event.altKey
-            )
-                return;
-            const card = (event.target as Element)?.closest<HTMLAnchorElement>(
-                'a[data-rf-slot="media-card"][href]'
-            );
-            const href = card?.getAttribute('href');
-            if (
-                !card ||
-                !container.contains(card) ||
-                !href?.startsWith('#/') ||
-                (card.target && card.target !== '_self') ||
-                card.hasAttribute('download')
-            )
-                return;
+            const target = plainCardNavigation(event, container);
+            if (!target) return;
+            const { card, href } = target;
             rememberHomePosition(key, container, card);
             // Use the router for Home's card links: native hash changes have no unique history
             // key and look like POP even when creating an entry. Modified/new-tab clicks stay native.
