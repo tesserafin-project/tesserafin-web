@@ -9,7 +9,7 @@ which of it is public by construction.
 No credential value appears in this document, and none may be added to it.
 
 Related: [`docs/local-ci.md`](local-ci.md) (how to run the secret scan locally),
-[`tesserafin-project/tesserafin` `docs/secret-configuration.md`](https://github.com/tesserafin-project/tesserafin/blob/master/docs/secret-configuration.md)
+[`tesserafin/tesserafin` `docs/secret-configuration.md`](https://github.com/tesserafin/tesserafin/blob/master/docs/secret-configuration.md)
 (the server and container half of the model).
 
 ---
@@ -91,7 +91,7 @@ This is not hypothetical for this repository. The only two post-fork findings in
 are the two commits of a **negative-login** end-to-end fixture — a value deliberately passed to
 `signIn()` to be rejected, then searched for in the console output to assert the server never
 echoes a submitted password. It was conclusively not a secret, and it was closed in
-[PR #96](https://github.com/tesserafin-project/tesserafin-web/pull/96) by assembling the value
+[PR #96](https://github.com/tesserafin/tesserafin-web/pull/96) by assembling the value
 from fragments at run time, **not** by suppressing the rule. Both commits remain immutable and
 are baselined by exact fingerprint, classified as what they are rather than as inherited
 history.
@@ -106,8 +106,8 @@ locally.
 It **detects**. It does not **prevent**. By the time it runs, GitHub has already accepted the
 push. Preventing the push requires GitHub-native push protection, which requires GitHub Secret
 Protection, which a private repository on a free organisation plan does not have — tracked by
-[tesserafin-project/tesserafin#96](https://github.com/tesserafin-project/tesserafin/issues/96)
-and [#94](https://github.com/tesserafin-project/tesserafin/issues/94).
+[tesserafin/tesserafin#96](https://github.com/tesserafin/tesserafin/issues/96)
+and [#94](https://github.com/tesserafin/tesserafin/issues/94).
 
 ## 7. If a credential is committed anyway
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Deterministic controls for EPUB.js's non-browser XML path
- * (tesserafin-project/tesserafin#95, C2).
+ * (tesserafin/tesserafin#95, C2).
  *
  * WHY THIS EXISTS. `package.json` pins `@xmldom/xmldom` to 0.8.15 *only under
  * epubjs*, above the `^0.7.5` range EPUB.js declares, because every 0.7.x and

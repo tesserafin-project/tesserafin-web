@@ -5,7 +5,7 @@
 > record. `tests/itemDetails/ledger.consistency.test.ts` fails if this file and that fixture
 > disagree, so there is one source of truth and this is not it.
 
-Frozen for [#129](https://github.com/tesserafin-project/tesserafin-web/issues/129) **Step 1c**:
+Frozen for [#129](https://github.com/tesserafin/tesserafin-web/issues/129) **Step 1c**:
 the migrated `/details` route's complete request and action ledger, recorded *before* any
 presentation recipe is bound. Step 2 binds the recipe and must leave every row here unchanged.
 

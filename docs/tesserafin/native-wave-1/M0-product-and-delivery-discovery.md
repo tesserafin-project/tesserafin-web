@@ -4,8 +4,8 @@
   record and for the future validation gates that acceptance deliberately leaves open.
 - **Accountable maintainer**: [`all3f0r1`](https://github.com/all3f0r1) — owner of every decision in
   §14 and of every flow in both inventories (§5.4, §7.6).
-- **Milestone**: [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222)
-- **Umbrella**: [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221)
+- **Milestone**: [`tesserafin#222`](https://github.com/tesserafin/tesserafin/issues/222)
+- **Umbrella**: [`tesserafin#221`](https://github.com/tesserafin/tesserafin/issues/221)
 - **Fixed inputs**: [RFC-0006 — Native-client foundation](../RFC-0006-native-client-foundation.md)
   and [RFC-0008 — Paid native-client distribution, Tesserafin accounts and entitlements](../RFC-0008-paid-client-distribution-and-entitlements.md),
   both **Accepted 2026-08-09**.
@@ -1046,7 +1046,7 @@ ambition), Q8 (AppLlama) and Q9 (documentation location) never blocked M1, and t
 (§14) do not change the ceiling above.
 
 **`FACT`** The M1 issue is **not created** by this document. It is created separately, in
-`tesserafin-project/tesserafin`, as the next sub-issue of `#221`.
+`tesserafin/tesserafin`, as the next sub-issue of `#221`.
 
 ---
 
@@ -1510,10 +1510,10 @@ the answers reopens RFC-0006 or RFC-0008.
 
 > **M0 is COMPLETE.**
 > **Accepted by [`all3f0r1`](https://github.com/all3f0r1) on 2026-08-09.**
-> Recorded in [`tesserafin-web#148`](https://github.com/tesserafin-project/tesserafin-web/pull/148);
-> milestone [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222) closes as
+> Recorded in [`tesserafin-web#148`](https://github.com/tesserafin/tesserafin-web/pull/148);
+> milestone [`tesserafin#222`](https://github.com/tesserafin/tesserafin/issues/222) closes as
 > completed. The umbrella
-> [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221) **remains open**.
+> [`tesserafin#221`](https://github.com/tesserafin/tesserafin/issues/221) **remains open**.
 
 **What acceptance is, and what it is not.** Acceptance settles the ten decisions of §14 and the M1
 ceiling of §11.2. It does **not** close a single evidence gap, and no gap below is marked researched.

@@ -1,5 +1,5 @@
-# RESTORED and made STANDALONE on 2026-08-01 (tesserafin-project/tesserafin#94,
-# tesserafin-project/tesserafin#180).
+# RESTORED and made STANDALONE on 2026-08-01 (tesserafin/tesserafin#94,
+# tesserafin/tesserafin#180).
 #
 # This file used to be `__codeql.yml`, a `workflow_call` reusable workflow invoked
 # by `pull_request.yml` and `push.yml` behind `if: vars.ENABLE_CODE_SCANNING ==
@@ -10,7 +10,7 @@
 #   Security must be enabled for this repository to use code scanning.
 # This repository is now PUBLIC and code scanning is free on public repositories.
 #
-#   $ gh api repos/tesserafin-project/tesserafin-web -q '{visibility,private}'
+#   $ gh api repos/tesserafin/tesserafin-web -q '{visibility,private}'
 #   {"visibility":"public","private":false}
 #
 # WHY STANDALONE. A `workflow_call` file cannot carry its own `schedule` or

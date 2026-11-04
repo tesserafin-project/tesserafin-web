@@ -27,7 +27,7 @@ variable "BUILD_DATE" {
 }
 
 variable "REGISTRY" {
-  default = "ghcr.io/tesserafin-project/tesserafin-web-assets"
+  default = "ghcr.io/tesserafin/tesserafin-web-assets"
 }
 
 function "short" {

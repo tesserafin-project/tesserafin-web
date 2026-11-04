@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const VERIFIER = fileURLToPath(
     new URL('./verify-no-runtime-jellyfin.mjs', import.meta.url)
 );
-const HTTPS_ORIGIN = 'https://github.com/tesserafin-project/tesserafin-web.git';
+const HTTPS_ORIGIN = 'https://github.com/tesserafin/tesserafin-web.git';
 
 // Run the actual CLI with a real git index and remote configuration. The empty
 // host inventory keeps a rejected origin distinguishable from other failures.
@@ -58,12 +58,12 @@ function run(t, origin, { push, upstream = false } = {}) {
 
 for (const origin of [
     HTTPS_ORIGIN,
-    'https://github.com/tesserafin-project/tesserafin-web',
-    'https://github.com/tesserafin-project/tesserafin-web.git/',
-    'git@github.com:tesserafin-project/tesserafin-web.git',
-    'git@github.com:tesserafin-project/tesserafin-web',
-    'ssh://git@github.com/tesserafin-project/tesserafin-web.git',
-    'https://GITHUB.COM/TESSERAFIN-PROJECT/TESSERAFIN-WEB.git'
+    'https://github.com/tesserafin/tesserafin-web',
+    'https://github.com/tesserafin/tesserafin-web.git/',
+    'git@github.com:tesserafin/tesserafin-web.git',
+    'git@github.com:tesserafin/tesserafin-web',
+    'ssh://git@github.com/tesserafin/tesserafin-web.git',
+    'https://GITHUB.COM/TESSERAFIN/TESSERAFIN-WEB.git'
 ]) {
     test(`accepts exact repository clone URL: ${origin}`, (t) => {
         const result = run(t, origin);
@@ -73,30 +73,30 @@ for (const origin of [
 }
 
 for (const origin of [
-    'https://example.invalid/tesserafin-project/tesserafin-web',
-    'https://github.com.example.invalid/tesserafin-project/tesserafin-web.git',
-    'https://github.com@example.invalid/tesserafin-project/tesserafin-web.git',
-    'https://example.invalid/?repo=tesserafin-project/tesserafin-web',
-    'https://example.invalid/#tesserafin-project/tesserafin-web',
-    'https://github.com/tesserafin-project/tesserafin-web-unrelated.git',
-    'https://github.com/not-tesserafin-project/tesserafin-web.git',
-    'https://github.com/other/tesserafin-project/tesserafin-web.git',
-    'https://github.com/tesserafin-project/tesserafin-web/tree/main',
-    'https://github.com/tesserafin-project/tesserafin-web.git?ref=main',
-    'https://github.com/tesserafin-project/tesserafin-web.git#main',
-    'https://github.com/tesserafin-project/tesserafin-web.git trailing-text',
-    'https://github.com/tesserafin-project/tesserafin-web.git\thttps://example.invalid',
-    'http://github.com/tesserafin-project/tesserafin-web.git',
-    'git@example.invalid:tesserafin-project/tesserafin-web.git',
-    'ssh://git@example.invalid/tesserafin-project/tesserafin-web.git',
-    'file:///tmp/tesserafin-project/tesserafin-web.git'
+    'https://example.invalid/tesserafin/tesserafin-web',
+    'https://github.com.example.invalid/tesserafin/tesserafin-web.git',
+    'https://github.com@example.invalid/tesserafin/tesserafin-web.git',
+    'https://example.invalid/?repo=tesserafin/tesserafin-web',
+    'https://example.invalid/#tesserafin/tesserafin-web',
+    'https://github.com/tesserafin/tesserafin-web-unrelated.git',
+    'https://github.com/not-tesserafin/tesserafin-web.git',
+    'https://github.com/other/tesserafin/tesserafin-web.git',
+    'https://github.com/tesserafin/tesserafin-web/tree/main',
+    'https://github.com/tesserafin/tesserafin-web.git?ref=main',
+    'https://github.com/tesserafin/tesserafin-web.git#main',
+    'https://github.com/tesserafin/tesserafin-web.git trailing-text',
+    'https://github.com/tesserafin/tesserafin-web.git\thttps://example.invalid',
+    'http://github.com/tesserafin/tesserafin-web.git',
+    'git@example.invalid:tesserafin/tesserafin-web.git',
+    'ssh://git@example.invalid/tesserafin/tesserafin-web.git',
+    'file:///tmp/tesserafin/tesserafin-web.git'
 ]) {
     test(`rejects an origin that is not the exact repository: ${origin}`, (t) => {
         const result = run(t, origin);
         assert.equal(result.status, 1, result.stdout);
         assert.match(
             result.stderr,
-            /git remote origin points at .*not tesserafin-project\/tesserafin-web/
+            /git remote origin points at .*not tesserafin\/tesserafin-web/
         );
         assert.doesNotMatch(result.stdout, /\[verify:no-runtime-jellyfin\] OK/);
     });
@@ -110,7 +110,7 @@ test('rejects a multiline remote instead of validating only its first line', (t)
 
 test('checks an external push URL even when the fetch URL is valid', (t) => {
     const result = run(t, HTTPS_ORIGIN, {
-        push: 'https://example.invalid/tesserafin-project/tesserafin-web.git'
+        push: 'https://example.invalid/tesserafin/tesserafin-web.git'
     });
     assert.equal(result.status, 1, result.stdout);
     assert.match(result.stderr, /git remote origin points at/);
@@ -119,7 +119,7 @@ test('checks an external push URL even when the fetch URL is valid', (t) => {
 test('checks an external fetch URL even when the push URL is valid', (t) => {
     const result = run(
         t,
-        'https://example.invalid/tesserafin-project/tesserafin-web.git',
+        'https://example.invalid/tesserafin/tesserafin-web.git',
         { push: HTTPS_ORIGIN }
     );
     assert.equal(result.status, 1, result.stdout);
@@ -128,7 +128,7 @@ test('checks an external fetch URL even when the push URL is valid', (t) => {
 
 test('accepts distinct valid fetch and push clone forms', (t) => {
     const result = run(t, HTTPS_ORIGIN, {
-        push: 'git@github.com:tesserafin-project/tesserafin-web.git'
+        push: 'git@github.com:tesserafin/tesserafin-web.git'
     });
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /\[verify:no-runtime-jellyfin\] OK/);

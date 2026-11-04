@@ -13,7 +13,7 @@
  * because the whole point of the wizard scenarios is a caller whose policy says
  * `EnableContentPackManagement: false` and whose `POST /ContentPacks` nevertheless succeeds. The
  * fixture answers `200` because the real server answers `200` — measured on `1cca371cba` and
- * recorded in `tesserafin-project/tesserafin#220`, where an administrator satisfies every
+ * recorded in `tesserafin/tesserafin#220`, where an administrator satisfies every
  * `UserPermissionRequirement` through `DefaultAuthorizationHandler`. If this file read the policy
  * and decided, the suite would be proving the fixture's copy of the server's rules rather than the
  * client's willingness to ask.

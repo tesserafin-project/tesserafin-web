@@ -59,7 +59,7 @@ publishes from CI.
 `git remote -v` in a developer checkout shows:
 
 ```
-origin    https://github.com/tesserafin-project/tesserafin-web.git
+origin    https://github.com/tesserafin/tesserafin-web.git
 upstream  https://github.com/jellyfin/jellyfin-web
 ```
 
@@ -67,7 +67,7 @@ upstream  https://github.com/jellyfin/jellyfin-web
 fetch upstream history to compare or cherry-pick. Nothing in the product, the
 build, the test suite or the workflows reads it — no workflow performs a
 `git remote add`, and GitHub-hosted checkouts have only `origin`. The gate
-asserts `origin` really is `tesserafin-project/tesserafin-web` and that any
+asserts `origin` really is `tesserafin/tesserafin-web` and that any
 Jellyfin-pointing remote is named in this document; it does not require the
 remote to be deleted.
 
@@ -76,7 +76,7 @@ HTTPS, `git@github.com:` and `ssh://git@github.com/` forms, with an optional
 `.git` suffix and trailing slash; matching is case-insensitive. Fetch and push
 URLs are checked independently. Other hosts, repository prefixes/suffixes,
 extra path components, query strings and fragments do not qualify merely by
-containing `tesserafin-project/tesserafin-web`. Plain HTTP and local filesystem
+containing `tesserafin/tesserafin-web`. Plain HTTP and local filesystem
 origins are outside this check's accepted clone forms.
 
 `npm run test:no-runtime-jellyfin-origin` executes the actual verifier in

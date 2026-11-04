@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Deterministic controls for the fail-closed npm dependency gate
- * (tesserafin-project/tesserafin#95, C2).
+ * (tesserafin/tesserafin#95, C2).
  *
  * The point of these controls is that a green "Dependency Audit" means
  * something. `npm audit` exits nonzero both when it found 32 high/critical
@@ -172,7 +172,7 @@ function waiver(overrides = {}) {
         severity: 'high',
         justification: 'control fixture',
         owner: 'tesserafin-maintainer',
-        issue: 'https://github.com/tesserafin-project/tesserafin/issues/1',
+        issue: 'https://github.com/tesserafin/tesserafin/issues/1',
         created: '2026-01-01',
         expires: '2099-01-01',
         ...overrides

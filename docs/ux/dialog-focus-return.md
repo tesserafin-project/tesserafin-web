@@ -1,7 +1,7 @@
 # Dialog focus return and journey residuals
 
 Scope: legacy `dialogHelper` dismissal. This follows the Web journey tracker
-[tesserafin#306](https://github.com/tesserafin-project/tesserafin/issues/306).
+[tesserafin#306](https://github.com/tesserafin/tesserafin/issues/306).
 
 ## Reconciliation against the current Web source
 

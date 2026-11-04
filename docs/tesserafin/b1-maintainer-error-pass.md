@@ -12,11 +12,11 @@ comment on #54.
 
 | | |
 | --- | --- |
-| Server image | `ghcr.io/tesserafin-project/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9` |
+| Server image | `ghcr.io/tesserafin/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9` |
 | Immutable server tag | `1.0.0-dev.a8ac09f3ff5a` |
 | Server source commit | `a8ac09f3ff5a715b35b9dc31d1b23c5865a6d34e` |
 | Bundled web commit | `a63cb11e8e9cfa137b6c3f739e8881a6dfb39dfb` |
-| Bundled web-assets image | `ghcr.io/tesserafin-project/tesserafin-web-assets@sha256:2585fc7e1e06cee0be1bb0bcac735ed783b6e8c3ea2ff346561e7f62c0a75daf` |
+| Bundled web-assets image | `ghcr.io/tesserafin/tesserafin-web-assets@sha256:2585fc7e1e06cee0be1bb0bcac735ed783b6e8c3ea2ff346561e7f62c0a75daf` |
 
 The web client you exercise must be the one the image bundles — the client the
 container serves at `/web/`, reached by opening the server's own address. Do not
@@ -42,7 +42,7 @@ docker run -d --name tesserafin-b1-manual \
   -v /tmp/b1-manual/config:/config -v /tmp/b1-manual/cache:/cache \
   -v /tmp/b1-manual/data:/data \
   -v /tmp/b1-manual/media:/media:ro -v /tmp/b1-manual/probes:/probes:ro \
-  ghcr.io/tesserafin-project/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9
+  ghcr.io/tesserafin/tesserafin-server@sha256:89dd01add7cbe7fd1d1529979f6aa4e6537c9b4b31e2ebec1836a583548a1bf9
 ```
 
 ### The two media fixtures
@@ -126,7 +126,7 @@ No credential, token or complete media path was displayed at any point: YES/NO
 ## What step 7 is asking now
 
 Step 7 used to carry a known wrong answer. It does not any more. #67 is fixed in
-the bundled web client (tesserafin-project/tesserafin-web#69): a terminal
+the bundled web client (tesserafin/tesserafin-web#69): a terminal
 playback failure now reaches a real, translated, dismissable error dialog, the
 player is torn down rather than left over dead media, dismissal needs no document
 reload, and the server-side session is released. The automated suite asserts all

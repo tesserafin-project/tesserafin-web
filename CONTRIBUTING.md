@@ -14,7 +14,7 @@ Thanks for taking the time to contribute! :purple_heart:
 Jellyfin is an entirely volunteer-driven project, so without contributors like you it could not exist!
 
 Below are some general guidelines and information about this project.
-If you have any questions, please open an issue or discussion on the [Tesserafin project](https://github.com/tesserafin-project) to discuss them.
+If you have any questions, please open an issue or discussion on the [Tesserafin project](https://github.com/tesserafin) to discuss them.
 
 ## Contributor Guidelines
 
