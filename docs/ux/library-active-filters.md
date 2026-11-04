@@ -42,4 +42,4 @@ the modern desktop/mobile library route; the legacy TV library and physical remo
 qualification are separate. No library ranking, access rule, dependency or repository setting changes.
 The implementation PR records hosted results and any remaining blocker.
 
-Related: tesserafin-project/tesserafin#306. Independent of Web #218 (Home return) and #213 (player menus).
+Related: tesserafin/tesserafin#306. Independent of Web #218 (Home return) and #213 (player menus).

@@ -4,7 +4,7 @@
 - **Date**: 2026-08-09
 - **Author**: Tesserafin Project
 - **Repository**: `tesserafin-web`
-- **Issue**: [`tesserafin#99`](https://github.com/tesserafin-project/tesserafin/issues/99) (D1 —
+- **Issue**: [`tesserafin#99`](https://github.com/tesserafin/tesserafin/issues/99) (D1 —
   architecture only)
 - **Relation**: builds on RFC-0001 §5 (native clients are separate codebases), RFC-0003 §9/§12
   (universal Web client plus administration centre; native clients in separate repositories over a
@@ -18,7 +18,7 @@
 - **Number**: RFC-0007 §8.4 reserved `0006` for the native-client RFC "whenever it is published".
   This is that document, and it takes the reserved number. It is a **standalone** ADR: it makes its
   own decisions and cites only sources a reader can open in this repository or in
-  `tesserafin-project/tesserafin`. See §1.4.
+  `tesserafin/tesserafin`. See §1.4.
 
 ---
 
@@ -504,7 +504,7 @@ without either being wrong, it is layer 3.**
 ### 7.2 What this RFC deliberately does not state
 
 **Account, purchase, entitlement, activation, device-binding and revocation architecture belongs to
-[`tesserafin#100`](https://github.com/tesserafin-project/tesserafin/issues/100), and is not decided
+[`tesserafin#100`](https://github.com/tesserafin/tesserafin/issues/100), and is not decided
 here.** That issue owns the Tesserafin account, OAuth/OIDC sign-in, per-store distribution and
 purchase restoration, signed offline entitlement leases, renewal and grace policy, revocation,
 device key pairs and multi-device policy.

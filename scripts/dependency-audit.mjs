@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Fail-closed npm dependency vulnerability gate - repository-local slice of
- * tesserafin-project/tesserafin#95 (C2).
+ * tesserafin/tesserafin#95 (C2).
  *
  * WHAT THIS IS NOT. It is not a vulnerability database and it is not a scanner.
  * It never decides whether a package is vulnerable; `npm audit` asks the

@@ -34,5 +34,5 @@ passed five browser cases and failed the two disappearing-trigger cases. After
 the fix all 32 passed using Chromium 153.0.0 (a local executable override because
 the Playwright browser archive could not be downloaded in this workspace).
 The new unit regressions likewise failed before the fix. This extends #198/#199's
-focus follow-up under tesserafin-project/tesserafin#306; it does not reopen their
+focus follow-up under tesserafin/tesserafin#306; it does not reopen their
 accepted deliveries or change legacy `dialogHelper` behavior.

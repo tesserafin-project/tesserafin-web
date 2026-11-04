@@ -5,7 +5,7 @@ It does not enable DSP in Tesserafin's player, add a setting, or deliver an asse
 in the production bundle. Nothing under `src/` imports these tools.
 
 The audited upstream source is [OneAmp v1.4.0, commit cbf04e7](https://github.com/all3f0r1/oneamp/tree/cbf04e7ba97f000676c829257ce215e41281dd84).
-The [server audit and host contract](https://github.com/tesserafin-project/tesserafin/blob/master/docs/audio/oneamp-dsp-1-audit.md)
+The [server audit and host contract](https://github.com/tesserafin/tesserafin/blob/master/docs/audio/oneamp-dsp-1-audit.md)
 remain the integration reference. This lot replaces the audit's mock ABI proof
 with execution of the actual Rust-produced module, without claiming a finished
 AudioWorklet integration.

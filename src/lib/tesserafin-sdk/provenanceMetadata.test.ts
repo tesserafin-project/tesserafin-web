@@ -121,7 +121,7 @@ describe('SDK provenance metadata (schema 2)', () => {
     });
 
     it('names the one server repository this SDK may be generated from', () => {
-        expect(version.sourceRepository).toBe('tesserafin-project/tesserafin');
+        expect(version.sourceRepository).toBe('tesserafin/tesserafin');
     });
 
     it('names a full, unambiguous source commit', () => {

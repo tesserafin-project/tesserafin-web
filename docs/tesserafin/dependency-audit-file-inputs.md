@@ -1,7 +1,7 @@
 # Dependency audit: file input identity
 
 This is the file-read slice of
-[server #185](https://github.com/tesserafin-project/tesserafin/issues/185),
+[server #185](https://github.com/tesserafin/tesserafin/issues/185),
 Group C (`scripts/dependency-audit.mjs`). It changes no vulnerability policy,
 waiver expiry or scanner configuration.
 

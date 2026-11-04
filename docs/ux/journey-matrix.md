@@ -1,7 +1,7 @@
 # Web journey acceptance matrix
 
 Scope: connect → browse → details → play → resume, for the Web tracker
-[tesserafin#306](https://github.com/tesserafin-project/tesserafin/issues/306). It follows
+[tesserafin#306](https://github.com/tesserafin/tesserafin/issues/306). It follows
 [dialog-focus-return.md](dialog-focus-return.md), whose last table listed the remaining
 browser/theme/screen-reader/responsive gaps.
 

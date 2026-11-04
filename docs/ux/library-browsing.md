@@ -1,6 +1,6 @@
 # Library browsing (LIBRARY-BROWSE-R1, R2, R3)
 
-Parent: tesserafin-project/tesserafin#306, "incremental library browsing without page controls".
+Parent: tesserafin/tesserafin#306, "incremental library browsing without page controls".
 
 ## What is continuous, and what is not
 

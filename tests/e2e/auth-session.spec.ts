@@ -54,7 +54,7 @@ const BASE_URL = process.env.TESSERAFIN_E2E_BASE_URL ?? 'http://localhost:8096';
  * credential-shaped literal exists in this file's committed bytes, and the joined value is
  * byte-identical to what it has always been. Do not re-inline it.
  *
- * See tesserafin-project/tesserafin#172 and #174.
+ * See tesserafin/tesserafin#172 and #174.
  */
 const WRONG_PASSWORD = ['zzq-b1', '-rejec', 'ted-se', 'cret-7', '413'].join('');
 

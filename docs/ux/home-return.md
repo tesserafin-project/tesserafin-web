@@ -47,4 +47,4 @@ and this suite must not be presented as validating that TV route or a physical r
 persistence, Search, library pages, player menus and screen-reader/device qualification remain
 separate work. The implementation PR records the hosted browser results and any outstanding limits.
 
-Related: tesserafin-project/tesserafin#306; player menu focus is Web #213.
+Related: tesserafin/tesserafin#306; player menu focus is Web #213.

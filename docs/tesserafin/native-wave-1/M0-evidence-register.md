@@ -6,8 +6,8 @@
   2026-08-09 and are open still. Nothing here is marked researched because a decision was taken
   around it.
 - **Accountable maintainer**: [`all3f0r1`](https://github.com/all3f0r1).
-- **Milestone**: [`tesserafin#222`](https://github.com/tesserafin-project/tesserafin/issues/222),
-  under the umbrella [`tesserafin#221`](https://github.com/tesserafin-project/tesserafin/issues/221).
+- **Milestone**: [`tesserafin#222`](https://github.com/tesserafin/tesserafin/issues/222),
+  under the umbrella [`tesserafin#221`](https://github.com/tesserafin/tesserafin/issues/221).
 - **Access date for every external source below**: **2026-08-09**. Where a page publishes its own
   "last updated" stamp, that stamp is recorded separately in the *Limitation* column, because the two
   dates answer different questions: the access date says when this register looked, the page stamp

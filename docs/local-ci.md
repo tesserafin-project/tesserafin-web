@@ -5,11 +5,11 @@
 > GitHub allocates hosted runners for this organisation again. The July 2026
 > allocation refusal described in section 1 is **over** and is kept below only
 > as an archive. Evidence comes from the sibling server repository, run
-> [30229812748](https://github.com/tesserafin-project/tesserafin/actions/runs/30229812748):
+> [30229812748](https://github.com/tesserafin/tesserafin/actions/runs/30229812748):
 > job `ABI - HEAD` **completed/success**, **8 steps executed**, runner
 > `GitHub Actions 1000000000` — the exact opposite of the parked signature
 > (failure in 1-3 s, zero steps, no runner, billing annotation). Both
-> repositories are owned by the same free organisation `tesserafin-project`
+> repositories are owned by the same free organisation `tesserafin`
 > and meter against the same pool, so that result establishes allocation here
 > too. The personal `all3f0r1` account named throughout section 1 is no longer
 > the metered pool.
@@ -195,7 +195,7 @@ equivalent document is `docs/local-ci.md` in that repository.
 
 ---
 
-## 7. Secret scanning (fail-closed) — tesserafin-project/tesserafin#172 / [C3]
+## 7. Secret scanning (fail-closed) — tesserafin/tesserafin#172 / [C3]
 
 Unlike everything above, this gate **does run on GitHub Actions**
 (`.github/workflows/secret-scan.yml`). It needs no CodeQL, no GitHub Advanced Security, no
@@ -205,7 +205,7 @@ block.
 
 It **detects** a committed secret. It does not **prevent** one: by the time it starts, GitHub
 has already accepted the push. Prevention needs native push protection, which needs GitHub
-Secret Protection, which is unavailable here. tesserafin-project/tesserafin#96 and #94 stay
+Secret Protection, which is unavailable here. tesserafin/tesserafin#96 and #94 stay
 open for that.
 
 ### Running it locally
@@ -274,7 +274,7 @@ classification and disposition, and stores no value.
 Eighteen are inherited pre-fork `dashboard-ui` history. **Two are not**, and are classified
 separately rather than being folded into "inherited": they are the two commits of the
 negative-login end-to-end fixture, conclusively a non-secret, removed from the current tree by
-[PR #96](https://github.com/tesserafin-project/tesserafin-web/pull/96) by assembling the value
+[PR #96](https://github.com/tesserafin/tesserafin-web/pull/96) by assembling the value
 from fragments at run time rather than by suppressing the rule.
 
 Editing either file to make CI green is not a fix. A new finding needs an owner disposition.

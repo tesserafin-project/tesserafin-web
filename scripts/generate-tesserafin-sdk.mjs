@@ -94,7 +94,7 @@ export const PROVENANCE_SCHEMA_VERSION = 2;
 export const TRANSFORM_VERSION = 1;
 
 /** The one server repository whose canonical contract this SDK may be generated from. */
-export const SERVER_REPOSITORY = 'tesserafin-project/tesserafin';
+export const SERVER_REPOSITORY = 'tesserafin/tesserafin';
 
 /** Repository-relative root the generated-file manifest covers. Nothing under it is excluded. */
 export const GENERATED_MANIFEST_ROOT = 'src/lib/tesserafin-sdk/generated';

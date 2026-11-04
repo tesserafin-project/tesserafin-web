@@ -4,10 +4,10 @@
 - **Date**: 2026-08-09
 - **Author**: Tesserafin Project
 - **Repository**: `tesserafin-web`
-- **Issue**: [`tesserafin#100`](https://github.com/tesserafin-project/tesserafin/issues/100) (D2 —
+- **Issue**: [`tesserafin#100`](https://github.com/tesserafin/tesserafin/issues/100) (D2 —
   architecture only)
 - **Depends on**: **RFC-0006 — Native-client foundation**, `Accepted (2026-08-09)`, merged to `main`
-  as [`f1ea39a2`](https://github.com/tesserafin-project/tesserafin-web/commit/f1ea39a22d67e1d5eb2bccbcaca821354dfda5cb).
+  as [`f1ea39a2`](https://github.com/tesserafin/tesserafin-web/commit/f1ea39a22d67e1d5eb2bccbcaca821354dfda5cb).
   RFC-0006 §7.2 deferred the account, purchase, entitlement, activation, device-binding and
   revocation architecture to `tesserafin#100`. This RFC is that architecture. It **builds on**
   RFC-0006 and **does not reopen** it: the three contract layers (§3), the eleven cross-client

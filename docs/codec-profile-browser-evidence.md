@@ -1,7 +1,7 @@
 # Codec profile probes: current scope and browser evidence
 
-The `Profiles` half of [web#29](https://github.com/tesserafin-project/tesserafin-web/issues/29)
-was already delivered by [web#49](https://github.com/tesserafin-project/tesserafin-web/pull/49).
+The `Profiles` half of [web#29](https://github.com/tesserafin/tesserafin-web/issues/29)
+was already delivered by [web#49](https://github.com/tesserafin/tesserafin-web/pull/49).
 `videoCodecProfiles.ts` derives H.264, HEVC and AV1 profile names from exact
 `canPlayType` MIME strings. Only `probably` is accepted. Known High 10 false-positive
 browser families remain vetoed. VP8/VP9 have no profile rows and remain unrestricted.

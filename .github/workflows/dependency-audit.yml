@@ -1,5 +1,5 @@
 # Automatic npm dependency vulnerability audit — repository-local slice of
-# tesserafin-project/tesserafin#95 (C2). New workflow, not a restoration:
+# tesserafin/tesserafin#95 (C2). New workflow, not a restoration:
 # nothing has ever audited this repository's dependency graph on a hosted
 # runner.
 #
@@ -20,7 +20,7 @@
 #     Security, which a private repository on a free organisation plan does not
 #     have — proven by run 30230774481, where the CodeQL analysis succeeded and
 #     only the upload was refused. That is tracked by
-#     tesserafin-project/tesserafin#94 (C1), not here.
+#     tesserafin/tesserafin#94 (C1), not here.
 #   * No `actions/dependency-review-action`. The dependency graph itself IS
 #     available and is now enabled — 1464 packages, 51 open Dependabot alerts —
 #     but the dependency-review API it calls needs Advanced Security on a
@@ -31,7 +31,7 @@
 #     GET .../rulesets both return 403 "Upgrade to GitHub Pro or make this
 #     repository public to enable this feature". This workflow reports
 #     automatically; nothing available on this plan can make it mandatory.
-#     tesserafin-project/tesserafin#94 stays open for that.
+#     tesserafin/tesserafin#94 stays open for that.
 #
 # Deliberately NO paths-ignore. A dependency advisory has nothing to do with
 # which files a pull request touched, and a filter here would let a

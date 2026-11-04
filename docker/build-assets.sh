@@ -36,7 +36,7 @@ VERSION="$(node -p "require('./package.json').version")"
 VCS_REF="$(git rev-parse HEAD)"
 SOURCE_DATE_EPOCH="$(git log -1 --format=%ct HEAD)"
 BUILD_DATE="$(date -u -d "@${SOURCE_DATE_EPOCH}" +%Y-%m-%dT%H:%M:%SZ)"
-REGISTRY="${REGISTRY:-ghcr.io/tesserafin-project/tesserafin-web-assets}"
+REGISTRY="${REGISTRY:-ghcr.io/tesserafin/tesserafin-web-assets}"
 export VERSION VCS_REF SOURCE_DATE_EPOCH BUILD_DATE REGISTRY
 
 if [[ -n "$(git status --porcelain)" ]]; then

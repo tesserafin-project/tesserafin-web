@@ -33,7 +33,7 @@ const VALID_WAIVERS = {
             severity: 'high',
             justification: 'test fixture',
             owner: 'test-owner',
-            issue: 'https://github.com/tesserafin-project/tesserafin/issues/185',
+            issue: 'https://github.com/tesserafin/tesserafin/issues/185',
             created: '2026-01-01',
             expires: '2099-01-01'
         }

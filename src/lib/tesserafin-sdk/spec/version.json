@@ -10,7 +10,7 @@
     "pathCount": 311,
     "schemaCount": 436,
     "source": "~/tesserafin-a0-server/openapi/openapi.json",
-    "sourceRepository": "tesserafin-project/tesserafin",
+    "sourceRepository": "tesserafin/tesserafin",
     "sourceCommit": "10d19f519af4d4d700d4fd84e06e954bdf882d64",
     "sourceRef": "10d19f519af4d4d700d4fd84e06e954bdf882d64",
     "canonicalSpecSha256": "a8d0e80c6dd7f8fde4183190d5b8ee61cd179a49c8d680f8bf0229d4867b51f5",
