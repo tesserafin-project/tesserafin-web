@@ -156,8 +156,8 @@ wasm instance inside it.
   the `GainNode`, the `AudioWorkletNode`, and the routing between them.
 - The host compiles the module once (`WebAssembly.compile` on the main
   thread) and passes the `WebAssembly.Module` in `processorOptions`; the worklet
-  instantiates it synchronously with an empty import object. No fetch, no
-  `TextDecoder`, no allocation in the worklet after construction.
+  instantiates it synchronously with an empty import object. No fetch or `TextDecoder` in the worklet. Allocation requirements are
+  limited to the verifiable properties below.
 - Typed setters are applied between blocks (port messages are delivered on
   the audio thread between `process()` calls). By source reading they
   contain no explicit allocation; this is not instrumented (§9.5).
@@ -349,10 +349,12 @@ reachable: `IsRemote` media sources get no `crossOrigin` (§3).
 the current item**, computed by one function shared with the legacy path:
 
 ```
-expectedGain(item) = normalisation(item, setting) × (Safari ? elem.volume : 1)
-normalisation: TrackGain → item.NormalizationGain ?? albumNormalizationGain
-               AlbumGain → albumNormalizationGain ?? item.NormalizationGain
-               missing value or setting Off → 1   (today's fallback rules)
+normalisationDb(item, setting):
+  TrackGain → item.NormalizationGain ?? albumNormalizationGain ?? 0
+  AlbumGain → albumNormalizationGain ?? item.NormalizationGain ?? 0
+  Off       → 0
+normalisationGain = 10 ** (normalisationDb(item, setting) / 20)
+expectedGain(item) = normalisationGain × (Safari ? elem.volume : 1)
 ```
 
 It never forces gain 1. (Safari never reaches the OneAmp route in the
@@ -650,7 +652,11 @@ No server change is made, so server tests are not part of this gate.
 
 ---
 
-## 11. Implementation issue (to file once these corrections are accepted)
+## 11. Implementation issue
+
+Tracked in [tesserafin/tesserafin#388](https://github.com/tesserafin/tesserafin/issues/388).
+The scope below specifies the demonstrator; acceptance of this contract is
+not browser validation.
 
 > **[Audio / DSP-2] Web demonstrator: OneAmp AudioWorklet on Direct Play audio**
 >
