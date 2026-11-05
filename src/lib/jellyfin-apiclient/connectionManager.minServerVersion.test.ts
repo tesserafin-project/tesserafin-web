@@ -149,13 +149,15 @@ describe('ConnectionManager minimum server version', () => {
         expect(connectionManager.minServerVersion()).not.toBe('10.10.0');
     });
 
-    it('resolves the Tesserafin-owned minimum to the pinned contract version 1.0.0', () => {
-        expect(TESSERAFIN_MINIMUM_VERSION).toBe('1.0.0');
+    // The pinned contract moved to 0.3.0 with the pre-launch renumbering
+    // (tesserafin/tesserafin#386): 1.0.0 is reserved for the public launch.
+    it('resolves the Tesserafin-owned minimum to the pinned contract version 0.3.0', () => {
+        expect(TESSERAFIN_MINIMUM_VERSION).toBe('0.3.0');
     });
 
-    it('accepts a Tesserafin server reporting 1.0.0', async () => {
+    it('accepts a Tesserafin server reporting 0.3.0', async () => {
         const connectionManager = await createConnectionManager();
-        respondWithVersion('1.0.0');
+        respondWithVersion('0.3.0');
 
         const result = await connectionManager.connectToServer(manualServer());
 
@@ -163,9 +165,9 @@ describe('ConnectionManager minimum server version', () => {
         expect(result.State).toBe(ConnectionState.ServerSignIn);
     });
 
-    it('rejects a server below the Tesserafin public epoch', async () => {
+    it('rejects a server older than the pinned contract (withdrawn pre-launch 0.2.0)', async () => {
         const connectionManager = await createConnectionManager();
-        respondWithVersion('0.9.0');
+        respondWithVersion('0.2.0');
 
         const result = await connectionManager.connectToServer(manualServer());
 

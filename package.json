@@ -1,6 +1,6 @@
 {
     "name": "tesserafin-web",
-    "version": "1.0.0",
+    "version": "0.3.0",
     "description": "Web interface for Tesserafin",
     "repository": "https://github.com/tesserafin/tesserafin-web",
     "license": "GPL-2.0-or-later",
