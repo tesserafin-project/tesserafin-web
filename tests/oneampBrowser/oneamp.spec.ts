@@ -68,7 +68,30 @@ async function waitPlaying(page: Page, seconds = 1) {
         .toBeGreaterThan(seconds);
 }
 
+/**
+ * Measurements need a rendering context. Without an audio output device (a CI runner)
+ * Firefox never renders, and every RMS reads 0: fail on that cause, not on a level.
+ */
+async function expectRendering(page: Page) {
+    const state = await page.evaluate(() =>
+        (
+            window as unknown as {
+                oneampHarness: { contextState(): string | null };
+            }
+        ).oneampHarness.contextState()
+    );
+    expect(
+        state,
+        'AudioContext must be running (is there an audio output device?)'
+    ).toBe('running');
+    const t0 = await h(page, (x) => x.element().currentTime);
+    await page.waitForTimeout(300);
+    const t1 = await h(page, (x) => x.element().currentTime);
+    expect(t1, 'media must be playing').toBeGreaterThan(t0);
+}
+
 async function rms(page: Page, ms = 600) {
+    await expectRendering(page);
     // Let ramps (parameter smoothing) settle before measuring.
     await page.waitForTimeout(300);
     const r = await page.evaluate(
