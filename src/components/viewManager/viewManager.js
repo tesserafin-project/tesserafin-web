@@ -1,6 +1,7 @@
 import viewContainer from '../viewContainer';
 import focusManager from '../focusManager';
 import layoutManager from '../layoutManager';
+import { getViewParams } from './viewParams';
 
 let currentView;
 let dispatchPageEvents;
@@ -117,13 +118,7 @@ function dispatchViewEvent(view, eventInfo, eventName, isCancellable) {
 }
 
 function getViewEventDetail(view, { state, url, options = {} }, isRestored) {
-    const index = url.indexOf('?');
-    const searchParams = new URLSearchParams(url.substring(index + 1));
-    const params = {};
-
-    searchParams.forEach((value, key) => {
-        params[key] = value;
-    });
+    const params = getViewParams(url);
 
     return {
         detail: {
