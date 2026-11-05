@@ -86,7 +86,12 @@ on:
     branches:
       - main
       - release*
-  workflow_dispatch:
+  # No `workflow_dispatch`: a dispatch event carries no pull request, so
+  # `github.event.pull_request.head.sha` below would be empty and the jobs
+  # would silently test the dispatched ref instead. It was also the entry
+  # point CodeQL keys `actions/cache-poisoning/poisonable-step` (web #30/#40)
+  # on through `__quality_checks.yml`. Never used (0 dispatch runs). Manual
+  # runs go through `push.yml`, which passes `github.sha`.
 
 jobs:
   build:
