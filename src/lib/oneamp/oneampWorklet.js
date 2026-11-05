@@ -27,39 +27,72 @@ function isBool(x) {
     return typeof x === 'boolean';
 }
 
-// Absent or non-numeric media-gain figures are "unknown" (NaN) for OneAmp.
+// Absent (undefined or null) media-gain figures are "unknown" (NaN) for OneAmp.
 function figure(x) {
     return isNumber(x) ? x : NaN;
 }
 
-// Validates an `apply` snapshot. Returns null when it is acceptable.
+function inRange(lo, hi) {
+    return (x) => isNumber(x) && x >= lo && x <= hi;
+}
+
+function integerIn(lo, hi) {
+    return (x) => Number.isInteger(x) && x >= lo && x <= hi;
+}
+
+function isBands(x) {
+    return Array.isArray(x) && x.length === EQ_BANDS && x.every(isNumber);
+}
+
+// Contract §4.4 domains. Every field of a message or snapshot is checked
+// against these BEFORE any setter runs, so a rejected message changes nothing.
+const isVolume = inRange(0, 1.5);
+const isBalance = inRange(-1, 1);
+const isListeningVolume = inRange(0, 1);
+const isReplayGainMode = integerIn(0, 3);
+const isGainContext = integerIn(0, 2);
+const isBand = integerIn(0, EQ_BANDS - 1);
+
+const SNAPSHOT_FIELDS = [
+    ['eqEnabled', isBool],
+    ['eqBands', isBands],
+    ['preamp', isNumber],
+    ['volume', isVolume],
+    ['balance', isBalance],
+    ['mono', isBool],
+    ['loudness', isBool],
+    ['listeningVolume', isListeningVolume],
+    ['replayGain', isReplayGainMode],
+    ['preventClipping', isBool]
+];
+const MEDIA_GAIN_FIGURES = ['trackDb', 'trackPeak', 'albumDb', 'albumPeak'];
+
+function isObject(x) {
+    return x !== null && typeof x === 'object' && !Array.isArray(x);
+}
+
+// Validates media-gain figures and context. Returns the bad field or null.
+function mediaGainError(g, prefix) {
+    for (const k of MEDIA_GAIN_FIGURES) {
+        const x = g[k];
+        if (x !== undefined && x !== null && !isNumber(x)) return prefix + k;
+    }
+    if (g.context !== undefined && !isGainContext(g.context)) {
+        return `${prefix}context`;
+    }
+    return null;
+}
+
+// Validates a whole snapshot, nested fields included. Returns the bad
+// field's path, or null when every field is acceptable.
 function snapshotError(p) {
-    if (p === null || typeof p !== 'object') return 'params';
-    if (!isBool(p.eqEnabled)) return 'eqEnabled';
-    if (
-        !Array.isArray(p.eqBands) ||
-        p.eqBands.length !== EQ_BANDS ||
-        !p.eqBands.every(isNumber)
-    ) {
-        return 'eqBands';
+    if (!isObject(p)) return 'params';
+    for (const [k, ok] of SNAPSHOT_FIELDS) {
+        if (!ok(p[k])) return k;
     }
-    for (const k of [
-        'preamp',
-        'volume',
-        'balance',
-        'listeningVolume',
-        'replayGain'
-    ]) {
-        if (!isNumber(p[k])) return k;
-    }
-    for (const k of ['mono', 'loudness', 'preventClipping']) {
-        if (!isBool(p[k])) return k;
-    }
-    if (
-        p.mediaGain !== undefined &&
-        (p.mediaGain === null || typeof p.mediaGain !== 'object')
-    ) {
-        return 'mediaGain';
+    if (p.mediaGain !== undefined) {
+        if (!isObject(p.mediaGain)) return 'mediaGain';
+        return mediaGainError(p.mediaGain, 'mediaGain.');
     }
     return null;
 }
@@ -151,13 +184,8 @@ class OneAmpProcessor extends AudioWorkletProcessor {
                 w.oneamp_set_eq_enabled(h, m.on ? 1 : 0);
                 break;
             case 'eqBand':
-                if (
-                    !Number.isInteger(m.band) ||
-                    m.band < 0 ||
-                    m.band >= EQ_BANDS
-                ) {
+                if (!isBand(m.band))
                     throw new BadMessage('bad-message', 'band');
-                }
                 if (!isNumber(m.db)) throw new BadMessage('bad-message', 'db');
                 w.oneamp_set_eq_band(h, m.band, m.db);
                 break;
@@ -166,36 +194,43 @@ class OneAmpProcessor extends AudioWorkletProcessor {
                 w.oneamp_set_preamp(h, m.db);
                 break;
             case 'volume':
-            case 'balance':
-                if (!isNumber(m.value))
+                if (!isVolume(m.value)) {
                     throw new BadMessage('bad-message', 'value');
-                if (m.type === 'volume') w.oneamp_set_volume(h, m.value);
-                else w.oneamp_set_balance(h, m.value);
+                }
+                w.oneamp_set_volume(h, m.value);
+                break;
+            case 'balance':
+                if (!isBalance(m.value)) {
+                    throw new BadMessage('bad-message', 'value');
+                }
+                w.oneamp_set_balance(h, m.value);
                 break;
             case 'mono':
                 if (!isBool(m.on)) throw new BadMessage('bad-message', 'on');
                 w.oneamp_set_mono(h, m.on ? 1 : 0);
                 break;
             case 'loudness':
-                if (!isBool(m.on) || !isNumber(m.listeningVolume)) {
-                    throw new BadMessage('bad-message', 'loudness');
+                if (!isBool(m.on)) throw new BadMessage('bad-message', 'on');
+                if (!isListeningVolume(m.listeningVolume)) {
+                    throw new BadMessage('bad-message', 'listeningVolume');
                 }
                 w.oneamp_set_loudness(h, m.on ? 1 : 0, m.listeningVolume);
                 break;
             case 'replayGain':
-                if (
-                    !Number.isInteger(m.mode) ||
-                    m.mode < 0 ||
-                    m.mode > 3 ||
-                    !isBool(m.preventClipping)
-                ) {
-                    throw new BadMessage('bad-message', 'replayGain');
+                if (!isReplayGainMode(m.mode)) {
+                    throw new BadMessage('bad-message', 'mode');
+                }
+                if (!isBool(m.preventClipping)) {
+                    throw new BadMessage('bad-message', 'preventClipping');
                 }
                 w.oneamp_set_replaygain(h, m.mode, m.preventClipping ? 1 : 0);
                 break;
-            case 'mediaGain':
+            case 'mediaGain': {
+                const bad = mediaGainError(m, '');
+                if (bad) throw new BadMessage('bad-message', bad);
                 this.applyMediaGain(m);
                 break;
+            }
             case 'reset':
                 w.oneamp_reset(h);
                 break;
@@ -225,11 +260,9 @@ class OneAmpProcessor extends AudioWorkletProcessor {
         }
     }
 
+    // Validated by `mediaGainError` first.
     applyMediaGain(g) {
         const context = g.context ?? 0;
-        if (!Number.isInteger(context) || context < 0 || context > 2) {
-            throw new BadMessage('bad-message', 'context');
-        }
         this.wasm.oneamp_set_media_gain(
             this.h,
             figure(g.trackDb),
@@ -240,7 +273,8 @@ class OneAmpProcessor extends AudioWorkletProcessor {
         );
     }
 
-    // Contract §4.4 order. Validated by `snapshotError` first.
+    // Contract §4.4 order. Validated as a whole by `snapshotError` first:
+    // no setter runs for a snapshot that has any bad field.
     applySnapshot(p) {
         const w = this.wasm;
         const h = this.h;

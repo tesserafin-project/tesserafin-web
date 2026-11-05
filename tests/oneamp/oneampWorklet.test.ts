@@ -211,6 +211,77 @@ describe('protocol', () => {
         expect(steadyPeak(p)).toBeCloseTo(0.25, 2);
     });
 
+    // Each snapshot carries a valid -6 dB preamp next to one bad field: if any
+    // setter ran before validation finished, the level would halve.
+    it.each([
+        [{ mediaGain: { context: 3 } }, 'params.mediaGain.context'],
+        [{ mediaGain: { context: 1.5 } }, 'params.mediaGain.context'],
+        [{ mediaGain: { context: -1 } }, 'params.mediaGain.context'],
+        [{ mediaGain: { trackDb: 'loud' } }, 'params.mediaGain.trackDb'],
+        [
+            { mediaGain: { albumPeak: Number.NaN } },
+            'params.mediaGain.albumPeak'
+        ],
+        [{ mediaGain: null }, 'params.mediaGain'],
+        [{ mediaGain: [] }, 'params.mediaGain'],
+        [{ replayGain: 4 }, 'params.replayGain'],
+        [{ replayGain: -1 }, 'params.replayGain'],
+        [{ replayGain: 1.5 }, 'params.replayGain'],
+        [{ volume: 1.6 }, 'params.volume'],
+        [{ volume: -0.1 }, 'params.volume'],
+        [{ balance: 1.5 }, 'params.balance'],
+        [{ listeningVolume: 2 }, 'params.listeningVolume'],
+        [{ eqBands: [0, 0, 0, 0, 0, 0, 0, 0, 0] }, 'params.eqBands'],
+        [
+            { eqBands: [0, 0, 0, 0, Number.NaN, 0, 0, 0, 0, 0] },
+            'params.eqBands'
+        ],
+        [{ preventClipping: 'no' }, 'params.preventClipping']
+    ])(
+        'a snapshot with %o is rejected whole: no ack, no setter (%s)',
+        (bad, detail) => {
+            const p = create();
+            take(p);
+            send(p, {
+                type: 'apply',
+                seq: 3,
+                params: { ...FLAT, preamp: -6.0206, ...bad }
+            });
+            expect(take(p)).toEqual([
+                expect.objectContaining({
+                    type: 'error',
+                    code: 'bad-message',
+                    about: 'apply',
+                    detail
+                })
+            ]);
+            expect(steadyPeak(p)).toBeCloseTo(0.5, 2);
+        }
+    );
+
+    it('a snapshot with valid media gains is accepted', () => {
+        const p = create();
+        take(p);
+        send(p, {
+            type: 'apply',
+            seq: 4,
+            params: {
+                ...FLAT,
+                mediaGain: { trackDb: -6, trackPeak: null, context: 1 }
+            }
+        });
+        expect(take(p)).toEqual([{ type: 'ack', v: 1, seq: 4 }]);
+    });
+
+    it('an invalid initial snapshot in processorOptions is rejected whole', () => {
+        expect(() =>
+            create({ params: { ...FLAT, mediaGain: { context: 3 } } })
+        ).toThrow('params.mediaGain.context');
+        expect(() => create({ params: { ...FLAT, replayGain: 4 } })).toThrow(
+            'params.replayGain'
+        );
+    });
+
     it('reports state: bypassed until something is enabled', () => {
         const p = create();
         take(p);
@@ -236,6 +307,14 @@ describe('protocol', () => {
             'bad-message'
         ],
         [{ type: 'mediaGain', context: 3 }, 'bad-message'],
+        [{ type: 'mediaGain', trackDb: 'x' }, 'bad-message'],
+        [
+            { type: 'replayGain', mode: 1.5, preventClipping: false },
+            'bad-message'
+        ],
+        [{ type: 'volume', value: 2 }, 'bad-message'],
+        [{ type: 'balance', value: -2 }, 'bad-message'],
+        [{ type: 'loudness', on: true, listeningVolume: 1.5 }, 'bad-message'],
         [{ type: 'apply', params: FLAT }, 'bad-message']
     ])('never throws on a bad message: %j -> %s', (message, code) => {
         const p = create();
