@@ -88,6 +88,11 @@ export interface HostDeps {
     /** Feature test for AudioWorklet + WebAssembly (§4.7.3). */
     available(): boolean;
     timeoutMs?: number;
+    /**
+     * A failure carried over from an earlier host on this page (the player
+     * builds a new host after an element swap): `failed` stays sticky.
+     */
+    initialFailure?: string | null;
     /** Failures are logged once, without URLs. */
     log?(message: string): void;
 }
@@ -147,6 +152,17 @@ export class OneAmpHost {
             normalisationOwner: 'none',
             params: defaultParams()
         };
+        if (deps.initialFailure) {
+            this.failedReason = deps.initialFailure;
+            this.logged = true;
+            this.s.state = 'failed';
+            this.s.reason = deps.initialFailure;
+        }
+    }
+
+    /** The sticky failure reason, if OneAmp failed on this page. */
+    get failure(): string | null {
+        return this.failedReason;
     }
 
     get state(): ObservableState {

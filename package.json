@@ -204,6 +204,7 @@
         "test:jellyfin-sdk-socket": "node scripts/jellyfin-sdk-socket.test.mjs",
         "generate:brand-assets": "node scripts/generate-brand-assets.mts",
         "verify:brand-assets": "node scripts/generate-brand-assets.mts --check",
+        "test:oneamp-browser": "webpack --config webpack.oneamp.js && playwright test --config playwright.oneamp.config.ts",
         "test:player-menu-browser": "webpack --config webpack.playerMenus.js && playwright test --config playwright.playerMenus.config.ts",
         "test:console-controls": "node --test scripts/debug.test.mjs scripts/console-volume.test.mjs",
         "test:console-production": "playwright test --config playwright.console.config.ts"

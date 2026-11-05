@@ -19,6 +19,7 @@ import {
     isNormalising,
     normalisationGain
 } from '../../lib/audio/audioGraph';
+import { OneAmpBridge } from '../../lib/oneamp/oneampBridge';
 
 // One shared load: every new item waits on the same promise (a fresh import()
 // per item would also re-enter module loading while a load is in flight).
@@ -26,10 +27,15 @@ import {
 // caching the bare namespace would keep every userSettings export name in
 // the main bundle (+1.1 KB measured).
 let selectAudioNormalizationLoad;
+// Set once loaded, for the synchronous route decision of a new item.
+let selectAudioNormalizationNow = null;
 function loadSelectAudioNormalization() {
     selectAudioNormalizationLoad ??= import(
         '../../scripts/settings/userSettings'
-    ).then((userSettings) => userSettings.selectAudioNormalization);
+    ).then((userSettings) => {
+        selectAudioNormalizationNow = userSettings.selectAudioNormalization;
+        return userSettings.selectAudioNormalization;
+    });
     return selectAudioNormalizationLoad;
 }
 
@@ -142,6 +148,17 @@ class HtmlAudioPlayer {
         // (async settings import) must not touch the current one.
         self._srcGeneration = 0;
 
+        // Experimental OneAmp route (tesserafin.experimental.oneamp). With
+        // the flag off or in Safari it loads nothing and creates no graph.
+        self._oneamp = new OneAmpBridge({
+            safari: !!browser.safari,
+            ensureGraph: (elem) => {
+                if (!self._audioGraph) self._audioGraph = new AudioGraph(elem);
+                return self._audioGraph.ensureGraph() ? self._audioGraph : null;
+            }
+        });
+        loadSelectAudioNormalization().catch(() => undefined);
+
         self.play = function (options) {
             self._started = false;
             self._timeUpdated = false;
@@ -175,6 +192,27 @@ class HtmlAudioPlayer {
 
             unBindEvents(elem);
             bindEvents(elem);
+
+            // Synchronously, before src/hls.js: the OneAmp route decision
+            // (contract §4.6). The expected gain uses the normalisation
+            // setting if it is loaded already; applyNormalisation refines it.
+            const setting = selectAudioNormalizationNow
+                ? selectAudioNormalizationNow()
+                : 'None';
+            self._oneamp.onMedia({
+                elem,
+                url: options.url,
+                playMethod: options.playMethod,
+                capturable: isCapturable(options.mediaSource, elem),
+                expectedGain: expectedGain(
+                    normalisationGain(options, setting),
+                    {
+                        safari: !!browser.safari,
+                        volume: elem.volume
+                    }
+                ),
+                normalising: isNormalising(setting)
+            });
 
             // #75 / S4: same disclosure as the video player - the url carries the session's
             // access token as `ApiKey`, so it is never logged.
@@ -222,6 +260,7 @@ class HtmlAudioPlayer {
                                         includeCorsCredentials;
                                 }
                             });
+                            self._oneamp.onHlsAttached();
                             hls.loadSource(val);
                             hls.attachMedia(elem);
 
@@ -266,6 +305,7 @@ class HtmlAudioPlayer {
         }
 
         function bindEvents(elem) {
+            elem.addEventListener('seeking', onSeeking);
             elem.addEventListener('timeupdate', onTimeUpdate);
             elem.addEventListener('ended', onEnded);
             elem.addEventListener('volumechange', onVolumeChange);
@@ -276,6 +316,7 @@ class HtmlAudioPlayer {
         }
 
         function unBindEvents(elem) {
+            elem.removeEventListener('seeking', onSeeking);
             elem.removeEventListener('timeupdate', onTimeUpdate);
             elem.removeEventListener('ended', onEnded);
             elem.removeEventListener('volumechange', onVolumeChange);
@@ -288,6 +329,7 @@ class HtmlAudioPlayer {
 
         self.stop = function (destroyPlayer) {
             cancelFadeTimeout();
+            self._oneamp.onStop();
 
             const elem = self._mediaElement;
             const src = self._currentSrc;
@@ -362,6 +404,7 @@ class HtmlAudioPlayer {
                 safari: !!browser.safari,
                 volume: elem.volume
             });
+            self._oneamp.setExpectedGain(gain);
 
             if (!isNormalising(setting)) {
                 debug('normalization disabled');
@@ -390,6 +433,7 @@ class HtmlAudioPlayer {
             unBindEvents(oldElem);
             oldElem.pause();
             htmlMediaHelper.resetSrc(oldElem);
+            self._oneamp.onGraphReleased();
             self._audioGraph?.release();
             self._audioGraph = null;
 
@@ -408,6 +452,11 @@ class HtmlAudioPlayer {
 
         function onEnded() {
             htmlMediaHelper.onEndedInternal(self, this, onError);
+        }
+
+        // Clear OneAmp's filter history and look-ahead (contract §4.6).
+        function onSeeking() {
+            self._oneamp.onSeeking();
         }
 
         function onTimeUpdate() {

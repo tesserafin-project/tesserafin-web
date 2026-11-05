@@ -530,6 +530,21 @@ describe('fallback triggers (§4.7.3): audible at the expected gain, sticky', ()
         await expectFailed(t, 'processor-error');
     });
 
+    it('a failure carried over to a new host stays sticky', async () => {
+        const t = setup({ initialFailure: 'compile' });
+        expect(t.host.state).toMatchObject({
+            state: 'failed',
+            reason: 'compile'
+        });
+        expect(t.host.failure).toBe('compile');
+        t.host.onMedia(directPlay);
+        await flush();
+        expect(t.nodes).toHaveLength(0);
+        expect(t.graph.route).toBe('bypass');
+        expect(t.graph.gainValue).toBe(GAIN);
+        expect(t.logs).toEqual([]);
+    });
+
     it('the graph is not captured (the player never captured a non-capturable item)', async () => {
         const t = setup();
         t.graph.captured = false;
