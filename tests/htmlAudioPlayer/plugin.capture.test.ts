@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { FakeAudioContext, path } from './audioGraphFake.testUtil';
+import { FakeAudioContext, path } from './fakeAudioContext';
 
 /**
  * The HTML audio player's legacy normalisation on the shared graph, and the two
@@ -14,22 +14,24 @@ const browserFlags = vi.hoisted(
     () => ({ safari: false }) as Record<string, boolean>
 );
 
-vi.mock('../../scripts/browser', () => ({ default: browserFlags }));
-vi.mock('../../components/apphost', () => ({
+vi.mock('../../src/scripts/browser', () => ({ default: browserFlags }));
+vi.mock('../../src/components/apphost', () => ({
     appHost: { supports: () => false }
 }));
-vi.mock('../../components/router/appRouter', () => ({
+vi.mock('../../src/components/router/appRouter', () => ({
     appRouter: { baseUrl: () => '' }
 }));
-vi.mock('../../scripts/browserDeviceProfile', () => ({ default: () => ({}) }));
-vi.mock('../../scripts/settings/webSettings', () => ({
+vi.mock('../../src/scripts/browserDeviceProfile', () => ({
+    default: () => ({})
+}));
+vi.mock('../../src/scripts/settings/webSettings', () => ({
     getIncludeCorsCredentials: () => Promise.resolve(false)
 }));
-vi.mock('../../scripts/settings/userSettings', () => ({
+vi.mock('../../src/scripts/settings/userSettings', () => ({
     selectAudioNormalization: () => settings.normalisation
 }));
 
-import HtmlAudioPlayer from './plugin';
+import HtmlAudioPlayer from '../../src/plugins/htmlAudioPlayer/plugin';
 
 interface PlayOptions {
     url: string;
@@ -192,7 +194,7 @@ describe('capture safety (§4.7.1)', () => {
         const captured = await play(local(-6));
         const fresh = await play(remote());
         const seen: string[] = [];
-        const Events = (await import('../../utils/events')).default;
+        const Events = (await import('../../src/utils/events')).default;
         Events.on(player, 'pause', () => seen.push('pause'));
         captured.dispatchEvent(new Event('pause'));
         expect(seen).toEqual([]);

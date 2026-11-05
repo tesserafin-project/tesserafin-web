@@ -7,8 +7,8 @@ import {
     isCapturable,
     normalisationDb,
     normalisationGain
-} from './audioGraph';
-import { FakeAudioContext, FakeNode, path } from './audioGraphFake.testUtil';
+} from '../../src/plugins/htmlAudioPlayer/audioGraph';
+import { FakeAudioContext, FakeNode, path } from './fakeAudioContext';
 
 /** OneAmp web host contract §4.7 and §7.2 (docs/tesserafin/oneamp-web-host-contract.md). */
 
