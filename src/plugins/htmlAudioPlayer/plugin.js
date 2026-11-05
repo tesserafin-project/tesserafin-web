@@ -11,6 +11,22 @@ import * as htmlMediaHelper from '../../components/htmlMediaHelper';
 import profileBuilder from '../../scripts/browserDeviceProfile';
 import { getIncludeCorsCredentials } from '../../scripts/settings/webSettings';
 import Events from '../../utils/events.ts';
+import {
+    AudioGraph,
+    applyCrossOrigin,
+    expectedGain,
+    isCapturable,
+    isNormalising,
+    normalisationGain
+} from './audioGraph';
+
+// One shared load: every new item waits on the same promise (a fresh import()
+// per item would also re-enter module loading while a load is in flight).
+let userSettingsLoad;
+function loadUserSettings() {
+    userSettingsLoad ??= import('../../scripts/settings/userSettings');
+    return userSettingsLoad;
+}
 
 function getDefaultProfile() {
     return profileBuilder({});
@@ -112,6 +128,15 @@ class HtmlAudioPlayer {
         // Let any players created by plugins take priority
         self.priority = 1;
 
+        // Web Audio graph of the current element (audioGraph.ts); null until
+        // an item is captured. `normalizationGain` is the current item's
+        // linear legacy normalisation gain (1 when off).
+        self._audioGraph = null;
+        self.normalizationGain = 1;
+        // Incremented on every new media: continuations of an older item
+        // (async settings import) must not touch the current one.
+        self._srcGeneration = 0;
+
         self.play = function (options) {
             self._started = false;
             self._timeUpdated = false;
@@ -123,55 +148,46 @@ class HtmlAudioPlayer {
         };
 
         function setCurrentSrc(elem, options) {
+            const generation = ++self._srcGeneration;
+
+            htmlMediaHelper.destroyHlsPlayer(self);
+
+            // Before any src or hls.js assignment: the CORS mode of this load,
+            // cleared for a remote item (a stale value would survive on the
+            // reused element), and no non-capturable item on a captured
+            // element - its audio would come out of the graph as silence.
+            const crossOrigin = htmlMediaHelper.getCrossOriginValue(
+                options.mediaSource
+            );
+            applyCrossOrigin(elem, crossOrigin);
+            if (
+                self._audioGraph?.captured &&
+                !isCapturable(options.mediaSource, elem)
+            ) {
+                elem = swapMediaElement(elem);
+                applyCrossOrigin(elem, crossOrigin);
+            }
+
             unBindEvents(elem);
             bindEvents(elem);
 
             // #75 / S4: same disclosure as the video player - the url carries the session's
             // access token as `ApiKey`, so it is never logged.
             let val = options.url;
-            import('../../scripts/settings/userSettings')
+            loadUserSettings()
                 .then((userSettings) => {
-                    let normalizationGain;
-                    if (
-                        userSettings.selectAudioNormalization() == 'TrackGain'
-                    ) {
-                        normalizationGain =
-                            options.item.NormalizationGain ??
-                            options.mediaSource.albumNormalizationGain;
-                    } else if (
-                        userSettings.selectAudioNormalization() == 'AlbumGain'
-                    ) {
-                        normalizationGain =
-                            options.mediaSource.albumNormalizationGain ??
-                            options.item.NormalizationGain;
-                    } else {
-                        debug('normalization disabled');
-                        return;
-                    }
-
-                    if (!self.gainNode) {
-                        addGainElement(elem);
-                        if (!self.gainNode) return;
-                    }
-
-                    if (normalizationGain) {
-                        self.normalizationGain = Math.pow(
-                            10,
-                            normalizationGain / 20
-                        );
-                        self.gainNode.gain.value = self.normalizationGain;
-                    } else {
-                        self.gainNode.gain.value = 1;
-                        self.normalizationGain = 1;
-                    }
-                    if (browser.safari) {
-                        // Gain value is absolute in Safari. Add volume from the slider
-                        self.gainNode.gain.value *= elem.volume;
-                    }
-                    debug('gain: ' + self.normalizationGain);
+                    if (generation !== self._srcGeneration) return;
+                    applyNormalisation(
+                        elem,
+                        options,
+                        userSettings.selectAudioNormalization()
+                    );
                 })
                 .catch((err) => {
-                    console.error('Failed to add/change gainNode', err);
+                    console.error(
+                        'Failed to add/change gainNode',
+                        err?.name ?? err
+                    );
                 });
 
             // Convert to seconds
@@ -180,16 +196,7 @@ class HtmlAudioPlayer {
                 val += '#t=' + seconds;
             }
 
-            htmlMediaHelper.destroyHlsPlayer(self);
-
             self._currentPlayOptions = options;
-
-            const crossOrigin = htmlMediaHelper.getCrossOriginValue(
-                options.mediaSource
-            );
-            if (crossOrigin) {
-                elem.crossOrigin = crossOrigin;
-            }
 
             return enableHlsPlayer(
                 val,
@@ -233,8 +240,9 @@ class HtmlAudioPlayer {
 
                     const includeCorsCredentials =
                         await getIncludeCorsCredentials();
-                    if (includeCorsCredentials) {
-                        // Safari will not send cookies without this
+                    if (includeCorsCredentials && crossOrigin) {
+                        // Safari will not send cookies without this. Not for a
+                        // remote item: it is loaded without CORS (above).
                         elem.crossOrigin = 'use-credentials';
                     }
 
@@ -339,26 +347,58 @@ class HtmlAudioPlayer {
             return elem;
         }
 
-        function addGainElement(elem) {
-            try {
-                const AudioContext =
-                    window.AudioContext || window.webkitAudioContext;
+        // Legacy client-side normalisation through the shared graph. The
+        // gain node always carries the item's expected gain (contract
+        // §4.7.2), including back to unity when normalisation is off.
+        function applyNormalisation(elem, options, setting) {
+            self.normalizationGain = normalisationGain(options, setting);
+            const graph = self._audioGraph;
+            const gain = expectedGain(self.normalizationGain, {
+                safari: !!browser.safari,
+                volume: elem.volume
+            });
 
-                const audioCtx = new AudioContext();
-                const source = audioCtx.createMediaElementSource(elem);
-
-                const gainNode = audioCtx.createGain();
-
-                source.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-
-                self.gainNode = gainNode;
-            } catch (e) {
-                console.error(
-                    'Web Audio API is not supported in this browser',
-                    e
-                );
+            if (!isNormalising(setting)) {
+                debug('normalization disabled');
+                graph?.setGain(gain);
+                return;
             }
+
+            if (!isCapturable(options.mediaSource, elem)) {
+                // Capturing it would silence it (contract §4.7.1).
+                debug('normalization skipped: not-capturable');
+                return;
+            }
+
+            if (!graph) {
+                self._audioGraph = new AudioGraph(elem);
+            }
+            if (!self._audioGraph.ensureGraph()) return;
+
+            self._audioGraph.setGain(gain);
+            debug('gain: ' + self.normalizationGain);
+        }
+
+        // Contract §4.7.1: a captured element cannot play a non-CORS item.
+        // Release it (graph and context) and continue on a fresh element.
+        function swapMediaElement(oldElem) {
+            unBindEvents(oldElem);
+            oldElem.pause();
+            htmlMediaHelper.resetSrc(oldElem);
+            self._audioGraph?.release();
+            self._audioGraph = null;
+
+            const elem = document.createElement('audio');
+            elem.className = oldElem.className;
+            elem.volume = oldElem.volume;
+            elem.muted = oldElem.muted;
+            if (oldElem.parentNode) {
+                oldElem.replaceWith(elem);
+            } else {
+                document.body.appendChild(elem);
+            }
+            self._mediaElement = elem;
+            return elem;
         }
 
         function onEnded() {
@@ -379,9 +419,13 @@ class HtmlAudioPlayer {
         function onVolumeChange() {
             if (!self._isFadingOut) {
                 htmlMediaHelper.saveVolume(this.volume);
-                if (browser.safari && self.gainNode) {
-                    self.gainNode.gain.value =
-                        this.volume * self.normalizationGain;
+                if (browser.safari && self._audioGraph?.captured) {
+                    self._audioGraph.setGain(
+                        expectedGain(self.normalizationGain, {
+                            safari: true,
+                            volume: this.volume
+                        })
+                    );
                 }
                 Events.trigger(self, 'volumechange');
             }
@@ -402,6 +446,9 @@ class HtmlAudioPlayer {
         }
 
         function onPlay() {
+            // A context left suspended by autoplay policy silences a captured
+            // element (contract L6).
+            self._audioGraph?.resume();
             Events.trigger(self, 'unpause');
         }
 
