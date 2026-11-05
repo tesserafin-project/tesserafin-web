@@ -594,6 +594,39 @@ describe('controls', () => {
         });
     });
 
+    it('out-of-domain values are clamped before they reach the worklet', async () => {
+        const t = await activeHost();
+        const n = t.node();
+        n.posted.length = 0;
+        t.host.setParams({
+            volume: 3,
+            balance: -5,
+            listeningVolume: 2,
+            loudness: true,
+            preamp: Number.NaN,
+            eqBands: [1, 2, 3]
+        });
+        expect(n.posted).toEqual([
+            ...Array.from({ length: 10 }, (_, band) => ({
+                v: 1,
+                type: 'eqBand',
+                band,
+                db: [1, 2, 3][band] ?? 0
+            })),
+            { v: 1, type: 'preamp', db: 0 },
+            { v: 1, type: 'volume', value: 1.5 },
+            { v: 1, type: 'balance', value: -1 },
+            { v: 1, type: 'loudness', on: true, listeningVolume: 1 }
+        ]);
+        expect(t.host.state.params).toMatchObject({
+            volume: 1.5,
+            balance: -1,
+            listeningVolume: 1,
+            preamp: 0,
+            replayGain: 0
+        });
+    });
+
     it('seeking posts reset only while active', async () => {
         const t = setup();
         t.host.onSeeking();

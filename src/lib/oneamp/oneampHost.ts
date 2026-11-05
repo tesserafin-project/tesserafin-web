@@ -212,8 +212,10 @@ export class OneAmpHost {
     setParams(
         change: Partial<Omit<OneAmpParams, 'replayGain' | 'preventClipping'>>
     ): void {
-        const p = { ...this.s.params, ...change };
-        if (change.eqBands) p.eqBands = change.eqBands.slice(0, EQ_BANDS);
+        const p = sanitiseParams(
+            { ...this.s.params, ...change },
+            this.s.params
+        );
         this.update({ params: p });
         if (!this.node) return;
         if (change.eqEnabled !== undefined)
@@ -533,6 +535,43 @@ export class OneAmpHost {
         const snapshot = this.state;
         for (const l of this.listeners) l(snapshot);
     }
+}
+
+function clamp(x: unknown, lo: number, hi: number, fallback: number): number {
+    if (typeof x !== 'number' || !Number.isFinite(x)) return fallback;
+    return Math.min(hi, Math.max(lo, x));
+}
+
+/**
+ * Brings a snapshot into the contract §4.4 domains the worklet enforces: a
+ * value it would reject would leave an `apply` without its `ack`, and the
+ * activation would fail. Non-finite values keep the previous setting.
+ */
+export function sanitiseParams(
+    p: OneAmpParams,
+    previous: OneAmpParams = defaultParams()
+): OneAmpParams {
+    const bands = Array.isArray(p.eqBands) ? p.eqBands : previous.eqBands;
+    return {
+        eqEnabled: p.eqEnabled === true,
+        eqBands: Array.from({ length: EQ_BANDS }, (_, i) =>
+            clamp(bands[i], -Infinity, Infinity, previous.eqBands[i] ?? 0)
+        ),
+        preamp: clamp(p.preamp, -Infinity, Infinity, previous.preamp),
+        volume: clamp(p.volume, 0, 1.5, previous.volume),
+        balance: clamp(p.balance, -1, 1, previous.balance),
+        mono: p.mono === true,
+        loudness: p.loudness === true,
+        listeningVolume: clamp(
+            p.listeningVolume,
+            0,
+            1,
+            previous.listeningVolume
+        ),
+        // OneAmp ReplayGain stays off in the demonstrator (§5).
+        replayGain: 0,
+        preventClipping: false
+    };
 }
 
 function cloneParams(p: OneAmpParams): OneAmpParams {
