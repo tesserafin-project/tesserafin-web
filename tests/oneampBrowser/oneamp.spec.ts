@@ -73,17 +73,25 @@ async function waitPlaying(page: Page, seconds = 1) {
  * Firefox never renders, and every RMS reads 0: fail on that cause, not on a level.
  */
 async function expectRendering(page: Page) {
-    const state = await page.evaluate(() =>
-        (
-            window as unknown as {
-                oneampHarness: { contextState(): string | null };
+    // `resume()` runs on the element's play event (contract L6) and settles
+    // asynchronously; a context still suspended after 5 s is a failure.
+    await expect
+        .poll(
+            () =>
+                page.evaluate(() =>
+                    (
+                        window as unknown as {
+                            oneampHarness: { contextState(): string | null };
+                        }
+                    ).oneampHarness.contextState()
+                ),
+            {
+                timeout: 5000,
+                message:
+                    'AudioContext must be running (is there an audio output device?)'
             }
-        ).oneampHarness.contextState()
-    );
-    expect(
-        state,
-        'AudioContext must be running (is there an audio output device?)'
-    ).toBe('running');
+        )
+        .toBe('running');
     const t0 = await h(page, (x) => x.element().currentTime);
     await page.waitForTimeout(300);
     const t1 = await h(page, (x) => x.element().currentTime);
