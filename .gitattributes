@@ -39,3 +39,4 @@ LICENSE         text
 # deleting the property under test and leaving `make-fixtures.mjs` unable to
 # reproduce the file byte for byte.
 tests/reader/fixtures/xml/container-crlf.xml -text
+*.wasm          binary
