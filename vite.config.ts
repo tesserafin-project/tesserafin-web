@@ -66,6 +66,8 @@ export default defineConfig({
             // transport fixture and is also the source of the runtime-origin inventory.
             'tests/contentPacksBrowser/**',
             'tests/m3Browser/**',
+            // Server-free OneAmp browser proof (`npm run test:oneamp-browser`): Playwright.
+            'tests/oneampBrowser/**',
             // S4 playback-credential probe (`npx playwright test --config
             // playwright.credential.config.ts`): Playwright, and it needs a real server serving the
             // built `dist/`. Only the SPEC is excluded - the suite's vitest containment tests live
