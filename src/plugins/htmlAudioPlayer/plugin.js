@@ -18,14 +18,19 @@ import {
     isCapturable,
     isNormalising,
     normalisationGain
-} from './audioGraph';
+} from '../../lib/audio/audioGraph';
 
 // One shared load: every new item waits on the same promise (a fresh import()
 // per item would also re-enter module loading while a load is in flight).
-let userSettingsLoad;
-function loadUserSettings() {
-    userSettingsLoad ??= import('../../scripts/settings/userSettings');
-    return userSettingsLoad;
+// The `.then((m) => m.prop)` form keeps webpack's export-usage tracking:
+// caching the bare namespace would keep every userSettings export name in
+// the main bundle (+1.1 KB measured).
+let selectAudioNormalizationLoad;
+function loadSelectAudioNormalization() {
+    selectAudioNormalizationLoad ??= import(
+        '../../scripts/settings/userSettings'
+    ).then((userSettings) => userSettings.selectAudioNormalization);
+    return selectAudioNormalizationLoad;
 }
 
 function getDefaultProfile() {
@@ -174,13 +179,13 @@ class HtmlAudioPlayer {
             // #75 / S4: same disclosure as the video player - the url carries the session's
             // access token as `ApiKey`, so it is never logged.
             let val = options.url;
-            loadUserSettings()
-                .then((userSettings) => {
+            loadSelectAudioNormalization()
+                .then((selectAudioNormalization) => {
                     if (generation !== self._srcGeneration) return;
                     applyNormalisation(
                         elem,
                         options,
-                        userSettings.selectAudioNormalization()
+                        selectAudioNormalization()
                     );
                 })
                 .catch((err) => {
