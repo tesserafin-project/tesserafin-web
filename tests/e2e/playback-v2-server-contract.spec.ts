@@ -1,5 +1,6 @@
 import { expect, test } from './support/origin-inventory';
 import { request } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Playback v2 SERVER descriptor contract — exercised over HTTP against the real server booted by
@@ -45,7 +46,7 @@ function baseRequest(overrides: Record<string, unknown> = {}) {
         ItemId: ctx.itemId,
         UserId: ctx.userId,
         MediaSourceId: ctx.itemId,
-        PlaySessionId: `e2e-${Math.random().toString(36).slice(2)}`,
+        PlaySessionId: `e2e-${randomUUID()}`,
         Capabilities: {
             Decode: {
                 DirectPlayProfiles: [
