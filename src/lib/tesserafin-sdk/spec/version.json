@@ -11,8 +11,8 @@
     "schemaCount": 436,
     "source": "~/tesserafin-030-server/openapi/openapi.json",
     "sourceRepository": "tesserafin/tesserafin",
-    "sourceCommit": "c206867206ac17cd051bf50eb0951f4394cd57b8",
-    "sourceRef": "c206867206ac17cd051bf50eb0951f4394cd57b8",
+    "sourceCommit": "326e74a20495ecc00ea55f99dd45c5082ea6641d",
+    "sourceRef": "326e74a20495ecc00ea55f99dd45c5082ea6641d",
     "canonicalSpecSha256": "100766b521af2bcf8a31f8bbda94ddc8cce44781b3278353484e71c3787a8d15",
     "specSha256": "4ca91a381bdd0bd4adc008caa269b0f7af1be6ae15ddb2fb0371a08401284d51",
     "transformVersion": 1,
@@ -23,5 +23,5 @@
     },
     "generatedManifestSha256": "f00351187d3184ddd982ae34ad8a47a5bd2abab651aa4e035bf2cbe22f183765",
     "generatedFileCount": 496,
-    "generatedAt": "2026-11-05T18:42:38.740Z"
+    "generatedAt": "2026-11-05T22:39:23.552Z"
 }
