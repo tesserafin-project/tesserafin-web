@@ -37,10 +37,28 @@ function download(url) {
     a.click();
 }
 
-export default function (urls) {
-    if (!urls) {
+const DOWNLOAD_PROTOCOLS = new Set(['http:', 'https:', 'blob:']);
+
+/**
+ * Resolves a download URL and refuses any scheme other than http(s) or blob.
+ *
+ * The URL ends up as an iframe `src` or an anchor `href` that is clicked, where a `javascript:`
+ * URL would execute in the app's origin (CodeQL js/xss-through-dom, web alerts #16/#17). Every
+ * caller today passes a server download or image URL, so this only closes the door.
+ */
+export function toDownloadUrl(url) {
+    const parsed = new URL(url, document.baseURI);
+    if (!DOWNLOAD_PROTOCOLS.has(parsed.protocol)) {
+        throw new Error(`refusing to download a ${parsed.protocol} URL`);
+    }
+    return parsed.href;
+}
+
+export default function (rawUrls) {
+    if (!rawUrls) {
         throw new Error('`urls` required');
     }
+    const urls = rawUrls.map(toDownloadUrl);
 
     if (
         typeof document.createElement('a').download === 'undefined' ||
