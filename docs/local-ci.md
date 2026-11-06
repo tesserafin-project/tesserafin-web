@@ -85,7 +85,7 @@ to work around it — the triggers are simply disarmed to stop the permanent red
 
 | File | Trigger before | Trigger after | Decision |
 |---|---|---|---|
-| `.github/workflows/pull_request.yml` | `pull_request` (branches `main`, `release*`; `paths-ignore: **/*.md`) | `workflow_dispatch` | **PARKED** — red on every PR |
+| `.github/workflows/pull_request.yml` | `pull_request` (branches `main`, `release*`; `paths-ignore: **/*.md`) | — | **PARKED** — red on every PR |
 | `.github/workflows/push.yml` | `push` (branches `main`, `release*`; `paths-ignore: **/*.md`) | `workflow_dispatch` | **PARKED** — red on every push |
 | `.github/workflows/workflow_run.yml` | `workflow_run` (workflows `Pull Request`, types `completed`) | `workflow_dispatch` | **PARKED** — its ungated `Automation` job went red on every PR-workflow completion |
 
