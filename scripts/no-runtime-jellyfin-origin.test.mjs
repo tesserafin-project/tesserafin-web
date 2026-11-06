@@ -13,7 +13,7 @@ const HTTPS_ORIGIN = 'https://github.com/tesserafin/tesserafin-web.git';
 
 // Run the actual CLI with a real git index and remote configuration. The empty
 // host inventory keeps a rejected origin distinguishable from other failures.
-function run(t, origin, { push, upstream = false } = {}) {
+function run(t, origin, { push, upstream = false, workflow } = {}) {
     const cwd = mkdtempSync(join(tmpdir(), 'tesserafin-origin-control-'));
     t.after(() => rmSync(cwd, { recursive: true, force: true }));
     const env = {
@@ -29,6 +29,10 @@ function run(t, origin, { push, upstream = false } = {}) {
         join(cwd, '.github/jellyfin-boundary-allowlist.json'),
         JSON.stringify({ entries: [] })
     );
+    if (workflow !== undefined) {
+        mkdirSync(join(cwd, '.github/workflows'));
+        writeFileSync(join(cwd, '.github/workflows/probe.yml'), workflow);
+    }
     git('add', '.github');
     git('remote', 'add', 'origin', origin);
     if (push) git('remote', 'set-url', '--push', 'origin', push);
@@ -140,3 +144,51 @@ test('preserves the documented developer-only upstream remote', (t) => {
     assert.match(result.stdout, /documented developer-only synchronisation/);
     assert.match(result.stdout, /\[verify:no-runtime-jellyfin\] OK/);
 });
+
+// Assembled at runtime: this file is itself scanned by the verifier's host inventory, so the
+// literal host must not appear in its source.
+const UPSTREAM_HOST = ['jellyfin', 'org'].join('.');
+
+for (const [name, workflow] of [
+    [
+        'config path before host',
+        `run: echo x > dist/config.json # https://repo.${UPSTREAM_HOST}\n`
+    ],
+    [
+        'host before config path',
+        `url: ${UPSTREAM_HOST}\nrun: cp a dist/config.json\n`
+    ],
+    ['gap of exactly 200', `dist/config.json${' '.repeat(200)}${UPSTREAM_HOST}`]
+]) {
+    test(`rejects a workflow writing an upstream endpoint into config.json: ${name}`, (t) => {
+        const result = run(t, HTTPS_ORIGIN, { workflow });
+        assert.equal(result.status, 1, result.stdout);
+        assert.match(
+            result.stderr,
+            /writes an upstream endpoint into the built client bundle/
+        );
+    });
+}
+
+for (const [name, workflow] of [
+    ['gap of 201', `dist/config.json${' '.repeat(201)}${UPSTREAM_HOST}`],
+    [
+        'host far before config path',
+        `${UPSTREAM_HOST}${'x'.repeat(201)}dist/config.json`
+    ],
+    ['config path only', 'run: echo {} > dist/config.json\n'],
+    [
+        'overlapping tokens do not count',
+        `dist/config.json${UPSTREAM_HOST.slice(0, -1)}`
+    ]
+]) {
+    test(`does not flag config.json without the host nearby: ${name}`, (t) => {
+        // Any mention of the upstream host still trips the host-inventory check, so assert on this
+        // rule's own message rather than on the exit status.
+        const result = run(t, HTTPS_ORIGIN, { workflow });
+        assert.doesNotMatch(
+            result.stderr,
+            /writes an upstream endpoint into the built client bundle/
+        );
+    });
+}
