@@ -1,5 +1,5 @@
 import { expect, test } from './support/origin-inventory';
-import { request } from '@playwright/test';
+import { request, type Response } from '@playwright/test';
 
 /**
  * Playback v2 (PR #26, `fix/playback-v2-descriptor-consumption`) — REAL browser E2E.
@@ -511,7 +511,9 @@ test.describe('playback v2 — flag ON', () => {
             `[killswitch] ServedBy=${d.ServedBy} FallbackReason=${d.FallbackReason} ` +
                 `Container=${d.Container} MimeType=${d.MimeType}`
         );
-        console.log(`[killswitch] descriptor Url=${d.Url}`);
+        console.log(
+            `[killswitch] descriptor path=${new URL(d.Url, BASE_URL).pathname}`
+        );
 
         // The engine really did decline, and for the kill-switch reason specifically — not for
         // `PlanNotExecutable` or `StopThresholdTripped`, which would make this a different test.
@@ -548,33 +550,11 @@ test.describe('playback v2 — flag ON', () => {
 });
 
 /**
- * The REAL Matroska fixture, driven through the REAL client.
- *
- * WHAT THIS PROVES, AND WHAT IT EXPLICITLY DOES NOT.
- *
- * It proves PR #26's descriptor consumption against a genuinely different container: the v2 engine
- * serves the `.mkv`, the descriptor supplies the media URL and the MimeType, and the client parses
- * nothing out of the URL.
- *
- * It does NOT prove a Remux/DirectStream decision, because THE REAL CLIENT CANNOT PROVOKE ONE ON
- * THIS RIG. The premise that it could rests on the claim that
- * `src/scripts/tesserafinPlaybackCapabilities.ts` offers `DirectPlayProfiles` for `webm`/`mp4`/`mov`
- * only. That claim is false: `buildVideoDirectPlayProfiles()` has an explicit third branch —
- *
- *     if (canPlayMkv(videoProbe, browser) && mp4VideoCodecs.length) {
- *         profiles.push(decodeProfile(MediaKind.Video, ['mkv'], mp4VideoCodecs, videoAudioCodecs));
- *     }
- *
- * — and Playwright's bundled Chromium satisfies `canPlayMkv`, so the unpatched client DECLARES mkv
- * direct-play support. The server then correctly answers `Method: 'DirectPlay'`,
- * `Reasons: ['MethodChosen']`, `Container: 'mkv'`, `MimeType: 'video/x-matroska'`. There is no
- * remux to observe. The declared containers are captured and printed below so this is a statement
- * about the bytes on the wire, not about reading the builder's source.
- *
- * Forcing a remux would require either rewriting the outgoing capability body (banned — removing
- * exactly that rewrite is the point of #26) or editing client source, so the Remux decision is
- * reported as NOT PROVEN rather than simulated. A hand-crafted capability set that excludes `mkv`
- * DOES yield `Method: 'Remux'` server-side; see `playback-v2-server-contract.spec.ts`.
+ * Real Matroska fixture, real browser capabilities, real v2 descriptor consumption.
+ * The browser's probes determine whether MKV is declared direct-playable. Require
+ * DirectPlay when it is, or Remux with stream-copy reasons when it is not. Both
+ * paths must consume the descriptor's URL and MIME type without rewriting the
+ * outgoing capabilities or inferring a decision from URL parameters.
  */
 test.describe('playback v2 — the real MKV', () => {
     let remuxId = '';
@@ -589,7 +569,7 @@ test.describe('playback v2 — the real MKV', () => {
         );
     });
 
-    test('the v2 engine serves the .mkv and its descriptor — not the URL — supplies the media URL and MimeType', async ({
+    test('the MKV decision follows declared capabilities and its descriptor supplies delivery', async ({
         page
     }) => {
         test.setTimeout(120_000);
@@ -633,7 +613,9 @@ test.describe('playback v2 — the real MKV', () => {
             `[remux] ServedBy=${d.ServedBy} FallbackReason=${d.FallbackReason} ` +
                 `Protocol=${d.Protocol} Container=${d.Container} MimeType=${d.MimeType}`
         );
-        console.log(`[remux] descriptor Url=${d.Url}`);
+        console.log(
+            `[remux] descriptor path=${new URL(d.Url, BASE_URL).pathname}`
+        );
 
         // The decision, read off the POST response body, which carries the engine's own
         // `Method`/`Reasons` — never inferred from the URL shape.
@@ -645,9 +627,7 @@ test.describe('playback v2 — the real MKV', () => {
             `[mkv] Method=${decision.Method} Reasons=${JSON.stringify(decision.Reasons)}`
         );
 
-        // THE EVIDENCE for why no remux occurs: the containers the UNPATCHED client actually put on
-        // the wire. Printed rather than merely asserted, so the run itself carries the proof that
-        // `mkv` is among them and the "webm/mp4/mov only" premise is wrong.
+        // Read the containers the real client sent, since MKV support varies by browser.
         const post = wire.requests.find(
             (r) => r.method === 'POST' && V2_SESSIONS.test(r.url)
         )!;
@@ -660,15 +640,16 @@ test.describe('playback v2 — the real MKV', () => {
         console.log(
             `[mkv] client-declared video direct-play containers=${JSON.stringify(declaredContainers)}`
         );
-        expect(
-            declaredContainers,
-            'the client did NOT declare mkv — a genuine remux should then have been reachable, ' +
-                'and this test needs rewriting to assert it'
-        ).toContain('mkv');
-
-        // Consequently the server direct-plays it. Asserted, not glossed: if this ever becomes
-        // `Remux`, the capability surface changed and the reasoning above must be revisited.
-        expect(decision.Method).toBe('DirectPlay');
+        const declaresMkv = declaredContainers.includes('mkv');
+        expect(decision.Method).toBe(declaresMkv ? 'DirectPlay' : 'Remux');
+        if (!declaresMkv) {
+            expect(decision.Reasons).toEqual(
+                expect.arrayContaining([
+                    'ContainerNotSupported',
+                    'StreamCopyable'
+                ])
+            );
+        }
 
         // v2 served it — not the legacy fallback.
         expect(
@@ -736,7 +717,7 @@ test.describe('playback v2 — external subtitle sidecar', () => {
     let itemId = '';
 
     test.beforeAll(async () => {
-        itemId = await resolveFirstMovieId();
+        itemId = await resolveItemIdByName('Smoke Test Movie (2020)');
     });
 
     test.beforeEach(async ({ page }) => {
@@ -753,7 +734,13 @@ test.describe('playback v2 — external subtitle sidecar', () => {
 
         const wire = instrument(page);
         const sessionBodies: string[] = [];
+        const subtitleResponses: Response[] = [];
         page.on('response', async (r) => {
+            if (
+                new URL(r.url()).pathname.toLowerCase().includes('/subtitles/')
+            ) {
+                subtitleResponses.push(r);
+            }
             if (V2_SESSIONS.test(r.url())) {
                 try {
                     sessionBodies.push(await r.text());
@@ -764,6 +751,22 @@ test.describe('playback v2 — external subtitle sidecar', () => {
         });
 
         await signInAndPlay(page, itemId);
+
+        // The rig's movie is only two seconds long. Keep the real player alive while
+        // its subtitle menu is exercised, without changing its requests or track data.
+        const video = page.locator('video').first();
+        await video.evaluate((element) => {
+            const media = element as HTMLVideoElement;
+            return new Promise<void>((resolve) => {
+                const pause = () => {
+                    media.pause();
+                    resolve();
+                };
+                if (media.paused)
+                    media.addEventListener('playing', pause, { once: true });
+                else pause();
+            });
+        });
 
         await expect
             .poll(() => sessionBodies.length, { timeout: 30_000 })
@@ -818,31 +821,97 @@ test.describe('playback v2 — external subtitle sidecar', () => {
             'subtitlemethod=encode'
         );
 
-        // And the sidecar is really retrievable as its own track, as real bytes, from the browser's
-        // own authenticated session — not merely promised by the decision. Fetched in-page so this
-        // exercises the same origin/credentials the player would use.
-        const subtitleProbe = await page.evaluate(async (id: string) => {
-            const res = await fetch(
-                `/Videos/${id}/${id}/Subtitles/0/0/Stream.vtt`,
-                { headers: { Accept: '*/*' } }
-            );
-            return {
-                status: res.status,
-                contentType: res.headers.get('content-type'),
-                body: (await res.text()).slice(0, 120)
-            };
-        }, itemId);
-        console.log(
-            `[subtitle] sidecar fetch=${JSON.stringify(subtitleProbe)}`
-        );
+        // Select the actual sidecar through the player's menu. The old probe invented
+        // an unauthenticated Stream.vtt URL; it never exercised the player (#263).
+        const openSubtitles = async () => {
+            await page.mouse.move(700, 450);
+            await page.mouse.move(720, 460);
+            const trigger = page
+                .locator('[data-track-menu="subtitles"]:visible')
+                .first();
+            await expect(trigger).toBeVisible();
+            await trigger.click();
+        };
+        await openSubtitles();
+        const sidecar = page
+            .getByRole('menu')
+            .locator(
+                '[role="menuitemradio"][data-track]:not([data-track="-1"])'
+            )
+            .first();
+        await expect(sidecar).toBeVisible();
+        const streamIndex = await sidecar.getAttribute('data-track');
+        expect(streamIndex).toMatch(/^\d+$/);
+        await sidecar.click();
+        // Account preferences may already have selected it at startup. Observe that
+        // real request too, instead of requiring an unnecessary second download.
+        const delivered = () =>
+            subtitleResponses.find((response) => {
+                // Delivery URLs use hyphenated GUIDs; Items returns compact IDs.
+                const path = new URL(response.url()).pathname
+                    .toLowerCase()
+                    .replaceAll('-', '');
+                return (
+                    path.startsWith(
+                        `/videos/${itemId.toLowerCase().replaceAll('-', '')}/`
+                    ) &&
+                    path.includes(`/subtitles/${streamIndex}/`) &&
+                    path.endsWith('/stream.js')
+                );
+            });
+        await expect.poll(() => Boolean(delivered())).toBe(true);
+        const subtitle = delivered()!;
+        expect(subtitle.status()).toBe(200);
+        expect(subtitle.headers()['content-type']).toMatch(/application\/json/);
 
-        expect(subtitleProbe.status).toBe(200);
-        expect(subtitleProbe.contentType).toMatch(/text\/vtt/);
-        // Real cue content, converted from the SubRip source — not an empty 200.
-        expect(subtitleProbe.body).toContain('WEBVTT');
-        expect(subtitleProbe.body).toContain(
-            'Tesserafin E2E external subtitle'
+        // Inspect key names only: a failed assertion must not print credentials.
+        const subtitleUrl = new URL(subtitle.url());
+        const queryKeys = [...subtitleUrl.searchParams.keys()];
+        expect(queryKeys).toContain('playbackCapability');
+        expect(
+            queryKeys.filter((key) =>
+                /^(api_?key|token|access_token)$/i.test(key)
+            )
+        ).toEqual([]);
+        expect(
+            Object.keys(subtitle.request().headers()).filter((key) =>
+                /^(authorization|x-emby-token)$/i.test(key)
+            )
+        ).toEqual([]);
+
+        const events = await subtitle.json();
+        expect(
+            events.TrackEvents.map((event: { Text: string }) => event.Text)
+        ).toEqual([
+            'Tesserafin E2E external subtitle, cue one.',
+            'Tesserafin E2E external subtitle, cue two.'
+        ]);
+        // A successful download alone is insufficient: the real player must install
+        // the cues on a showing native track (Chromium's default renderer).
+        await expect
+            .poll(() =>
+                video.evaluate((element) =>
+                    Array.from((element as HTMLVideoElement).textTracks)
+                        .filter((track) => track.mode === 'showing')
+                        .flatMap((track) =>
+                            Array.from(
+                                track.cues ?? [],
+                                (cue) => (cue as VTTCue).text
+                            )
+                        )
+                        .join('\n')
+                )
+            )
+            .toContain('Tesserafin E2E external subtitle, cue two.');
+
+        // Negative control: browser origin/session cookies do not authorize sidecars.
+        // Removing the player's bounded capability must reproduce the original 401.
+        subtitleUrl.searchParams.delete('playbackCapability');
+        const anonymousStatus = await page.evaluate(
+            async (url: string) => (await fetch(url)).status,
+            subtitleUrl.toString()
         );
+        expect(anonymousStatus).toBe(401);
     });
 });
 
