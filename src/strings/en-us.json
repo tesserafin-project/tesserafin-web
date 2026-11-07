@@ -205,6 +205,7 @@
     "OptionBrowseByMediaFamily": "By media type",
     "OptionBrowseByMediaFamilyHelp": "Movies, shows, music and photos lead. Content packs stay available.",
     "PlaybackError.ItemUnavailable": "This item does not exist or is not available to your account.",
+    "PlaybackError.SeriesQueueUnavailable": "The next episodes could not be loaded. Play the series again to retry.",
     "PlayEpisode": "Play {0}",
     "ResumeEpisode": "Resume {0}",
     "SelectAudioNormalizationHelp": "Track gain - adjusts the volume of each track so they playback with the same loudness. Album gain - adjusts the volume of all the tracks in an album only, keeping the album's dynamic range. Switching between \"Off\" and other options requires restarting the current playback.",
