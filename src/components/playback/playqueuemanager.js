@@ -1,6 +1,8 @@
 import { randomInt } from '../../utils/number.ts';
 
 let currentId = 0;
+const upcomingRefillThreshold = 5;
+const previousItemsToKeep = 3;
 function addUniquePlaylistItemId(item) {
     if (!item.PlaylistItemId) {
         item.PlaylistItemId = 'playlistItem' + currentId;
@@ -30,7 +32,11 @@ class PlayQueueManager {
         return this._playlist.slice(0);
     }
 
-    setPlaylist(items) {
+    setPlaylist(items, loadContinuation) {
+        this.cancelContinuation();
+        this._continuation = loadContinuation
+            ? { load: loadContinuation }
+            : null;
         items = items.slice(0);
 
         for (let i = 0, length = items.length; i < length; i++) {
@@ -43,6 +49,11 @@ class PlayQueueManager {
     }
 
     queue(items) {
+        this.cancelContinuation();
+        this.appendItems(items);
+    }
+
+    appendItems(items) {
         for (let i = 0, length = items.length; i < length; i++) {
             addUniquePlaylistItemId(items[i]);
 
@@ -50,7 +61,50 @@ class PlayQueueManager {
         }
     }
 
+    cancelContinuation() {
+        const continuation = this._continuation;
+        this._continuation = null;
+        continuation?.cancelPending?.();
+    }
+
+    loadUpcoming() {
+        const continuation = this._continuation;
+        const currentIndex = this.getCurrentPlaylistIndex();
+        if (
+            !continuation?.load ||
+            currentIndex < 0 ||
+            this._repeatMode !== 'RepeatNone' ||
+            this._playlist.length - currentIndex > upcomingRefillThreshold
+        ) {
+            return null;
+        }
+
+        if (!continuation.pending) {
+            const cancelled = new Promise((resolve) => {
+                continuation.cancelPending = () => resolve(false);
+            });
+            const request = Promise.resolve().then(async () => {
+                if (this._continuation !== continuation) return false;
+                const result = await continuation.load(this.getPlaylist());
+                if (this._continuation !== continuation) return false;
+
+                this.appendItems(result.items);
+                if (!result.hasMore) continuation.load = null;
+                return result.items.length > 0;
+            });
+            continuation.pending = Promise.race([request, cancelled]).finally(
+                () => {
+                    continuation.pending = null;
+                    continuation.cancelPending = null;
+                }
+            );
+        }
+
+        return continuation.pending;
+    }
+
     shufflePlaylist() {
+        this.cancelContinuation();
         this._sortedPlaylist = [];
         for (const item of this._playlist) {
             this._sortedPlaylist.push(item);
@@ -71,6 +125,7 @@ class PlayQueueManager {
     }
 
     sortShuffledPlaylist() {
+        this.cancelContinuation();
         this._playlist = [];
         for (const item of this._sortedPlaylist) {
             this._playlist.push(item);
@@ -80,6 +135,7 @@ class PlayQueueManager {
     }
 
     clearPlaylist(clearCurrentItem = false) {
+        this.cancelContinuation();
         const currentPlaylistItem = this._playlist.splice(
             this.getCurrentPlaylistIndex(),
             1
@@ -91,6 +147,7 @@ class PlayQueueManager {
     }
 
     queueNext(items) {
+        this.cancelContinuation();
         for (let i = 0, length = items.length; i < length; i++) {
             addUniquePlaylistItemId(items[i]);
         }
@@ -128,6 +185,11 @@ class PlayQueueManager {
 
     setPlaylistState(playlistItemId) {
         this._currentPlaylistItemId = playlistItemId;
+        if (this._continuation) {
+            const removeCount =
+                this.getCurrentPlaylistIndex() - previousItemsToKeep;
+            if (removeCount > 0) this._playlist.splice(0, removeCount);
+        }
     }
 
     setPlaylistIndex(playlistIndex) {
@@ -139,6 +201,7 @@ class PlayQueueManager {
     }
 
     removeFromPlaylist(playlistItemIds) {
+        this.cancelContinuation();
         if (this._playlist.length <= playlistItemIds.length) {
             return {
                 result: 'empty'
@@ -186,6 +249,7 @@ class PlayQueueManager {
 
         moveInArray(playlist, oldIndex, newIndex);
 
+        this.cancelContinuation();
         this._playlist = playlist;
 
         return {
@@ -196,6 +260,7 @@ class PlayQueueManager {
     }
 
     reset() {
+        this.cancelContinuation();
         this._sortedPlaylist = [];
         this._playlist = [];
         this._currentPlaylistItemId = null;
@@ -206,6 +271,7 @@ class PlayQueueManager {
     setRepeatMode(value) {
         const repeatModes = ['RepeatOne', 'RepeatAll', 'RepeatNone'];
         if (repeatModes.includes(value)) {
+            if (value === 'RepeatAll') this.cancelContinuation();
             this._repeatMode = value;
         } else {
             throw new TypeError('invalid value provided for setRepeatMode');

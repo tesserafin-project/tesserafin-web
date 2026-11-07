@@ -16,6 +16,10 @@ import appSettings from '../../scripts/settings/appSettings';
 import itemHelper from '../itemHelper';
 import { pluginManager } from '../pluginManager';
 import PlayQueueManager from './playqueuemanager';
+import {
+    createEpisodeContinuation,
+    episodePlaybackFields
+} from './episodecontinuation.ts';
 import * as userSettings from '../../scripts/settings/userSettings';
 import globalize from '../../lib/globalize';
 import loading from '../loading/loading';
@@ -2671,7 +2675,11 @@ export class PlaybackManager {
             );
         }
 
-        async function translateItemsForPlayback(items, options) {
+        async function translateItemsForPlayback(
+            items,
+            options,
+            onEpisodePage
+        ) {
             if (!items.length) return [];
 
             sortItemsIfNeeded(items, options);
@@ -2685,7 +2693,8 @@ export class PlaybackManager {
                 serverId,
                 options,
                 queryOptions,
-                items
+                items,
+                onEpisodePage
             );
 
             if (promise) {
@@ -2712,7 +2721,8 @@ export class PlaybackManager {
             serverId,
             options,
             queryOptions,
-            items
+            items,
+            onEpisodePage
         ) {
             const SortBy = options.shuffle
                 ? ItemSortBy.Random
@@ -2823,10 +2833,16 @@ export class PlaybackManager {
                     return getSeriesOrSeasonPlaybackPromise(
                         firstItem,
                         options,
-                        items
+                        items,
+                        onEpisodePage
                     );
                 case BaseItemKind.Episode:
-                    return getEpisodePlaybackPromise(firstItem, options, items);
+                    return getEpisodePlaybackPromise(
+                        firstItem,
+                        options,
+                        items,
+                        onEpisodePage
+                    );
             }
 
             return getNonItemTypePromise(
@@ -2949,7 +2965,8 @@ export class PlaybackManager {
         async function getSeriesOrSeasonPlaybackPromise(
             firstItem,
             options,
-            items
+            items,
+            onEpisodePage
         ) {
             const apiClient = ServerConnections.getApiClient(
                 firstItem.ServerId
@@ -2976,14 +2993,12 @@ export class PlaybackManager {
             }
 
             const episodesResult = await apiClient.getEpisodes(SeriesId, {
-                IsVirtualUnaired: false,
-                IsMissing: false,
+                ...episodePlaybackFields,
                 SeasonId: seasonId,
                 // default to first 100 episodes if no season was specified to avoid loading too large payloads
                 limit: seasonId ? undefined : 100,
                 SortBy: options.shuffle ? 'Random' : undefined,
                 UserId,
-                Fields: ['Chapters', 'Trickplay'],
                 startItemId
             });
 
@@ -3022,50 +3037,45 @@ export class PlaybackManager {
                         ?.PlaybackPositionTicks || 0;
             }
 
-            episodesResult.TotalRecordCount = episodesResult.Items.length;
+            if (!options.shuffle && !seasonId && items.length === 1) {
+                onEpisodePage?.(episodesResult, apiClient, UserId, SeriesId);
+            }
 
             return episodesResult;
         }
 
-        function getEpisodePlaybackPromise(firstItem, options, items) {
+        function getEpisodePlaybackPromise(
+            firstItem,
+            options,
+            items,
+            onEpisodePage
+        ) {
             if (
                 items.length === 1 &&
                 getPlayer(firstItem, options).supportsProgress !== false
             ) {
-                return getEpisodes(firstItem, options);
+                return getEpisodes(firstItem, options, onEpisodePage);
             } else {
                 return null;
             }
         }
 
-        function getEpisodes(firstItem, options) {
-            return new Promise(function (resolve, reject) {
-                const apiClient = ServerConnections.getApiClient(
-                    firstItem.ServerId
-                );
+        async function getEpisodes(firstItem, options, onEpisodePage) {
+            const { SeriesId, Id, ServerId } = firstItem;
+            if (!SeriesId) return null;
 
-                const { SeriesId, Id } = firstItem;
-                if (!SeriesId) {
-                    resolve(null);
-                    return;
-                }
-
-                apiClient
-                    .getEpisodes(SeriesId, {
-                        IsVirtualUnaired: false,
-                        IsMissing: false,
-                        UserId: apiClient.getCurrentUserId(),
-                        Fields: ['Chapters', 'Trickplay'],
-                        // limit to loading 100 episodes to avoid loading too large payload
-                        limit: 100,
-                        startItemId: Id
-                    })
-                    .then(function (episodesResult) {
-                        resolve(
-                            filterEpisodes(episodesResult, firstItem, options)
-                        );
-                    }, reject);
+            const apiClient = ServerConnections.getApiClient(ServerId);
+            const userId = apiClient.getCurrentUserId();
+            const episodesResult = await apiClient.getEpisodes(SeriesId, {
+                ...episodePlaybackFields,
+                UserId: userId,
+                limit: 100,
+                startItemId: Id
             });
+            if (!options.shuffle) {
+                onEpisodePage?.(episodesResult, apiClient, userId, SeriesId);
+            }
+            return filterEpisodes(episodesResult, firstItem, options);
         }
 
         function filterEpisodes(episodesResult, firstItem, options) {
@@ -3078,7 +3088,6 @@ export class PlaybackManager {
 
             // TODO: fix calling code to read episodesResult.StartIndex instead when set.
             options.startIndex = episodesResult.StartIndex;
-            episodesResult.TotalRecordCount = episodesResult.Items.length;
             return episodesResult;
         }
 
@@ -3119,8 +3128,34 @@ export class PlaybackManager {
                 ).Items;
             }
 
-            // Prepare the list of items
-            items = await translateItemsForPlayback(items, options);
+            let loadContinuation;
+            items = await translateItemsForPlayback(
+                items,
+                options,
+                (page, apiClient, userId, seriesId) => {
+                    const lastEpisodeId = page.Items[page.Items.length - 1]?.Id;
+                    if (
+                        !lastEpisodeId ||
+                        !(page.TotalRecordCount > page.Items.length)
+                    ) {
+                        return;
+                    }
+
+                    const serverId = apiClient.serverId();
+                    loadContinuation = createEpisodeContinuation({
+                        apiClient,
+                        userId,
+                        seriesId,
+                        lastEpisodeId,
+                        isCurrentAccount: () =>
+                            ServerConnections.getApiClient(serverId) ===
+                                apiClient &&
+                            apiClient.getCurrentUserId() === userId,
+                        expandParts: async (episodes) =>
+                            (await getAdditionalParts(episodes)).flat()
+                    });
+                }
+            );
             // Add any additional parts for movies or episodes
             items = await getAdditionalParts(
                 items,
@@ -3139,7 +3174,7 @@ export class PlaybackManager {
             // getAdditionalParts returns an array of arrays of items, so flatten it
             items = items.flat();
 
-            return playWithIntros(items, options);
+            return playWithIntros(items, options, loadContinuation);
         };
 
         function getPlayerData(player) {
@@ -3340,7 +3375,7 @@ export class PlaybackManager {
             );
         };
 
-        function playWithIntros(items, options) {
+        function playWithIntros(items, options, loadContinuation) {
             let playStartIndex = options.startIndex || 0;
             let firstItem = items[playStartIndex];
 
@@ -3397,8 +3432,13 @@ export class PlaybackManager {
                     return playInternal(
                         items[playStartIndex],
                         introPlayOptions,
-                        function () {
-                            self._playQueueManager.setPlaylist(items);
+                        function (player) {
+                            self._playQueueManager.setPlaylist(
+                                items,
+                                player && enableLocalPlaylistManagement(player)
+                                    ? loadContinuation
+                                    : undefined
+                            );
 
                             setPlaylistState(
                                 items[playStartIndex].PlaylistItemId,
@@ -3837,7 +3877,7 @@ export class PlaybackManager {
                         .play(streamInfo)
                         .then(() => {
                             loading.hide();
-                            onPlaybackStartedFn();
+                            onPlaybackStartedFn(player);
                             onPlaybackStarted(player, playOptions, streamInfo);
                         })
                         .catch((errorCode) => {
@@ -4071,7 +4111,7 @@ export class PlaybackManager {
                     return player.play(streamInfo).then(
                         function () {
                             loading.hide();
-                            onPlaybackStartedFn();
+                            onPlaybackStartedFn(player);
                             onPlaybackStarted(
                                 player,
                                 playOptions,
@@ -4086,7 +4126,7 @@ export class PlaybackManager {
                                 return;
                             }
                             // TODO: Improve this because it will report playback start on a failure
-                            onPlaybackStartedFn();
+                            onPlaybackStartedFn(player);
                             onPlaybackStarted(
                                 player,
                                 playOptions,
@@ -4926,6 +4966,23 @@ export class PlaybackManager {
             streamInfo.started = true;
 
             startPlaybackProgressTimer(player);
+
+            // Keep the next page ready while the last few buffered episodes play.
+            // A failed background request is retried on the next start or at the boundary.
+            self._playQueueManager.loadUpcoming()?.then(
+                (added) => {
+                    if (
+                        added &&
+                        getPlayerData(player).streamInfo === streamInfo &&
+                        !streamInfo.ended
+                    ) {
+                        Events.trigger(player, 'playlistitemadd');
+                    }
+                },
+                () => {
+                    // The boundary path can retry and report a visible failure.
+                }
+            );
         }
 
         function onPlaybackStartedFromSelfManagingPlayer(e, item, mediaSource) {
@@ -5208,8 +5265,10 @@ export class PlaybackManager {
             onPlaybackStopped.call(player, e, `.${terminalType}`);
         }
 
-        function onPlaybackStopped(e, displayErrorCode) {
+        async function onPlaybackStopped(e, displayErrorCode) {
             const player = this;
+            const data = getPlayerData(player);
+            if (data.seriesStopPending) return;
 
             if (getPlayerData(player).isChangingStream) {
                 // A stream change ends the old stream without ending playback - except when the
@@ -5224,7 +5283,6 @@ export class PlaybackManager {
 
             // User clicked stop or content ended
             const state = self.getPlayerState(player);
-            const data = getPlayerData(player);
             const streamInfo = data.streamInfo;
 
             const errorOccurred =
@@ -5263,21 +5321,10 @@ export class PlaybackManager {
                 errorOccurred ? 'error' : 'stopped'
             );
 
-            const nextItem =
+            let nextItem =
                 self._playNextAfterEnded && !errorOccurred
                     ? self._playQueueManager.getNextItemInfo()
                     : null;
-
-            const nextMediaType = nextItem ? nextItem.item.MediaType : null;
-
-            const playbackStopInfo = {
-                player: player,
-                state: state,
-                nextItem: nextItem ? nextItem.item : null,
-                nextMediaType: nextMediaType
-            };
-
-            state.NextMediaType = nextMediaType;
 
             if (streamInfo && isServerItem(streamInfo.item)) {
                 if (
@@ -5318,6 +5365,39 @@ export class PlaybackManager {
                 );
             }
 
+            let seriesQueueUnavailable = false;
+            if (self._playNextAfterEnded && !errorOccurred && !nextItem) {
+                const refill = self._playQueueManager.loadUpcoming();
+                if (refill) {
+                    // Report the stopped stream before waiting. The next title or an
+                    // explicit Stop can invalidate this advance while the request is pending.
+                    data.seriesStopPending = refill;
+                    try {
+                        await refill;
+                    } catch {
+                        seriesQueueUnavailable = true;
+                    }
+                    if (data.seriesStopPending !== refill) return;
+                    data.seriesStopPending = null;
+                    if (
+                        self._currentPlayer !== player ||
+                        data.streamInfo !== streamInfo
+                    )
+                        return;
+                    if (self._playNextAfterEnded) {
+                        nextItem = self._playQueueManager.getNextItemInfo();
+                    }
+                }
+            }
+
+            const nextMediaType = nextItem?.item.MediaType ?? null;
+            const playbackStopInfo = {
+                player: player,
+                state: state,
+                nextItem: nextItem?.item ?? null,
+                nextMediaType: nextMediaType
+            };
+            state.NextMediaType = nextMediaType;
             state.NextItem = playbackStopInfo.nextItem;
 
             if (!nextItem) {
@@ -5369,12 +5449,30 @@ export class PlaybackManager {
                     self,
                     'PlaybackError' + displayErrorCode
                 );
+            } else if (
+                seriesQueueUnavailable &&
+                self._playNextAfterEnded &&
+                !nextItem
+            ) {
+                showPlaybackInfoErrorMessage(
+                    self,
+                    'PlaybackError.SeriesQueueUnavailable'
+                );
             } else if (newPlayer) {
                 const apiClient = ServerConnections.getApiClient(
                     nextItem.item.ServerId
                 );
 
                 apiClient.getCurrentUser().then(function (user) {
+                    if (
+                        !self._playNextAfterEnded ||
+                        data.streamInfo !== streamInfo ||
+                        self._playQueueManager.getNextItemInfo()?.item !==
+                            nextItem.item
+                    ) {
+                        return;
+                    }
+
                     if (
                         user.Configuration.EnableNextEpisodeAutoPlay ||
                         nextMediaType !== MediaType.Video
@@ -5405,6 +5503,8 @@ export class PlaybackManager {
             // change, the position reported for the old item is where the viewer was, not the
             // zero of an element that has no stream.
             const replaced = getPlayerData(activePlayer);
+            const alreadyReportedStop = replaced.streamInfo?.ended;
+            replaced.seriesStopPending = null;
             if (state.PlayState && !state.PlayState.PositionTicks) {
                 state.PlayState.PositionTicks =
                     (replaced.softwareRecovery &&
@@ -5436,7 +5536,10 @@ export class PlaybackManager {
 
                 bindStopped(activePlayer);
 
-                if (enableLocalPlaylistManagement(activePlayer)) {
+                if (
+                    enableLocalPlaylistManagement(activePlayer) &&
+                    !alreadyReportedStop
+                ) {
                     reportPlayback(
                         self,
                         state,
@@ -5973,6 +6076,7 @@ export class PlaybackManager {
         if (player) {
             if (enableLocalPlaylistManagement(player)) {
                 this._playNextAfterEnded = false;
+                this._playQueueManager.cancelContinuation();
             }
 
             // A stop asked for while a stream change is in flight wins. The change checks this
